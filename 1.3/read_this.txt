@@ -1,0 +1,2 @@
+Irrlicht 1.3 was actually revision 559. 
+However, revisions 560 and 561 fixed quite a bug with ISceneNode::getType(), so this snapshot is of r561 instead.
