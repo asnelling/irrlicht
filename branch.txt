@@ -1,0 +1,18 @@
+about
+-----
+
+This branch is for work on a generic bone based loader for 
+all bone based mesh formats
+
+
+roadmap
+-------
+
+ - finish CSkinnedMesh
+ - convert B3D, MS3D and X loaders to use the new format
+ - Add compile config macros for excluding specific loaders
+
+changes
+-------
+
+ - initial import
