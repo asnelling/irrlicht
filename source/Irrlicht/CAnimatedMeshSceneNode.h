@@ -80,10 +80,6 @@ namespace scene
 		//! the corrsesponding joint, if the mesh in this scene node is a x mesh.
 		virtual ISceneNode* getXJointNode(const c8* jointName);
 
-		//! Returns a pointer to a child node, which has the same transformation as
-		//! the corresponding joint, if the mesh in this scene node is a b3d mesh.
-		virtual ISceneNode* getB3DJointNode(const c8* jointName);
-
 		//! Removes a child from this scene node.
 		//! Implemented here, to be able to remove the shadow properly, if there is one,
 		//! or to remove attached childs.

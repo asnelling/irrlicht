@@ -122,25 +122,6 @@ namespace scene
 		//! ms3d mesh or the name of the joint could not be found.
 		virtual ISceneNode* getXJointNode(const c8* jointName) = 0;
 
-		//! Returns a pointer to a child node, which has the same transformation as
-		//! the corresponding joint, if the mesh in this scene node is a b3d mesh.
-		//! Otherwise 0 is returned. With this method it is possible to
-		//! attach scene nodes to joints more easily. In this way, it is
-		//! for example possible to attach a weapon to the left hand of an
-		//! animated model. This example shows how:
-		//! \code
-		//! ISceneNode* hand =
-		//!		yourB3DAnimatedMeshSceneNode->getB3DJointNode("LeftHand");
-		//! hand->addChild(weaponSceneNode);
-		//! \endcode
-		//! Please note that the SceneNode returned by this method may not exist
-		//! before this call and is created by it.
-		//! \param jointName: Name of the joint.
-		//! \return Returns a pointer to the scene node which represents the joint
-		//! with the specified name. Returns 0 if the contained mesh is not an
-		//! ms3d mesh or the name of the joint could not be found.
-		virtual ISceneNode* getB3DJointNode(const c8* jointName) = 0;
-
 		//! Starts a default MD2 animation.
 		//! With this method it is easily possible to start a Run, Attack,
 		//! Die or whatever animation, if the mesh contained in this scene

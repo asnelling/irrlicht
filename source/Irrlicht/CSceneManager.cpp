@@ -29,6 +29,7 @@
 #include "COgreMeshFileLoader.h"
 #include "COBJMeshFileLoader.h"
 #include "CMD3MeshFileLoader.h"
+#include "CB3DMeshLoader.h"
 
 #include "CCubeSceneNode.h"
 #include "CSphereSceneNode.h"
@@ -130,8 +131,9 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	MeshLoaderList.push_back(new COgreMeshFileLoader(MeshManipulator, FileSystem, Driver));
 	MeshLoaderList.push_back(new COBJMeshFileLoader(FileSystem, Driver));
 	MeshLoaderList.push_back(new CMD3MeshFileLoader(FileSystem, Driver));
-	// factories
+	MeshLoaderList.push_back(new CB3DMeshLoader(this));
 
+	// factories
 	ISceneNodeFactory* factory = new CDefaultSceneNodeFactory(this);
 	registerSceneNodeFactory(factory);
 	factory->drop();
@@ -266,7 +268,7 @@ ITextSceneNode* CSceneManager::addTextSceneNode(gui::IGUIFont* font, const wchar
 //! Adds a text scene node, which uses billboards
 ITextSceneNode* CSceneManager::addBillboardTextSceneNode(gui::IGUIFont* font, const wchar_t* text,
 			ISceneNode* parent,
-			const core::dimension2d<f32>& size, 
+			const core::dimension2d<f32>& size,
 			const core::vector3df& position, s32 id,
 			video::SColor shade_top, video::SColor shade_down)
 {
@@ -606,7 +608,7 @@ ITerrainSceneNode* CSceneManager::addTerrainSceneNode(
 	}
 
 	ITerrainSceneNode* terrain = addTerrainSceneNode(file, parent, id,
-		position, rotation, scale, vertexColor, maxLOD, patchSize, 
+		position, rotation, scale, vertexColor, maxLOD, patchSize,
 		smoothFactor, addAlsoIfHeightmapEmpty);
 
 	if (file)
@@ -640,7 +642,7 @@ ITerrainSceneNode* CSceneManager::addTerrainSceneNode(
 			node->remove();
 			node->drop();
 			return 0;
-		}		
+		}
 	}
 
 	node->drop();
@@ -726,7 +728,7 @@ IAnimatedMesh* CSceneManager::addTerrainMesh(const c8* name,
 //! Adds an arrow mesh to the mesh pool.
 IAnimatedMesh* CSceneManager::addArrowMesh(const c8* name,u32 tesselationCylinder, u32 tesselationCone, f32 height, f32 cylinderHeight, f32 width0,f32 width1, video::SColor vtxColor0, video::SColor vtxColor1)
 {
-	
+
 	if (!name || MeshCache->isMeshLoaded(name))
 		return 0;
 
@@ -1628,7 +1630,7 @@ bool CSceneManager::loadScene(io::IReadFile* file, ISceneUserDataSerializer* use
         os::Printer::log("Scene is not a valid XML file", file->getFileName(), ELL_ERROR);
 		return false;
 	}
-	
+
 	// for mesh loading, set collada loading attributes
 
 	bool bOldColladaSingleMesh = getParameters()->getAttributeAsBool(COLLADA_CREATE_SCENE_INSTANCES);
@@ -2049,7 +2051,7 @@ video::SColorf CSceneManager::getAmbientLight()
 
 // creates a scenemanager
 ISceneManager* createSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
-								  gui::ICursorControl* cursorcontrol, 
+								  gui::ICursorControl* cursorcontrol,
 								  gui::IGUIEnvironment *guiEnvironment )
 {
 	return new CSceneManager(driver, fs, cursorcontrol, 0, guiEnvironment );

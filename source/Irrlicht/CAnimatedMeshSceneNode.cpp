@@ -11,7 +11,6 @@
 #include "IAnimatedMeshMS3D.h"
 #include "IAnimatedMeshMD3.h"
 #include "IAnimatedMeshX.h"
-#include "IAnimatedMeshB3d.h"
 #include "IDummyTransformationSceneNode.h"
 #include "IMaterialRenderer.h"
 #include "IMesh.h"
@@ -181,7 +180,7 @@ inline void AlignToUpVector(irr::core::matrix4 &m, const irr::core::vector3df &u
 	core::quaternion quatRot( up.Z, 0.f, -up.X, 1 + up.Y );
 	quatRot.normalize();
 	quatRot.getMatrix ( m );
-} 
+}
 
 
 
@@ -215,7 +214,7 @@ void CAnimatedMeshSceneNode::render()
 
 	// update all dummy transformation nodes
 	if (!JointChildSceneNodes.empty() && Mesh &&
-		(Mesh->getMeshType() == EAMT_MS3D || Mesh->getMeshType() == EAMT_X  || Mesh->getMeshType() == EAMT_B3D ))
+		(Mesh->getMeshType() == EAMT_MS3D || Mesh->getMeshType() == EAMT_X  || Mesh->getMeshType() == EAMT_SKINNED ))
 	{
 		IAnimatedMeshMS3D* amm = (IAnimatedMeshMS3D*)Mesh;
 		core::matrix4* m;
@@ -282,7 +281,7 @@ void CAnimatedMeshSceneNode::render()
 		{
 			for ( g=0; g< m->getMeshBufferCount(); ++g)
 			{
-				driver->draw3DBox( m->getMeshBuffer(g)->getBoundingBox(), 
+				driver->draw3DBox( m->getMeshBuffer(g)->getBoundingBox(),
 									video::SColor(0,190,128,128)
 								);
 			}
@@ -345,7 +344,7 @@ void CAnimatedMeshSceneNode::render()
 		// show normals
 		if ( DebugDataVisible & scene::EDS_NORMALS )
 		{
-			IAnimatedMesh * arrow = SceneManager->addArrowMesh ( "__debugnormal", 
+			IAnimatedMesh * arrow = SceneManager->addArrowMesh ( "__debugnormal",
 							4, 8, 1.f, 0.6f, 0.05f, 0.3f, 0xFFECEC00, 0xFF999900
 							);
 			if ( 0 == arrow )
@@ -367,7 +366,9 @@ void CAnimatedMeshSceneNode::render()
 				for ( i = 0; i != mb->getVertexCount(); ++i )
 				{
 					AlignToUpVector ( m2, v->Normal );
-					AbsoluteTransformation.transformVect ( m2.pointer(), v->Pos );
+
+					m2.setTranslation(v->Pos);
+					m2*=AbsoluteTransformation;
 
 					driver->setTransform(video::ETS_WORLD, m2 );
 					for ( u32 a = 0; a != mesh->getMeshBufferCount(); ++a )
@@ -559,40 +560,6 @@ ISceneNode* CAnimatedMeshSceneNode::getXJointNode(const c8* jointName)
 }
 
 
-//! Returns a pointer to a child node, which has the same transformation as
-//! the corrsesponding joint, if the mesh in this scene node is a b3d mesh.
-ISceneNode* CAnimatedMeshSceneNode::getB3DJointNode(const c8* jointName)
-{
-	if (!Mesh || Mesh->getMeshType() != EAMT_B3D)
-		return 0;
-
-	IAnimatedMeshB3d* amm = (IAnimatedMeshB3d*)Mesh;
-	s32 jointCount = amm->getJointCount();
-	s32 number = amm->getJointNumber(jointName);
-
-	if (number == -1)
-	{
-		os::Printer::log("Joint with specified name not found in b3d mesh.", jointName, ELL_WARNING);
-		return 0;
-	}
-
-	if (JointChildSceneNodes.empty())
-	{
-		// allocate joints for the first time.
-		JointChildSceneNodes.set_used(jointCount);
-		for (s32 i=0; i<jointCount; ++i)
-			JointChildSceneNodes[i] = 0;
-	}
-
-	if (JointChildSceneNodes[number] == 0)
-	{
-		JointChildSceneNodes[number] =
-			SceneManager->addDummyTransformationSceneNode(this);
-		JointChildSceneNodes[number]->grab();
-	}
-
-	return JointChildSceneNodes[number];
-}
 
 //! Removes a child from this scene node.
 //! Implemented here, to be able to remove the shadow properly, if there is one,
@@ -778,7 +745,7 @@ const SMD3QuaterionTag& CAnimatedMeshSceneNode::getAbsoluteTransformation( const
 	SMD3QuaterionTag * tag = MD3Special.AbsoluteTagList.get ( tagname );
 	if ( tag )
 		return *tag;
-		
+
 	MD3Special.AbsoluteTagList.Container.push_back ( SMD3QuaterionTag ( tagname, AbsoluteTransformation ) );
 	return *MD3Special.AbsoluteTagList.get ( tagname );
 }
@@ -800,7 +767,7 @@ void CAnimatedMeshSceneNode::updateAbsolutePosition()
 	}
 
 	SMD3QuaterionTag relative( RelativeTranslation, RelativeRotation );
-	
+
 	SMD3QuaterionTagList *taglist;
 	taglist = ( (IAnimatedMeshMD3*) Mesh )->getTagList ( getFrameNr(),255,getStartFrame (),getEndFrame () );
 	if ( taglist )

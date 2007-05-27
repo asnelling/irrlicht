@@ -6,7 +6,6 @@
 #include "CAnimatedMeshMD2.h"
 #include "CAnimatedMeshMS3D.h"
 #include "CQ3LevelMesh.h"
-#include "CAnimatedMeshB3d.h"
 
 namespace irr
 {
@@ -44,7 +43,7 @@ CDefaultMeshFormatLoader::~CDefaultMeshFormatLoader()
 //! based on the file extension (e.g. ".bsp")
 bool CDefaultMeshFormatLoader::isALoadableFileExtension(const c8* filename)
 {
-	return strstr(filename, ".md2") || strstr(filename, ".b3d") ||
+	return strstr(filename, ".md2") ||
 			strstr(filename, ".ms3d") || strstr(filename, ".bsp") ||
 			 strstr(filename, ".shader");
 }
@@ -91,7 +90,7 @@ IAnimatedMesh* CDefaultMeshFormatLoader::createMesh(irr::io::IReadFile* file)
 	if (strstr(file->getFileName(), ".bsp"))
 	{
 		CQ3LevelMesh* q = new CQ3LevelMesh(FileSystem, Driver, SceneManager);
-		
+
 		q->getShader ( "scripts/models.shader", 1 );
 		q->getShader ( "scripts/liquid.shader", 1 );
 		//q->getShader ( "scripts/sky.shader", 1 );
@@ -108,19 +107,6 @@ IAnimatedMesh* CDefaultMeshFormatLoader::createMesh(irr::io::IReadFile* file)
 		CQ3LevelMesh* q = new CQ3LevelMesh(FileSystem, Driver, SceneManager);
 		q->getShader ( file->getFileName(), 1 );
 		return q;
-	}
-
-	// load blitz basic
-	if (strstr(file->getFileName(), ".b3d"))
-	{
-		file->seek(0);
-
-		msh = new CAnimatedMeshB3d(Driver);
-		success = ((CAnimatedMeshB3d*)msh)->loadFile(file);
-		if (success)
-			return msh;
-
-		msh->drop();
 	}
 
 	return 0;
