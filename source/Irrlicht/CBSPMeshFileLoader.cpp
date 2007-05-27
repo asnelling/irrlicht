@@ -2,9 +2,10 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
-#include "CDefaultMeshFormatLoader.h"
-#include "CAnimatedMeshMD2.h"
-#include "CAnimatedMeshMS3D.h"
+#include "IrrCompileConfig.h"
+#ifdef _IRR_COMPILE_WITH_BSP_LOADER_
+
+#include "CBSPMeshFileLoader.h"
 #include "CQ3LevelMesh.h"
 
 namespace irr
@@ -13,7 +14,7 @@ namespace scene
 {
 
 //! Constructor
-CDefaultMeshFormatLoader::CDefaultMeshFormatLoader(io::IFileSystem* fs,video::IVideoDriver* driver, scene::ISceneManager* smgr)
+CBSPMeshFileLoader::CBSPMeshFileLoader(io::IFileSystem* fs,video::IVideoDriver* driver, scene::ISceneManager* smgr)
 : FileSystem(fs), Driver(driver), SceneManager(smgr)
 {
 	if (FileSystem)
@@ -27,7 +28,7 @@ CDefaultMeshFormatLoader::CDefaultMeshFormatLoader(io::IFileSystem* fs,video::IV
 
 
 //! destructor
-CDefaultMeshFormatLoader::~CDefaultMeshFormatLoader()
+CBSPMeshFileLoader::~CBSPMeshFileLoader()
 {
 	if (FileSystem)
 		FileSystem->drop();
@@ -41,11 +42,9 @@ CDefaultMeshFormatLoader::~CDefaultMeshFormatLoader()
 
 //! returns true if the file maybe is able to be loaded by this class
 //! based on the file extension (e.g. ".bsp")
-bool CDefaultMeshFormatLoader::isALoadableFileExtension(const c8* filename)
+bool CBSPMeshFileLoader::isALoadableFileExtension(const c8* filename)
 {
-	return strstr(filename, ".md2") ||
-			strstr(filename, ".ms3d") || strstr(filename, ".bsp") ||
-			 strstr(filename, ".shader");
+	return strstr(filename, ".bsp") || strstr(filename, ".shader");
 }
 
 
@@ -54,37 +53,13 @@ bool CDefaultMeshFormatLoader::isALoadableFileExtension(const c8* filename)
 //! \return Pointer to the created mesh. Returns 0 if loading failed.
 //! If you no longer need the mesh, you should call IAnimatedMesh::drop().
 //! See IUnknown::drop() for more information.
-IAnimatedMesh* CDefaultMeshFormatLoader::createMesh(irr::io::IReadFile* file)
+IAnimatedMesh* CBSPMeshFileLoader::createMesh(irr::io::IReadFile* file)
 {
 	IAnimatedMesh* msh = 0;
 
-	// This method loads a mesh if it cans.
-	// Someday I will have to refactor this, and split the DefaultMeshFormatloader
-	// into one loader for every format.
+	// This method loads a mesh if it can.
 
 	bool success = false;
-
-	// load quake 2 md2 model
-	if (strstr(file->getFileName(), ".md2"))
-	{
-		msh = new CAnimatedMeshMD2();
-		success = ((CAnimatedMeshMD2*)msh)->loadFile(file);
-		if (success)
-			return msh;
-
-		msh->drop();
-	}
-
-	// load milkshape
-	if (strstr(file->getFileName(), ".ms3d"))
-	{
-		msh = new CAnimatedMeshMS3D(Driver);
-		success = ((CAnimatedMeshMS3D*)msh)->loadFile(file);
-		if (success)
-			return msh;
-
-		msh->drop();
-	}
 
 	// load quake 3 bsp
 	if (strstr(file->getFileName(), ".bsp"))
@@ -115,3 +90,4 @@ IAnimatedMesh* CDefaultMeshFormatLoader::createMesh(irr::io::IReadFile* file)
 } // end namespace scene
 } // end namespace irr
 
+#endif // _IRR_COMPILE_WITH_BSP_LOADER_

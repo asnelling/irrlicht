@@ -1,19 +1,9 @@
-about
------
-
-This branch is for work on a generic skeletal animator for
-all bone based mesh formats
-
-
-roadmap
+Changes
 -------
 
- - finish CSkinnedMesh
- - convert MS3D and X loaders to use the new format
- - Add compile config macros for excluding specific loaders
+ - added defines in IrrCompileConfig for excluding loaders
 
-changes
--------
+ - split and removed default mesh format loader
 
  - can now update the normals when skinning
 

@@ -6,7 +6,7 @@
 #define __IRR_COMPILE_CONFIG_H_INCLUDED__
 
 //! Irrlicht SDK Version
-#define IRRLICHT_SDK_VERSION "1.3"
+#define IRRLICHT_SDK_VERSION "1.3.1.SkinnedMesh"
 
 //! The defines for different operating system are:
 //! _IRR_XBOX_PLATFORM_ for XBox
@@ -108,7 +108,7 @@ define out. */
 /** This enables the engine to read from compressed .zip archives. If you
 disable this feature, the engine can still read archives, but only uncompressed
 ones. */
-#define _IRR_COMPILE_WITH_ZLIB_
+//#define _IRR_COMPILE_WITH_ZLIB_
 
 //! Define _IRR_USE_NON_SYSTEM_ZLIB_ to let irrlicht use the zlib which comes with irrlicht.
 /** If this is commented out, Irrlicht will try to compile using the zlib installed in the system.
@@ -119,7 +119,7 @@ ones. */
 //! Define _IRR_COMPILE_WITH_JPEGLIB_ to enable compiling the engine using libjpeg.
 /** This enables the engine to read jpeg images. If you comment this out,
 the engine will no longer read .jpeg images. */
-#define _IRR_COMPILE_WITH_LIBJPEG_
+//#define _IRR_COMPILE_WITH_LIBJPEG_
 
 //! Define _IRR_USE_NON_SYSTEM_JPEG_LIB_ to let irrlicht use the jpeglib which comes with irrlicht.
 /** If this is commented out, Irrlicht will try to compile using the jpeg lib installed in the system.
@@ -130,7 +130,7 @@ the engine will no longer read .jpeg images. */
 //! Define _IRR_COMPILE_WITH_LIBPNG_ to enable compiling the engine using libpng.
 /** This enables the engine to read png images. If you comment this out,
 the engine will no longer read .png images. */
-#define _IRR_COMPILE_WITH_LIBPNG_
+//#define _IRR_COMPILE_WITH_LIBPNG_
 
 //! Define _IRR_USE_NON_SYSTEM_LIBPNG_ to let irrlicht use the libpng which comes with irrlicht.
 /** If this is commented out, Irrlicht will try to compile using the libpng installed in the system.
@@ -208,6 +208,46 @@ Note that the engine will run in D3D REF for this, which is a lot slower than HA
 //#define BURNINGVIDEO_RENDERER_FAST
 //#define BURNINGVIDEO_RENDERER_ULTRA_FAST
 
+
+//! Define _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_ if you want to use bone based
+/** animated meshes. If you compile without this, you will be unable to load 
+B3D, MS3D or X meshes */
+#define _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_
+
+#ifdef _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_
+//! Define _IRR_COMPILE_WITH_B3D_LOADER_ if you want to use Blitz3D files
+#define _IRR_COMPILE_WITH_B3D_LOADER_
+//! Define _IRR_COMPILE_WITH_B3D_LOADER_ if you want to Milkshape files
+#define _IRR_COMPILE_WITH_MS3D_LOADER_
+//! Define _IRR_COMPILE_WITH_X_LOADER_ if you want to use Microsoft X files
+#define _IRR_COMPILE_WITH_X_LOADER_
+#endif
+
+//! Define _IRR_COMPILE_WITH_MD2_LOADER_ if you want to load Quake 2 animated files
+#define _IRR_COMPILE_WITH_MD2_LOADER_
+//! Define _IRR_COMPILE_WITH_MD3_LOADER_ if you want to load Quake 3 animated files
+#define _IRR_COMPILE_WITH_MD3_LOADER_
+
+//! Define _IRR_COMPILE_WITH_3DS_LOADER_ if you want to load 3D Studio Max files
+#define _IRR_COMPILE_WITH_3DS_LOADER_
+//! Define _IRR_COMPILE_WITH_COLLADA_LOADER_ if you want to load Collada files
+#define _IRR_COMPILE_WITH_COLLADA_LOADER_
+//! Define _IRR_COMPILE_WITH_CSM_LOADER_ if you want to load Cartography Shop files
+#define _IRR_COMPILE_WITH_CSM_LOADER_
+//! Define _IRR_COMPILE_WITH_BSP_LOADER_ if you want to load Quake 3 BSP files
+#define _IRR_COMPILE_WITH_BSP_LOADER_
+//! Define _IRR_COMPILE_WITH_DMF_LOADER_ if you want to load DeleD files
+#define _IRR_COMPILE_WITH_DMF_LOADER_
+//! Define _IRR_COMPILE_WITH_LMTS_LOADER_ if you want to load LMTools files
+#define _IRR_COMPILE_WITH_LMTS_LOADER_
+//! Define _IRR_COMPILE_WITH_MY3D_LOADER_ if you want to load MY3D files
+#define _IRR_COMPILE_WITH_MY3D_LOADER_
+//! Define _IRR_COMPILE_WITH_OBJ_LOADER_ if you want to load Wavefront OBJ files
+#define _IRR_COMPILE_WITH_OBJ_LOADER_
+//! Define _IRR_COMPILE_WITH_OCT_LOADER_ if you want to load FSRad OCT files
+#define _IRR_COMPILE_WITH_OCT_LOADER_
+//! Define _IRR_COMPILE_WITH_OGRE_LOADER_ if you want to load Ogre 3D files
+#define _IRR_COMPILE_WITH_OGRE_LOADER_
 
 //! Set FPU settings
 /** Irrlicht should use approximate float and integer fpu techniques

@@ -2,6 +2,9 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
+#include "IrrCompileConfig.h" 
+#ifdef _IRR_COMPILE_WITH_BSP_LOADER_
+
 #include "CQ3LevelMesh.h"
 #include "ISceneManager.h"
 #include "os.h"
@@ -1888,3 +1891,4 @@ E_ANIMATED_MESH_TYPE CQ3LevelMesh::getMeshType() const
 } // end namespace scene
 } // end namespace irr
 
+#endif // _IRR_COMPILE_WITH_BSP_LOADER_

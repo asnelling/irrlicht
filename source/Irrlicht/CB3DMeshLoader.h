@@ -5,11 +5,6 @@
 
 #include "irrCompileConfig.h"
 
-// temporary, until its added to compile config
-#define _IRR_COMPILE_WITH_B3D_LOADER_
-
-#ifdef _IRR_COMPILE_WITH_B3D_LOADER_
-
 #include "IMeshLoader.h"
 #include "ISceneManager.h"
 #include "CSkinnedMesh.h"
@@ -121,8 +116,6 @@ private:
 
 } // end namespace scene
 } // end namespace irr
-
-#endif // _IRR_COMPILE_WITH_B3D_LOADER_
 
 #endif // __C_B3D_MESH_LOADER_H_INCLUDED__
 

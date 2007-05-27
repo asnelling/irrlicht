@@ -2,6 +2,9 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
+#include "IrrCompileConfig.h" 
+#ifdef _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_
+
 #include "CSkinnedMesh.h"
 #include "IBoneSceneNode.h"
 #include "IAnimatedMeshSceneNode.h"
@@ -9,8 +12,8 @@
 
 
 ////////////////////// TEMP /////////////////////////////
-#include "iostream"
-using namespace std;
+//#include "iostream"
+//using namespace std;
 /////////////////////////////////////////////////////////
 
 
@@ -1170,4 +1173,4 @@ void CSkinnedMesh::createSkelton_Helper(ISceneManager* SceneManager, core::array
 } // end namespace scene
 } // end namespace irr
 
-
+#endif // _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_

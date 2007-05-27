@@ -2,6 +2,9 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
+#include "IrrCompileConfig.h"
+#ifdef _IRR_COMPILE_WITH_X_LOADER_
+
 #include "CXAnimationPlayer.h"
 #include "ISceneNode.h"
 #include "IVideoDriver.h"
@@ -853,3 +856,4 @@ bool CXAnimationPlayer::setCurrentAnimation(const c8* name)
 } // end namespace scene
 } // end namespace irr
 
+#endif // _IRR_COMPILE_WITH_X_LOADER_

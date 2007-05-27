@@ -3,9 +3,10 @@
 //file format designed by mark sibly for the blitz3d engine and has been declared public domain
 //loader by luke hoschke
 
-#include "CB3DMeshLoader.h"
-
+#include "IrrCompileConfig.h"
 #ifdef _IRR_COMPILE_WITH_B3D_LOADER_
+
+#include "CB3DMeshLoader.h"
 
 #include "IVideoDriver.h"
 #include "os.h"
@@ -983,13 +984,8 @@ void CB3DMeshLoader::readFloats(f32* vec, u32 count)
 	#endif
 }
 
-
-
-
 } // end namespace scene
 } // end namespace irr
 
 
-
-
-#endif
+#endif // _IRR_COMPILE_WITH_B3D_LOADER_
