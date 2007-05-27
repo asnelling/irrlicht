@@ -1,7 +1,7 @@
 about
 -----
 
-This branch is for work on a generic bone based loader for 
+This branch is for work on a generic skeletal animator for
 all bone based mesh formats
 
 
@@ -9,10 +9,34 @@ roadmap
 -------
 
  - finish CSkinnedMesh
- - convert B3D, MS3D and X loaders to use the new format
+ - convert MS3D and X loaders to use the new format
  - Add compile config macros for excluding specific loaders
 
 changes
 -------
 
- - initial import
+ - can now update the normals when skinning
+
+ - initial import to irrlicht svn branch
+
+ - Can convert the mesh at runtime to use tangent mesh buffers (bumpmapping)
+
+ - b3d loader now fully working with skinnedmesh to load and animate any mesh
+
+ - keys now use floats for frames, it maybe needed
+
+ - added getFrameData() and buildAll_LocalAnimatedMatrices()  to CSkinnedMesh
+
+ - added CalculateGlobalMatrixes() to CSkinnedMesh
+
+ - added an enum and get/set functions to IBoneSceneNode for animation mode, started readme.txt
+
+ - added files for x and ms3d importers using CSkinnedMesh. MS3D looks easy enough
+
+ - added methods to get pointers for bones and buffers, and finalize() to CSkinnedMesh
+
+ - fleshed out the loader and (I/C)BoneSceneNode, haven't tried compiling it yet
+
+ - added BoneSceneNode, and B3DMeshLoader
+
+ - Started project
