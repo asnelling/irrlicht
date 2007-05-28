@@ -73,6 +73,10 @@ namespace scene
 			bool zfailmethod=true, f32 infinity=10000.0f);
 
 		//! Returns a pointer to a child node, which has the same transformation as
+		//! the corrsesponding joint, if the mesh in this scene node is a skinned mesh.
+		virtual IBoneSceneNode* getJointNode(const c8* jointName);
+
+		//! Returns a pointer to a child node, which has the same transformation as
 		//! the corrsesponding joint, if the mesh in this scene node is a ms3d mesh.
 		virtual ISceneNode* getMS3DJointNode(const c8* jointName);
 
@@ -154,7 +158,7 @@ namespace scene
 
 		IShadowVolumeSceneNode* Shadow;
 
-		core::array<IDummyTransformationSceneNode* > JointChildSceneNodes;
+		core::array<ISceneNode* > JointChildSceneNodes;
 
 		struct SMD3Special
 		{

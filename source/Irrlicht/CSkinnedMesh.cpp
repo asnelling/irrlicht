@@ -6,7 +6,7 @@
 #ifdef _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_
 
 #include "CSkinnedMesh.h"
-#include "IBoneSceneNode.h"
+#include "CBoneSceneNode.h"
 #include "IAnimatedMeshSceneNode.h"
 #include "os.h"
 
@@ -82,6 +82,7 @@ IMesh* CSkinnedMesh::getMesh(s32 frame, s32 detailLevel, s32 startFrameLoop, s32
 //								Keyframe Animation
 //--------------------------------------------------------------------------
 
+
 //! Animates this mesh's joints based on frame input
 //! blend: {0-old position, 1-New position}
 void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
@@ -146,6 +147,11 @@ void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
 		//_LocalAnimatedMatrix needs to be built at some point, but this function maybe called lots of times for
 		//one render (to play two animations at the same time) _LocalAnimatedMatrix only needs to be built once.
 		//a call to buildAllLocalAnimatedMatrices is needed before skinning the mesh, and before the user gets the joints to move
+
+		//----------------
+		// Temp!
+		buildAll_LocalAnimatedMatrices();
+		//-----------------
 
 	}
 
@@ -396,14 +402,12 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 //								Software Skinning
 //--------------------------------------------------------------------------
 
-
 //! Preforms a software skin on this mesh based of joint positions
 void CSkinnedMesh::skinMesh()
 {
 
 	//----------------
 	// Temp!
-	buildAll_LocalAnimatedMatrices();
 	buildAll_GlobalAnimatedMatrices();
 	//-----------------
 
@@ -819,7 +823,13 @@ void CSkinnedMesh::finalize()
 
 
 	//Needed for animation and skinning...
+
 	CalculateGlobalMatrixes(0,0);
+
+
+	//animateMesh(0, 1);
+	//buildAll_LocalAnimatedMatrices();
+	//buildAll_GlobalAnimatedMatrices();
 
 
 	if (HasAnimation)
@@ -1019,24 +1029,27 @@ void CSkinnedMesh::normalizeWeights()
 
 void CSkinnedMesh::recoverJointsFromMesh(core::array<IBoneSceneNode*> &JointChildSceneNodes)
 {
-	//Note: This function works because of the way the b3d fomat nests nodes, other mesh loaders may need a different function
-	for (s32 i=0;i<(s32)RootJoints.size();++i)
+
+
+	for (u32 i=0;i<AllJoints.size();++i)
 	{
 		IBoneSceneNode* node=JointChildSceneNodes[i];
-		SJoint *joint=RootJoints[i];
+		SJoint *joint=AllJoints[i];
 		node->setPosition( joint->_LocalAnimatedMatrix.getTranslation() );
 		node->setRotation( joint->_LocalAnimatedMatrix.getRotationDegrees() );
 		//node->setScale( B3dNode->LocalAnimatedMatrix.getScale() );
-		//node->updateAbsolutePosition();//works because of nests nodes
+
+		//Note: This updateAbsolutePosition will not work well if joints are not nested like b3d
+		//node->updateAbsolutePosition();
 	}
 }
 
 void CSkinnedMesh::tranferJointsToMesh(core::array<IBoneSceneNode*> &JointChildSceneNodes)
 {
-	for (s32 i=0;i<(s32)RootJoints.size();++i)
+	for (u32 i=0;i<AllJoints.size();++i)
 	{
 		IBoneSceneNode* node=JointChildSceneNodes[i];
-		SJoint *joint=RootJoints[i];
+		SJoint *joint=AllJoints[i];
 		joint->_LocalAnimatedMatrix.setTranslation( node->getPosition() );
 		joint->_LocalAnimatedMatrix.setRotationDegrees( node->getRotation() );
 		//B3dNode->LocalAnimatedMatrix.setScale( node->getScale() );
@@ -1046,24 +1059,48 @@ void CSkinnedMesh::tranferJointsToMesh(core::array<IBoneSceneNode*> &JointChildS
 	lastSkinnedFrame=-1;
 }
 
-
-
 void CSkinnedMesh::createJoints(core::array<IBoneSceneNode*> &JointChildSceneNodes,
 	IAnimatedMeshSceneNode* AnimatedMeshSceneNode, ISceneManager* SceneManager)
 {
-	//Note: This function works because of the way the b3d format nests nodes, other mesh loaders may need a different function
+	u32 i;
 
-	//createSkelton_Helper(SceneManager, JointChildSceneNodes,AnimatedMeshSceneNode,0,0,0);
+	//Create new joints
+	for (i=0;i<AllJoints.size();++i)
+	{
+		IBoneSceneNode* node = new CBoneSceneNode(AnimatedMeshSceneNode, SceneManager, 0);
+		node->drop();
 
+		JointChildSceneNodes.push_back(node);
+	}
 
+	//Match up parents
+	for (i=0;i<JointChildSceneNodes.size();++i)
+	{
+		IBoneSceneNode* node=JointChildSceneNodes[i];
+		SJoint *joint=AllJoints[i]; //should be fine
 
+		s32 parentID=-1;
 
+		for (u32 j=0;j<AllJoints.size();++j)
+		{
+			if (i!=j && parentID==-1)
+			{
+				SJoint *parentTest=AllJoints[i];
+				for (u32 n=0;n<parentTest->Children.size();++n)
+				{
+					if (parentTest->Children[n]==joint)
+					{
+						parentID=j;
+						break;
+					}
+				}
+			}
+		}
 
-
-
-
+		if (parentID!=-1)
+			node->setParent( JointChildSceneNodes[parentID] );
+	}
 }
-
 
 void CSkinnedMesh::convertMeshToTangents()
 {
@@ -1124,22 +1161,6 @@ void CSkinnedMesh::convertMeshToTangents()
 	}
 
 
-/*
-	// For skinning
-	for (s32 i=0; i < (s32)Nodes.size(); ++i)
-	{
-		SB3dNode *Node=Nodes[i];
-		for (s32 j=0; j<(s32)Node->Bones.size(); ++j)
-		{
-			Node->Bones[j].pos = BaseVertices[Node->Bones[j].vertex_id]->Pos;
-			Node->Bones[j].normal = BaseVertices[Node->Bones[j].vertex_id]->Normal;
-			Node->Bones[j].vertex =
-				AnimatedVertices_MeshBuffer[ Node->Bones[j].vertex_id ]->getVertex(
-					AnimatedVertices_VertexID[ Node->Bones[j].vertex_id ] );
-		}
-	}
-*/
-
 }
 
 
@@ -1179,35 +1200,6 @@ void CSkinnedMesh::calculateTangents(
 		binormal *= -1.0f;
 	}
 }
-
-/*
-
-void CSkinnedMesh::createSkelton_Helper(ISceneManager* SceneManager, core::array<IBoneSceneNode*> &JointChildSceneNodes,
-	IAnimatedMeshSceneNode* AnimatedMeshSceneNode, ISceneNode* ParentNode, SB3dNode *ParentB3dNode,SB3dNode *B3dNode)
-{
-	//Note: This function works because of the way the b3d fomat nests nodes, other mesh loaders may need a different function
-	if (!ParentNode)
-	{
-		for (s32 i=0;i<(s32)RootNodes.size();++i)
-		{
-			B3dNode=RootNodes[i];
-			ISceneNode* node = SceneManager->addEmptySceneNode(AnimatedMeshSceneNode);
-			JointChildSceneNodes.push_back(node);
-			for (s32 j=0;j<(s32)B3dNode->Nodes.size();++j)
-				createSkelton_Helper(SceneManager,JointChildSceneNodes,AnimatedMeshSceneNode,node,B3dNode,B3dNode->Nodes[j]);
-		}
-	}
-	else
-	{
-		ISceneNode* node = SceneManager->addEmptySceneNode(ParentNode);
-		JointChildSceneNodes.push_back(node);
-		for (s32 j=0;j<(s32)B3dNode->Nodes.size();++j)
-			createSkelton_Helper(SceneManager,JointChildSceneNodes,AnimatedMeshSceneNode,node,B3dNode,B3dNode->Nodes[j]);
-	}
-}
-
-
-*/
 
 
 } // end namespace scene

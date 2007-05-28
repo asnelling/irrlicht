@@ -13,6 +13,7 @@
 #include "IAnimatedMeshX.h"
 #include "ISkinnedMesh.h"
 #include "IDummyTransformationSceneNode.h"
+#include "IBoneSceneNode.h"
 #include "IMaterialRenderer.h"
 #include "IMesh.h"
 #include "IMeshCache.h"
@@ -53,9 +54,9 @@ CAnimatedMeshSceneNode::~CAnimatedMeshSceneNode()
 	if (Shadow)
 		Shadow->drop();
 
-	for (u32 i=0; i<JointChildSceneNodes.size(); ++i)
-		if (JointChildSceneNodes[i])
-			JointChildSceneNodes[i]->drop();
+	//for (u32 i=0; i<JointChildSceneNodes.size(); ++i)
+	//	if (JointChildSceneNodes[i])
+	//		JointChildSceneNodes[i]->drop();
 
 	if (LoopCallBack)
 		LoopCallBack->drop();
@@ -220,10 +221,21 @@ void CAnimatedMeshSceneNode::render()
 		m = Mesh->getMesh((s32)frame, 255, StartFrame, EndFrame);
 	else
 	{
-		((ISkinnedMesh*)Mesh)->animateMesh(frame, 1.0f);
-		((ISkinnedMesh*)Mesh)->skinMesh();
-		m=((ISkinnedMesh*)Mesh);
+		ISkinnedMesh* skinnedMesh=(ISkinnedMesh*)Mesh;
+
+		if (0)//Use joint control stuff?
+			skinnedMesh->tranferJointsToMesh( (core::array<IBoneSceneNode*>&) JointChildSceneNodes);
+		else
+			skinnedMesh->animateMesh(frame, 1.0f);
+
+
+		skinnedMesh->skinMesh();
+
+
+
+		m=skinnedMesh;
 	}
+
 
 
 	if ( 0 == m )
@@ -238,9 +250,12 @@ void CAnimatedMeshSceneNode::render()
 
 	u32 i,g;
 
+
+	// ---------------- To be deleted -----------------
+
 	// update all dummy transformation nodes
 	if (!JointChildSceneNodes.empty() && Mesh &&
-		(Mesh->getMeshType() == EAMT_MS3D || Mesh->getMeshType() == EAMT_X  || Mesh->getMeshType() == EAMT_SKINNED ))
+		(Mesh->getMeshType() == EAMT_MS3D || Mesh->getMeshType() == EAMT_X ))
 	{
 		IAnimatedMeshMS3D* amm = (IAnimatedMeshMS3D*)Mesh;
 		core::matrix4* m;
@@ -248,11 +263,14 @@ void CAnimatedMeshSceneNode::render()
 		for ( i=0; i< JointChildSceneNodes.size(); ++i)
 			if (JointChildSceneNodes[i])
 			{
+
 				m = amm->getMatrixOfJoint(i, (s32)frame);
 				if (m)
-					JointChildSceneNodes[i]->getRelativeTransformationMatrix() = *m;
+					((IDummyTransformationSceneNode*)JointChildSceneNodes[i]) ->getRelativeTransformationMatrix() = *m;
 			}
 	}
+	//---------------------------------------------------
+
 
 	if (Shadow && PassCount==1)
 		Shadow->setMeshToRenderFrom(m);
@@ -514,6 +532,35 @@ IShadowVolumeSceneNode* CAnimatedMeshSceneNode::addShadowVolumeSceneNode(s32 id,
 
 
 
+IBoneSceneNode* CAnimatedMeshSceneNode::getJointNode(const c8* jointName)
+{
+	if (!Mesh || Mesh->getMeshType() != EAMT_SKINNED)
+		return 0;
+
+	ISkinnedMesh *skinnedMesh=(ISkinnedMesh*)Mesh;
+
+	s32 jointCount = skinnedMesh->getJointCount();
+	s32 number = skinnedMesh->getJointNumber(jointName);
+
+	if (number == -1)
+	{
+		os::Printer::log("Joint with specified name not found in skinned mesh.", jointName, ELL_WARNING);
+		return 0;
+	}
+
+	if ((s32)JointChildSceneNodes.size() <= number)
+	{
+		os::Printer::log("Joint was found in mesh, but is not loaded into node", jointName, ELL_WARNING);
+		return 0;
+	}
+
+	return (IBoneSceneNode*)JointChildSceneNodes[number]; //JointChildSceneNodes will only be IBoneSceneNode later
+
+}
+
+
+
+
 //! Returns a pointer to a child node, which has the same transformation as
 //! the corrsesponding joint, if the mesh in this scene node is a ms3d mesh.
 ISceneNode* CAnimatedMeshSceneNode::getMS3DJointNode(const c8* jointName)
@@ -543,7 +590,7 @@ ISceneNode* CAnimatedMeshSceneNode::getMS3DJointNode(const c8* jointName)
 	{
 		JointChildSceneNodes[number] =
 			SceneManager->addDummyTransformationSceneNode(this);
-		JointChildSceneNodes[number]->grab();
+		//JointChildSceneNodes[number]->grab();
 	}
 
 	return JointChildSceneNodes[number];
@@ -579,7 +626,7 @@ ISceneNode* CAnimatedMeshSceneNode::getXJointNode(const c8* jointName)
 	{
 		JointChildSceneNodes[number] =
 			SceneManager->addDummyTransformationSceneNode(this);
-		JointChildSceneNodes[number]->grab();
+		//JointChildSceneNodes[number]->grab();
 	}
 
 	return JointChildSceneNodes[number];
@@ -599,12 +646,13 @@ bool CAnimatedMeshSceneNode::removeChild(ISceneNode* child)
 		return true;
 	}
 
+
 	if (ISceneNode::removeChild(child))
 	{
 		for (s32 i=0; i<(s32)JointChildSceneNodes.size(); ++i)
 		if (JointChildSceneNodes[i] == child)
 		{
-			JointChildSceneNodes[i]->drop();
+			//JointChildSceneNodes[i]->drop();
 			JointChildSceneNodes[i] = 0;
 			return true;
 		}
@@ -759,6 +807,21 @@ void CAnimatedMeshSceneNode::setMesh(IAnimatedMesh* mesh)
 	// get start and begin time
 	setFrameLoop ( 0, Mesh->getFrameCount() );
 
+
+
+
+
+	//Create joints for SkinnedMesh
+	if (Mesh->getMeshType() == EAMT_SKINNED)
+	{
+		//this is here for testing only, it will only be created when needed later
+		((ISkinnedMesh*)Mesh)->createJoints( 	(core::array<IBoneSceneNode*>&)JointChildSceneNodes,  //bad cast, but it won't be needed later
+												this,
+												SceneManager);
+		((ISkinnedMesh*)Mesh)->recoverJointsFromMesh( (core::array<IBoneSceneNode*>&) JointChildSceneNodes);
+
+	}
+
 	// grab the mesh
 	if (Mesh)
 		Mesh->grab();
@@ -817,8 +880,14 @@ void CAnimatedMeshSceneNode::animateJoints()
 	{
 		if (!JointChildSceneNodes.empty())
 		{
+			f32 frame = getFrameNr(); //old?
 
-			//Todo :)
+
+			ISkinnedMesh* skinnedMesh=(ISkinnedMesh*)Mesh;
+
+			skinnedMesh->animateMesh(frame, 1.0f);
+
+			skinnedMesh->recoverJointsFromMesh( (core::array<IBoneSceneNode*>&) JointChildSceneNodes);
 
 		}
 	}
