@@ -108,7 +108,7 @@ define out. */
 /** This enables the engine to read from compressed .zip archives. If you
 disable this feature, the engine can still read archives, but only uncompressed
 ones. */
-//#define _IRR_COMPILE_WITH_ZLIB_
+#define _IRR_COMPILE_WITH_ZLIB_
 
 //! Define _IRR_USE_NON_SYSTEM_ZLIB_ to let irrlicht use the zlib which comes with irrlicht.
 /** If this is commented out, Irrlicht will try to compile using the zlib installed in the system.
@@ -119,7 +119,7 @@ ones. */
 //! Define _IRR_COMPILE_WITH_JPEGLIB_ to enable compiling the engine using libjpeg.
 /** This enables the engine to read jpeg images. If you comment this out,
 the engine will no longer read .jpeg images. */
-//#define _IRR_COMPILE_WITH_LIBJPEG_
+#define _IRR_COMPILE_WITH_LIBJPEG_
 
 //! Define _IRR_USE_NON_SYSTEM_JPEG_LIB_ to let irrlicht use the jpeglib which comes with irrlicht.
 /** If this is commented out, Irrlicht will try to compile using the jpeg lib installed in the system.
@@ -130,7 +130,7 @@ the engine will no longer read .jpeg images. */
 //! Define _IRR_COMPILE_WITH_LIBPNG_ to enable compiling the engine using libpng.
 /** This enables the engine to read png images. If you comment this out,
 the engine will no longer read .png images. */
-//#define _IRR_COMPILE_WITH_LIBPNG_
+#define _IRR_COMPILE_WITH_LIBPNG_
 
 //! Define _IRR_USE_NON_SYSTEM_LIBPNG_ to let irrlicht use the libpng which comes with irrlicht.
 /** If this is commented out, Irrlicht will try to compile using the libpng installed in the system.
@@ -210,7 +210,7 @@ Note that the engine will run in D3D REF for this, which is a lot slower than HA
 
 
 //! Define _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_ if you want to use bone based
-/** animated meshes. If you compile without this, you will be unable to load 
+/** animated meshes. If you compile without this, you will be unable to load
 B3D, MS3D or X meshes */
 #define _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_
 

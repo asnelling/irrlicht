@@ -2,7 +2,7 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
-#include "IrrCompileConfig.h" 
+#include "IrrCompileConfig.h"
 #ifdef _IRR_COMPILE_WITH_SKINNED_MESH_SUPPORT_
 
 #include "CSkinnedMesh.h"
@@ -628,6 +628,32 @@ void CSkinnedMesh::finalize()
 	lastAnimatedFrame=-1;
 	lastSkinnedFrame=-1;
 	AnimateNormals=false;
+
+	//calculate bounding box
+
+	for (i=0; i<Buffers.size(); ++i)
+	{
+		Buffers[i]->recalculateBoundingBox();
+	}
+
+	// Get BoundingBox...
+	if (Buffers.empty())
+		BoundingBox.reset(0,0,0);
+	else
+	{
+		BoundingBox.reset(Buffers[0]->BoundingBox.MaxEdge);
+		for (s32 i=0; i<(s32)Buffers.size(); ++i)
+		{
+			BoundingBox.addInternalBox(Buffers[i]->BoundingBox);
+		}
+	}
+
+	//add 5% padding to bounding box
+	core::vector3df Padding=(BoundingBox.MaxEdge-BoundingBox.MinEdge)*0.05;
+	BoundingBox.MinEdge-=Padding;
+	BoundingBox.MaxEdge+=Padding;
+
+
 
 	if (AllJoints.size() || RootJoints.size())
 	{

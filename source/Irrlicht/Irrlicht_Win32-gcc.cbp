@@ -191,6 +191,8 @@
 		<Unit filename="CAttributes.h" />
 		<Unit filename="CB3DMeshLoader.cpp" />
 		<Unit filename="CB3DMeshLoader.h" />
+		<Unit filename="CBSPMeshFileLoader.cpp" />
+		<Unit filename="CBSPMeshFileLoader.h" />
 		<Unit filename="CBillboardSceneNode.cpp" />
 		<Unit filename="CBillboardSceneNode.h" />
 		<Unit filename="CBoneSceneNode.cpp" />
@@ -237,8 +239,6 @@
 		<Unit filename="CDMFLoader.h" />
 		<Unit filename="CDefaultGUIElementFactory.cpp" />
 		<Unit filename="CDefaultGUIElementFactory.h" />
-		<Unit filename="CDefaultMeshFormatLoader.cpp" />
-		<Unit filename="CDefaultMeshFormatLoader.h" />
 		<Unit filename="CDefaultSceneNodeAnimatorFactory.cpp" />
 		<Unit filename="CDefaultSceneNodeAnimatorFactory.h" />
 		<Unit filename="CDefaultSceneNodeFactory.cpp" />
@@ -346,8 +346,12 @@
 		<Unit filename="CLimitReadFile.h" />
 		<Unit filename="CLogger.cpp" />
 		<Unit filename="CLogger.h" />
+		<Unit filename="CMD2MeshFileLoader.cpp" />
+		<Unit filename="CMD2MeshFileLoader.h" />
 		<Unit filename="CMD3MeshFileLoader.cpp" />
 		<Unit filename="CMD3MeshFileLoader.h" />
+		<Unit filename="CMS3DMeshFileLoader.cpp" />
+		<Unit filename="CMS3DMeshFileLoader.h" />
 		<Unit filename="CMY3DHelper.h" />
 		<Unit filename="CMY3DMeshFileLoader.cpp" />
 		<Unit filename="CMY3DMeshFileLoader.h" />

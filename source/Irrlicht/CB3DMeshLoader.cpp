@@ -336,8 +336,6 @@ bool CB3DMeshLoader::readChunkMESH(CSkinnedMesh::SJoint *InJoint)
 			if(readChunkTRIS(InJoint, MeshBuffer,AnimatedMesh->getMeshBuffers().size()-1, Vertices_Start)==false)
 				return false;
 
-			MeshBuffer->recalculateBoundingBox();
-
 			if (!NormalsInFile && MeshBuffer->Material.Lighting) // No point wasting time on lightmapped levels
 			{
 				s32 i;
