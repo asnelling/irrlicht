@@ -54,7 +54,7 @@ namespace scene
 		//! \param frame: Number of the frame to let the animation be started from.
 		//! The frame number must be a valid frame number of the IMesh used by this
 		//! scene node. Set IAnimatedMesh::getMesh() for details.
-		virtual void setCurrentFrame(s32 frame) = 0;
+		virtual void setCurrentFrame(f32 frame) = 0;
 
 		//! Sets the frame numbers between the animation is looped.
 		//! The default is 0 - MaximalFrameCount of the mesh.
@@ -146,7 +146,7 @@ namespace scene
 		virtual bool setMD2Animation(const c8* animationName) = 0;
 
 		//! Returns the current displayed frame number.
-		virtual s32 getFrameNr() const = 0;
+		virtual f32 getFrameNr() const = 0;
 		//! Returns the current start frame number.
 		virtual s32 getStartFrame() const = 0;
 		//! Returns the current end frame number.
@@ -179,6 +179,9 @@ namespace scene
 		// returns the absolute transformation for a special MD3 Tag if the mesh is a md3 mesh,
 		// or the absolutetransformation if it's a normal scenenode
 		virtual const SMD3QuaterionTag& getAbsoluteTransformation( const core::stringc & tagname) = 0;
+
+		//! updates the joint positions of this mesh
+		virtual void animateJoints() = 0;
 
 	};
 

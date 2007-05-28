@@ -28,7 +28,7 @@ namespace scene
 		virtual ~CAnimatedMeshSceneNode();
 
 		//! sets the current frame. from now on the animation is played from this frame.
-		virtual void setCurrentFrame(s32 frame);
+		virtual void setCurrentFrame(f32 frame);
 
 		//! frame
 		virtual void OnRegisterSceneNode();
@@ -92,7 +92,7 @@ namespace scene
 		virtual bool setMD2Animation(const c8* animationName);
 
 		//! Returns the current displayed frame number.
-		virtual s32 getFrameNr() const;
+		virtual f32 getFrameNr() const;
 		//! Returns the current start frame number.
 		virtual s32 getStartFrame() const;
 		//! Returns the current end frame number.
@@ -128,9 +128,12 @@ namespace scene
 		//! updates the absolute position based on the relative and the parents position
 		virtual void updateAbsolutePosition();
 
+		//! updates the joint positions of this mesh
+		virtual void animateJoints();
+
 	private:
 
-		u32 buildFrameNr( u32 timeMs);
+		f32 buildFrameNr( u32 timeMs);
 
 		core::array<video::SMaterial> Materials;
 		core::aabbox3d<f32> Box;
@@ -141,7 +144,7 @@ namespace scene
 		s32 EndFrame;
 		f32 FramesPerSecond;
 
-		s32 CurrentFrameNr;
+		f32 CurrentFrameNr;
 
 		bool Looping;
 		bool ReadOnlyMaterials;

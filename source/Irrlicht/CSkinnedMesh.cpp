@@ -400,6 +400,13 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 //! Preforms a software skin on this mesh based of joint positions
 void CSkinnedMesh::skinMesh()
 {
+
+	//----------------
+	// Temp!
+	buildAll_LocalAnimatedMatrices();
+	buildAll_GlobalAnimatedMatrices();
+	//-----------------
+
 	//Software skin....
 
 
@@ -1047,6 +1054,13 @@ void CSkinnedMesh::createJoints(core::array<IBoneSceneNode*> &JointChildSceneNod
 	//Note: This function works because of the way the b3d format nests nodes, other mesh loaders may need a different function
 
 	//createSkelton_Helper(SceneManager, JointChildSceneNodes,AnimatedMeshSceneNode,0,0,0);
+
+
+
+
+
+
+
 
 }
 

@@ -11,6 +11,7 @@
 #include "IAnimatedMeshMS3D.h"
 #include "IAnimatedMeshMD3.h"
 #include "IAnimatedMeshX.h"
+#include "ISkinnedMesh.h"
 #include "IDummyTransformationSceneNode.h"
 #include "IMaterialRenderer.h"
 #include "IMesh.h"
@@ -63,40 +64,52 @@ CAnimatedMeshSceneNode::~CAnimatedMeshSceneNode()
 
 
 //! Sets the current frame. From now on the animation is played from this frame.
-void CAnimatedMeshSceneNode::setCurrentFrame(s32 frame)
+void CAnimatedMeshSceneNode::setCurrentFrame(f32 frame)
 {
 	// if you pass an out of range value, we just clamp it
-	CurrentFrameNr = core::s32_clamp ( frame, StartFrame, EndFrame );
+	CurrentFrameNr = core::clamp ( frame, (f32)StartFrame, (f32)EndFrame );
+
+
 
 	BeginFrameTime = os::Timer::getTime() - (s32)((CurrentFrameNr - StartFrame) / FramesPerSecond);
 }
 
 
 //! Returns the current displayed frame number.
-s32 CAnimatedMeshSceneNode::getFrameNr() const
+f32 CAnimatedMeshSceneNode::getFrameNr() const
 {
 	return CurrentFrameNr;
 }
 
 
-u32 CAnimatedMeshSceneNode::buildFrameNr(u32 timeMs)
+f32 CAnimatedMeshSceneNode::buildFrameNr(u32 timeMs)
 {
-	const s32 deltaFrame = core::floor32 ( f32 ( timeMs - BeginFrameTime ) * FramesPerSecond );
+
 
 	if (Looping)
 	{
-		const s32 len = EndFrame - StartFrame + 1;
 		// play animation looped
-		return StartFrame + ( deltaFrame % len );
+
+		const s32 lenInTime = s32( f32(EndFrame - StartFrame) / FramesPerSecond);
+
+		return StartFrame + ( (timeMs - BeginFrameTime) % lenInTime) *FramesPerSecond;
+
+		//const f32 deltaFrame = core::floor32 ( f32 ( timeMs - BeginFrameTime ) * FramesPerSecond );
+		//const s32 len= EndFrame - StartFrame + 1;
+		// play animation looped
+		//return StartFrame + ( deltaFrame % len );
+
 	}
 	else
 	{
-		// play animation non looped
-		s32 frame = StartFrame + deltaFrame;
+		const f32 deltaFrame = core::floor32 ( f32 ( timeMs - BeginFrameTime ) * FramesPerSecond );
 
-		if (frame > EndFrame)
+		// play animation non looped
+		f32 frame = StartFrame + deltaFrame;
+
+		if (frame > (f32)EndFrame)
 		{
-			frame = EndFrame;
+			frame = (f32)EndFrame;
 			if (LoopCallBack)
 				LoopCallBack->OnAnimationEnd(this);
 		}
@@ -160,11 +173,13 @@ void CAnimatedMeshSceneNode::OnAnimate(u32 timeMs)
 
 	if ( Mesh )
 	{
+		/*
 		scene::IMesh *m = Mesh->getMesh(CurrentFrameNr, 255, StartFrame, EndFrame);
 		if ( m )
 		{
 			Box = m->getBoundingBox();
 		}
+		*/
 	}
 
 	IAnimatedMeshSceneNode::OnAnimate ( timeMs );
@@ -197,8 +212,19 @@ void CAnimatedMeshSceneNode::render()
 
 	++PassCount;
 
-	s32 frame = getFrameNr();
-	scene::IMesh* m = Mesh->getMesh(frame, 255, StartFrame, EndFrame);
+	f32 frame = getFrameNr();
+
+	scene::IMesh* m;
+
+	if (Mesh->getMeshType() != EAMT_SKINNED)
+		m = Mesh->getMesh((s32)frame, 255, StartFrame, EndFrame);
+	else
+	{
+		((ISkinnedMesh*)Mesh)->animateMesh(frame, 1.0f);
+		((ISkinnedMesh*)Mesh)->skinMesh();
+		m=((ISkinnedMesh*)Mesh);
+	}
+
 
 	if ( 0 == m )
 	{
@@ -222,7 +248,7 @@ void CAnimatedMeshSceneNode::render()
 		for ( i=0; i< JointChildSceneNodes.size(); ++i)
 			if (JointChildSceneNodes[i])
 			{
-				m = amm->getMatrixOfJoint(i, frame);
+				m = amm->getMatrixOfJoint(i, (s32)frame);
 				if (m)
 					JointChildSceneNodes[i]->getRelativeTransformationMatrix() = *m;
 			}
@@ -297,7 +323,7 @@ void CAnimatedMeshSceneNode::render()
 			{
 				// draw skeleton
 				const core::array<core::vector3df>* ds =
-					((IAnimatedMeshX*)Mesh)->getDrawableSkeleton(frame);
+					((IAnimatedMeshX*)Mesh)->getDrawableSkeleton((s32)frame);
 
 				for ( g=0; g < ds->size(); g +=2 )
 					driver->draw3DLine((*ds)[g], (*ds)[g+1],  video::SColor(0,51,66,255));
@@ -321,7 +347,7 @@ void CAnimatedMeshSceneNode::render()
 
 				core::matrix4 m;
 
-				SMD3QuaterionTagList *taglist = ((IAnimatedMeshMD3*)Mesh)->getTagList (	getFrameNr(),
+				SMD3QuaterionTagList *taglist = ((IAnimatedMeshMD3*)Mesh)->getTagList (	(s32)getFrameNr(),
 												255,
 												getStartFrame (),
 												getEndFrame ()
@@ -769,7 +795,7 @@ void CAnimatedMeshSceneNode::updateAbsolutePosition()
 	SMD3QuaterionTag relative( RelativeTranslation, RelativeRotation );
 
 	SMD3QuaterionTagList *taglist;
-	taglist = ( (IAnimatedMeshMD3*) Mesh )->getTagList ( getFrameNr(),255,getStartFrame (),getEndFrame () );
+	taglist = ( (IAnimatedMeshMD3*) Mesh )->getTagList ( (s32)getFrameNr(),255,getStartFrame (),getEndFrame () );
 	if ( taglist )
 	{
 		MD3Special.AbsoluteTagList.Container.set_used ( taglist->size () );
@@ -782,6 +808,25 @@ void CAnimatedMeshSceneNode::updateAbsolutePosition()
 	}
 
 }
+
+
+//! updates the joint positions of this mesh
+void CAnimatedMeshSceneNode::animateJoints()
+{
+	if (Mesh && Mesh->getMeshType() == EAMT_SKINNED )
+	{
+		if (!JointChildSceneNodes.empty())
+		{
+
+			//Todo :)
+
+		}
+	}
+
+}
+
+
+
 
 
 } // end namespace scene

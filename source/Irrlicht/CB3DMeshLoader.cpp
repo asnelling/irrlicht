@@ -697,7 +697,7 @@ bool CB3DMeshLoader::readChunkKEYS(CSkinnedMesh::SJoint *InJoint)
 		frame = os::Byteswap::byteswap(frame);
 		#endif
 
-		frame *= 100; // Scale the animation frames up
+		//frame *= 100; // Scale the animation frames up
 
 		core::vector3df position = core::vector3df(positionData[0], positionData[1], positionData[2]);
 		core::vector3df scale = core::vector3df(scaleData[0], scaleData[1], scaleData[2]);
@@ -745,7 +745,7 @@ bool CB3DMeshLoader::readChunkANIM(CSkinnedMesh::SJoint *InJoint)
 		AnimFrames = os::Byteswap::byteswap(AnimFrames);
 	#endif
 
-	AnimFrames*=100; //unneed soon...
+	//AnimFrames*=100; //unneed soon...
 
 	B3dStack.erase(B3dStack.size()-1);
 	return true;
