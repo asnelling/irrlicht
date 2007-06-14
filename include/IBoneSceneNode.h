@@ -63,6 +63,8 @@ namespace scene
 		//! Returns the relative transformation of the scene node.
 		virtual core::matrix4 getRelativeTransformation() const = 0;
 
+		virtual void OnAnimate(u32 timeMs) =0;
+
 		//! Does nothing as bones are not visible
 		virtual void render() { };
 

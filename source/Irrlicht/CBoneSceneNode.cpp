@@ -7,9 +7,9 @@ namespace scene
 {
 
 //! constructor
-CBoneSceneNode::CBoneSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 id, 
+CBoneSceneNode::CBoneSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 id,
 	u32 boneIndex, const c8* boneName)
-: IBoneSceneNode(parent, mgr, id), AnimationMode(EBAM_AUTOMATIC), 
+: IBoneSceneNode(parent, mgr, id), AnimationMode(EBAM_AUTOMATIC),
   BoneIndex(boneIndex), BoneName(boneName)
 {
 
@@ -58,6 +58,28 @@ core::matrix4 CBoneSceneNode::getRelativeTransformation() const
 	return core::matrix4(); // RelativeTransformation;
 }
 
+void CBoneSceneNode::OnAnimate(u32 timeMs)
+{
+	if (IsVisible)
+	{
+		// animate this node with all animators
+
+		core::list<ISceneNodeAnimator*>::Iterator ait = Animators.begin();
+		for (; ait != Animators.end(); ++ait)
+			(*ait)->animateNode(this, timeMs);
+
+		// update absolute position
+		//updateAbsolutePosition();
+
+		// perform the post render process on all children
+		core::list<ISceneNode*>::Iterator it = Children.begin();
+		for (; it != Children.end(); ++it)
+			(*it)->OnAnimate(timeMs);
+	}
+}
+
+
+
 void CBoneSceneNode::serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options)
 {
 	out->addInt("BoneIndex", BoneIndex);
@@ -70,7 +92,7 @@ void CBoneSceneNode::deserializeAttributes(io::IAttributes* in, io::SAttributeRe
 	BoneIndex = in->getAttributeAsInt("BoneIndex");
 	BoneName = in->getAttributeAsString("BoneName");
 	AnimationMode = (E_BONE_ANIMATION_MODE)in->getAttributeAsEnumeration("AnimationMode", BoneAnimationModeNames);
-	// todo: add/replace bone in parent with bone from mesh 
+	// todo: add/replace bone in parent with bone from mesh
 }
 
 } // namespace scene

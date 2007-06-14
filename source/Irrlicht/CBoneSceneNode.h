@@ -17,7 +17,7 @@ namespace scene
 	public:
 
 		//! constructor
-		CBoneSceneNode(ISceneNode* parent, ISceneManager* mgr, 
+		CBoneSceneNode(ISceneNode* parent, ISceneManager* mgr,
 			s32 id=-1, u32 boneIndex=0, const c8* boneName=0);
 
 		//! destructor
@@ -40,6 +40,8 @@ namespace scene
 
 		//! Returns the relative transformation of the scene node.
 		virtual core::matrix4 getRelativeTransformation() const;
+
+		virtual void OnAnimate(u32 timeMs);
 
 		//! Writes attributes of the scene node.
 		virtual void serializeAttributes(io::IAttributes* out, io::SAttributeReadWriteOptions* options=0);

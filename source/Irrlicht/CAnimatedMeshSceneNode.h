@@ -8,6 +8,9 @@
 #include "IAnimatedMeshSceneNode.h"
 #include "IAnimatedMesh.h"
 
+#include "matrix4.h"
+
+
 namespace irr
 {
 namespace scene
@@ -132,12 +135,21 @@ namespace scene
 		//! updates the absolute position based on the relative and the parents position
 		virtual void updateAbsolutePosition();
 
+
+		//! Set the joint update mode (0-unused, 1-get joints only, 2-set joints only, 3-move and set)
+		virtual void setJointMode(s32 mode);
+
+
 		//! updates the joint positions of this mesh
 		virtual void animateJoints();
 
 	private:
 
 		f32 buildFrameNr( u32 timeMs);
+
+		void checkJoints();
+
+		void beginTransition();
 
 		core::array<video::SMaterial> Materials;
 		core::aabbox3d<f32> Box;
@@ -150,6 +162,14 @@ namespace scene
 
 		f32 CurrentFrameNr;
 
+		s32 JointMode; //0-unused, 1-get joints only, 2-set joints only, 3-move and set
+		bool JointsUsed;
+
+		f32 TransitionTime;
+
+		f32 Transiting;
+
+
 		bool Looping;
 		bool ReadOnlyMaterials;
 
@@ -158,7 +178,9 @@ namespace scene
 
 		IShadowVolumeSceneNode* Shadow;
 
-		core::array<ISceneNode* > JointChildSceneNodes;
+		core::array<IBoneSceneNode* > JointChildSceneNodes;
+		core::array<core::matrix4> PretransitingSave;
+
 
 		struct SMD3Special
 		{

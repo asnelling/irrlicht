@@ -32,7 +32,7 @@ CAnimatedMeshSceneNode::CAnimatedMeshSceneNode(IAnimatedMesh* mesh, ISceneNode* 
 : IAnimatedMeshSceneNode(parent, mgr, id, position, rotation, scale), Mesh(0),
 	BeginFrameTime(0), StartFrame(0), EndFrame(0), FramesPerSecond(25.f / 1000.f ),
 	CurrentFrameNr(0), Looping(true), ReadOnlyMaterials(false),
-	LoopCallBack(0), PassCount(0), Shadow(0)
+	LoopCallBack(0), PassCount(0), Shadow(0), JointMode(0), JointsUsed(0), TransitionTime(0)
 {
 	#ifdef _DEBUG
 	setDebugName("CAnimatedMeshSceneNode");
@@ -61,6 +61,14 @@ CAnimatedMeshSceneNode::~CAnimatedMeshSceneNode()
 	if (LoopCallBack)
 		LoopCallBack->drop();
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -223,20 +231,18 @@ void CAnimatedMeshSceneNode::render()
 	{
 		ISkinnedMesh* skinnedMesh=(ISkinnedMesh*)Mesh;
 
-		if (0)//Use joint control stuff?
-			skinnedMesh->tranferJointsToMesh( (core::array<IBoneSceneNode*>&) JointChildSceneNodes);
+		if (JointMode &2)//write to mesh
+			skinnedMesh->tranferJointsToMesh(JointChildSceneNodes);
 		else
 			skinnedMesh->animateMesh(frame, 1.0f);
 
-
 		skinnedMesh->skinMesh();
 
-
+		if (JointMode &1)//read from mesh
+			skinnedMesh->recoverJointsFromMesh(JointChildSceneNodes);
 
 		m=skinnedMesh;
 	}
-
-
 
 	if ( 0 == m )
 	{
@@ -249,27 +255,6 @@ void CAnimatedMeshSceneNode::render()
 
 
 	u32 i,g;
-
-
-	// ---------------- To be deleted -----------------
-
-	// update all dummy transformation nodes
-	if (!JointChildSceneNodes.empty() && Mesh &&
-		(Mesh->getMeshType() == EAMT_MS3D || Mesh->getMeshType() == EAMT_X ))
-	{
-		IAnimatedMeshMS3D* amm = (IAnimatedMeshMS3D*)Mesh;
-		core::matrix4* m;
-
-		for ( i=0; i< JointChildSceneNodes.size(); ++i)
-			if (JointChildSceneNodes[i])
-			{
-
-				m = amm->getMatrixOfJoint(i, (s32)frame);
-				if (m)
-					((IDummyTransformationSceneNode*)JointChildSceneNodes[i]) ->getRelativeTransformationMatrix() = *m;
-			}
-	}
-	//---------------------------------------------------
 
 
 	if (Shadow && PassCount==1)
@@ -337,14 +322,16 @@ void CAnimatedMeshSceneNode::render()
 		// show skeleton
 		if ( DebugDataVisible & scene::EDS_SKELETON )
 		{
-			if (Mesh->getMeshType() == EAMT_X)
+			if (Mesh->getMeshType() == EAMT_SKINNED)
 			{
+				/*
 				// draw skeleton
 				const core::array<core::vector3df>* ds =
 					((IAnimatedMeshX*)Mesh)->getDrawableSkeleton((s32)frame);
 
 				for ( g=0; g < ds->size(); g +=2 )
 					driver->draw3DLine((*ds)[g], (*ds)[g+1],  video::SColor(0,51,66,255));
+				*/
 			}
 
 			// show tag for quake3 models
@@ -537,6 +524,8 @@ IBoneSceneNode* CAnimatedMeshSceneNode::getJointNode(const c8* jointName)
 	if (!Mesh || Mesh->getMeshType() != EAMT_SKINNED)
 		return 0;
 
+	checkJoints();
+
 	ISkinnedMesh *skinnedMesh=(ISkinnedMesh*)Mesh;
 
 	s32 jointCount = skinnedMesh->getJointCount();
@@ -565,35 +554,10 @@ IBoneSceneNode* CAnimatedMeshSceneNode::getJointNode(const c8* jointName)
 //! the corrsesponding joint, if the mesh in this scene node is a ms3d mesh.
 ISceneNode* CAnimatedMeshSceneNode::getMS3DJointNode(const c8* jointName)
 {
-	if (!Mesh || Mesh->getMeshType() != EAMT_MS3D)
-		return 0;
 
-	IAnimatedMeshMS3D* amm = (IAnimatedMeshMS3D*)Mesh;
-	s32 jointCount = amm->getJointCount();
-	s32 number = amm->getJointNumber(jointName);
+	//return  getJointNode(jointName);
 
-	if (number == -1)
-	{
-		os::Printer::log("Joint with specified name not found in ms3d mesh.", jointName, ELL_WARNING);
-		return 0;
-	}
-
-	if (JointChildSceneNodes.empty())
-	{
-		// allocate joints for the first time.
-		JointChildSceneNodes.set_used(jointCount);
-		for (s32 i=0; i<jointCount; ++i)
-			JointChildSceneNodes[i] = 0;
-	}
-
-	if (JointChildSceneNodes[number] == 0)
-	{
-		JointChildSceneNodes[number] =
-			SceneManager->addDummyTransformationSceneNode(this);
-		//JointChildSceneNodes[number]->grab();
-	}
-
-	return JointChildSceneNodes[number];
+	return 0;
 }
 
 
@@ -601,35 +565,9 @@ ISceneNode* CAnimatedMeshSceneNode::getMS3DJointNode(const c8* jointName)
 //! the corrsesponding joint, if the mesh in this scene node is a ms3d mesh.
 ISceneNode* CAnimatedMeshSceneNode::getXJointNode(const c8* jointName)
 {
-	if (!Mesh || Mesh->getMeshType() != EAMT_X)
-		return 0;
+	//return  getJointNode(jointName);
 
-	IAnimatedMeshX* amm = (IAnimatedMeshX*)Mesh;
-	s32 jointCount = amm->getJointCount();
-	s32 number = amm->getJointNumber(jointName);
-
-	if (number == -1)
-	{
-		os::Printer::log("Joint with specified name not found in x mesh.", jointName, ELL_WARNING);
-		return 0;
-	}
-
-	if (JointChildSceneNodes.empty())
-	{
-		// allocate joints for the first time.
-		JointChildSceneNodes.set_used(jointCount);
-		for (s32 i=0; i<jointCount; ++i)
-			JointChildSceneNodes[i] = 0;
-	}
-
-	if (JointChildSceneNodes[number] == 0)
-	{
-		JointChildSceneNodes[number] =
-			SceneManager->addDummyTransformationSceneNode(this);
-		//JointChildSceneNodes[number]->grab();
-	}
-
-	return JointChildSceneNodes[number];
+	return 0;
 }
 
 
@@ -807,21 +745,6 @@ void CAnimatedMeshSceneNode::setMesh(IAnimatedMesh* mesh)
 	// get start and begin time
 	setFrameLoop ( 0, Mesh->getFrameCount() );
 
-
-
-
-
-	//Create joints for SkinnedMesh
-	if (Mesh->getMeshType() == EAMT_SKINNED)
-	{
-		//this is here for testing only, it will only be created when needed later
-		((ISkinnedMesh*)Mesh)->createJoints( 	(core::array<IBoneSceneNode*>&)JointChildSceneNodes,  //bad cast, but it won't be needed later
-												this,
-												SceneManager);
-		((ISkinnedMesh*)Mesh)->recoverJointsFromMesh( (core::array<IBoneSceneNode*>&) JointChildSceneNodes);
-
-	}
-
 	// grab the mesh
 	if (Mesh)
 		Mesh->grab();
@@ -872,27 +795,79 @@ void CAnimatedMeshSceneNode::updateAbsolutePosition()
 
 }
 
+//! Set the joint update mode (0-unused, 1-get joints only, 2-set joints only, 3-move and set)
+void CAnimatedMeshSceneNode::setJointMode(s32 mode)
+{
+	checkJoints();
+
+	if (mode<0) mode=0;
+	if (mode>2) mode=2;
+
+	JointMode=mode;
+}
+
+
 
 //! updates the joint positions of this mesh
 void CAnimatedMeshSceneNode::animateJoints()
 {
+	checkJoints();
+
 	if (Mesh && Mesh->getMeshType() == EAMT_SKINNED )
 	{
 		if (!JointChildSceneNodes.empty())
 		{
 			f32 frame = getFrameNr(); //old?
 
-
 			ISkinnedMesh* skinnedMesh=(ISkinnedMesh*)Mesh;
 
 			skinnedMesh->animateMesh(frame, 1.0f);
 
-			skinnedMesh->recoverJointsFromMesh( (core::array<IBoneSceneNode*>&) JointChildSceneNodes);
+			skinnedMesh->recoverJointsFromMesh( JointChildSceneNodes);
 
 		}
 	}
 
 }
+
+void CAnimatedMeshSceneNode::checkJoints()
+{
+	if (!Mesh || Mesh->getMeshType() != EAMT_SKINNED)
+		return;
+
+	if (!JointsUsed)
+	{
+		JointsUsed=true;
+
+		//Create joints for SkinnedMesh
+		((ISkinnedMesh*)Mesh)->createJoints( JointChildSceneNodes,this,SceneManager);
+		((ISkinnedMesh*)Mesh)->recoverJointsFromMesh( JointChildSceneNodes);
+	}
+
+}
+
+void CAnimatedMeshSceneNode::beginTransition()
+{
+	u32 n;
+
+	if (TransitionTime!=0)
+	{
+		//Check the storage array is big enough
+		if (PretransitingSave.size()<JointChildSceneNodes.size())
+		{
+			for(n=PretransitingSave.size();JointChildSceneNodes.size()<n;++n)
+			{
+				PretransitingSave.push_back(core::matrix4());
+			}
+		}
+
+
+
+
+	}
+}
+
+
 
 
 

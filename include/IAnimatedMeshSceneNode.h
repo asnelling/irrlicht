@@ -201,6 +201,9 @@ namespace scene
 		// or the absolutetransformation if it's a normal scenenode
 		virtual const SMD3QuaterionTag& getAbsoluteTransformation( const core::stringc & tagname) = 0;
 
+		//! Set the joint update mode (0-unused, 1-get joints only, 2-set joints only, 3-move and set)
+		virtual void setJointMode(s32 mode)=0;
+
 		//! updates the joint positions of this mesh
 		virtual void animateJoints() = 0;
 
