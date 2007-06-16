@@ -61,7 +61,7 @@ namespace scene
 		virtual const core::aabbox3d<f32>& getBoundingBox() const = 0;
 
 		//! Returns the relative transformation of the scene node.
-		virtual core::matrix4 getRelativeTransformation() const = 0;
+		//virtual core::matrix4 getRelativeTransformation() const = 0;
 
 		virtual void OnAnimate(u32 timeMs) =0;
 

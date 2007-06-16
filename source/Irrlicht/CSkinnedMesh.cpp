@@ -405,6 +405,8 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 //! Preforms a software skin on this mesh based of joint positions
 void CSkinnedMesh::skinMesh()
 {
+	if ( !HasAnimation)
+		return;
 
 	//----------------
 	// Temp!

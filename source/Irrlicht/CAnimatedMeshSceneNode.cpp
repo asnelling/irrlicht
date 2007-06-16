@@ -20,6 +20,11 @@
 #include "IAnimatedMesh.h"
 #include "quaternion.h"
 
+// ------------------- TEMP!!!!!!!!!!!!!!!!!!!!!!!!!!!!! --------------------------
+#include <iostream>
+// ------------------- TEMP!!!!!!!!!!!!!!!!!!!!!!!!!!!!! --------------------------
+
+
 namespace irr
 {
 namespace scene
@@ -32,7 +37,9 @@ CAnimatedMeshSceneNode::CAnimatedMeshSceneNode(IAnimatedMesh* mesh, ISceneNode* 
 : IAnimatedMeshSceneNode(parent, mgr, id, position, rotation, scale), Mesh(0),
 	BeginFrameTime(0), StartFrame(0), EndFrame(0), FramesPerSecond(25.f / 1000.f ),
 	CurrentFrameNr(0), Looping(true), ReadOnlyMaterials(false),
-	LoopCallBack(0), PassCount(0), Shadow(0), JointMode(0), JointsUsed(0), TransitionTime(0)
+	LoopCallBack(0), PassCount(0), Shadow(0),
+	JointMode(0), JointsUsed(0),
+	TransitionTime(0), Transiting(0), TransitingBlend(0)
 {
 	#ifdef _DEBUG
 	setDebugName("CAnimatedMeshSceneNode");
@@ -78,9 +85,10 @@ void CAnimatedMeshSceneNode::setCurrentFrame(f32 frame)
 	// if you pass an out of range value, we just clamp it
 	CurrentFrameNr = core::clamp ( frame, (f32)StartFrame, (f32)EndFrame );
 
-
-
 	BeginFrameTime = os::Timer::getTime() - (s32)((CurrentFrameNr - StartFrame) / FramesPerSecond);
+
+	beginTransition(); //transite to this frame if enabled
+
 }
 
 
@@ -94,6 +102,21 @@ f32 CAnimatedMeshSceneNode::getFrameNr() const
 f32 CAnimatedMeshSceneNode::buildFrameNr(u32 timeMs)
 {
 
+	if (Transiting!=0)
+	{
+		TransitingBlend=f32(timeMs-BeginFrameTime) * Transiting;
+
+		if (TransitingBlend>1)
+		{
+			Transiting=0;
+			TransitingBlend=0;
+		}
+	}
+
+
+	if (StartFrame==EndFrame) return StartFrame; //Support for non animated meshes
+
+	if (FramesPerSecond==0) return StartFrame;
 
 	if (Looping)
 	{
@@ -178,6 +201,7 @@ void CAnimatedMeshSceneNode::OnRegisterSceneNode()
 //! OnAnimate() is called just before rendering the whole scene.
 void CAnimatedMeshSceneNode::OnAnimate(u32 timeMs)
 {
+
 	CurrentFrameNr = buildFrameNr ( timeMs );
 
 	if ( Mesh )
@@ -191,7 +215,9 @@ void CAnimatedMeshSceneNode::OnAnimate(u32 timeMs)
 		*/
 	}
 
+
 	IAnimatedMeshSceneNode::OnAnimate ( timeMs );
+
 }
 
 
@@ -215,6 +241,7 @@ void CAnimatedMeshSceneNode::render()
 
 	if (!Mesh || !driver)
 		return;
+
 
 	bool isTransparentPass =
 		SceneManager->getSceneNodeRenderPass() == scene::ESNRP_TRANSPARENT;
@@ -243,6 +270,7 @@ void CAnimatedMeshSceneNode::render()
 
 		m=skinnedMesh;
 	}
+
 
 	if ( 0 == m )
 	{
@@ -424,6 +452,8 @@ void CAnimatedMeshSceneNode::render()
 			}
 		}
 	}
+
+
 }
 
 
@@ -801,12 +831,18 @@ void CAnimatedMeshSceneNode::setJointMode(s32 mode)
 	checkJoints();
 
 	if (mode<0) mode=0;
-	if (mode>2) mode=2;
+	if (mode>3) mode=3;
 
 	JointMode=mode;
 }
 
 
+//! Sets the transition time in seconds (note: This needs to enable joints)
+void CAnimatedMeshSceneNode::setTransitionTime(f32 Time)
+{
+	if (Time!=0) checkJoints();
+	TransitionTime=u32(Time*1000.0f);
+}
 
 //! updates the joint positions of this mesh
 void CAnimatedMeshSceneNode::animateJoints()
@@ -815,15 +851,89 @@ void CAnimatedMeshSceneNode::animateJoints()
 
 	if (Mesh && Mesh->getMeshType() == EAMT_SKINNED )
 	{
-		if (!JointChildSceneNodes.empty())
+		if (JointsUsed)
 		{
 			f32 frame = getFrameNr(); //old?
 
 			ISkinnedMesh* skinnedMesh=(ISkinnedMesh*)Mesh;
 
+
 			skinnedMesh->animateMesh(frame, 1.0f);
 
+
 			skinnedMesh->recoverJointsFromMesh( JointChildSceneNodes);
+
+
+
+
+
+			if (Transiting!=0)
+			{
+				u32 n;
+
+				//Check the array is big enough (not really needed)
+				if (PretransitingSave.size()<JointChildSceneNodes.size())
+				{
+					for(n=PretransitingSave.size();n<JointChildSceneNodes.size();++n)
+						PretransitingSave.push_back(core::matrix4());
+				}
+
+				//std::cout << TransitingBlend << std::endl;
+
+				f32 InvTransitingBlend=1-TransitingBlend;
+				for (n=0;n<JointChildSceneNodes.size();++n)
+				{
+
+
+					JointChildSceneNodes[n]->setPosition(PretransitingSave[n].getTranslation()*InvTransitingBlend+
+														JointChildSceneNodes[n]->getPosition()*TransitingBlend);
+
+
+
+
+
+					//JointChildSceneNodes[n]->setRotation(PretransitingSave[n].getRotationDegrees()*InvTransitingBlend+
+					//									JointChildSceneNodes[n]->getRotation()*TransitingBlend);
+
+
+
+
+/*
+
+					core::quaternion RotationStart;
+					core::quaternion RotationEnd;
+
+					core::quaternion QRotation;
+
+					core::vector3df tempVector;
+
+					tempVector=PretransitingSave[n].getRotationDegrees();
+					RotationStart.set(tempVector.X,tempVector.Y,tempVector.Z);
+
+					std::cout << tempVector.X<<tempVector.Y<<tempVector.Z << std::endl;
+
+					tempVector=JointChildSceneNodes[n]->getRotation();
+					RotationEnd.set(tempVector.X,tempVector.Y,tempVector.Z);
+
+					std::cout << tempVector.X << tempVector.Y<<tempVector.Z << std::endl;
+
+					QRotation.slerp(RotationStart, RotationEnd, TransitingBlend);
+
+					core::vector3df Rotation;
+					QRotation.toEuler (Rotation);
+
+					JointChildSceneNodes[n]->setRotation( Rotation );
+*/
+
+
+
+
+					//JointChildSceneNodes[n]->setScale( PretransitingSave[n].getScale() );
+
+
+				}
+
+			}
 
 		}
 	}
@@ -848,21 +958,24 @@ void CAnimatedMeshSceneNode::checkJoints()
 
 void CAnimatedMeshSceneNode::beginTransition()
 {
+	if (!JointsUsed) return;
+
 	u32 n;
 
 	if (TransitionTime!=0)
 	{
-		//Check the storage array is big enough
+		//Check the array is big enough
 		if (PretransitingSave.size()<JointChildSceneNodes.size())
 		{
-			for(n=PretransitingSave.size();JointChildSceneNodes.size()<n;++n)
-			{
+			for(n=PretransitingSave.size();n<JointChildSceneNodes.size();++n)
 				PretransitingSave.push_back(core::matrix4());
-			}
 		}
 
+		//Copy the position of joints
+		for (n=0;n<JointChildSceneNodes.size();++n)
+			PretransitingSave[n]=JointChildSceneNodes[n]->getRelativeTransformation();
 
-
+		Transiting=1.0f/f32(TransitionTime);
 
 	}
 }

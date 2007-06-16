@@ -51,12 +51,13 @@ const core::aabbox3d<f32>& CBoneSceneNode::getBoundingBox() const
 {
 	return Box;
 }
-
+/*
 //! Returns the relative transformation of the scene node.
 core::matrix4 CBoneSceneNode::getRelativeTransformation() const
 {
 	return core::matrix4(); // RelativeTransformation;
 }
+*/
 
 void CBoneSceneNode::OnAnimate(u32 timeMs)
 {

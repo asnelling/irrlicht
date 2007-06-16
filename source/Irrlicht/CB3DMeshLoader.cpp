@@ -85,6 +85,11 @@ bool CB3DMeshLoader::load()
 
 	B3dStack.clear();
 
+	NormalsInFile=false;
+
+
+
+
 	//------ Get header ------
 
 	SB3dChunkHeader header;
@@ -169,6 +174,16 @@ bool CB3DMeshLoader::load()
 	BaseVertices.clear();
 	AnimatedVertices_VertexID.clear();
 	AnimatedVertices_BufferID.clear();
+
+	Materials.clear();
+	Textures.clear();
+
+	BaseVertices.clear();
+
+	Buffers=0;
+	AllJoints=0;
+
+
 
 	return true;
 
