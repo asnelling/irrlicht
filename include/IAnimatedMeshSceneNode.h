@@ -204,7 +204,8 @@ namespace scene
 		//! Set the joint update mode (0-unused, 1-get joints only, 2-set joints only, 3-move and set)
 		virtual void setJointMode(s32 mode)=0;
 
-		//! Sets the transition time in seconds (note: This needs to enable joints)
+		//! Sets the transition time in seconds (note: This needs to enable joints, and setJointmode maybe set to 2)
+		//! you must call animateJoints(), or the mesh will not animate
 		virtual void setTransitionTime(f32 Time) =0;
 
 		//! updates the joint positions of this mesh

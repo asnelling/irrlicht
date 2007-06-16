@@ -837,10 +837,12 @@ void CAnimatedMeshSceneNode::setJointMode(s32 mode)
 }
 
 
-//! Sets the transition time in seconds (note: This needs to enable joints)
+//! Sets the transition time in seconds (note: This needs to enable joints, and setJointmode maybe set to 2)
+//! you must call animateJoints(), or the mesh will not animate
 void CAnimatedMeshSceneNode::setTransitionTime(f32 Time)
 {
 	if (Time!=0) checkJoints();
+	if (!(JointMode &2)) setJointMode(2);
 	TransitionTime=u32(Time*1000.0f);
 }
 
@@ -857,15 +859,14 @@ void CAnimatedMeshSceneNode::animateJoints()
 
 			ISkinnedMesh* skinnedMesh=(ISkinnedMesh*)Mesh;
 
-
 			skinnedMesh->animateMesh(frame, 1.0f);
-
 
 			skinnedMesh->recoverJointsFromMesh( JointChildSceneNodes);
 
 
-
-
+			//-----------------------------------------
+			//				Transition
+			//-----------------------------------------
 
 			if (Transiting!=0)
 			{
@@ -878,58 +879,41 @@ void CAnimatedMeshSceneNode::animateJoints()
 						PretransitingSave.push_back(core::matrix4());
 				}
 
-				//std::cout << TransitingBlend << std::endl;
-
 				f32 InvTransitingBlend=1-TransitingBlend;
 				for (n=0;n<JointChildSceneNodes.size();++n)
 				{
 
+					//------Position------
 
 					JointChildSceneNodes[n]->setPosition(PretransitingSave[n].getTranslation()*InvTransitingBlend+
 														JointChildSceneNodes[n]->getPosition()*TransitingBlend);
 
 
+					//------Rotation------
 
+					//Code is slow, needs to be fixed up
 
-
-					//JointChildSceneNodes[n]->setRotation(PretransitingSave[n].getRotationDegrees()*InvTransitingBlend+
-					//									JointChildSceneNodes[n]->getRotation()*TransitingBlend);
-
-
-
-
-/*
-
-					core::quaternion RotationStart;
-					core::quaternion RotationEnd;
-
+					core::quaternion RotationStart, RotationEnd;
 					core::quaternion QRotation;
+					core::vector3df tmpVector;
 
-					core::vector3df tempVector;
+					tmpVector=PretransitingSave[n].getRotationDegrees();
+					RotationStart.set(tmpVector.X*core::DEGTORAD ,tmpVector.Y*core::DEGTORAD,tmpVector.Z*core::DEGTORAD);
 
-					tempVector=PretransitingSave[n].getRotationDegrees();
-					RotationStart.set(tempVector.X,tempVector.Y,tempVector.Z);
-
-					std::cout << tempVector.X<<tempVector.Y<<tempVector.Z << std::endl;
-
-					tempVector=JointChildSceneNodes[n]->getRotation();
-					RotationEnd.set(tempVector.X,tempVector.Y,tempVector.Z);
-
-					std::cout << tempVector.X << tempVector.Y<<tempVector.Z << std::endl;
+					tmpVector=JointChildSceneNodes[n]->getRotation();
+					RotationEnd.set(tmpVector.X*core::DEGTORAD ,tmpVector.Y*core::DEGTORAD,tmpVector.Z*core::DEGTORAD);
 
 					QRotation.slerp(RotationStart, RotationEnd, TransitingBlend);
 
-					core::vector3df Rotation;
-					QRotation.toEuler (Rotation);
-
-					JointChildSceneNodes[n]->setRotation( Rotation );
-*/
+					QRotation.toEuler (tmpVector);
+					tmpVector.X*=core::RADTODEG; tmpVector.Y*=core::RADTODEG; tmpVector.Z*=core::RADTODEG; //convert from radians back to degrees
+					JointChildSceneNodes[n]->setRotation( tmpVector );
 
 
+					//------Scale------
 
-
-					//JointChildSceneNodes[n]->setScale( PretransitingSave[n].getScale() );
-
+					//JointChildSceneNodes[n]->setScale(PretransitingSave[n].getScale()*InvTransitingBlend+
+					//									JointChildSceneNodes[n]->getScale()*TransitingBlend);
 
 				}
 
