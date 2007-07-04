@@ -21,7 +21,6 @@
 #include "quaternion.h"
 
 
-
 namespace irr
 {
 namespace scene

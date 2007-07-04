@@ -136,7 +136,11 @@ namespace scene
 
 private:
 
-		core::array<SSkinMeshBuffer*> Buffers;
+		core::array<SSkinMeshBuffer*> *SkinningBuffers; //Meshbuffer to skin, default is to skin localBuffers
+
+		core::array<SSkinMeshBuffer*> LocalBuffers;
+
+
 		core::array<SJoint*> AllJoints;
 		core::array<SJoint*> RootJoints;
 

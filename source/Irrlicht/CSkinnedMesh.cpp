@@ -22,12 +22,15 @@ namespace scene
 //! constructor
 CSkinnedMesh::CSkinnedMesh()
 : HasAnimation(0), AnimationFrames(0), lastAnimatedFrame(0), lastSkinnedFrame(0), AnimateNormals(0),
-	InterpolationMode(EIM_LINEAR), Buffers(), RootJoints(), AllJoints()
+	InterpolationMode(EIM_LINEAR), SkinningBuffers(0)
 {
 
 	#ifdef _DEBUG
 	setDebugName("CSkinnedMesh");
 	#endif
+
+
+	SkinningBuffers=&LocalBuffers;
 
 }
 
@@ -43,10 +46,10 @@ CSkinnedMesh::~CSkinnedMesh()
 		AllJoints.erase(n);
 	}
 
-	for (n=Buffers.size()-1;n>=0;--n)
+	for (n=LocalBuffers.size()-1;n>=0;--n)
 	{
 		//delete Buffers[n];
-		Buffers.erase(n);
+		LocalBuffers.erase(n);
 	}
 
 }
@@ -437,6 +440,10 @@ void CSkinnedMesh::SkinJoint(SJoint *Joint, SJoint *ParentJoint)
 
 		SWeight *Weight;
 
+
+
+		core::array<SSkinMeshBuffer*> &BuffersUsed=*SkinningBuffers;
+
 		//Skin Vertices Normals...
 
 		//Skin Vertices Positions...
@@ -461,17 +468,17 @@ void CSkinnedMesh::SkinJoint(SJoint *Joint, SJoint *ParentJoint)
 			{
 				(*Weight->_Moved) = true;
 
-				Buffers[Weight->buffer_id]->getVertex(Weight->vertex_id)->Pos = (ThisVertexMove * Weight->strength);
+				BuffersUsed[Weight->buffer_id]->getVertex(Weight->vertex_id)->Pos = (ThisVertexMove * Weight->strength);
 
-				if (AnimateNormals) Buffers[Weight->buffer_id]->getVertex(Weight->vertex_id)->Normal = (ThisNormalMove * Weight->strength);
+				if (AnimateNormals) BuffersUsed[Weight->buffer_id]->getVertex(Weight->vertex_id)->Normal = (ThisNormalMove * Weight->strength);
 
 				//(*Weight->_Pos) = ThisVertexMove * Weight->strength;
 			}
 			else
 			{
-				Buffers[Weight->buffer_id]->getVertex(Weight->vertex_id)->Pos += (ThisVertexMove* Weight->strength);
+				BuffersUsed[Weight->buffer_id]->getVertex(Weight->vertex_id)->Pos += (ThisVertexMove* Weight->strength);
 
-				if (AnimateNormals) Buffers[Weight->buffer_id]->getVertex(Weight->vertex_id)->Normal += (ThisNormalMove * Weight->strength);
+				if (AnimateNormals) BuffersUsed[Weight->buffer_id]->getVertex(Weight->vertex_id)->Normal += (ThisNormalMove * Weight->strength);
 
 				//(*Weight->_Pos) += (ThisVertexMove * Weight->strength);
 
@@ -524,15 +531,15 @@ s32 CSkinnedMesh::getJointNumber(const c8* name) const
 //! returns amount of mesh buffers.
 u32 CSkinnedMesh::getMeshBufferCount() const
 {
-	return Buffers.size();
+	return LocalBuffers.size();
 }
 
 
 //! returns pointer to a mesh buffer
 IMeshBuffer* CSkinnedMesh::getMeshBuffer(u32 nr) const
 {
-	if (nr < Buffers.size())
-		return Buffers[nr];
+	if (nr < LocalBuffers.size())
+		return LocalBuffers[nr];
 	else
 		return 0;
 }
@@ -540,10 +547,10 @@ IMeshBuffer* CSkinnedMesh::getMeshBuffer(u32 nr) const
 //! Returns pointer to a mesh buffer which fits a material
 IMeshBuffer* CSkinnedMesh::getMeshBuffer(const video::SMaterial &material) const
 {
-	for (u32 i=0; i<Buffers.size(); ++i)
+	for (u32 i=0; i<LocalBuffers.size(); ++i)
 	{
-		if (Buffers[i]->getMaterial() == material)
-			return Buffers[i];
+		if (LocalBuffers[i]->getMaterial() == material)
+			return LocalBuffers[i];
 	}
 	return 0;
 }
@@ -564,8 +571,8 @@ void CSkinnedMesh::setBoundingBox( const core::aabbox3df& box)
 //! sets a flag of all contained materials to a new value
 void CSkinnedMesh::setMaterialFlag(video::E_MATERIAL_FLAG flag, bool newvalue)
 {
-	for (s32 i=0; i<(s32)Buffers.size(); ++i)
-		Buffers[i]->Material.setFlag(flag,newvalue);
+	for (u32 i=0; i<LocalBuffers.size(); ++i)
+		LocalBuffers[i]->Material.setFlag(flag,newvalue);
 }
 
 //!Update Normals when Animating
@@ -585,7 +592,7 @@ void CSkinnedMesh::setInterpolationMode(E_INTERPOLATION_MODE mode)
 
 core::array<CSkinnedMesh::SSkinMeshBuffer*> &CSkinnedMesh::getMeshBuffers()
 {
-	return Buffers;
+	return LocalBuffers;
 }
 
 core::array<CSkinnedMesh::SJoint*> &CSkinnedMesh::getAllJoints()
@@ -639,20 +646,20 @@ void CSkinnedMesh::finalize()
 
 	//calculate bounding box
 
-	for (i=0; i<Buffers.size(); ++i)
+	for (i=0; i<LocalBuffers.size(); ++i)
 	{
-		Buffers[i]->recalculateBoundingBox();
+		LocalBuffers[i]->recalculateBoundingBox();
 	}
 
 	// Get BoundingBox...
-	if (Buffers.empty())
+	if (LocalBuffers.empty())
 		BoundingBox.reset(0,0,0);
 	else
 	{
-		BoundingBox.reset(Buffers[0]->BoundingBox.MaxEdge);
-		for (s32 i=0; i<(s32)Buffers.size(); ++i)
+		BoundingBox.reset(LocalBuffers[0]->BoundingBox.MaxEdge);
+		for (u32 i=0; i<LocalBuffers.size(); ++i)
 		{
-			BoundingBox.addInternalBox(Buffers[i]->BoundingBox);
+			BoundingBox.addInternalBox(LocalBuffers[i]->BoundingBox);
 		}
 	}
 
@@ -696,10 +703,10 @@ void CSkinnedMesh::finalize()
 
 
 
-	for (i=0; i<Buffers.size(); ++i)
+	for (i=0; i<LocalBuffers.size(); ++i)
 	{
 		Vertices_Moved.push_back( core::array<bool>() );
-		Vertices_Moved[i].set_used(Buffers[i]->getVertexCount());
+		Vertices_Moved[i].set_used(LocalBuffers[i]->getVertexCount());
 	}
 
 
@@ -845,12 +852,12 @@ void CSkinnedMesh::finalize()
 				u32 vertex_id=Joint->Weights[j].vertex_id;
 
 				//check for invalid ids
-				if (buffer_id>=Buffers.size())
+				if (buffer_id>=LocalBuffers.size())
 				{
 					os::Printer::log("Skinned Mesh: Weight buffer id too large");
 					Joint->Weights[j].buffer_id = Joint->Weights[j].vertex_id =0;
 				}
-				else if (vertex_id>=Buffers[buffer_id]->getVertexCount())
+				else if (vertex_id>=LocalBuffers[buffer_id]->getVertexCount())
 				{
 					os::Printer::log("Skinned Mesh: Weight vertex id too large");
 					Joint->Weights[j].buffer_id = Joint->Weights[j].vertex_id =0;
@@ -876,8 +883,8 @@ void CSkinnedMesh::finalize()
 				u32 buffer_id=Joint->Weights[j].buffer_id;
 
 				Joint->Weights[j]._Moved = &Vertices_Moved[buffer_id] [vertex_id];
-				Joint->Weights[j]._StaticPos = Buffers[buffer_id]->getVertex(vertex_id)->Pos;
-				Joint->Weights[j]._StaticNormal = Buffers[buffer_id]->getVertex(vertex_id)->Normal;
+				Joint->Weights[j]._StaticPos = LocalBuffers[buffer_id]->getVertex(vertex_id)->Pos;
+				Joint->Weights[j]._StaticNormal = LocalBuffers[buffer_id]->getVertex(vertex_id)->Normal;
 
 				//Joint->Weights[j]._Pos=&Buffers[buffer_id]->getVertex(vertex_id)->Pos;
 			}
@@ -897,7 +904,7 @@ void CSkinnedMesh::finalize()
 CSkinnedMesh::SSkinMeshBuffer *CSkinnedMesh::createBuffer()
 {
 	SSkinMeshBuffer *buffer=new SSkinMeshBuffer;
-	Buffers.push_back(buffer);
+	LocalBuffers.push_back(buffer);
 	buffer->VertexType=video::EVT_STANDARD;
 	return buffer;
 }
@@ -982,10 +989,10 @@ void CSkinnedMesh::normalizeWeights()
 	u32 i,j;
 	core::array< core::array<f32> > Vertices_TotalWeight;
 
-	for (i=0; i<Buffers.size(); ++i)
+	for (i=0; i<LocalBuffers.size(); ++i)
 	{
 		Vertices_TotalWeight.push_back(core::array<f32>());
-		Vertices_TotalWeight[i].set_used(Buffers[i]->getVertexCount());
+		Vertices_TotalWeight[i].set_used(LocalBuffers[i]->getVertexCount());
 	}
 
 
@@ -1103,18 +1110,18 @@ void CSkinnedMesh::convertMeshToTangents()
 {
 
 	// now calculate tangents
-	for (u32 b=0; b < Buffers.size(); ++b)
+	for (u32 b=0; b < LocalBuffers.size(); ++b)
 	{
-		if (Buffers[b])
+		if (LocalBuffers[b])
 		{
 
-			Buffers[b]->MoveTo_Tangents();
+			LocalBuffers[b]->MoveTo_Tangents();
 
-			s32 idxCnt = Buffers[b]->getIndexCount();
+			s32 idxCnt = LocalBuffers[b]->getIndexCount();
 
-			u16* idx = Buffers[b]->getIndices();
+			u16* idx = LocalBuffers[b]->getIndices();
 			video::S3DVertexTangents* v =
-				(video::S3DVertexTangents*)Buffers[b]->getVertices();
+				(video::S3DVertexTangents*)LocalBuffers[b]->getVertices();
 
 			for (s32 i=0; i<idxCnt; i+=3)
 			{
