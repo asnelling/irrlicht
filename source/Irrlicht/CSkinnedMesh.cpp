@@ -21,7 +21,7 @@ namespace scene
 
 //! constructor
 CSkinnedMesh::CSkinnedMesh()
-: HasAnimation(0), AnimationFrames(0), lastAnimatedFrame(0), lastSkinnedFrame(0), AnimateNormals(0),
+: HasAnimation(0),PreparedForSkinning(0), AnimationFrames(0), lastAnimatedFrame(0), lastSkinnedFrame(0), AnimateNormals(0),
 	InterpolationMode(EIM_LINEAR), SkinningBuffers(0)
 {
 
@@ -163,7 +163,10 @@ void CSkinnedMesh::buildAll_LocalAnimatedMatrices()
 
 		//Could be faster:
 
-		if (Joint->PositionKeys.size() ||Joint->ScaleKeys.size() || Joint->RotationKeys.size())
+		if (Joint->_UseAnimationFrom &&
+			(Joint->_UseAnimationFrom->PositionKeys.size() ||
+			 Joint->_UseAnimationFrom->ScaleKeys.size() ||
+			 Joint->_UseAnimationFrom->RotationKeys.size() ))
 		{
 			Joint->_LocalAnimatedMatrix.makeIdentity();
 			Joint->_LocalAnimatedMatrix.setTranslation(Joint->_Animatedposition);
@@ -219,177 +222,187 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 	s32 foundRotationIndex = -1;
 
 
-	if (Joint->PositionKeys.size())
+	if (Joint->_UseAnimationFrom)
 	{
-		foundPositionIndex = -1;
 
-		//Test the Hints...
-		if (positionHint>=0 && positionHint < (s32)Joint->PositionKeys.size())
+		core::array<SPositionKey> &PositionKeys=Joint->_UseAnimationFrom->PositionKeys;
+		core::array<SScaleKey> &ScaleKeys=Joint->_UseAnimationFrom->ScaleKeys;
+		core::array<SRotationKey> &RotationKeys=Joint->_UseAnimationFrom->RotationKeys;
+
+
+
+		if (PositionKeys.size())
 		{
-			//check this hint
-			if (Joint->PositionKeys[positionHint].frame>=frame &&
-						(positionHint+1 >= (s32)Joint->PositionKeys.size()-1 || Joint->PositionKeys[positionHint+1].frame<frame))
-				foundPositionIndex=positionHint;
+			foundPositionIndex = -1;
 
-			//check the next index
-			else if ( (positionHint+1 < (s32)Joint->PositionKeys.size()-1 && Joint->PositionKeys[positionHint+1].frame>=frame) &&
-						(positionHint+2 >=(s32)Joint->PositionKeys.size()-1 || Joint->PositionKeys[positionHint+2].frame<frame))
+			//Test the Hints...
+			if (positionHint>=0 && positionHint < (s32)PositionKeys.size())
+			{
+				//check this hint
+				if (PositionKeys[positionHint].frame>=frame &&
+							(positionHint+1 >= (s32)PositionKeys.size()-1 || PositionKeys[positionHint+1].frame<frame))
+					foundPositionIndex=positionHint;
+
+				//check the next index
+				else if ( (positionHint+1 < (s32)PositionKeys.size()-1 && PositionKeys[positionHint+1].frame>=frame) &&
+							(positionHint+2 >=(s32)PositionKeys.size()-1 || PositionKeys[positionHint+2].frame<frame))
+					{
+						foundPositionIndex=positionHint+1;
+						positionHint++;
+					}
+			}
+
+			//The hint test failed, do a full scan...
+			if (foundPositionIndex==-1)
+			{
+				for (u32 i=0; i<PositionKeys.size(); ++i)
 				{
-					foundPositionIndex=positionHint+1;
-					positionHint++;
+					if (PositionKeys[i].frame >= frame) //Keys should to be sorted by frame
+					{
+						foundPositionIndex=i;
+						positionHint=i;
+						break;
+					}
 				}
-		}
+			}
 
-		//The hint test failed, do a full scan...
-		if (foundPositionIndex==-1)
-		{
-			for (u32 i=0; i<Joint->PositionKeys.size(); ++i)
+			//Do interpolation...
+			if (foundPositionIndex!=-1)
 			{
-				if (Joint->PositionKeys[i].frame >= frame) //Keys should to be sorted by frame
+				if (InterpolationMode==EIM_CONSTANT || foundPositionIndex==0)
 				{
-					foundPositionIndex=i;
-					positionHint=i;
-					break;
+					position = PositionKeys[foundPositionIndex].position;
 				}
-			}
-		}
-
-		//Do interpolation...
-		if (foundPositionIndex!=-1)
-		{
-			if (InterpolationMode==EIM_CONSTANT || foundPositionIndex==0)
-			{
-				position = Joint->PositionKeys[foundPositionIndex].position;
-			}
-			else if (InterpolationMode==EIM_LINEAR)
-			{
-				SPositionKey *KeyA = &Joint->PositionKeys[foundPositionIndex];
-				SPositionKey *KeyB = &Joint->PositionKeys[foundPositionIndex-1];
-
-				f32 fd1 = frame-KeyA->frame;
-				f32 fd2 = KeyB->frame-frame;
-				position = ((KeyB->position-KeyA->position)/(fd1+fd2))*fd1 + KeyA->position;
-			}
-		}
-	}
-
-	//-------------------------------------------------------------------------
-
-	if (Joint->ScaleKeys.size())
-	{
-		foundScaleIndex = -1;
-
-		//Test the Hints...
-		if (scaleHint>=0 && scaleHint < (s32)Joint->ScaleKeys.size())
-		{
-			//check this hint
-			if (Joint->ScaleKeys[scaleHint].frame>=frame &&
-						(scaleHint+1 >= (s32)Joint->ScaleKeys.size()-1 || Joint->ScaleKeys[scaleHint+1].frame<frame))
-				foundScaleIndex=scaleHint;
-
-			//check the next index
-			else if ( (scaleHint+1 < (s32)Joint->ScaleKeys.size()-1 && Joint->ScaleKeys[scaleHint+1].frame>=frame) &&
-						(scaleHint+2 >=(s32)Joint->ScaleKeys.size()-1 || Joint->ScaleKeys[scaleHint+2].frame<frame))
-			{
-				foundScaleIndex=scaleHint+1;
-				scaleHint++;
-			}
-		}
-
-		//The hint test failed, do a full scan...
-		if (foundScaleIndex==-1)
-		{
-			for (u32 i=0; i<Joint->ScaleKeys.size(); ++i)
-			{
-				if (Joint->ScaleKeys[i].frame >= frame) //Keys should to be sorted by frame
+				else if (InterpolationMode==EIM_LINEAR)
 				{
-					foundScaleIndex=i;
-					scaleHint=i;
-					break;
+					SPositionKey *KeyA = &PositionKeys[foundPositionIndex];
+					SPositionKey *KeyB = &PositionKeys[foundPositionIndex-1];
+
+					f32 fd1 = frame-KeyA->frame;
+					f32 fd2 = KeyB->frame-frame;
+					position = ((KeyB->position-KeyA->position)/(fd1+fd2))*fd1 + KeyA->position;
 				}
 			}
 		}
 
-		//Do interpolation...
-		if (foundScaleIndex!=-1)
+		//-------------------------------------------------------------------------
+
+		if (ScaleKeys.size())
 		{
-			if (InterpolationMode==EIM_CONSTANT || foundScaleIndex==0)
+			foundScaleIndex = -1;
+
+			//Test the Hints...
+			if (scaleHint>=0 && scaleHint < (s32)ScaleKeys.size())
 			{
-				scale = Joint->ScaleKeys[foundScaleIndex].scale;
-			}
-			else if (InterpolationMode==EIM_LINEAR)
-			{
-				SScaleKey *KeyA = &Joint->ScaleKeys[foundScaleIndex];
-				SScaleKey *KeyB = &Joint->ScaleKeys[foundScaleIndex-1];
+				//check this hint
+				if (ScaleKeys[scaleHint].frame>=frame &&
+							(scaleHint+1 >= (s32)ScaleKeys.size()-1 || ScaleKeys[scaleHint+1].frame<frame))
+					foundScaleIndex=scaleHint;
 
-				f32 fd1 = frame-KeyA->frame;
-				f32 fd2 = KeyB->frame-frame;
-				scale = ((KeyB->scale-KeyA->scale)/(fd1+fd2))*fd1 + KeyA->scale;
-			}
-		}
-	}
-
-	//-------------------------------------------------------------------------
-
-	if (Joint->RotationKeys.size())
-	{
-		foundRotationIndex = -1;
-
-		//Test the Hints...
-		if (rotationHint>=0 && rotationHint < (s32)Joint->RotationKeys.size())
-		{
-			//check this hint
-			if (Joint->RotationKeys[rotationHint].frame>=frame &&
-						(rotationHint+1 >= (s32)Joint->RotationKeys.size()-1 || Joint->RotationKeys[rotationHint+1].frame<frame))
-				foundRotationIndex=rotationHint;
-
-			//check the next index
-			else if ( (rotationHint+1 < (s32)Joint->RotationKeys.size()-1 && Joint->RotationKeys[rotationHint+1].frame>=frame) &&
-						(rotationHint+2 >=(s32)Joint->RotationKeys.size()-1 || Joint->RotationKeys[rotationHint+2].frame<frame))
-			{
-				foundRotationIndex=rotationHint+1;
-				rotationHint++;
-			}
-		}
-
-		//The hint test failed, do a full scan...
-		if (foundRotationIndex==-1)
-		{
-			for (u32 i=0; i<Joint->RotationKeys.size(); ++i)
-			{
-				if (Joint->RotationKeys[i].frame >= frame) //Keys should to be sorted by frame
+				//check the next index
+				else if ( (scaleHint+1 < (s32)ScaleKeys.size()-1 && ScaleKeys[scaleHint+1].frame>=frame) &&
+							(scaleHint+2 >=(s32)ScaleKeys.size()-1 || ScaleKeys[scaleHint+2].frame<frame))
 				{
-					foundRotationIndex=i;
-					rotationHint=i;
-					break;
+					foundScaleIndex=scaleHint+1;
+					scaleHint++;
+				}
+			}
+
+			//The hint test failed, do a full scan...
+			if (foundScaleIndex==-1)
+			{
+				for (u32 i=0; i<ScaleKeys.size(); ++i)
+				{
+					if (ScaleKeys[i].frame >= frame) //Keys should to be sorted by frame
+					{
+						foundScaleIndex=i;
+						scaleHint=i;
+						break;
+					}
+				}
+			}
+
+			//Do interpolation...
+			if (foundScaleIndex!=-1)
+			{
+				if (InterpolationMode==EIM_CONSTANT || foundScaleIndex==0)
+				{
+					scale = ScaleKeys[foundScaleIndex].scale;
+				}
+				else if (InterpolationMode==EIM_LINEAR)
+				{
+					SScaleKey *KeyA = &ScaleKeys[foundScaleIndex];
+					SScaleKey *KeyB = &ScaleKeys[foundScaleIndex-1];
+
+					f32 fd1 = frame-KeyA->frame;
+					f32 fd2 = KeyB->frame-frame;
+					scale = ((KeyB->scale-KeyA->scale)/(fd1+fd2))*fd1 + KeyA->scale;
 				}
 			}
 		}
 
-		//Do interpolation...
-		if (foundRotationIndex!=-1)
+		//-------------------------------------------------------------------------
+
+		if (RotationKeys.size())
 		{
-			if (InterpolationMode==EIM_CONSTANT || foundRotationIndex==0)
+			foundRotationIndex = -1;
+
+			//Test the Hints...
+			if (rotationHint>=0 && rotationHint < (s32)RotationKeys.size())
 			{
-				rotation = Joint->RotationKeys[foundRotationIndex].rotation;
+				//check this hint
+				if (RotationKeys[rotationHint].frame>=frame &&
+							(rotationHint+1 >= (s32)RotationKeys.size()-1 || RotationKeys[rotationHint+1].frame<frame))
+					foundRotationIndex=rotationHint;
+
+				//check the next index
+				else if ( (rotationHint+1 < (s32)RotationKeys.size()-1 && RotationKeys[rotationHint+1].frame>=frame) &&
+							(rotationHint+2 >=(s32)RotationKeys.size()-1 || RotationKeys[rotationHint+2].frame<frame))
+				{
+					foundRotationIndex=rotationHint+1;
+					rotationHint++;
+				}
 			}
-			else if (InterpolationMode==EIM_LINEAR)
+
+			//The hint test failed, do a full scan...
+			if (foundRotationIndex==-1)
 			{
-				SRotationKey *KeyA = &Joint->RotationKeys[foundRotationIndex];
-				SRotationKey *KeyB = &Joint->RotationKeys[foundRotationIndex-1];
+				for (u32 i=0; i<RotationKeys.size(); ++i)
+				{
+					if (RotationKeys[i].frame >= frame) //Keys should to be sorted by frame
+					{
+						foundRotationIndex=i;
+						rotationHint=i;
+						break;
+					}
+				}
+			}
 
-				f32 fd1 = frame-KeyA->frame;
-				f32 fd2 = KeyB->frame - frame;
-				f32 t = (1.0f/(fd1+fd2))*fd1;
+			//Do interpolation...
+			if (foundRotationIndex!=-1)
+			{
+				if (InterpolationMode==EIM_CONSTANT || foundRotationIndex==0)
+				{
+					rotation = RotationKeys[foundRotationIndex].rotation;
+				}
+				else if (InterpolationMode==EIM_LINEAR)
+				{
+					SRotationKey *KeyA = &RotationKeys[foundRotationIndex];
+					SRotationKey *KeyB = &RotationKeys[foundRotationIndex-1];
 
-				/*
-				f32 t = 0;
-				if (KeyA->frame!=KeyB->frame)
-					t = (frame-KeyA->frame) / (KeyB->frame - KeyA->frame);
-				*/
+					f32 fd1 = frame-KeyA->frame;
+					f32 fd2 = KeyB->frame - frame;
+					f32 t = (1.0f/(fd1+fd2))*fd1;
 
-				rotation.slerp(KeyA->rotation, KeyB->rotation, t);
+					/*
+					f32 t = 0;
+					if (KeyA->frame!=KeyB->frame)
+						t = (frame-KeyA->frame) / (KeyB->frame - KeyA->frame);
+					*/
 
+					rotation.slerp(KeyA->rotation, KeyB->rotation, t);
+
+				}
 			}
 		}
 	}
@@ -403,6 +416,7 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 //! Preforms a software skin on this mesh based of joint positions
 void CSkinnedMesh::skinMesh()
 {
+
 	if ( !HasAnimation)
 		return;
 
@@ -414,20 +428,24 @@ void CSkinnedMesh::skinMesh()
 	//Software skin....
 
 
+
 	//clear skinning helper array
 	u32 i, j;
 	for (i=0; i<Vertices_Moved.size(); ++i)
 		for (j=0; j<Vertices_Moved[i].size(); ++j)
 			Vertices_Moved[i][j]=false;
 
+
 	//skin starting with the root joints
 	for (i=0; i<RootJoints.size(); ++i)
 		SkinJoint(RootJoints[i], 0);
+
 
 }
 
 void CSkinnedMesh::SkinJoint(SJoint *Joint, SJoint *ParentJoint)
 {
+
 
 
 	if (Joint->Weights.size())
@@ -449,6 +467,8 @@ void CSkinnedMesh::SkinJoint(SJoint *Joint, SJoint *ParentJoint)
 		//Skin Vertices Positions...
 		for (u32 i=0; i<Joint->Weights.size(); ++i)
 		{
+
+
 			Weight=&Joint->Weights[i];
 
 			// Pull this vertex...
@@ -462,6 +482,7 @@ void CSkinnedMesh::SkinJoint(SJoint *Joint, SJoint *ParentJoint)
 				ThisNormalMove.Y = JointVertexPull[1]*Weight->_StaticNormal.X + JointVertexPull[5]*Weight->_StaticNormal.Y + JointVertexPull[9]*Weight->_StaticNormal.Z;
 				ThisNormalMove.Z = JointVertexPull[2]*Weight->_StaticNormal.X + JointVertexPull[6]*Weight->_StaticNormal.Y + JointVertexPull[10]*Weight->_StaticNormal.Z;
 			}
+
 
 
 			if (! (*Weight->_Moved) )
@@ -486,11 +507,15 @@ void CSkinnedMesh::SkinJoint(SJoint *Joint, SJoint *ParentJoint)
 
 		}
 
+
+
 	}
+
 
 	//Skin all children
 	for (u32 j=0; j<Joint->Children.size(); ++j)
 		SkinJoint(Joint->Children[j], Joint);
+
 
 }
 
@@ -575,6 +600,43 @@ void CSkinnedMesh::setMaterialFlag(video::E_MATERIAL_FLAG flag, bool newvalue)
 		LocalBuffers[i]->Material.setFlag(flag,newvalue);
 }
 
+//! uses animation from another mesh
+bool CSkinnedMesh::useAnimationFrom(ISkinnedMesh *mesh)
+{
+
+
+	bool unmatched=false;
+
+	for(u32 i=0;i<AllJoints.size();++i)
+	{
+		SJoint *joint=AllJoints[i];
+		joint->_UseAnimationFrom=0;
+
+		if (joint->Name=="")
+			unmatched=true;
+		else
+		{
+			for(u32 j=0;j<mesh->getAllJoints().size();++j)
+			{
+				SJoint *otherJoint=mesh->getAllJoints()[j];
+				if (joint->Name==otherJoint->Name)
+				{
+					joint->_UseAnimationFrom=otherJoint;
+				}
+			}
+			if (!joint->_UseAnimationFrom) unmatched=true;
+		}
+	}
+
+	cheakForAnimation();
+
+
+	return !unmatched;
+}
+
+
+
+
 //!Update Normals when Animating
 //!False= Don't (default)
 //!True= Update normals, slower
@@ -630,6 +692,106 @@ void CSkinnedMesh::CalculateGlobalMatrixes(SJoint *Joint,SJoint *ParentJoint)
 		CalculateGlobalMatrixes(Joint->Children[j],Joint);
 }
 
+
+void CSkinnedMesh::cheakForAnimation()
+{
+	u32 i,j;
+	//Check for animation...
+	HasAnimation = false;
+	for(i=0;i<AllJoints.size();++i)
+	{
+		if (AllJoints[i]->_UseAnimationFrom)
+		{
+			if (AllJoints[i]->_UseAnimationFrom->PositionKeys.size() ||
+				AllJoints[i]->_UseAnimationFrom->ScaleKeys.size() ||
+				AllJoints[i]->_UseAnimationFrom->RotationKeys.size() )
+			{
+				HasAnimation = true;
+			}
+		}
+	}
+
+	if (HasAnimation)
+	{
+
+		//--- Find the length of the animation ---
+		AnimationFrames=0;
+		for(i=0;i<AllJoints.size();++i)
+		{
+			if (AllJoints[i]->_UseAnimationFrom)
+			{
+				if (AllJoints[i]->_UseAnimationFrom->PositionKeys.size())
+					if (AllJoints[i]->_UseAnimationFrom->PositionKeys.getLast().frame > AnimationFrames)
+						AnimationFrames=AllJoints[i]->_UseAnimationFrom->PositionKeys.getLast().frame;
+
+				if (AllJoints[i]->_UseAnimationFrom->ScaleKeys.size())
+					if (AllJoints[i]->_UseAnimationFrom->ScaleKeys.getLast().frame > AnimationFrames)
+						AnimationFrames=AllJoints[i]->_UseAnimationFrom->ScaleKeys.getLast().frame;
+
+				if (AllJoints[i]->_UseAnimationFrom->RotationKeys.size())
+					if (AllJoints[i]->_UseAnimationFrom->RotationKeys.getLast().frame > AnimationFrames)
+						AnimationFrames=AllJoints[i]->_UseAnimationFrom->RotationKeys.getLast().frame;
+			}
+		}
+	}
+
+	if (HasAnimation && !PreparedForSkinning)
+	{
+		PreparedForSkinning=true;
+
+		//check for bugs:
+		for(i=0; i < AllJoints.size(); ++i)
+		{
+			SJoint *Joint = AllJoints[i];
+			for (j=0; j<Joint->Weights.size(); ++j)
+			{
+				u16 buffer_id=Joint->Weights[j].buffer_id;
+				u32 vertex_id=Joint->Weights[j].vertex_id;
+
+				//check for invalid ids
+				if (buffer_id>=LocalBuffers.size())
+				{
+					os::Printer::log("Skinned Mesh: Weight buffer id too large");
+					Joint->Weights[j].buffer_id = Joint->Weights[j].vertex_id =0;
+				}
+				else if (vertex_id>=LocalBuffers[buffer_id]->getVertexCount())
+				{
+					os::Printer::log("Skinned Mesh: Weight vertex id too large");
+					Joint->Weights[j].buffer_id = Joint->Weights[j].vertex_id =0;
+				}
+
+			}
+		}
+
+		//An array used in skinning
+
+		for (i=0; i<Vertices_Moved.size(); ++i)
+			for (j=0; j<Vertices_Moved[i].size(); ++j)
+				Vertices_Moved[i][j] = false;
+
+		// For skinning: cache weight values for speed
+
+		for (i=0; i<AllJoints.size(); ++i)
+		{
+			SJoint *Joint = AllJoints[i];
+			for (j=0; j<Joint->Weights.size(); ++j)
+			{
+				u32 vertex_id=Joint->Weights[j].vertex_id;
+				u32 buffer_id=Joint->Weights[j].buffer_id;
+
+				Joint->Weights[j]._Moved = &Vertices_Moved[buffer_id] [vertex_id];
+				Joint->Weights[j]._StaticPos = LocalBuffers[buffer_id]->getVertex(vertex_id)->Pos;
+				Joint->Weights[j]._StaticNormal = LocalBuffers[buffer_id]->getVertex(vertex_id)->Normal;
+
+				//Joint->Weights[j]._Pos=&Buffers[buffer_id]->getVertex(vertex_id)->Pos;
+			}
+		}
+
+		// normalize weights
+		normalizeWeights();
+	}
+
+}
 
 
 //! called by loader after populating with mesh and bone data
@@ -713,41 +875,11 @@ void CSkinnedMesh::finalize()
 	//Todo: optimise keys here...
 
 
-
-
-	//Check for animation...
-	HasAnimation = false;
-	for(i=0;i<AllJoints.size();++i)
-	{
-		if (AllJoints[i]->PositionKeys.size() ||
-			AllJoints[i]->ScaleKeys.size() ||
-			AllJoints[i]->RotationKeys.size() )
-		{
-			HasAnimation = true;
-		}
-	}
+	cheakForAnimation();
 
 
 	if (HasAnimation)
 	{
-
-		//--- Find the length of the animation ---
-		AnimationFrames=0;
-		for(i=0;i<AllJoints.size();++i)
-		{
-			if (AllJoints[i]->PositionKeys.size())
-				if (AllJoints[i]->PositionKeys.getLast().frame > AnimationFrames)
-					AnimationFrames=AllJoints[i]->PositionKeys.getLast().frame;
-
-			if (AllJoints[i]->ScaleKeys.size())
-				if (AllJoints[i]->ScaleKeys.getLast().frame > AnimationFrames)
-					AnimationFrames=AllJoints[i]->ScaleKeys.getLast().frame;
-
-			if (AllJoints[i]->RotationKeys.size())
-				if (AllJoints[i]->RotationKeys.getLast().frame > AnimationFrames)
-					AnimationFrames=AllJoints[i]->RotationKeys.getLast().frame;
-		}
-
 
 		//--- optimize and check keyframes ---
 		for(i=0;i<AllJoints.size();++i)
@@ -836,66 +968,7 @@ void CSkinnedMesh::finalize()
 	//buildAll_GlobalAnimatedMatrices();
 
 
-	if (HasAnimation)
-	{
 
-
-
-
-		//check for bugs:
-		for(i=0; i < AllJoints.size(); ++i)
-		{
-			SJoint *Joint = AllJoints[i];
-			for (j=0; j<Joint->Weights.size(); ++j)
-			{
-				u16 buffer_id=Joint->Weights[j].buffer_id;
-				u32 vertex_id=Joint->Weights[j].vertex_id;
-
-				//check for invalid ids
-				if (buffer_id>=LocalBuffers.size())
-				{
-					os::Printer::log("Skinned Mesh: Weight buffer id too large");
-					Joint->Weights[j].buffer_id = Joint->Weights[j].vertex_id =0;
-				}
-				else if (vertex_id>=LocalBuffers[buffer_id]->getVertexCount())
-				{
-					os::Printer::log("Skinned Mesh: Weight vertex id too large");
-					Joint->Weights[j].buffer_id = Joint->Weights[j].vertex_id =0;
-				}
-
-			}
-		}
-
-		//An array used in skinning
-
-		for (i=0; i<Vertices_Moved.size(); ++i)
-			for (j=0; j<Vertices_Moved[i].size(); ++j)
-				Vertices_Moved[i][j] = false;
-
-		// For skinning: cache weight values for speed
-
-		for (i=0; i<AllJoints.size(); ++i)
-		{
-			SJoint *Joint = AllJoints[i];
-			for (j=0; j<Joint->Weights.size(); ++j)
-			{
-				u32 vertex_id=Joint->Weights[j].vertex_id;
-				u32 buffer_id=Joint->Weights[j].buffer_id;
-
-				Joint->Weights[j]._Moved = &Vertices_Moved[buffer_id] [vertex_id];
-				Joint->Weights[j]._StaticPos = LocalBuffers[buffer_id]->getVertex(vertex_id)->Pos;
-				Joint->Weights[j]._StaticNormal = LocalBuffers[buffer_id]->getVertex(vertex_id)->Normal;
-
-				//Joint->Weights[j]._Pos=&Buffers[buffer_id]->getVertex(vertex_id)->Pos;
-			}
-		}
-
-		// normalize weights
-		normalizeWeights();
-
-
-
-	}
 
 
 }
@@ -923,6 +996,11 @@ CSkinnedMesh::SJoint *CSkinnedMesh::createJoint(SJoint *parent)
 		//Set parent (Be careful  of the mesh loader also setting the parent)
 		parent->Children.push_back(joint);
 	}
+
+	joint->_UseAnimationFrom=joint;
+
+
+
 	return joint;
 }
 

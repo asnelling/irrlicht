@@ -80,6 +80,9 @@ namespace scene
 		//! Gets a joint number from its name
 		virtual s32 getJointNumber(const c8* name) const;
 
+		//! uses animation from another mesh
+		virtual bool useAnimationFrom(ISkinnedMesh *mesh);
+
 		//! Update Normals when Animating
 		//! False= Don't (default)
 		//! True = Update normals, slower
@@ -146,6 +149,8 @@ private:
 
 		bool HasAnimation;
 
+		bool PreparedForSkinning;
+
 		f32 AnimationFrames;
 
 		f32 lastAnimatedFrame;
@@ -158,6 +163,8 @@ private:
 		core::aabbox3d<f32> BoundingBox;
 
 		core::array< core::array<bool> > Vertices_Moved;
+
+		void cheakForAnimation();
 
 		void normalizeWeights();
 

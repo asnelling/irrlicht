@@ -50,6 +50,12 @@ namespace scene
 		//! \return Returns the number of the joint or -1 if not found.
 		virtual s32 getJointNumber(const c8* name) const = 0;
 
+		//! uses animation from another mesh
+		//! the animation is linked (not copied) based on joint names (so make sure they are unique)
+		//! \return Returns true if all joints in this mesh were matched up (empty names will not be matched, and it's case sensitive)
+		//! unmatched joints will not be animated
+		virtual bool useAnimationFrom(ISkinnedMesh *mesh) = 0;
+
 		//!Update Normals when Animating
 		//!False= Don't (default)
 		//!True= Update normals, slower
@@ -356,6 +362,7 @@ namespace scene
 			core::quaternion _Animatedrotation;
 			core::matrix4 _GlobalAnimatedMatrix;
 			core::matrix4 _LocalAnimatedMatrix;
+			SJoint *_UseAnimationFrom;
 			bool _LocalAnimatedMatrix_Animated;
 		};
 
