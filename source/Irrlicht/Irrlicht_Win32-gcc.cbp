@@ -23,7 +23,6 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-O3" />
-			<Add option="-g" />
 			<Add option="-D__GNUWIN32__ -W -DWIN32 -DNDEBUG -D_WINDOWS -D_MBCS -D_USRDLL -DIRRLICHT_EXPORTS" />
 			<Add directory="..\..\include" />
 			<Add directory="zlib" />

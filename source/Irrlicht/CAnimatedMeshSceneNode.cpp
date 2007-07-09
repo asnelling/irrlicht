@@ -348,14 +348,19 @@ void CAnimatedMeshSceneNode::render()
 		{
 			if (Mesh->getMeshType() == EAMT_SKINNED)
 			{
-				/*
-				// draw skeleton
-				const core::array<core::vector3df>* ds =
-					((IAnimatedMeshX*)Mesh)->getDrawableSkeleton((s32)frame);
 
-				for ( g=0; g < ds->size(); g +=2 )
-					driver->draw3DLine((*ds)[g], (*ds)[g+1],  video::SColor(0,51,66,255));
-				*/
+				// draw skeleton
+
+
+				for ( g=0; g < ((ISkinnedMesh*)Mesh)->getAllJoints().size(); g +=2 )
+				{
+					ISkinnedMesh::SJoint *joint=((ISkinnedMesh*)Mesh)->getAllJoints()[g];
+
+					for (u32 n=0;n<joint->Children.size();++n)
+					{
+						driver->draw3DLine(joint->_GlobalAnimatedMatrix.getTranslation(), joint->Children[n]->_GlobalAnimatedMatrix.getTranslation(),  video::SColor(0,51,66,255));
+					}
+				}
 			}
 
 			// show tag for quake3 models

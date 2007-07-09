@@ -10,13 +10,15 @@
 #include "CMS3DMeshFileLoader.h"
 #include "CSkinnedMesh.h"
 
+
+
 namespace irr
 {
 namespace scene
 {
 
 // byte-align structures
-#if defined(_MSC_VER) ||  defined(__BORLANDC__) || defined (__BCPLUSPLUS__) 
+#if defined(_MSC_VER) ||  defined(__BORLANDC__) || defined (__BCPLUSPLUS__)
 #	pragma pack( push, packing )
 #	pragma pack( 1 )
 #	define PACK_STRUCT
@@ -88,14 +90,14 @@ struct MS3DKeyframe
 } PACK_STRUCT;
 
 // Default alignment
-#if defined(_MSC_VER) ||  defined(__BORLANDC__) || defined (__BCPLUSPLUS__) 
+#if defined(_MSC_VER) ||  defined(__BORLANDC__) || defined (__BCPLUSPLUS__)
 #	pragma pack( pop, packing )
 #endif
 
 #undef PACK_STRUCT
 
 //! Constructor
-CMS3DMeshFileLoader::CMS3DMeshFileLoader(video::IVideoDriver *driver) 
+CMS3DMeshFileLoader::CMS3DMeshFileLoader(video::IVideoDriver *driver)
 : Driver(driver), AnimatedMesh(0)
 {
 }
@@ -121,8 +123,6 @@ IAnimatedMesh* CMS3DMeshFileLoader::createMesh(irr::io::IReadFile* file)
 
 	AnimatedMesh = new CSkinnedMesh();
 
-	Buffers = &AnimatedMesh->getMeshBuffers();
-
 	if ( load(file) )
 	{
 		AnimatedMesh->finalize();
@@ -141,7 +141,7 @@ IAnimatedMesh* CMS3DMeshFileLoader::createMesh(irr::io::IReadFile* file)
 bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 {
 	s32 i=0, j;
-	
+
 	if (!file)
 		return false;
 
@@ -197,7 +197,7 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 		for (j=0; j<3; ++j)
 			vertices[i].Vertex[j] = os::Byteswap::byteswap(vertices[i].Vertex[j]);
 #endif
-	
+
 	// triangles
 	u16 numTriangles = *(u16*)pPtr;
 #ifdef __BIG_ENDIAN__
@@ -220,14 +220,14 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 		}
 	}
 #endif
-	
+
 	// groups
 	u16 numGroups = *(u16*)pPtr;
 #ifdef __BIG_ENDIAN__
 	numGroups = os::Byteswap::byteswap(numGroups);
 #endif
 	pPtr += sizeof(u16);
-	
+
 	//skip groups
 	for (i=0; i<numGroups; ++i)
 	{
@@ -243,9 +243,9 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 		triangleCount = os::Byteswap::byteswap(triangleCount);
 #endif
 		pPtr += sizeof(u16);
-		
+
 		//pPtr += sizeof(u16) * triangleCount; // triangle indices
-		for (j=0; j<triangleCount; ++j) 
+		for (j=0; j<triangleCount; ++j)
 		{
 #ifdef __BIG_ENDIAN__
 			grp.VertexIds.push_back(os::Byteswap::byteswap(*(u16*)pPtr));
@@ -258,10 +258,10 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 		grp.MaterialIdx = *(u8*)pPtr;
 		if (grp.MaterialIdx == 255)
 			grp.MaterialIdx = 0;
-		
+
 		pPtr += sizeof(c8); // material index
 	}
-	
+
 	// skip materials
 	u16 numMaterials = *(u16*)pPtr;
 #ifdef __BIG_ENDIAN__
@@ -272,12 +272,12 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 	// MS3DMaterial *materials = (MS3DMaterial*)pPtr;
 	// pPtr += sizeof(MS3DMaterial) * numMaterials;
 
-	if(numMaterials <= 0) 
-	{ 
+	if(numMaterials <= 0)
+	{
 		// if there are no materials, add at least one buffer
 
-		Buffers->push_back(new CSkinnedMesh::SSkinMeshBuffer(video::EVT_STANDARD)); 
-		CSkinnedMesh::SSkinMeshBuffer& tmpBuffer = *Buffers->getLast(); 
+		AnimatedMesh->createBuffer();
+
 	}
 
 	for (i=0; i<numMaterials; ++i)
@@ -297,20 +297,33 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 #endif
 		pPtr += sizeof(MS3DMaterial);
 
-		Buffers->push_back (new CSkinnedMesh::SSkinMeshBuffer(video::EVT_STANDARD));
-		CSkinnedMesh::SSkinMeshBuffer& tmpBuffer = *Buffers->getLast();
 
-		tmpBuffer.Material.MaterialType = video::EMT_SOLID;
+		CSkinnedMesh::SSkinMeshBuffer *tmpBuffer = AnimatedMesh->createBuffer();
 
-		tmpBuffer.Material.AmbientColor = video::SColorf(material->Ambient[0], material->Ambient[1], material->Ambient[2], material->Ambient[3]).toSColor ();
-		tmpBuffer.Material.DiffuseColor = video::SColorf(material->Diffuse[0], material->Diffuse[1], material->Diffuse[2], material->Diffuse[3]).toSColor ();
-		tmpBuffer.Material.EmissiveColor = video::SColorf(material->Emissive[0], material->Emissive[1], material->Emissive[2], material->Emissive[3]).toSColor ();
-		tmpBuffer.Material.SpecularColor = video::SColorf(material->Specular[0], material->Specular[1], material->Specular[2], material->Specular[3]).toSColor ();
-		tmpBuffer.Material.Shininess = material->Shininess;
-		if (material->Texture)
-			tmpBuffer.Material.Textures[0] = Driver->getTexture((const c8*)material->Texture);
-		if (material->Alphamap)
-			tmpBuffer.Material.Textures[2] = Driver->getTexture((const c8*)material->Alphamap);
+		tmpBuffer->Material.MaterialType = video::EMT_SOLID;
+
+		tmpBuffer->Material.AmbientColor = video::SColorf(material->Ambient[0], material->Ambient[1], material->Ambient[2], material->Ambient[3]).toSColor ();
+		tmpBuffer->Material.DiffuseColor = video::SColorf(material->Diffuse[0], material->Diffuse[1], material->Diffuse[2], material->Diffuse[3]).toSColor ();
+		tmpBuffer->Material.EmissiveColor = video::SColorf(material->Emissive[0], material->Emissive[1], material->Emissive[2], material->Emissive[3]).toSColor ();
+		tmpBuffer->Material.SpecularColor = video::SColorf(material->Specular[0], material->Specular[1], material->Specular[2], material->Specular[3]).toSColor ();
+		tmpBuffer->Material.Shininess = material->Shininess;
+
+		core::stringc TexturePath=(const c8*)material->Texture;
+		TexturePath.trim();
+		if (TexturePath!="")
+		{
+			TexturePath=stripPathFromString(file->getFileName(),true) + stripPathFromString(TexturePath,false);
+			tmpBuffer->Material.Textures[0] = Driver->getTexture(TexturePath.c_str() );
+		}
+
+		core::stringc AlphamapPath=(const c8*)material->Alphamap;
+		AlphamapPath.trim();
+		if (AlphamapPath!="")
+		{
+			AlphamapPath=stripPathFromString(file->getFileName(),true) + stripPathFromString(AlphamapPath,false);
+			tmpBuffer->Material.Textures[2] = Driver->getTexture(AlphamapPath.c_str() );
+		}
+
 	}
 
 	// animation time
@@ -319,22 +332,25 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 	framesPerSecond = os::Byteswap::byteswap(framesPerSecond);
 #endif
 	pPtr += sizeof(f32) * 2; // fps and current time
-	
+
 	s32 frameCount = *(s32*)pPtr;
 #ifdef __BIG_ENDIAN__
 	frameCount = os::Byteswap::byteswap(frameCount);
 #endif
 	pPtr += sizeof(s32);
-	
-	totalTime = (frameCount / framesPerSecond) * 1000.0f;
-	
+
+
+
 	u16 jointCount = *(u16*)pPtr;
 #ifdef __BIG_ENDIAN__
 	jointCount = os::Byteswap::byteswap(jointCount);
 #endif
 	pPtr += sizeof(u16);
-	
-	// load joints	
+
+
+	core::array<core::stringc> ParentNames;
+
+	// load joints
 	for (i=0; i<jointCount; ++i)
 	{
 		MS3DJoint *pJoint = (MS3DJoint*)pPtr;
@@ -348,9 +364,10 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 #endif
 		pPtr += sizeof(MS3DJoint);
 
-		ISkinnedMesh::SJoint *jnt = new ISkinnedMesh::SJoint();
-		Joints.push_back(jnt);
-		
+
+
+		ISkinnedMesh::SJoint *jnt = AnimatedMesh->createJoint();
+
 		/*
 		jnt.Name = pJoint->Name;
 		jnt.Index = i;
@@ -365,19 +382,26 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 		*/
 
 		jnt->Name = pJoint->Name;
+
 		jnt->LocalMatrix.makeIdentity();
+
+
 		jnt->LocalMatrix.setRotationRadians(
 			core::vector3df(pJoint->Rotation[0], pJoint->Rotation[1], pJoint->Rotation[2]) );
-		jnt->LocalMatrix.setTranslation( 
+
+		jnt->LocalMatrix.setTranslation(
 			core::vector3df(pJoint->Translation[0], pJoint->Translation[1], pJoint->Translation[2]) );
 
+
 		ParentNames.push_back( (c8*)pJoint->ParentName );
-		IsRoot.push_back(true);
 
 		/*if (pJoint->NumRotationKeyframes ||
 			pJoint->NumTranslationKeyframes)
 			HasAnimation = true;*/
-		
+
+
+
+
 		// get rotation keyframes
 		for (j=0; j < pJoint->NumRotationKeyframes; ++j)
 		{
@@ -389,10 +413,24 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 #endif
 			pPtr += sizeof(MS3DKeyframe);
 
-			ISkinnedMesh::SRotationKey k;
-			k.frame = kf->Time * 1000.0f;
-			k.rotation = core::vector3df(kf->Parameter[0], kf->Parameter[1], kf->Parameter[2]);
-			jnt->RotationKeys.push_back(k);
+			ISkinnedMesh::SRotationKey *k=AnimatedMesh->createRotationKey(jnt);
+			k->frame = kf->Time * framesPerSecond;
+
+			core::matrix4 tmpMatrix;
+
+			tmpMatrix.setRotationRadians(
+				core::vector3df(kf->Parameter[0], kf->Parameter[1], kf->Parameter[2]) );
+
+			tmpMatrix=jnt->LocalMatrix*tmpMatrix;
+
+			k->rotation  = core::quaternion(tmpMatrix);
+
+			//fix
+			//k->rotation  = core::vector3df
+			//	(kf->Parameter[0],//+pJoint->Rotation[0]*core::RADTODEG,
+			//	 kf->Parameter[1],//+pJoint->Rotation[1]*core::RADTODEG,
+			//	 kf->Parameter[2]);//+pJoint->Rotation[2]*core::RADTODEG);
+
 		}
 
 		// get translation keyframes
@@ -406,60 +444,31 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 #endif
 			pPtr += sizeof(MS3DKeyframe);
 
-			ISkinnedMesh::SPositionKey k;
-			k.frame = kf->Time * 1000.0f;
-			k.position = core::vector3df(kf->Parameter[0], kf->Parameter[1], kf->Parameter[2]);
-			jnt->PositionKeys.push_back(k);
+			ISkinnedMesh::SPositionKey *k=AnimatedMesh->createPositionKey(jnt);
+			k->frame = kf->Time * framesPerSecond;
+
+			k->position = core::vector3df
+				(kf->Parameter[0]+pJoint->Translation[0],
+				 kf->Parameter[1]+pJoint->Translation[1],
+				 kf->Parameter[2]+pJoint->Translation[2]);
+
+
 		}
 	}
 
 	//find parent of every joint
-	for (i=0; i<(s32)Joints.size(); ++i)
-	{
-		if (ParentNames[i].size() != 0)
-		{
-			for (j=0; j<(s32)Joints.size(); ++j)
-				if (i != j && ParentNames[i] == Joints[j]->Name)
-				{
-					Joints[j]->Children.push_back(Joints[i]);
-					IsRoot[i] = false;
-					break;
-				}	
+	for (i=0; i<(s32)AnimatedMesh->getAllJoints().size(); ++i)
+		for (j=0; j<(s32)AnimatedMesh->getAllJoints().size(); ++j)
+			if (i != j && ParentNames[i] == AnimatedMesh->getAllJoints()[j]->Name )
+			{
+				AnimatedMesh->getAllJoints()[j]->Children.push_back(AnimatedMesh->getAllJoints()[i]);
+				break;
+			}
 
 			/*if (Joints[i].Parent == -1)
 				os::Printer::log("Found joint in model without parent.", ELL_WARNING);*/
-		}
-	}
-
-	// add root(s) to mesh
-	for (i=0; i<(s32)Joints.size(); ++i)
-	{
-		if (IsRoot[i])
-			AnimatedMesh->getAllJoints().push_back(Joints[i]);
-	}
 
 
-	//no need?
-/*
-	// sets up all joints with initial rotation and translation
-	for (i=0; i<(s32)Joints.size(); ++i)
-	{
-		SJoint& jnt = Joints[i];
-
-		jnt.RelativeTransformation.setRotationRadians(jnt.Rotation);
-		jnt.RelativeTransformation.setTranslation(jnt.Translation);
-
-		if (jnt.Parent == -1)
-			jnt.AbsoluteTransformation  = jnt.RelativeTransformation;
-		else
-		{
-			jnt.AbsoluteTransformation = Joints[jnt.Parent].AbsoluteTransformation;
-			jnt.AbsoluteTransformation *= jnt.RelativeTransformation;
-		}
-
-		jnt.AbsoluteTransformationAnimated = jnt.AbsoluteTransformation;
-	}
-*/
 	// create vertices and indices, attach them to the joints.
 	video::S3DVertex v;
 	core::array<video::S3DVertex> *Vertices;
@@ -468,7 +477,7 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 	for (i=0; i<numTriangles; ++i)
 	{
 		u32 tmp = Groups[triangles[i].GroupIndex].MaterialIdx;
-		Vertices = &(*Buffers)[tmp]->Vertices_Standard;
+		Vertices = &AnimatedMesh->getMeshBuffers()[tmp]->Vertices_Standard;
 
 		for (j = 0; j<3; ++j)
 		{
@@ -479,8 +488,8 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 			v.Normal.Y = triangles[i].VertexNormals[j][1];
 			v.Normal.Z = triangles[i].VertexNormals[j][2];
 
-			if(triangles[i].GroupIndex < Groups.size() && Groups[triangles[i].GroupIndex].MaterialIdx < Buffers->size())
-				v.Color = (*Buffers)[Groups[triangles[i].GroupIndex].MaterialIdx]->Material.DiffuseColor;
+			if(triangles[i].GroupIndex < Groups.size() && Groups[triangles[i].GroupIndex].MaterialIdx < AnimatedMesh->getMeshBuffers().size())
+				v.Color = AnimatedMesh->getMeshBuffers()[Groups[triangles[i].GroupIndex].MaterialIdx]->Material.DiffuseColor;
 			else
 				v.Color.set(255,255,255,255);
 			v.Pos.X = vertices[triangles[i].VertexIndices[j]].Vertex[0];
@@ -500,15 +509,15 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 			if (index == -1)
 			{
 				s32 boneid = vertices[triangles[i].VertexIndices[j]].BoneID;
-				if (boneid>=0 && boneid<(s32)Joints.size())
+				if (boneid>=0 && boneid<(s32)AnimatedMesh->getAllJoints().size())
 				{
-					ISkinnedMesh::SWeight w;
-					w.buffer_id = Groups[triangles[i].GroupIndex].MaterialIdx;
-					w.strength = 1.0f;
-					w.vertex_id = Vertices->size();
+					ISkinnedMesh::SWeight *w=AnimatedMesh->createWeight(AnimatedMesh->getAllJoints()[boneid]);
+					w->buffer_id = Groups[triangles[i].GroupIndex].MaterialIdx;
+					w->strength = 1.0f;
+					w->vertex_id = Vertices->size();
 					//Joints[boneid]->VertexIds.push_back(Vertices.size());
 
-					Joints[boneid]->Weights.push_back(w);
+
 				}
 
 				Vertices->push_back(v);
@@ -520,14 +529,14 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 
 	//create groups
 	s32 iIndex = -1;
-	for (i=0; i<(int)Groups.size(); ++i) 
-	{ 
-		SGroup& grp = Groups[i]; 
+	for (i=0; i<(int)Groups.size(); ++i)
+	{
+		SGroup& grp = Groups[i];
 
-		if (grp.MaterialIdx >= (*Buffers).size()) 
-			grp.MaterialIdx = 0; 
+		if (grp.MaterialIdx >= AnimatedMesh->getMeshBuffers().size())
+			grp.MaterialIdx = 0;
 
-		core::array<u16>& indices = (*Buffers)[grp.MaterialIdx]->Indices;
+		core::array<u16>& indices = AnimatedMesh->getMeshBuffers()[grp.MaterialIdx]->Indices;
 
 		for (u32 k=0; k < grp.VertexIds.size(); ++k)
 			for (u32 l=0; l<3; ++l)
@@ -555,16 +564,32 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 
 	AnimatedVertices = Vertices;
 */
-	AnimatedMesh->finalize();
-
-	// clear arrays
-	Groups.clear();
-	ParentNames.clear();
-	IsRoot.clear();
-
 
 	delete [] buffer;
+	// clear arrays
+	Groups.clear();
+
 	return true;
+}
+
+
+core::stringc CMS3DMeshFileLoader::stripPathFromString(core::stringc string, bool returnPath)
+{
+	s32 slashIndex=string.findLast('/'); // forward slash
+	s32 backSlash=string.findLast('\\'); // back slash
+
+	if (backSlash>slashIndex) slashIndex=backSlash;
+
+	if (slashIndex==-1)//no slashes found
+		if (returnPath)
+			return core::stringc(); //no path to return
+		else
+			return string;
+
+	if (returnPath)
+		return string.subString(0, slashIndex + 1);
+	else
+		return string.subString(slashIndex+1, string.size() - (slashIndex+1));
 }
 
 

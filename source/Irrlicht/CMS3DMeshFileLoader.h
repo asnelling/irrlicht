@@ -34,27 +34,20 @@ public:
 
 private:
 
+	core::stringc stripPathFromString(core::stringc string, bool returnPath);
+
 	bool load(irr::io::IReadFile* file);
 	video::IVideoDriver* Driver;
 	CSkinnedMesh* AnimatedMesh;
 
-	struct SGroup 
-	{ 
-		core::stringc Name; 
-		core::array<u16> VertexIds; 
-		u16 MaterialIdx; 
-	}; 
-
-	//? needed here?
-	f32 totalTime;
-
+	struct SGroup
+	{
+		core::stringc Name;
+		core::array<u16> VertexIds;
+		u16 MaterialIdx;
+	};
 
 	core::array<SGroup> Groups;
-	core::array<core::stringc> ParentNames;
-	core::array<bool> IsRoot;
-
-	core::array<CSkinnedMesh::SSkinMeshBuffer*> *Buffers;
-	core::array<CSkinnedMesh::SJoint*> Joints;
 
 };
 
