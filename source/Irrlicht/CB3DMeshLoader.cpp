@@ -36,7 +36,6 @@ CB3DMeshLoader::~CB3DMeshLoader()
 	{
 		if (Materials[n].Material)
 			delete Materials[n].Material;
-		Materials.erase(n);
 	}
 
 }

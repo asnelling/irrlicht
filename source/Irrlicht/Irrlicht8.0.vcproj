@@ -1825,6 +1825,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\CBoneSceneNode.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CBoneSceneNode.h"
+					>
+				</File>
+				<File
 					RelativePath=".\CCameraFPSSceneNode.cpp"
 					>
 				</File>

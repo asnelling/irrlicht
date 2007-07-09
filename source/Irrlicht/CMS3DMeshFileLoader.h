@@ -7,6 +7,7 @@
 
 #include "IMeshLoader.h"
 #include "IVideoDriver.h"
+#include "CSkinnedMesh.h"
 
 namespace irr
 {
@@ -32,7 +33,28 @@ public:
 	virtual IAnimatedMesh* createMesh(irr::io::IReadFile* file);
 
 private:
+
+	bool load(irr::io::IReadFile* file);
 	video::IVideoDriver* Driver;
+	CSkinnedMesh* AnimatedMesh;
+
+	struct SGroup 
+	{ 
+		core::stringc Name; 
+		core::array<u16> VertexIds; 
+		u16 MaterialIdx; 
+	}; 
+
+	//? needed here?
+	f32 totalTime;
+
+
+	core::array<SGroup> Groups;
+	core::array<core::stringc> ParentNames;
+	core::array<bool> IsRoot;
+
+	core::array<CSkinnedMesh::SSkinMeshBuffer*> *Buffers;
+	core::array<CSkinnedMesh::SJoint*> Joints;
 
 };
 
@@ -40,4 +62,5 @@ private:
 } // end namespace irr
 
 #endif
+
 

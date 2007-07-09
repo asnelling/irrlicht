@@ -628,7 +628,7 @@ bool CSkinnedMesh::useAnimationFrom(ISkinnedMesh *mesh)
 		}
 	}
 
-	cheakForAnimation();
+	checkForAnimation();
 
 
 	return !unmatched;
@@ -693,7 +693,7 @@ void CSkinnedMesh::CalculateGlobalMatrixes(SJoint *Joint,SJoint *ParentJoint)
 }
 
 
-void CSkinnedMesh::cheakForAnimation()
+void CSkinnedMesh::checkForAnimation()
 {
 	u32 i,j;
 	//Check for animation...
@@ -875,7 +875,7 @@ void CSkinnedMesh::finalize()
 	//Todo: optimise keys here...
 
 
-	cheakForAnimation();
+	checkForAnimation();
 
 
 	if (HasAnimation)
@@ -976,9 +976,8 @@ void CSkinnedMesh::finalize()
 
 CSkinnedMesh::SSkinMeshBuffer *CSkinnedMesh::createBuffer()
 {
-	SSkinMeshBuffer *buffer=new SSkinMeshBuffer;
+	SSkinMeshBuffer *buffer=new SSkinMeshBuffer();
 	LocalBuffers.push_back(buffer);
-	buffer->VertexType=video::EVT_STANDARD;
 	return buffer;
 }
 

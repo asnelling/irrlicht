@@ -164,7 +164,7 @@ private:
 
 		core::array< core::array<bool> > Vertices_Moved;
 
-		void cheakForAnimation();
+		void checkForAnimation();
 
 		void normalizeWeights();
 
@@ -191,5 +191,6 @@ private:
 } // end namespace irr
 
 #endif
+
 
 

@@ -93,7 +93,7 @@ namespace scene
 		//! S3DVertex2TCoords, S3DVertex and S3DVertexTangents at runtime
 		struct SSkinMeshBuffer : public IMeshBuffer
 		{
-			SSkinMeshBuffer()
+			SSkinMeshBuffer(video::E_VERTEX_TYPE vt=video::EVT_STANDARD) : VertexType(vt)
 			{
 				#ifdef _DEBUG
 				setDebugName("SSkinMeshBuffer");
@@ -333,6 +333,13 @@ namespace scene
 		//! Joints
 	  	struct SJoint
 		{
+			SJoint() :  
+				Name(""), LocalMatrix(), 
+				Children(), PositionKeys(), ScaleKeys(), RotationKeys(), Weights(),
+				_UseAnimationFrom(0), _LocalAnimatedMatrix_Animated(false)
+			{
+			}
+
 			//! The name of this joint
 			core::stringc Name;
 
@@ -406,5 +413,6 @@ namespace scene
 } // end namespace irr
 
 #endif
+
 
 
