@@ -1641,14 +1641,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\CAnimatedMeshMS3D.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\CAnimatedMeshMS3D.h"
-					>
-				</File>
-				<File
 					RelativePath=".\CB3DMeshLoader.cpp"
 					>
 				</File>

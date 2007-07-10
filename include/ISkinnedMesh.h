@@ -304,10 +304,12 @@ namespace scene
 			//! Weight Strength/Percentage (0-1)
 			f32 strength;
 
-			//! internal, please do not use
-			bool *_Moved;
-			core::vector3df _StaticPos;
-			core::vector3df _StaticNormal;
+		private:
+			//! Internal functions used by CSkinnedMesh
+			friend class CSkinnedMesh;
+			bool *Moved;
+			core::vector3df StaticPos;
+			core::vector3df StaticNormal;
 		};
 
 

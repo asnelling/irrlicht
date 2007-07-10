@@ -472,22 +472,22 @@ void CSkinnedMesh::SkinJoint(SJoint *Joint, SJoint *ParentJoint)
 			Weight=&Joint->Weights[i];
 
 			// Pull this vertex...
-			ThisVertexMove.X = JointVertexPull[0]*Weight->_StaticPos.X + JointVertexPull[4]*Weight->_StaticPos.Y + JointVertexPull[8]*Weight->_StaticPos.Z + JointVertexPull[12];
-			ThisVertexMove.Y = JointVertexPull[1]*Weight->_StaticPos.X + JointVertexPull[5]*Weight->_StaticPos.Y + JointVertexPull[9]*Weight->_StaticPos.Z + JointVertexPull[13];
-			ThisVertexMove.Z = JointVertexPull[2]*Weight->_StaticPos.X + JointVertexPull[6]*Weight->_StaticPos.Y + JointVertexPull[10]*Weight->_StaticPos.Z + JointVertexPull[14];
+			ThisVertexMove.X = JointVertexPull[0]*Weight->StaticPos.X + JointVertexPull[4]*Weight->StaticPos.Y + JointVertexPull[8]*Weight->StaticPos.Z + JointVertexPull[12];
+			ThisVertexMove.Y = JointVertexPull[1]*Weight->StaticPos.X + JointVertexPull[5]*Weight->StaticPos.Y + JointVertexPull[9]*Weight->StaticPos.Z + JointVertexPull[13];
+			ThisVertexMove.Z = JointVertexPull[2]*Weight->StaticPos.X + JointVertexPull[6]*Weight->StaticPos.Y + JointVertexPull[10]*Weight->StaticPos.Z + JointVertexPull[14];
 
 			if (AnimateNormals)
 			{
-				ThisNormalMove.X = JointVertexPull[0]*Weight->_StaticNormal.X + JointVertexPull[4]*Weight->_StaticNormal.Y + JointVertexPull[8]*Weight->_StaticNormal.Z;
-				ThisNormalMove.Y = JointVertexPull[1]*Weight->_StaticNormal.X + JointVertexPull[5]*Weight->_StaticNormal.Y + JointVertexPull[9]*Weight->_StaticNormal.Z;
-				ThisNormalMove.Z = JointVertexPull[2]*Weight->_StaticNormal.X + JointVertexPull[6]*Weight->_StaticNormal.Y + JointVertexPull[10]*Weight->_StaticNormal.Z;
+				ThisNormalMove.X = JointVertexPull[0]*Weight->StaticNormal.X + JointVertexPull[4]*Weight->StaticNormal.Y + JointVertexPull[8]*Weight->StaticNormal.Z;
+				ThisNormalMove.Y = JointVertexPull[1]*Weight->StaticNormal.X + JointVertexPull[5]*Weight->StaticNormal.Y + JointVertexPull[9]*Weight->StaticNormal.Z;
+				ThisNormalMove.Z = JointVertexPull[2]*Weight->StaticNormal.X + JointVertexPull[6]*Weight->StaticNormal.Y + JointVertexPull[10]*Weight->StaticNormal.Z;
 			}
 
 
 
-			if (! (*Weight->_Moved) )
+			if (! (*Weight->Moved) )
 			{
-				(*Weight->_Moved) = true;
+				(*Weight->Moved) = true;
 
 				BuffersUsed[Weight->buffer_id]->getVertex(Weight->vertex_id)->Pos = (ThisVertexMove * Weight->strength);
 
@@ -779,9 +779,9 @@ void CSkinnedMesh::checkForAnimation()
 				u32 vertex_id=Joint->Weights[j].vertex_id;
 				u32 buffer_id=Joint->Weights[j].buffer_id;
 
-				Joint->Weights[j]._Moved = &Vertices_Moved[buffer_id] [vertex_id];
-				Joint->Weights[j]._StaticPos = LocalBuffers[buffer_id]->getVertex(vertex_id)->Pos;
-				Joint->Weights[j]._StaticNormal = LocalBuffers[buffer_id]->getVertex(vertex_id)->Normal;
+				Joint->Weights[j].Moved = &Vertices_Moved[buffer_id] [vertex_id];
+				Joint->Weights[j].StaticPos = LocalBuffers[buffer_id]->getVertex(vertex_id)->Pos;
+				Joint->Weights[j].StaticNormal = LocalBuffers[buffer_id]->getVertex(vertex_id)->Normal;
 
 				//Joint->Weights[j]._Pos=&Buffers[buffer_id]->getVertex(vertex_id)->Pos;
 			}
