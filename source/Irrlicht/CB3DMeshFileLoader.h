@@ -1,9 +1,10 @@
 // B3D mesh loader
 
-#ifndef __C_B3D_MESH_LOADER_H_INCLUDED__
-#define __C_B3D_MESH_LOADER_H_INCLUDED__
 
 #include "irrCompileConfig.h"
+
+#ifndef __C_B3D_MESH_LOADER_H_INCLUDED__
+#define __C_B3D_MESH_LOADER_H_INCLUDED__
 
 #include "IMeshLoader.h"
 #include "ISceneManager.h"
@@ -17,15 +18,15 @@ namespace scene
 {
 
 //! Meshloader for B3D format
-class CB3DMeshLoader : public IMeshLoader
+class CB3DMeshFileLoader : public IMeshLoader
 {
 public:
 
 	//! Constructor
-	CB3DMeshLoader(scene::ISceneManager* smgr);
+	CB3DMeshFileLoader(scene::ISceneManager* smgr);
 
 	//! destructor
-	virtual ~CB3DMeshLoader();
+	virtual ~CB3DMeshFileLoader();
 
 	//! returns true if the file maybe is able to be loaded by this class
 	//! based on the file extension (e.g. ".bsp")

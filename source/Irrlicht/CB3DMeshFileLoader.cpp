@@ -6,7 +6,7 @@
 #include "IrrCompileConfig.h"
 #ifdef _IRR_COMPILE_WITH_B3D_LOADER_
 
-#include "CB3DMeshLoader.h"
+#include "CB3DMeshFileLoader.h"
 
 #include "IVideoDriver.h"
 #include "os.h"
@@ -19,16 +19,16 @@ namespace scene
 {
 
 //! Constructor
-CB3DMeshLoader::CB3DMeshLoader(scene::ISceneManager* smgr)
+CB3DMeshFileLoader::CB3DMeshFileLoader(scene::ISceneManager* smgr)
 : B3dStack(), NormalsInFile(false), SceneManager(smgr), AnimatedMesh(0), file(0)
 {
 	#ifdef _DEBUG
-	setDebugName("CB3DMeshLoader");
+	setDebugName("CB3DMeshFileLoader");
 	#endif
 }
 
 //! destructor
-CB3DMeshLoader::~CB3DMeshLoader()
+CB3DMeshFileLoader::~CB3DMeshFileLoader()
 {
 	s32 n;
 
@@ -42,7 +42,7 @@ CB3DMeshLoader::~CB3DMeshLoader()
 
 //! returns true if the file maybe is able to be loaded by this class
 //! based on the file extension (e.g. ".bsp")
-bool CB3DMeshLoader::isALoadableFileExtension(const c8* fileName)
+bool CB3DMeshFileLoader::isALoadableFileExtension(const c8* fileName)
 {
 	return strstr(fileName, ".b3d") != 0;
 }
@@ -51,7 +51,7 @@ bool CB3DMeshLoader::isALoadableFileExtension(const c8* fileName)
 //! \return Pointer to the created mesh. Returns 0 if loading failed.
 //! If you no longer need the mesh, you should call IAnimatedMesh::drop().
 //! See IUnknown::drop() for more information.
-IAnimatedMesh* CB3DMeshLoader::createMesh(irr::io::IReadFile* f)
+IAnimatedMesh* CB3DMeshFileLoader::createMesh(irr::io::IReadFile* f)
 {
 
 	if (!f)
@@ -76,7 +76,7 @@ IAnimatedMesh* CB3DMeshLoader::createMesh(irr::io::IReadFile* f)
 	return AnimatedMesh;
 }
 
-bool CB3DMeshLoader::load()
+bool CB3DMeshFileLoader::load()
 {
 
 	B3dStack.clear();
@@ -186,7 +186,7 @@ bool CB3DMeshLoader::load()
 }
 
 
-bool CB3DMeshLoader::readChunkNODE(CSkinnedMesh::SJoint *InJoint)
+bool CB3DMeshFileLoader::readChunkNODE(CSkinnedMesh::SJoint *InJoint)
 {
 
 	core::stringc JointName = readString();
@@ -298,7 +298,7 @@ bool CB3DMeshLoader::readChunkNODE(CSkinnedMesh::SJoint *InJoint)
 	return true;
 }
 
-bool CB3DMeshLoader::readChunkMESH(CSkinnedMesh::SJoint *InJoint)
+bool CB3DMeshFileLoader::readChunkMESH(CSkinnedMesh::SJoint *InJoint)
 {
 
 	s32 Vertices_Start=BaseVertices.size(); //B3Ds have Vertex ID's local within the mesh I don't want this
@@ -404,7 +404,7 @@ VRTS:
   float tex_coords[tex_coord_sets][tex_coord_set_size]	;tex coords
   }
 */
-bool CB3DMeshLoader::readChunkVRTS(CSkinnedMesh::SJoint *InJoint, CSkinnedMesh::SSkinMeshBuffer* MeshBuffer, s32 Vertices_Start)
+bool CB3DMeshFileLoader::readChunkVRTS(CSkinnedMesh::SJoint *InJoint, CSkinnedMesh::SSkinMeshBuffer* MeshBuffer, s32 Vertices_Start)
 {
 
 	s32 flags, tex_coord_sets, tex_coord_set_size;
@@ -540,7 +540,7 @@ bool CB3DMeshLoader::readChunkVRTS(CSkinnedMesh::SJoint *InJoint, CSkinnedMesh::
 }
 
 
-bool CB3DMeshLoader::readChunkTRIS(CSkinnedMesh::SJoint *InJoint, CSkinnedMesh::SSkinMeshBuffer *MeshBuffer, u32 MeshBufferID, s32 Vertices_Start)
+bool CB3DMeshFileLoader::readChunkTRIS(CSkinnedMesh::SJoint *InJoint, CSkinnedMesh::SSkinMeshBuffer *MeshBuffer, u32 MeshBufferID, s32 Vertices_Start)
 {
 
 	s32 triangle_brush_id; // Note: Irrlicht can't have different brushes for each triangle (I'm using a workaround)
@@ -641,7 +641,7 @@ bool CB3DMeshLoader::readChunkTRIS(CSkinnedMesh::SJoint *InJoint, CSkinnedMesh::
 
 
 
-bool CB3DMeshLoader::readChunkBONE(CSkinnedMesh::SJoint *InJoint)
+bool CB3DMeshFileLoader::readChunkBONE(CSkinnedMesh::SJoint *InJoint)
 {
 
 	if (B3dStack.getLast().length > 8)
@@ -681,7 +681,7 @@ bool CB3DMeshLoader::readChunkBONE(CSkinnedMesh::SJoint *InJoint)
 
 
 
-bool CB3DMeshLoader::readChunkKEYS(CSkinnedMesh::SJoint *InJoint)
+bool CB3DMeshFileLoader::readChunkKEYS(CSkinnedMesh::SJoint *InJoint)
 {
 
 	s32 flags;
@@ -746,7 +746,7 @@ bool CB3DMeshLoader::readChunkKEYS(CSkinnedMesh::SJoint *InJoint)
 }
 
 
-bool CB3DMeshLoader::readChunkANIM(CSkinnedMesh::SJoint *InJoint)
+bool CB3DMeshFileLoader::readChunkANIM(CSkinnedMesh::SJoint *InJoint)
 {
 	s32 AnimFlags; //not stored\used
 	s32 AnimFrames;//not stored\used
@@ -767,7 +767,7 @@ bool CB3DMeshLoader::readChunkANIM(CSkinnedMesh::SJoint *InJoint)
 	return true;
 }
 
-bool CB3DMeshLoader::readChunkTEXS()
+bool CB3DMeshFileLoader::readChunkTEXS()
 {
 
 	bool Previous32BitTextureFlag = SceneManager->getVideoDriver()->getTextureCreationFlag(video::ETCF_ALWAYS_32_BIT);
@@ -805,7 +805,7 @@ bool CB3DMeshLoader::readChunkTEXS()
 	return true;
 }
 
-bool CB3DMeshLoader::readChunkBRUS()
+bool CB3DMeshFileLoader::readChunkBRUS()
 {
 
 	s32 n_texs;
@@ -957,7 +957,7 @@ bool CB3DMeshLoader::readChunkBRUS()
 	return true;
 }
 
-core::stringc CB3DMeshLoader::readString()
+core::stringc CB3DMeshFileLoader::readString()
 {
 	core::stringc newstring;
 	while (file->getPos() <= file->getSize())
@@ -970,7 +970,7 @@ core::stringc CB3DMeshLoader::readString()
 	return newstring;
 }
 
-core::stringc CB3DMeshLoader::stripPathFromString(core::stringc string, bool returnPath)
+core::stringc CB3DMeshFileLoader::stripPathFromString(core::stringc string, bool returnPath)
 {
 	s32 slashIndex=string.findLast('/'); // forward slash
 	s32 backSlash=string.findLast('\\'); // back slash
@@ -989,7 +989,7 @@ core::stringc CB3DMeshLoader::stripPathFromString(core::stringc string, bool ret
 		return string.subString(slashIndex+1, string.size() - (slashIndex+1));
 }
 
-void CB3DMeshLoader::readFloats(f32* vec, u32 count)
+void CB3DMeshFileLoader::readFloats(f32* vec, u32 count)
 {
 	file->read(vec, count*sizeof(f32));
 	#ifdef __BIG_ENDIAN__

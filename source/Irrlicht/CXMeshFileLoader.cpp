@@ -7,11 +7,6 @@
 
 #include "CXMeshFileLoader.h"
 #include "os.h"
-#include "SMeshBuffer.h"
-#include "SAnimatedMesh.h"
-#include "CXFileReader.h"
-#include "CXAnimationPlayer.h"
-#include "IMeshManipulator.h"
 
 namespace irr
 {
@@ -19,15 +14,10 @@ namespace scene
 {
 
 //! Constructor
-CXMeshFileLoader::CXMeshFileLoader(IMeshManipulator* manip,
-				   video::IVideoDriver* driver)
-: Manipulator(manip), Driver(driver)
+CXMeshFileLoader::CXMeshFileLoader(scene::ISceneManager* smgr)
+: SceneManager(smgr)
 {
-	if (Manipulator)
-		Manipulator->grab();
 
-	if (Driver)
-		Driver->grab();
 }
 
 
@@ -35,11 +25,7 @@ CXMeshFileLoader::CXMeshFileLoader(IMeshManipulator* manip,
 //! destructor
 CXMeshFileLoader::~CXMeshFileLoader()
 {
-	if (Manipulator)
-		Manipulator->drop();
 
-	if (Driver)
-		Driver->drop();
 }
 
 
@@ -57,26 +43,43 @@ bool CXMeshFileLoader::isALoadableFileExtension(const c8* filename)
 //! \return Pointer to the created mesh. Returns 0 if loading failed.
 //! If you no longer need the mesh, you should call IAnimatedMesh::drop().
 //! See IUnknown::drop() for more information.
-IAnimatedMesh* CXMeshFileLoader::createMesh(io::IReadFile* file)
+IAnimatedMesh* CXMeshFileLoader::createMesh(irr::io::IReadFile* f)
 {
-	if (!file)
+
+	if (!f)
 		return 0;
 
-	IAnimatedMesh* mesh = 0;
-	CXFileReader *xreader = new CXFileReader(file);
+	file = f;
+	AnimatedMesh = new CSkinnedMesh();
 
-	if (xreader->errorHappened())
+	Buffers = &AnimatedMesh->getMeshBuffers();
+	AllJoints = &AnimatedMesh->getAllJoints();
+
+	if ( load() )
 	{
-		xreader->drop();
-		return 0;
+		AnimatedMesh->finalize();
+	}
+	else
+	{
+		AnimatedMesh->drop();
+		AnimatedMesh = 0;
 	}
 
-	mesh = new CXAnimationPlayer(xreader, Driver, Manipulator,
-		file->getFileName());
-
-	xreader->drop();
-	return mesh;
+	return AnimatedMesh;
 }
+
+
+bool CXMeshFileLoader::load()
+{
+
+
+
+
+}
+
+
+
+
 
 
 } // end namespace scene

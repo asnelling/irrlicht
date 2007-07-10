@@ -28,7 +28,7 @@
 
 #ifdef _IRR_COMPILE_WITH_MS3D_LOADER_
 #include "CMS3DMeshFileLoader.h"
-#endif 
+#endif
 
 #ifdef _IRR_COMPILE_WITH_3DS_LOADER_
 #include "C3DSMeshFileLoader.h"
@@ -72,10 +72,10 @@
 
 #ifdef _IRR_COMPILE_WITH_MD3_LOADER_
 #include "CMD3MeshFileLoader.h"
-#endif 
+#endif
 
 #ifdef _IRR_COMPILE_WITH_B3D_LOADER_
-#include "CB3DMeshLoader.h"
+#include "CB3DMeshFileLoader.h"
 #endif
 
 #include "CCubeSceneNode.h"
@@ -180,7 +180,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	MeshLoaderList.push_back(new C3DSMeshFileLoader(MeshManipulator,FileSystem, Driver));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_X_LOADER_
-	MeshLoaderList.push_back(new CXMeshFileLoader(MeshManipulator, Driver));
+	MeshLoaderList.push_back(new CXMeshFileLoader(this));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_OCT_LOADER_
 	MeshLoaderList.push_back(new COCTLoader(Driver));
@@ -210,7 +210,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	MeshLoaderList.push_back(new CMD3MeshFileLoader(FileSystem, Driver));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_B3D_LOADER_
-	MeshLoaderList.push_back(new CB3DMeshLoader(this));
+	MeshLoaderList.push_back(new CB3DMeshFileLoader(this));
 	#endif
 
 	// factories

@@ -189,8 +189,8 @@
 		<Unit filename="CAttributeImpl.h" />
 		<Unit filename="CAttributes.cpp" />
 		<Unit filename="CAttributes.h" />
-		<Unit filename="CB3DMeshLoader.cpp" />
-		<Unit filename="CB3DMeshLoader.h" />
+		<Unit filename="CB3DMeshFileLoader.cpp" />
+		<Unit filename="CB3DMeshFileLoader.h" />
 		<Unit filename="CBSPMeshFileLoader.cpp" />
 		<Unit filename="CBSPMeshFileLoader.h" />
 		<Unit filename="CBillboardSceneNode.cpp" />

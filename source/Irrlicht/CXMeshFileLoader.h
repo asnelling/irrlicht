@@ -9,9 +9,10 @@
 #include "IFileSystem.h"
 #include "IVideoDriver.h"
 #include "irrString.h"
-#include "SMesh.h"
-#include "CXFileReader.h"
-#include "SMeshBuffer.h"
+
+#include "CSkinnedMesh.h"
+
+
 
 namespace irr
 {
@@ -25,7 +26,7 @@ class CXMeshFileLoader : public IMeshLoader
 public:
 
 	//! Constructor
-	CXMeshFileLoader(IMeshManipulator* manip, video::IVideoDriver* driver);
+	CXMeshFileLoader(scene::ISceneManager* smgr);
 
 	//! destructor
 	virtual ~CXMeshFileLoader();
@@ -42,8 +43,19 @@ public:
 
 private:
 
-	IMeshManipulator* Manipulator;
+	bool load();
+
 	video::IVideoDriver* Driver;
+
+
+	core::array<CSkinnedMesh::SSkinMeshBuffer*> *Buffers;
+	core::array<CSkinnedMesh::SJoint*> *AllJoints;
+
+
+	ISceneManager*	SceneManager;
+	CSkinnedMesh*	AnimatedMesh;
+	io::IReadFile*	file;
+
 };
 
 } // end namespace scene
