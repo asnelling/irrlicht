@@ -41,17 +41,10 @@ CSkinnedMesh::~CSkinnedMesh()
 	s32 n;
 
 	for (n=AllJoints.size()-1;n>=0;--n)
-	{
-		//delete AllJoints[n];
-		AllJoints.erase(n);
-	}
+		delete AllJoints[n];
 
 	for (n=LocalBuffers.size()-1;n>=0;--n)
-	{
-		//delete Buffers[n];
-		LocalBuffers.erase(n);
-	}
-
+		LocalBuffers[n]->drop();
 }
 
 
@@ -826,7 +819,7 @@ void CSkinnedMesh::finalize()
 	}
 
 	//add 5% padding to bounding box
-	core::vector3df Padding=(BoundingBox.MaxEdge-BoundingBox.MinEdge)*0.05;
+	core::vector3df Padding=BoundingBox.getExtent()*0.05f;
 	BoundingBox.MinEdge-=Padding;
 	BoundingBox.MaxEdge+=Padding;
 

@@ -719,19 +719,19 @@ bool CB3DMeshLoader::readChunkKEYS(CSkinnedMesh::SJoint *InJoint)
 		if (flags & 1)
 		{
 			CSkinnedMesh::SPositionKey *Key=AnimatedMesh->createPositionKey(InJoint);
-			Key->frame = frame;
+			Key->frame = (f32)frame;
 			Key->position = position;
 		}
 		if (flags & 2)
 		{
 			CSkinnedMesh::SScaleKey *Key=AnimatedMesh->createScaleKey(InJoint);
-			Key->frame = frame;
+			Key->frame = (f32)frame;
 			Key->scale=scale;
 		}
 		if (flags & 4)
 		{
 			CSkinnedMesh::SRotationKey *Key=AnimatedMesh->createRotationKey(InJoint);
-			Key->frame = frame;
+			Key->frame = (f32)frame;
 			Key->rotation = rotation;
 		}
 	}
