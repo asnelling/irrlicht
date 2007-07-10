@@ -333,6 +333,11 @@ bool CMS3DMeshFileLoader::load(io::IReadFile* file)
 #endif
 	pPtr += sizeof(f32) * 2; // fps and current time
 
+
+	if (framesPerSecond==0) framesPerSecond=1;
+
+
+
 	s32 frameCount = *(s32*)pPtr;
 #ifdef __BIG_ENDIAN__
 	frameCount = os::Byteswap::byteswap(frameCount);

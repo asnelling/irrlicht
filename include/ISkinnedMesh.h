@@ -305,7 +305,7 @@ namespace scene
 			f32 strength;
 
 		private:
-			//! Internal functions used by CSkinnedMesh
+			//! Internal members used by CSkinnedMesh
 			friend class CSkinnedMesh;
 			bool *Moved;
 			core::vector3df StaticPos;
@@ -335,10 +335,10 @@ namespace scene
 		//! Joints
 	  	struct SJoint
 		{
-			SJoint() :  
-				Name(""), LocalMatrix(), 
+			SJoint() :
+				Name(""), LocalMatrix(),
 				Children(), PositionKeys(), ScaleKeys(), RotationKeys(), Weights(),
-				_UseAnimationFrom(0), _LocalAnimatedMatrix_Animated(false)
+				UseAnimationFrom(0), LocalAnimatedMatrix_Animated(false)
 			{
 			}
 
@@ -363,16 +363,20 @@ namespace scene
 			//! Skin weights
 			core::array<SWeight> Weights;
 
-			//! Internal, please do not use
-			core::matrix4 _GlobalMatrix;
-			core::matrix4 _GlobalInversedMatrix;
-			core::vector3df _Animatedposition;
-			core::vector3df _Animatedscale;
-			core::quaternion _Animatedrotation;
-			core::matrix4 _GlobalAnimatedMatrix;
-			core::matrix4 _LocalAnimatedMatrix;
-			SJoint *_UseAnimationFrom;
-			bool _LocalAnimatedMatrix_Animated;
+			//! Unnecessary for loaders, will be overwritten on finalize
+			core::matrix4 GlobalMatrix;
+			core::matrix4 GlobalAnimatedMatrix;
+			core::matrix4 LocalAnimatedMatrix;
+			core::vector3df Animatedposition;
+			core::vector3df Animatedscale;
+			core::quaternion Animatedrotation;
+
+		private:
+			//! Internal members used by CSkinnedMesh
+			friend class CSkinnedMesh;
+			core::matrix4 GlobalInversedMatrix;
+			SJoint *UseAnimationFrom;
+			bool LocalAnimatedMatrix_Animated;
 		};
 
 

@@ -10,7 +10,7 @@
 #include "IAnimatedMeshSceneNode.h"
 #include "os.h"
 
-
+#include <iostream>
 
 
 namespace irr
@@ -38,13 +38,14 @@ CSkinnedMesh::CSkinnedMesh()
 //! destructor
 CSkinnedMesh::~CSkinnedMesh()
 {
-	s32 n;
+	u32 n;
 
-	for (n=AllJoints.size()-1;n>=0;--n)
-		delete AllJoints[n];
+	for (n=0;n<AllJoints.size();++n)
+		if (AllJoints[n]) delete AllJoints[n];
 
-	for (n=LocalBuffers.size()-1;n>=0;--n)
-		LocalBuffers[n]->drop();
+	for (n=0;n<LocalBuffers.size();++n)
+		if (LocalBuffers[n]) LocalBuffers[n]->drop();
+
 }
 
 
@@ -97,9 +98,9 @@ void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
 		//position/scale/rotation is probably the best method has animation data less likely to be blended over
 		//top of user data, it's the under way around
 
-		core::vector3df oldPosition = Joint->_Animatedposition;
-		core::vector3df oldScale = Joint->_Animatedscale;
-		core::quaternion oldRotation = Joint->_Animatedrotation;
+		core::vector3df oldPosition = Joint->Animatedposition;
+		core::vector3df oldScale = Joint->Animatedscale;
+		core::quaternion oldRotation = Joint->Animatedrotation;
 
 		core::vector3df position =oldPosition;
 		core::vector3df scale =oldScale;
@@ -118,9 +119,9 @@ void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
 		if (blend==1.0f)
 		{
 			//No blending need:
-			Joint->_Animatedposition = position;
-			Joint->_Animatedscale = scale;
-			Joint->_Animatedrotation = rotation;
+			Joint->Animatedposition = position;
+			Joint->Animatedscale = scale;
+			Joint->Animatedrotation = rotation;
 		}
 		else
 		{
@@ -128,9 +129,9 @@ void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
 
 			f32 invBlend=1-blend;
 
-			Joint->_Animatedposition = (position * blend) + (oldPosition* invBlend );
-			Joint->_Animatedscale = (scale * blend) + (oldScale* invBlend );
-			Joint->_Animatedrotation.slerp(oldRotation, rotation, blend);
+			Joint->Animatedposition = (position * blend) + (oldPosition* invBlend );
+			Joint->Animatedscale = (scale * blend) + (oldScale* invBlend );
+			Joint->Animatedrotation.slerp(oldRotation, rotation, blend);
 
 		}
 
@@ -156,26 +157,26 @@ void CSkinnedMesh::buildAll_LocalAnimatedMatrices()
 
 		//Could be faster:
 
-		if (Joint->_UseAnimationFrom &&
-			(Joint->_UseAnimationFrom->PositionKeys.size() ||
-			 Joint->_UseAnimationFrom->ScaleKeys.size() ||
-			 Joint->_UseAnimationFrom->RotationKeys.size() ))
+		if (Joint->UseAnimationFrom &&
+			(Joint->UseAnimationFrom->PositionKeys.size() ||
+			 Joint->UseAnimationFrom->ScaleKeys.size() ||
+			 Joint->UseAnimationFrom->RotationKeys.size() ))
 		{
-			Joint->_LocalAnimatedMatrix.makeIdentity();
-			Joint->_LocalAnimatedMatrix.setTranslation(Joint->_Animatedposition);
-			Joint->_LocalAnimatedMatrix*=Joint->_Animatedrotation.getMatrix();
+			Joint->LocalAnimatedMatrix.makeIdentity();
+			Joint->LocalAnimatedMatrix.setTranslation(Joint->Animatedposition);
+			Joint->LocalAnimatedMatrix*=Joint->Animatedrotation.getMatrix();
 
 			if (Joint->ScaleKeys.size())
 			{
 				//Joint->_LocalAnimatedMatrix.setScale(Joint->_Animatedscale);
 				core::matrix4 scaleMatrix;
-				scaleMatrix.setScale(Joint->_Animatedscale);
-				Joint->_LocalAnimatedMatrix *= scaleMatrix;
+				scaleMatrix.setScale(Joint->Animatedscale);
+				Joint->LocalAnimatedMatrix *= scaleMatrix;
 			}
 		}
 		else
 		{
-			Joint->_LocalAnimatedMatrix=Joint->LocalMatrix;
+			Joint->LocalAnimatedMatrix=Joint->LocalMatrix;
 		}
 
 	}
@@ -194,9 +195,9 @@ void CSkinnedMesh::buildAll_GlobalAnimatedMatrices(SJoint *Joint, SJoint *Parent
 	{
 		// Find global matrix...
 		if (!ParentJoint)
-			Joint->_GlobalAnimatedMatrix = Joint->_LocalAnimatedMatrix;
+			Joint->GlobalAnimatedMatrix = Joint->LocalAnimatedMatrix;
 		else
-			Joint->_GlobalAnimatedMatrix = ParentJoint->_GlobalAnimatedMatrix * Joint->_LocalAnimatedMatrix;
+			Joint->GlobalAnimatedMatrix = ParentJoint->GlobalAnimatedMatrix * Joint->LocalAnimatedMatrix;
 	}
 
 	for (u32 j=0; j<Joint->Children.size(); ++j)
@@ -215,12 +216,12 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 	s32 foundRotationIndex = -1;
 
 
-	if (Joint->_UseAnimationFrom)
+	if (Joint->UseAnimationFrom)
 	{
 
-		core::array<SPositionKey> &PositionKeys=Joint->_UseAnimationFrom->PositionKeys;
-		core::array<SScaleKey> &ScaleKeys=Joint->_UseAnimationFrom->ScaleKeys;
-		core::array<SRotationKey> &RotationKeys=Joint->_UseAnimationFrom->RotationKeys;
+		core::array<SPositionKey> &PositionKeys=Joint->UseAnimationFrom->PositionKeys;
+		core::array<SScaleKey> &ScaleKeys=Joint->UseAnimationFrom->ScaleKeys;
+		core::array<SRotationKey> &RotationKeys=Joint->UseAnimationFrom->RotationKeys;
 
 
 
@@ -445,7 +446,7 @@ void CSkinnedMesh::SkinJoint(SJoint *Joint, SJoint *ParentJoint)
 	{
 		//Find this joints pull on vertices...
 		core::matrix4 JointVertexPull(core::matrix4::EM4CONST_NOTHING);
-		JointVertexPull.setbyproduct(Joint->_GlobalAnimatedMatrix, Joint->_GlobalInversedMatrix);
+		JointVertexPull.setbyproduct(Joint->GlobalAnimatedMatrix, Joint->GlobalInversedMatrix);
 
 		core::vector3df ThisVertexMove, ThisNormalMove;
 
@@ -603,7 +604,7 @@ bool CSkinnedMesh::useAnimationFrom(ISkinnedMesh *mesh)
 	for(u32 i=0;i<AllJoints.size();++i)
 	{
 		SJoint *joint=AllJoints[i];
-		joint->_UseAnimationFrom=0;
+		joint->UseAnimationFrom=0;
 
 		if (joint->Name=="")
 			unmatched=true;
@@ -614,10 +615,10 @@ bool CSkinnedMesh::useAnimationFrom(ISkinnedMesh *mesh)
 				SJoint *otherJoint=mesh->getAllJoints()[j];
 				if (joint->Name==otherJoint->Name)
 				{
-					joint->_UseAnimationFrom=otherJoint;
+					joint->UseAnimationFrom=otherJoint;
 				}
 			}
-			if (!joint->_UseAnimationFrom) unmatched=true;
+			if (!joint->UseAnimationFrom) unmatched=true;
 		}
 	}
 
@@ -670,15 +671,15 @@ void CSkinnedMesh::CalculateGlobalMatrixes(SJoint *Joint,SJoint *ParentJoint)
 	}
 
 	if (!ParentJoint)
-		Joint->_GlobalMatrix = Joint->LocalMatrix;
+		Joint->GlobalMatrix = Joint->LocalMatrix;
 	else
-		Joint->_GlobalMatrix = ParentJoint->_GlobalMatrix * Joint->LocalMatrix;
+		Joint->GlobalMatrix = ParentJoint->GlobalMatrix * Joint->LocalMatrix;
 
-	Joint->_LocalAnimatedMatrix=Joint->LocalMatrix;
-	Joint->_GlobalAnimatedMatrix=Joint->_GlobalMatrix;
+	Joint->LocalAnimatedMatrix=Joint->LocalMatrix;
+	Joint->GlobalAnimatedMatrix=Joint->GlobalMatrix;
 
-	Joint->_GlobalInversedMatrix = Joint->_GlobalMatrix;
-	Joint->_GlobalInversedMatrix.makeInverse(); // slow
+	Joint->GlobalInversedMatrix = Joint->GlobalMatrix;
+	Joint->GlobalInversedMatrix.makeInverse(); // slow
 
 
 	for (u32 j=0; j<Joint->Children.size(); ++j)
@@ -693,11 +694,11 @@ void CSkinnedMesh::checkForAnimation()
 	HasAnimation = false;
 	for(i=0;i<AllJoints.size();++i)
 	{
-		if (AllJoints[i]->_UseAnimationFrom)
+		if (AllJoints[i]->UseAnimationFrom)
 		{
-			if (AllJoints[i]->_UseAnimationFrom->PositionKeys.size() ||
-				AllJoints[i]->_UseAnimationFrom->ScaleKeys.size() ||
-				AllJoints[i]->_UseAnimationFrom->RotationKeys.size() )
+			if (AllJoints[i]->UseAnimationFrom->PositionKeys.size() ||
+				AllJoints[i]->UseAnimationFrom->ScaleKeys.size() ||
+				AllJoints[i]->UseAnimationFrom->RotationKeys.size() )
 			{
 				HasAnimation = true;
 			}
@@ -711,19 +712,19 @@ void CSkinnedMesh::checkForAnimation()
 		AnimationFrames=0;
 		for(i=0;i<AllJoints.size();++i)
 		{
-			if (AllJoints[i]->_UseAnimationFrom)
+			if (AllJoints[i]->UseAnimationFrom)
 			{
-				if (AllJoints[i]->_UseAnimationFrom->PositionKeys.size())
-					if (AllJoints[i]->_UseAnimationFrom->PositionKeys.getLast().frame > AnimationFrames)
-						AnimationFrames=AllJoints[i]->_UseAnimationFrom->PositionKeys.getLast().frame;
+				if (AllJoints[i]->UseAnimationFrom->PositionKeys.size())
+					if (AllJoints[i]->UseAnimationFrom->PositionKeys.getLast().frame > AnimationFrames)
+						AnimationFrames=AllJoints[i]->UseAnimationFrom->PositionKeys.getLast().frame;
 
-				if (AllJoints[i]->_UseAnimationFrom->ScaleKeys.size())
-					if (AllJoints[i]->_UseAnimationFrom->ScaleKeys.getLast().frame > AnimationFrames)
-						AnimationFrames=AllJoints[i]->_UseAnimationFrom->ScaleKeys.getLast().frame;
+				if (AllJoints[i]->UseAnimationFrom->ScaleKeys.size())
+					if (AllJoints[i]->UseAnimationFrom->ScaleKeys.getLast().frame > AnimationFrames)
+						AnimationFrames=AllJoints[i]->UseAnimationFrom->ScaleKeys.getLast().frame;
 
-				if (AllJoints[i]->_UseAnimationFrom->RotationKeys.size())
-					if (AllJoints[i]->_UseAnimationFrom->RotationKeys.getLast().frame > AnimationFrames)
-						AnimationFrames=AllJoints[i]->_UseAnimationFrom->RotationKeys.getLast().frame;
+				if (AllJoints[i]->UseAnimationFrom->RotationKeys.size())
+					if (AllJoints[i]->UseAnimationFrom->RotationKeys.getLast().frame > AnimationFrames)
+						AnimationFrames=AllJoints[i]->UseAnimationFrom->RotationKeys.getLast().frame;
 			}
 		}
 	}
@@ -853,6 +854,14 @@ void CSkinnedMesh::finalize()
 			AllJoints=RootJoints;
 		}
 	}
+
+	for(i=0; i < AllJoints.size(); ++i)
+	{
+		AllJoints[i]->UseAnimationFrom=AllJoints[i];
+	}
+
+
+
 
 	//Set array sizes...
 
@@ -989,10 +998,6 @@ CSkinnedMesh::SJoint *CSkinnedMesh::createJoint(SJoint *parent)
 		parent->Children.push_back(joint);
 	}
 
-	joint->_UseAnimationFrom=joint;
-
-
-
 	return joint;
 }
 
@@ -1109,8 +1114,8 @@ void CSkinnedMesh::recoverJointsFromMesh(core::array<IBoneSceneNode*> &JointChil
 	{
 		IBoneSceneNode* node=JointChildSceneNodes[i];
 		SJoint *joint=AllJoints[i];
-		node->setPosition( joint->_LocalAnimatedMatrix.getTranslation() );
-		node->setRotation( joint->_LocalAnimatedMatrix.getRotationDegrees() );
+		node->setPosition( joint->LocalAnimatedMatrix.getTranslation() );
+		node->setRotation( joint->LocalAnimatedMatrix.getRotationDegrees() );
 		//node->setScale( B3dNode->LocalAnimatedMatrix.getScale() );
 
 		//Note: This updateAbsolutePosition will not work well if joints are not nested like b3d
@@ -1124,8 +1129,8 @@ void CSkinnedMesh::tranferJointsToMesh(core::array<IBoneSceneNode*> &JointChildS
 	{
 		IBoneSceneNode* node=JointChildSceneNodes[i];
 		SJoint *joint=AllJoints[i];
-		joint->_LocalAnimatedMatrix.setTranslation( node->getPosition() );
-		joint->_LocalAnimatedMatrix.setRotationDegrees( node->getRotation() );
+		joint->LocalAnimatedMatrix.setTranslation( node->getPosition() );
+		joint->LocalAnimatedMatrix.setRotationDegrees( node->getRotation() );
 		//B3dNode->LocalAnimatedMatrix.setScale( node->getScale() );
 	}
 	//Remove cache, temp...

@@ -217,17 +217,22 @@ bool CB3DMeshLoader::readChunkNODE(CSkinnedMesh::SJoint *InJoint)
 	CSkinnedMesh::SJoint *Joint = AnimatedMesh->createJoint(InJoint);
 
 	Joint->Name = JointName;
-	Joint->_Animatedposition = core::vector3df(position[0],position[1],position[2]) ;
-	Joint->_Animatedscale = core::vector3df(scale[0],scale[1],scale[2]);
-	Joint->_Animatedrotation = core::quaternion(rotation[1], rotation[2], rotation[3], rotation[0]);
+	Joint->Animatedposition = core::vector3df(position[0],position[1],position[2]) ;
+	Joint->Animatedscale = core::vector3df(scale[0],scale[1],scale[2]);
+	Joint->Animatedrotation = core::quaternion(rotation[1], rotation[2], rotation[3], rotation[0]);
 
 	//Build LocalMatrix:
 
-	irr::core::matrix4 positionMatrix; positionMatrix.setTranslation( Joint->_Animatedposition );
-	irr::core::matrix4 scaleMatrix; scaleMatrix.setScale( Joint->_Animatedscale );
-	irr::core::matrix4 rotationMatrix = Joint->_Animatedrotation.getMatrix();
+	irr::core::matrix4 positionMatrix; positionMatrix.setTranslation( Joint->Animatedposition );
+	irr::core::matrix4 scaleMatrix; scaleMatrix.setScale( Joint->Animatedscale );
+	irr::core::matrix4 rotationMatrix = Joint->Animatedrotation.getMatrix();
 
 	Joint->LocalMatrix = positionMatrix * rotationMatrix * scaleMatrix;
+
+	if (InJoint)
+		Joint->GlobalMatrix = InJoint->GlobalMatrix * Joint->LocalMatrix;
+	else
+		Joint->GlobalMatrix = Joint->LocalMatrix;
 
 	while(B3dStack.getLast().startposition + B3dStack.getLast().length > file->getPos()) // this chunk repeats
 	{
@@ -369,7 +374,7 @@ bool CB3DMeshLoader::readChunkMESH(CSkinnedMesh::SJoint *InJoint)
 				}
 			}
 
-			(*Buffers).push_back(MeshBuffer);
+
 
 		}
 
@@ -518,7 +523,7 @@ bool CB3DMeshLoader::readChunkVRTS(CSkinnedMesh::SJoint *InJoint, CSkinnedMesh::
 		core::matrix4 VertexMatrix;
 		VertexMatrix.setTranslation(Vertex->Pos);
 
-		VertexMatrix = InJoint->_GlobalMatrix * VertexMatrix;
+		VertexMatrix = InJoint->GlobalMatrix * VertexMatrix;
 		Vertex->Pos = VertexMatrix.getTranslation();
 
 		//Add it...
