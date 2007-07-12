@@ -199,7 +199,7 @@ namespace scene
 
 		// returns the absolute transformation for a special MD3 Tag if the mesh is a md3 mesh,
 		// or the absolutetransformation if it's a normal scenenode
-		virtual const SMD3QuaterionTag& getAbsoluteTransformation( const core::stringc & tagname) = 0;
+		virtual const SMD3QuaterionTag& getMD3TagTransformation( const core::stringc & tagname) = 0;
 
 		//! Set the joint update mode (0-unused, 1-get joints only, 2-set joints only, 3-move and set)
 		virtual void setJointMode(s32 mode)=0;

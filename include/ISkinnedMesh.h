@@ -191,6 +191,7 @@ namespace scene
 							for (u32 i=1; i<Vertices_Standard.size(); ++i)
 								BoundingBox.addInternalPoint(Vertices_Standard[i].Pos);
 						}
+						break;
 					}
 					case video::EVT_2TCOORDS:
 					{
@@ -202,6 +203,7 @@ namespace scene
 							for (u32 i=1; i<Vertices_2TCoords.size(); ++i)
 								BoundingBox.addInternalPoint(Vertices_2TCoords[i].Pos);
 						}
+						break;
 					}
 					case video::EVT_TANGENTS:
 					{
@@ -213,6 +215,7 @@ namespace scene
 							for (u32 i=1; i<Vertices_Tangents.size(); ++i)
 								BoundingBox.addInternalPoint(Vertices_Tangents[i].Pos);
 						}
+						break;
 					}
 				}
 			}
