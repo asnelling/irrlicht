@@ -891,7 +891,6 @@ void CSkinnedMesh::finalize()
 			core::array<SRotationKey> &RotationKeys = AllJoints[i]->RotationKeys;
 
 
-
 			if (PositionKeys.size()>2)
 				for(j=0;j<PositionKeys.size()-2;++j)
 				{
@@ -902,54 +901,119 @@ void CSkinnedMesh::finalize()
 					}
 				}
 
-		if (PositionKeys.size()>1)
-			for(j=0;j<PositionKeys.size()-1;++j)
-			{
-				if (PositionKeys[j].frame >= PositionKeys[j+1].frame) //bad frame, unneed and may cause problems
+			if (PositionKeys.size()>1)
+				for(j=0;j<PositionKeys.size()-1;++j)
 				{
-					PositionKeys.erase(j+1);
-					j--;
+					if (PositionKeys[j].frame >= PositionKeys[j+1].frame) //bad frame, unneed and may cause problems
+					{
+						PositionKeys.erase(j+1);
+						j--;
+					}
+				}
+
+			if (ScaleKeys.size()>2)
+				for(j=0;j<ScaleKeys.size()-2;++j)
+				{
+					if (ScaleKeys[j].scale == ScaleKeys[j+1].scale && ScaleKeys[j+1].scale == ScaleKeys[j+2].scale)
+					{
+						ScaleKeys.erase(j+1); //the middle key is unneeded
+						j--;
+					}
+				}
+
+			if (ScaleKeys.size()>1)
+					for(j=0;j<ScaleKeys.size()-1;++j)
+					{
+						if (ScaleKeys[j].frame >= ScaleKeys[j+1].frame) //bad frame, unneed and may cause problems
+						{
+							ScaleKeys.erase(j+1);
+							j--;
+						}
+					}
+
+			if (RotationKeys.size()>2)
+				for(j=0;j<RotationKeys.size()-2;++j)
+				{
+					if (RotationKeys[j].rotation == RotationKeys[j+1].rotation && RotationKeys[j+1].rotation == RotationKeys[j+2].rotation)
+					{
+						RotationKeys.erase(j+1); //the middle key is unneeded
+						j--;
+					}
+				}
+
+			if (RotationKeys.size()>1)
+				for(j=0;j<RotationKeys.size()-1;++j)
+				{
+					if (RotationKeys[j].frame >= RotationKeys[j+1].frame) //bad frame, unneed and may cause problems
+					{
+						RotationKeys.erase(j+1);
+						j--;
+					}
+				}
+
+
+			//Fill empty keyframe areas
+			if (PositionKeys.size())
+			{
+				SPositionKey *Key;
+				Key=&PositionKeys[0];//getFirst
+				if (Key->frame!=0)
+				{
+					PositionKeys.push_front(*Key);
+					Key=&PositionKeys[0];//getFirst
+					Key->frame=0;
+				}
+
+				Key=&PositionKeys.getLast();
+				if (Key->frame!=AnimationFrames)
+				{
+					PositionKeys.push_back(*Key);
+					Key=&PositionKeys.getLast();
+					Key->frame=AnimationFrames;
 				}
 			}
 
-		if (ScaleKeys.size()>2)
-			for(j=0;j<ScaleKeys.size()-2;++j)
+			if (ScaleKeys.size())
 			{
-				if (ScaleKeys[j].scale == ScaleKeys[j+1].scale && ScaleKeys[j+1].scale == ScaleKeys[j+2].scale)
+				SScaleKey *Key;
+				Key=&ScaleKeys[0];//getFirst
+				if (Key->frame!=0)
 				{
-					ScaleKeys.erase(j+1); //the middle key is unneeded
-					j--;
+					ScaleKeys.push_front(*Key);
+					Key=&ScaleKeys[0];//getFirst
+					Key->frame=0;
 				}
-			}
-	if (ScaleKeys.size()>1)
-			for(j=0;j<ScaleKeys.size()-1;++j)
-			{
-				if (ScaleKeys[j].frame >= ScaleKeys[j+1].frame) //bad frame, unneed and may cause problems
+
+				Key=&ScaleKeys.getLast();
+				if (Key->frame!=AnimationFrames)
 				{
-					ScaleKeys.erase(j+1);
-					j--;
+					ScaleKeys.push_back(*Key);
+					Key=&ScaleKeys.getLast();
+					Key->frame=AnimationFrames;
 				}
 			}
 
-		if (RotationKeys.size()>2)
-			for(j=0;j<RotationKeys.size()-2;++j)
+			if (RotationKeys.size())
 			{
-				if (RotationKeys[j].rotation == RotationKeys[j+1].rotation && RotationKeys[j+1].rotation == RotationKeys[j+2].rotation)
+				SRotationKey *Key;
+				Key=&RotationKeys[0];//getFirst
+				if (Key->frame!=0)
 				{
-					RotationKeys.erase(j+1); //the middle key is unneeded
-					j--;
+					RotationKeys.push_front(*Key);
+					Key=&RotationKeys[0];//getFirst
+					Key->frame=0;
+				}
+
+				Key=&RotationKeys.getLast();
+				if (Key->frame!=AnimationFrames)
+				{
+					RotationKeys.push_back(*Key);
+					Key=&RotationKeys.getLast();
+					Key->frame=AnimationFrames;
 				}
 			}
 
-		if (RotationKeys.size()>1)
-			for(j=0;j<RotationKeys.size()-1;++j)
-			{
-				if (RotationKeys[j].frame >= RotationKeys[j+1].frame) //bad frame, unneed and may cause problems
-				{
-					RotationKeys.erase(j+1);
-					j--;
-				}
-			}
+
 
 		}
 
