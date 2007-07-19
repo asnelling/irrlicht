@@ -43,7 +43,7 @@ namespace scene
 	public:
 
 		IBoneSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 id=-1) :
-		  ISceneNode(parent, mgr, id) { }
+		  ISceneNode(parent, mgr, id),positionHint(-1),scaleHint(-1),rotationHint(-1) { }
 
 		//! Returns the name of the bone
 		virtual const c8* getBoneName() const = 0;
@@ -67,6 +67,19 @@ namespace scene
 
 		//! Does nothing as bones are not visible
 		virtual void render() { };
+
+
+		virtual void setAbsoluteTransformation(core::matrix4 transformation)
+		{
+			AbsoluteTransformation=transformation;
+		}
+
+		s32 positionHint;
+		s32 scaleHint;
+		s32 rotationHint;
+
+
+
 
 	};
 

@@ -106,15 +106,10 @@ void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
 		core::vector3df scale =oldScale;
 		core::quaternion rotation =oldRotation;
 
-		//Should be from IJointSceneNode
-		s32 positionHint, scaleHint, rotationHint;
-		positionHint=scaleHint=rotationHint=-1; //Todo: supply function with real hints
-
-
 		getFrameData(frame, Joint,
-					position, positionHint,
-					scale, scaleHint,
-					rotation, rotationHint);
+					position, Joint->positionHint,
+					scale, Joint->scaleHint,
+					rotation, Joint->rotationHint);
 
 		if (blend==1.0f)
 		{
@@ -230,7 +225,7 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 			foundPositionIndex = -1;
 
 			//Test the Hints...
-			if (positionHint>=0 && positionHint < (s32)PositionKeys.size())
+			if (positionHint>=0 && positionHint < (s32)PositionKeys.size()-1  )
 			{
 				//check this hint
 				if (PositionKeys[positionHint].frame>=frame &&
@@ -286,7 +281,7 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 			foundScaleIndex = -1;
 
 			//Test the Hints...
-			if (scaleHint>=0 && scaleHint < (s32)ScaleKeys.size())
+			if (scaleHint>=0 && scaleHint < (s32)ScaleKeys.size()-1)
 			{
 				//check this hint
 				if (ScaleKeys[scaleHint].frame>=frame &&
@@ -342,7 +337,7 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 			foundRotationIndex = -1;
 
 			//Test the Hints...
-			if (rotationHint>=0 && rotationHint < (s32)RotationKeys.size())
+			if (rotationHint>=0 && rotationHint < (s32)RotationKeys.size()-1)
 			{
 				//check this hint
 				if (RotationKeys[rotationHint].frame>=frame &&
@@ -1182,6 +1177,13 @@ void CSkinnedMesh::recoverJointsFromMesh(core::array<IBoneSceneNode*> &JointChil
 		node->setRotation( joint->LocalAnimatedMatrix.getRotationDegrees() );
 		//node->setScale( B3dNode->LocalAnimatedMatrix.getScale() );
 
+		node->positionHint=joint->positionHint;
+		node->scaleHint=joint->scaleHint;
+		node->rotationHint=joint->rotationHint;
+
+		//node->setAbsoluteTransformation(joint->GlobalMatrix); //not going to work
+
+
 		//Note: This updateAbsolutePosition will not work well if joints are not nested like b3d
 		//node->updateAbsolutePosition();
 	}
@@ -1196,6 +1198,12 @@ void CSkinnedMesh::tranferJointsToMesh(core::array<IBoneSceneNode*> &JointChildS
 		joint->LocalAnimatedMatrix.setTranslation( node->getPosition() );
 		joint->LocalAnimatedMatrix.setRotationDegrees( node->getRotation() );
 		//B3dNode->LocalAnimatedMatrix.setScale( node->getScale() );
+
+		joint->positionHint=node->positionHint;
+		joint->scaleHint=node->scaleHint;
+		joint->rotationHint=node->rotationHint;
+
+
 	}
 	//Remove cache, temp...
 	lastAnimatedFrame=-1;

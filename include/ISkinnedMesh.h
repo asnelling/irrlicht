@@ -341,7 +341,7 @@ namespace scene
 			SJoint() :
 				Name(""), LocalMatrix(),
 				Children(), PositionKeys(), ScaleKeys(), RotationKeys(), Weights(),
-				UseAnimationFrom(0), LocalAnimatedMatrix_Animated(false)
+				UseAnimationFrom(0), LocalAnimatedMatrix_Animated(false),positionHint(-1),scaleHint(-1),rotationHint(-1)
 			{
 			}
 
@@ -380,6 +380,11 @@ namespace scene
 			core::matrix4 GlobalInversedMatrix;
 			SJoint *UseAnimationFrom;
 			bool LocalAnimatedMatrix_Animated;
+
+			s32 positionHint;
+			s32 scaleHint;
+			s32 rotationHint;
+
 		};
 
 

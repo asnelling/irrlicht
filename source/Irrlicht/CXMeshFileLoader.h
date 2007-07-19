@@ -6,7 +6,8 @@
 #define __C_X_MESH_FILE_LOADER_H_INCLUDED__
 
 #include "IMeshLoader.h"
-#include "IFileSystem.h"
+#include "IReadFile.h"
+
 #include "IVideoDriver.h"
 #include "irrString.h"
 
@@ -45,16 +46,107 @@ private:
 
 	bool load();
 
-	video::IVideoDriver* Driver;
+	bool readFileIntoMemory();
 
+	bool parseFile();
+
+
+	bool parseDataObject();
+
+	bool parseDataObjectTemplate();
+
+	bool parseDataObjectFrame(CSkinnedMesh::SJoint& joint);
+
+	bool parseDataObjectTransformationMatrix(core::matrix4 &mat);
+
+
+	bool parseUnknownDataObject();
+
+
+
+	//! places pointer to next begin of a token, and ignores comments
+	void findNextNoneWhiteSpace();
+
+	//! places pointer to next begin of a token, which must be a number,
+	// and ignores comments
+	void findNextNoneWhiteSpaceNumber();
+
+	//! returns next parseable token. Returns empty string if no token there
+	core::stringc getNextToken();
+
+	//! reads header of dataobject including the opening brace.
+	//! returns false if error happened, and writes name of object
+	//! if there is one
+	bool readHeadOfDataObject(core::stringc* outname=0);
+
+	//! checks for two following semicolons, returns false if they are not there
+	bool checkForTwoFollowingSemicolons();
+
+	//! reads a x file style string
+	bool getNextTokenAsString(core::stringc& out);
+
+
+	void readUntilEndOfLine();
+
+
+	u16 readBinWord();
+	u32 readBinDWord();
+	s32 readInt();
+	f32 readFloat();
+	bool readVector2(core::vector2df& vec);
+	bool readVector3(core::vector3df& vec);
+	bool readRGB(video::SColorf& color);
+	bool readRGBA(video::SColorf& color);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	video::IVideoDriver* Driver;
 
 	core::array<CSkinnedMesh::SSkinMeshBuffer*> *Buffers;
 	core::array<CSkinnedMesh::SJoint*> *AllJoints;
 
-
 	ISceneManager*	SceneManager;
 	CSkinnedMesh*	AnimatedMesh;
 	io::IReadFile*	file;
+
+
+
+
+
+	s32 MajorVersion;
+	s32 MinorVersion;
+	bool binary;
+	s32 binaryNumCount;
+
+	c8* Buffer;
+	s32 Size;
+	c8 FloatSize;
+	const c8* P;
+	c8* End;
+
+	bool ErrorHappened;
+
+
+
+	CSkinnedMesh::SJoint *m_pgCurFrame;
+
+
 
 };
 
