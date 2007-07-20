@@ -21,7 +21,7 @@ namespace scene
 
 //! constructor
 CSkinnedMesh::CSkinnedMesh()
-: HasAnimation(0),PreparedForSkinning(0), AnimationFrames(0), lastAnimatedFrame(0), lastSkinnedFrame(0), AnimateNormals(0),
+: HasAnimation(0),PreparedForSkinning(0), AnimationFrames(0), lastAnimatedFrame(0), lastSkinnedFrame(0), BoneControlUsed(0), AnimateNormals(0),
 	InterpolationMode(EIM_LINEAR), SkinningBuffers(0)
 {
 
@@ -79,13 +79,12 @@ IMesh* CSkinnedMesh::getMesh(s32 frame, s32 detailLevel, s32 startFrameLoop, s32
 //! blend: {0-old position, 1-New position}
 void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
 {
-	if ( !HasAnimation || lastAnimatedFrame==frame)
+	if ( !HasAnimation  || lastAnimatedFrame==frame)
 		return;
 
 	lastAnimatedFrame=frame;
 
 	if (blend<=0) return; //No need to animate
-
 
 	for (u32 i=0; i<AllJoints.size(); ++i)
 	{
@@ -94,10 +93,6 @@ void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
 
 		SJoint *Joint = AllJoints[i];
 
-		//hmmm, sure I blend the position/scale/rotation or matrixes...
-		//position/scale/rotation is probably the best method has animation data less likely to be blended over
-		//top of user data, it's the under way around
-
 		core::vector3df oldPosition = Joint->Animatedposition;
 		core::vector3df oldScale = Joint->Animatedscale;
 		core::quaternion oldRotation = Joint->Animatedrotation;
@@ -105,6 +100,13 @@ void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
 		core::vector3df position =oldPosition;
 		core::vector3df scale =oldScale;
 		core::quaternion rotation =oldRotation;
+
+		if (!BoneControlUsed)
+		{
+			Joint->positionHint=-1;
+			Joint->scaleHint=-1;
+			Joint->rotationHint=-1;
+		}
 
 		getFrameData(frame, Joint,
 					position, Joint->positionHint,
@@ -141,6 +143,9 @@ void CSkinnedMesh::animateMesh(f32 frame, f32 blend)
 		//-----------------
 
 	}
+
+	BoneControlUsed=false;
+
 
 }
 
@@ -225,20 +230,21 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 			foundPositionIndex = -1;
 
 			//Test the Hints...
-			if (positionHint>=0 && positionHint < (s32)PositionKeys.size()-1  )
+			if (positionHint>0 && positionHint < (s32)PositionKeys.size()  )
 			{
 				//check this hint
-				if (PositionKeys[positionHint].frame>=frame &&
-							(positionHint+1 >= (s32)PositionKeys.size()-1 || PositionKeys[positionHint+1].frame<frame))
+				if (PositionKeys[positionHint].frame>=frame && PositionKeys[positionHint-1].frame<frame )
 					foundPositionIndex=positionHint;
-
-				//check the next index
-				else if ( (positionHint+1 < (s32)PositionKeys.size()-1 && PositionKeys[positionHint+1].frame>=frame) &&
-							(positionHint+2 >=(s32)PositionKeys.size()-1 || PositionKeys[positionHint+2].frame<frame))
+				else if (positionHint+1 < (s32)PositionKeys.size())
+				{
+					//check the next index
+					if ( PositionKeys[positionHint+1].frame>=frame &&
+							PositionKeys[positionHint+0].frame<frame)
 					{
-						foundPositionIndex=positionHint+1;
 						positionHint++;
+						foundPositionIndex=positionHint;
 					}
+				}
 			}
 
 			//The hint test failed, do a full scan...
@@ -281,21 +287,23 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 			foundScaleIndex = -1;
 
 			//Test the Hints...
-			if (scaleHint>=0 && scaleHint < (s32)ScaleKeys.size()-1)
+			if (scaleHint>0 && scaleHint < (s32)ScaleKeys.size()  )
 			{
 				//check this hint
-				if (ScaleKeys[scaleHint].frame>=frame &&
-							(scaleHint+1 >= (s32)ScaleKeys.size()-1 || ScaleKeys[scaleHint+1].frame<frame))
+				if (ScaleKeys[scaleHint].frame>=frame && ScaleKeys[scaleHint-1].frame<frame )
 					foundScaleIndex=scaleHint;
-
-				//check the next index
-				else if ( (scaleHint+1 < (s32)ScaleKeys.size()-1 && ScaleKeys[scaleHint+1].frame>=frame) &&
-							(scaleHint+2 >=(s32)ScaleKeys.size()-1 || ScaleKeys[scaleHint+2].frame<frame))
+				else if (scaleHint+1 < (s32)ScaleKeys.size())
 				{
-					foundScaleIndex=scaleHint+1;
-					scaleHint++;
+					//check the next index
+					if ( ScaleKeys[scaleHint+1].frame>=frame &&
+							ScaleKeys[scaleHint+0].frame<frame)
+					{
+						scaleHint++;
+						foundScaleIndex=scaleHint;
+					}
 				}
 			}
+
 
 			//The hint test failed, do a full scan...
 			if (foundScaleIndex==-1)
@@ -337,21 +345,23 @@ void CSkinnedMesh::getFrameData(f32 frame, SJoint *Joint,
 			foundRotationIndex = -1;
 
 			//Test the Hints...
-			if (rotationHint>=0 && rotationHint < (s32)RotationKeys.size()-1)
+			if (rotationHint>0 && rotationHint < (s32)RotationKeys.size()  )
 			{
 				//check this hint
-				if (RotationKeys[rotationHint].frame>=frame &&
-							(rotationHint+1 >= (s32)RotationKeys.size()-1 || RotationKeys[rotationHint+1].frame<frame))
+				if (RotationKeys[rotationHint].frame>=frame && RotationKeys[rotationHint-1].frame<frame )
 					foundRotationIndex=rotationHint;
-
-				//check the next index
-				else if ( (rotationHint+1 < (s32)RotationKeys.size()-1 && RotationKeys[rotationHint+1].frame>=frame) &&
-							(rotationHint+2 >=(s32)RotationKeys.size()-1 || RotationKeys[rotationHint+2].frame<frame))
+				else if (rotationHint+1 < (s32)RotationKeys.size())
 				{
-					foundRotationIndex=rotationHint+1;
-					rotationHint++;
+					//check the next index
+					if ( RotationKeys[rotationHint+1].frame>=frame &&
+							RotationKeys[rotationHint+0].frame<frame)
+					{
+						rotationHint++;
+						foundRotationIndex=rotationHint;
+					}
 				}
 			}
+
 
 			//The hint test failed, do a full scan...
 			if (foundRotationIndex==-1)
@@ -771,6 +781,7 @@ void CSkinnedMesh::checkForAnimation()
 				Joint->Weights[j].Moved = &Vertices_Moved[buffer_id] [vertex_id];
 				Joint->Weights[j].StaticPos = LocalBuffers[buffer_id]->getVertex(vertex_id)->Pos;
 				Joint->Weights[j].StaticNormal = LocalBuffers[buffer_id]->getVertex(vertex_id)->Normal;
+
 
 				//Joint->Weights[j]._Pos=&Buffers[buffer_id]->getVertex(vertex_id)->Pos;
 			}
@@ -1208,6 +1219,9 @@ void CSkinnedMesh::tranferJointsToMesh(core::array<IBoneSceneNode*> &JointChildS
 	//Remove cache, temp...
 	lastAnimatedFrame=-1;
 	lastSkinnedFrame=-1;
+
+	BoneControlUsed=true;
+
 }
 
 void CSkinnedMesh::createJoints(core::array<IBoneSceneNode*> &JointChildSceneNodes,

@@ -155,6 +155,8 @@ private:
 
 		f32 lastAnimatedFrame;
 		f32 lastSkinnedFrame;
+		bool BoneControlUsed;
+
 
 		bool AnimateNormals;
 
