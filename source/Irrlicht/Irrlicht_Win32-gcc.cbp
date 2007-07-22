@@ -22,6 +22,7 @@
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
 		<Compiler>
+			<Add option="-fexpensive-optimizations" />
 			<Add option="-O3" />
 			<Add option="-D__GNUWIN32__ -W -DWIN32 -DNDEBUG -D_WINDOWS -D_MBCS -D_USRDLL -DIRRLICHT_EXPORTS" />
 			<Add directory="..\..\include" />

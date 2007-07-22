@@ -101,7 +101,6 @@ f32 CAnimatedMeshSceneNode::buildFrameNr(u32 timeMs)
 	if (Transiting!=0)
 	{
 		TransitingBlend=f32(timeMs-BeginFrameTime) * Transiting;
-
 		if (TransitingBlend>1)
 		{
 			Transiting=0;
@@ -109,38 +108,60 @@ f32 CAnimatedMeshSceneNode::buildFrameNr(u32 timeMs)
 		}
 	}
 
-
 	if (StartFrame==EndFrame) return StartFrame; //Support for non animated meshes
-
 	if (FramesPerSecond==0) return StartFrame;
+
 
 	if (Looping)
 	{
 		// play animation looped
 
-		const s32 lenInTime = s32( f32(EndFrame - StartFrame) / FramesPerSecond);
-
-		return StartFrame + ( (timeMs - BeginFrameTime) % lenInTime) *FramesPerSecond;
-
-		//const f32 deltaFrame = core::floor32 ( f32 ( timeMs - BeginFrameTime ) * FramesPerSecond );
-		//const s32 len= EndFrame - StartFrame + 1;
-		// play animation looped
-		//return StartFrame + ( deltaFrame % len );
-
+		if (FramesPerSecond>0) //forwards...
+		{
+			const s32 lenInTime = s32( f32(EndFrame - StartFrame) / FramesPerSecond);
+			return StartFrame + ( (timeMs - BeginFrameTime) % lenInTime) *FramesPerSecond;
+		}
+		else //backwards...
+		{
+			const s32 lenInTime = s32( f32(EndFrame - StartFrame) / -FramesPerSecond);
+			return EndFrame - ( (timeMs - BeginFrameTime) % lenInTime)*-FramesPerSecond;
+		}
 	}
 	else
 	{
-		const f32 deltaFrame = core::floor32 ( f32 ( timeMs - BeginFrameTime ) * FramesPerSecond );
-
 		// play animation non looped
-		f32 frame = StartFrame + deltaFrame;
 
-		if (frame > (f32)EndFrame)
+		f32 frame;
+
+		if (FramesPerSecond>0) //forwards...
 		{
-			frame = (f32)EndFrame;
-			if (LoopCallBack)
-				LoopCallBack->OnAnimationEnd(this);
+
+			const f32 deltaFrame = core::floor32 ( f32 ( timeMs - BeginFrameTime ) * FramesPerSecond );
+
+			frame = StartFrame + deltaFrame;
+
+			if (frame > (f32)EndFrame)
+			{
+				frame = (f32)EndFrame;
+				if (LoopCallBack)
+					LoopCallBack->OnAnimationEnd(this);
+			}
 		}
+		else //backwards... (untested)
+		{
+			const f32 deltaFrame = core::floor32 ( f32 ( timeMs - BeginFrameTime ) * -FramesPerSecond );
+
+			frame = EndFrame - deltaFrame;
+
+			if (frame < (f32)StartFrame)
+			{
+				frame = (f32)StartFrame;
+				if (LoopCallBack)
+					LoopCallBack->OnAnimationEnd(this);
+			}
+
+		}
+
 		return frame;
 	}
 }
@@ -925,6 +946,9 @@ void CAnimatedMeshSceneNode::animateJoints()
 
 }
 
+
+
+
 void CAnimatedMeshSceneNode::checkJoints()
 {
 	if (!Mesh || Mesh->getMeshType() != EAMT_SKINNED)
@@ -955,6 +979,7 @@ void CAnimatedMeshSceneNode::beginTransition()
 			for(n=PretransitingSave.size();n<JointChildSceneNodes.size();++n)
 				PretransitingSave.push_back(core::matrix4());
 		}
+
 
 		//Copy the position of joints
 		for (n=0;n<JointChildSceneNodes.size();++n)
