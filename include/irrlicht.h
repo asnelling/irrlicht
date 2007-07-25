@@ -43,7 +43,6 @@
 #include "IAnimatedMesh.h"
 #include "IAnimatedMeshMD2.h"
 #include "IAnimatedMeshMD3.h"
-#include "IAnimatedMeshMS3D.h"
 #include "IQ3LevelMesh.h"
 #include "IAnimatedMeshX.h"
 #include "IAnimatedMeshSceneNode.h"

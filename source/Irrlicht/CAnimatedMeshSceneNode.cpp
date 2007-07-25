@@ -8,7 +8,6 @@
 #include "S3DVertex.h"
 #include "os.h"
 #include "CShadowVolumeSceneNode.h"
-#include "IAnimatedMeshMS3D.h"
 #include "IAnimatedMeshMD3.h"
 #include "IAnimatedMeshX.h"
 #include "ISkinnedMesh.h"

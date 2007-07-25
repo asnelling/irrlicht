@@ -52,7 +52,7 @@
 		<Unit filename="..\..\include\ETerrainElements.h" />
 		<Unit filename="..\..\include\IAnimatedMesh.h" />
 		<Unit filename="..\..\include\IAnimatedMeshMD2.h" />
-		<Unit filename="..\..\include\IAnimatedMeshMS3D.h" />
+		<Unit filename="..\..\include\IAnimatedMeshMD3.h" />
 		<Unit filename="..\..\include\IAnimatedMeshSceneNode.h" />
 		<Unit filename="..\..\include\IAnimatedMeshX.h" />
 		<Unit filename="..\..\include\IAttributeExchangingObject.h" />
@@ -183,8 +183,6 @@
 		<Unit filename="CAnimatedMeshMD2.h" />
 		<Unit filename="CAnimatedMeshMD3.cpp" />
 		<Unit filename="CAnimatedMeshMD3.h" />
-		<Unit filename="CAnimatedMeshMS3D.cpp" />
-		<Unit filename="CAnimatedMeshMS3D.h" />
 		<Unit filename="CAnimatedMeshSceneNode.cpp" />
 		<Unit filename="CAnimatedMeshSceneNode.h" />
 		<Unit filename="CAttributeImpl.h" />

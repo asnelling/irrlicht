@@ -2,7 +2,7 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
-#include "IrrCompileConfig.h" 
+#include "IrrCompileConfig.h"
 #ifdef _IRR_COMPILE_WITH_BSP_LOADER_
 
 #include "CQ3LevelMesh.h"
@@ -27,7 +27,7 @@ CQ3LevelMesh::CQ3LevelMesh(io::IFileSystem* fs, video::IVideoDriver* driver, sce
 {
 	#ifdef _DEBUG
 	IUnknown::setDebugName("CQ3LevelMesh");
-	#endif	
+	#endif
 
 	s32 i;
 	for ( i = 0; i!= quake3::E_Q3_MESH_SIZE; ++i )
@@ -56,7 +56,7 @@ CQ3LevelMesh::~CQ3LevelMesh()
 
 	if (LightMaps)
 		delete [] LightMaps;
-	
+
 	if (Vertices)
 		delete [] Vertices;
 
@@ -74,7 +74,7 @@ CQ3LevelMesh::~CQ3LevelMesh()
 
 	if (LeafFaces)
 		delete [] LeafFaces;
-	
+
 	if (MeshVerts)
 		delete [] MeshVerts;
 
@@ -464,7 +464,7 @@ void CQ3LevelMesh::parser_nextToken ()
 			}
 			// take /[name] as valid token..?!?!?. mhmm, maybe
 			break;
-			
+
 		case '\n':
 			Parser.tokenresult = Q3_TOKEN_EOL;
 			return;
@@ -893,14 +893,14 @@ void CQ3LevelMesh::constructMesh2()
 			} // end switch
 		}
 	}
-	
+
 
 }
 
 //! constructs a mesh from the quake 3 level file.
 void CQ3LevelMesh::constructMesh()
 {
-	// reserve buffer. 
+	// reserve buffer.
 	s32 i; // new ISO for scoping problem with some compilers
 
 	for (i=0; i<(NumTextures+1) * (NumLightMaps+1); ++i)
@@ -943,9 +943,9 @@ void CQ3LevelMesh::constructMesh()
 						s32 idx = meshBuffer->getVertexCount();
 						s32 vidxes[3];
 
-						vidxes[0] = MeshVerts[Faces[i].meshVertIndex + tf +0] 
+						vidxes[0] = MeshVerts[Faces[i].meshVertIndex + tf +0]
 							+ Faces[i].vertexIndex;
-						vidxes[1] = MeshVerts[Faces[i].meshVertIndex + tf +1] 
+						vidxes[1] = MeshVerts[Faces[i].meshVertIndex + tf +1]
 							+ Faces[i].vertexIndex;
 						vidxes[2] = MeshVerts[Faces[i].meshVertIndex + tf +2]
 							+ Faces[i].vertexIndex;
@@ -975,7 +975,7 @@ void CQ3LevelMesh::constructMesh()
 				break;
 		} // end switch
 	}
-	
+
 }
 
 // helper method for creating curved surfaces, sent in by Dean P. Macri.
@@ -994,7 +994,7 @@ inline f32 CQ3LevelMesh::Blend( const f64 s[3], const f64 t[3], const tBSPVertex
 	return (f32) res;
 }
 
-//!helper function 
+//!helper function
 inline s32 s32_min ( s32 a, s32 b)
 {
 	s32 mask = (a - b) >> 31;
@@ -1269,7 +1269,7 @@ void CQ3LevelMesh::createCurvedSurface2 (	SMeshBufferLightMap* meshBuffer,
 			if ( !v.equals ( m, tolerance ) )
 				continue;
 
-			meshBuffer->Vertices[k].Pos = v; 
+			meshBuffer->Vertices[k].Pos = v;
 			//Bezier.Patch->Vertices[j].Pos = m;
 		}
 	}
@@ -1462,7 +1462,7 @@ const quake3::SShader * CQ3LevelMesh::getShader ( const c8 * filename, s32 fileN
 	search.name = filename;
 
 	s32 index;
-	
+
 	//! is Shader already in cache?
 	index = Shader.linear_search ( search );
 	if ( index >= 0 )
@@ -1644,7 +1644,7 @@ void CQ3LevelMesh::loadTextures()
 	tex.set_used(NumTextures+1);
 
 	tex[0] = 0;
-	
+
 	s32 t;// new ISO for scoping problem with some compilers
 
 	for (t=1; t<(NumTextures+1); ++t)
@@ -1688,7 +1688,7 @@ void CQ3LevelMesh::loadTextures()
 
 		// lightmap is a CTexture::R8G8B8 format
 		lmapImg = Driver->createImageFromData(
-			video::ECF_R8G8B8, 
+			video::ECF_R8G8B8,
 			lmapsize,
 			LightMaps[t-1].imageBits, true, false );
 
@@ -1734,7 +1734,7 @@ void CQ3LevelMesh::cleanMeshes ()
 			{
 				// delete Meshbuffer
 				Mesh[g]->MeshBuffers[i]->drop();
-				Mesh[g]->MeshBuffers.erase(i);		
+				Mesh[g]->MeshBuffers.erase(i);
 			}
 			else
 				++i;
@@ -1763,7 +1763,7 @@ void CQ3LevelMesh::calcBoundingBoxes ()
 //! loads a texture
 video::ITexture* CQ3LevelMesh::loadTexture ( const tStringList &stringList )
 {
-	static const char * extension[2] = 
+	static const char * extension[2] =
 	{
 		".jpg",
 		".tga"
@@ -1809,7 +1809,7 @@ void CQ3LevelMesh::loadTextures2()
 
 		// lightmap is a CTexture::R8G8B8 format
 		lmapImg = Driver->createImageFromData(
-			video::ECF_R8G8B8, 
+			video::ECF_R8G8B8,
 			lmapsize,
 			LightMaps[t].imageBits, true, false );
 
@@ -1820,7 +1820,7 @@ void CQ3LevelMesh::loadTextures2()
 
 	// load textures
 	Tex.set_used( NumTextures+1 );
-	
+
 	const quake3::SShader * shader;
 
 	core::stringc list;
@@ -1879,6 +1879,11 @@ void CQ3LevelMesh::loadTextures2()
 const core::aabbox3d<f32>& CQ3LevelMesh::getBoundingBox() const
 {
 	return Mesh[0]->getBoundingBox();
+}
+
+void CQ3LevelMesh::setBoundingBox( const core::aabbox3df& box)
+{
+	return Mesh[0]->setBoundingBox(box); //?
 }
 
 

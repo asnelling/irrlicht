@@ -18,7 +18,7 @@ namespace irr
 namespace scene
 {
 
-	class CAnimatedMeshMD2 : public IAnimatedMeshMD2, public IMesh, public IMeshBuffer
+	class CAnimatedMeshMD2 : public IAnimatedMeshMD2, public IMeshBuffer
 	{
 	public:
 
@@ -45,7 +45,7 @@ namespace scene
 
 		//! Returns pointer to a mesh buffer which fits a material
  		/** \param material: material to search for
-		\return Returns the pointer to the mesh buffer or 
+		\return Returns the pointer to the mesh buffer or
 		NULL if there is no such mesh buffer. */
 		virtual IMeshBuffer* getMeshBuffer( const video::SMaterial &material) const;
 
@@ -56,10 +56,10 @@ namespace scene
 		virtual video::SMaterial& getMaterial();
 
 		//! returns pointer to vertices
-		virtual const void* getVertices() const; 
+		virtual const void* getVertices() const;
 
 		//! returns pointer to vertices
-		virtual void* getVertices(); 
+		virtual void* getVertices();
 
 		//! returns which type of vertex data is stored.
 		virtual video::E_VERTEX_TYPE getVertexType() const;
@@ -92,18 +92,18 @@ namespace scene
 		virtual E_ANIMATED_MESH_TYPE getMeshType() const;
 
 		//! Returns frame loop data for a special MD2 animation type.
-		virtual void getFrameLoop(EMD2_ANIMATION_TYPE, 
+		virtual void getFrameLoop(EMD2_ANIMATION_TYPE,
 			s32& outBegin, s32& outEnd, s32& outFps) const;
 
 		//! Returns frame loop data for a special MD2 animation type.
-		virtual bool getFrameLoop(const c8* name, 
+		virtual bool getFrameLoop(const c8* name,
 			s32& outBegin, s32& outEnd, s32& outFps) const;
 
 		//! Returns amount of md2 animations in this file.
 		virtual s32 getAnimationCount() const;
 
-		//! Returns name of md2 animation. 
-		//! \param nr: Zero based index of animation. 
+		//! Returns name of md2 animation.
+		//! \param nr: Zero based index of animation.
 		virtual const c8* getAnimationName(s32 nr) const;
 
 	private:

@@ -7,7 +7,6 @@
 
 #include "irrArray.h"
 #include "IBoneSceneNode.h"
-#include "IMesh.h"
 #include "IAnimatedMesh.h"
 
 namespace irr
@@ -30,7 +29,7 @@ namespace scene
 
 
 	//! Interface for using some special functions of Skinned meshes
-	class ISkinnedMesh : public IAnimatedMesh, public IMesh
+	class ISkinnedMesh : public IAnimatedMesh
 	{
 	public:
 

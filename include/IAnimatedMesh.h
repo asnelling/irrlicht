@@ -7,12 +7,12 @@
 
 #include "IUnknown.h"
 #include "aabbox3d.h"
+#include "IMesh.h"
 
 namespace irr
 {
 namespace scene
 {
-	class IMesh;
 
 	enum E_ANIMATED_MESH_TYPE
 	{
@@ -66,7 +66,7 @@ namespace scene
 	you don't have to implement this interface on your own if you need to:
 	You might want to use irr::scene::SAnimatedMesh, irr::scene::SMesh,
 	irr::scene::SMeshBuffer etc. */
-	class IAnimatedMesh : public virtual IUnknown
+	class IAnimatedMesh : public IMesh
 	{
 	public:
 
