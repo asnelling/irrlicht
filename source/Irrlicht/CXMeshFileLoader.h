@@ -42,6 +42,35 @@ public:
 	//! See IUnknown::drop() for more information.
 	virtual IAnimatedMesh* createMesh(irr::io::IReadFile* file);
 
+	struct SXTemplateMaterial
+	{
+		core::stringc Name; // template name from Xfile
+		video::SMaterial Material; // material
+	};
+
+	struct SXMesh
+	{
+		// this mesh contains triangulated texture data.
+		// because in an .x file, faces can be made of more than 3
+		// vertices, the indices data structure is triangulated during the
+		// loading process. The IndexCountPerFace array is filled during
+		// this triangulation process and stores how much indices belong to
+		// every face. This data structure can be ignored, because all data
+		// in this structure is triangulated.
+
+		core::stringc Name;
+
+		core::array< s32 > IndexCountPerFace; // default 3, but could be more
+
+		CSkinnedMesh::SSkinMeshBuffer *Buffer;
+
+
+		core::array<s32> FaceIndices; // index of material for each face
+		core::array<video::SMaterial> Materials; // material array
+
+	};
+
+
 private:
 
 	bool load();
@@ -59,8 +88,25 @@ private:
 
 	bool parseDataObjectTransformationMatrix(core::matrix4 &mat);
 
+	bool parseDataObjectMesh(SXMesh &mesh);
+
+	bool parseDataObjectMeshNormals(SXMesh &mesh);
+
+	bool parseDataObjectMeshTextureCoords(SXMesh &mesh);
+
+	bool parseDataObjectMeshVertexColors(SXMesh &mesh);
+
+	bool parseDataObjectMeshMaterialList(SXMesh &mesh);
+
+	bool parseDataObjectMaterial(video::SMaterial& material);
+
+
+	bool parseDataObjectTextureFilename(core::stringc& texturename);
+
 
 	bool parseUnknownDataObject();
+
+
 
 
 
@@ -98,12 +144,10 @@ private:
 	bool readRGB(video::SColorf& color);
 	bool readRGBA(video::SColorf& color);
 
+	bool readRGB(video::SColor& color);
+	bool readRGBA(video::SColor& color);
 
-
-
-
-
-
+	core::stringc stripPathFromString(core::stringc string, bool returnPath);
 
 
 
@@ -148,6 +192,13 @@ private:
 
 
 
+
+
+
+
+
+
+	core::array<SXTemplateMaterial> TemplateMaterials;
 };
 
 } // end namespace scene

@@ -220,7 +220,7 @@ B3D, MS3D or X meshes */
 //! Define _IRR_COMPILE_WITH_B3D_LOADER_ if you want to Milkshape files
 #define _IRR_COMPILE_WITH_MS3D_LOADER_
 //! Define _IRR_COMPILE_WITH_X_LOADER_ if you want to use Microsoft X files
-//#define _IRR_COMPILE_WITH_X_LOADER_
+#define _IRR_COMPILE_WITH_X_LOADER_
 #endif
 
 //! Define _IRR_COMPILE_WITH_MD2_LOADER_ if you want to load Quake 2 animated files
