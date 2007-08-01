@@ -65,8 +65,11 @@ public:
 		CSkinnedMesh::SSkinMeshBuffer *Buffer;
 
 
-		core::array<s32> FaceIndices; // index of material for each face
+		core::array<u32> FaceIndices; // index of material for each face
 		core::array<video::SMaterial> Materials; // material array
+
+
+
 
 	};
 
@@ -84,11 +87,15 @@ private:
 
 	bool parseDataObjectTemplate();
 
-	bool parseDataObjectFrame(CSkinnedMesh::SJoint& joint);
+	bool parseDataObjectFrame(CSkinnedMesh::SJoint *parent);
 
 	bool parseDataObjectTransformationMatrix(core::matrix4 &mat);
 
 	bool parseDataObjectMesh(SXMesh &mesh);
+
+	bool parseDataObjectSkinWeights(SXMesh &mesh);
+
+	bool parseDataObjectSkinMeshHeader();
 
 	bool parseDataObjectMeshNormals(SXMesh &mesh);
 
@@ -99,6 +106,14 @@ private:
 	bool parseDataObjectMeshMaterialList(SXMesh &mesh);
 
 	bool parseDataObjectMaterial(video::SMaterial& material);
+
+	bool parseDataObjectAnimationSet();
+
+	bool parseDataObjectAnimation();
+
+	bool parseDataObjectAnimationKey(ISkinnedMesh::SJoint *joint);
+
+
 
 
 	bool parseDataObjectTextureFilename(core::stringc& texturename);
