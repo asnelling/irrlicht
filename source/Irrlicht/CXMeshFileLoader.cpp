@@ -361,8 +361,19 @@ bool CXMeshFileLoader::parseDataObjectFrame( CSkinnedMesh::SJoint *Parent )
 		else
 		if (objectName == "FrameTransformMatrix")
 		{
+			//if (!parseDataObjectTransformationMatrix(joint->LocalMatrix))
+
 			if (!parseDataObjectTransformationMatrix(joint->LocalMatrix))
 				return false;
+
+			//joint->LocalAnimatedMatrix
+
+
+			//joint->LocalAnimatedMatrix.makeInverse();
+
+			//joint->LocalMatrix=tmp*joint->LocalAnimatedMatrix;
+
+
 		}
 		else
 		if (objectName == "Mesh")
@@ -484,9 +495,9 @@ bool CXMeshFileLoader::parseDataObjectMesh(SXMesh &mesh)
 	}
 
 	for (s32 n=0; n<nVertices; ++n)
+	{
 		readVector3(MeshBuffer.Vertices_Standard[n].Pos);
-
-
+	}
 
 
 	if (!checkForTwoFollowingSemicolons())
@@ -722,9 +733,14 @@ bool CXMeshFileLoader::parseDataObjectSkinWeights(SXMesh &mesh)
 					// When concatenated to the bone's transform, this provides the
 					// world space coordinates of the mesh as affected by the bone
 
+
+
 	for (i=0; i<4; ++i)
 		for (u32 j=0; j<4; ++j)
 			MatrixOffset(i,j) = readFloat();
+
+
+	joint->GlobalInversedMatrix=MatrixOffset;
 
 
 	for (i=0; i<nWeights; ++i)
@@ -732,10 +748,13 @@ bool CXMeshFileLoader::parseDataObjectSkinWeights(SXMesh &mesh)
 
 		CSkinnedMesh::SWeight *weight=AnimatedMesh->createWeight(joint);
 
-
 		weight->buffer_id=0;
 
 		weight->vertex_id=Weights_Index[i];
+
+
+		core::matrix4 tmpMatrix;
+
 
 		weight->strength=Weights_Strength[i];
 	}
@@ -988,8 +1007,10 @@ bool CXMeshFileLoader::parseDataObjectMeshVertexColors(SXMesh &mesh)
 		readRGBA(mesh.Buffer->Vertices_Standard[i].Color);
 	}
 
-	if (getNextToken() != ";")
+	core::stringc tmp=getNextToken();
+	if (tmp != ";")
 	{
+		os::Printer::log("is (;)[", tmp.c_str());
 		os::Printer::log("No finishing semicolon in Mesh Vertex Colors Array found in x file", ELL_WARNING);
 		return false;
 	}
@@ -1136,17 +1157,17 @@ bool CXMeshFileLoader::parseDataObjectMaterial(video::SMaterial& material)
 	}
 
 	// read RGBA
-	readRGBA(material.DiffuseColor);
+	readRGBA(material.DiffuseColor); checkForOneFollowingSemicolons();
 
 	// read power
 	//material.Power = readFloat();
 	readFloat();
 
 	// read specular
-	readRGB(material.SpecularColor);
+	readRGB(material.SpecularColor); checkForOneFollowingSemicolons();
 
 	// read emissive
-	readRGB(material.EmissiveColor);
+	readRGB(material.EmissiveColor); checkForOneFollowingSemicolons();
 
 	// read other data objects
 	while(true)
@@ -1360,15 +1381,47 @@ bool CXMeshFileLoader::parseDataObjectAnimation()
 
 			u32 n;
 
+
+
+
+
+
 			for (n=0;n<animationDump.PositionKeys.size();++n)
-				joint->PositionKeys.push_back(animationDump.PositionKeys[n]);
+			{
+				ISkinnedMesh::SPositionKey *key=&animationDump.PositionKeys[n];
+
+				//key->position+=joint->LocalMatrix.getTranslation();
+
+				joint->PositionKeys.push_back(*key);
+			}
 
 			for (n=0;n<animationDump.ScaleKeys.size();++n)
-				joint->ScaleKeys.push_back(animationDump.ScaleKeys[n]);
+			{
+				ISkinnedMesh::SScaleKey *key=&animationDump.ScaleKeys[n];
+
+				//key->scale*=joint->LocalMatrix.getScale();
+
+				joint->ScaleKeys.push_back(*key);
+			}
 
 			for (n=0;n<animationDump.RotationKeys.size();++n)
-				joint->RotationKeys.push_back(animationDump.RotationKeys[n]);
+			{
+				ISkinnedMesh::SRotationKey *key=&animationDump.RotationKeys[n];
 
+
+				core::matrix4 tmpMatrix;
+
+				tmpMatrix.setRotationRadians(
+					core::vector3df(key->rotation.X, key->rotation.Y, key->rotation.Z) );
+
+				tmpMatrix=joint->LocalMatrix*tmpMatrix;
+
+				//key->rotation  = core::quaternion(tmpMatrix);
+
+
+
+				joint->RotationKeys.push_back(*key);
+			}
 
 		}
 
@@ -1571,12 +1624,12 @@ bool CXMeshFileLoader::parseDataObjectAnimationKey(ISkinnedMesh::SJoint *joint)
 					return false;
 				}
 
-				core::vector3df rotation = Matrix.getRotationDegrees();
+				//core::vector3df rotation = Matrix.getRotationDegrees();
 
 				ISkinnedMesh::SRotationKey *keyR=AnimatedMesh->createRotationKey(joint);
 				keyR->frame=(f32)time;
-				keyR->rotation.set(rotation.X*core::DEGTORAD,rotation.Y*core::DEGTORAD,rotation.Z*core::DEGTORAD);
-
+				//keyR->rotation.set(rotation.X*core::DEGTORAD,rotation.Y*core::DEGTORAD,rotation.Z*core::DEGTORAD);
+				keyR->rotation= core::quaternion(Matrix);
 
 
 				ISkinnedMesh::SPositionKey *keyP=AnimatedMesh->createPositionKey(joint);
@@ -1590,16 +1643,16 @@ bool CXMeshFileLoader::parseDataObjectAnimationKey(ISkinnedMesh::SJoint *joint)
 				//if (scale.X==0) scale.X=1;
 				//if (scale.Y==0) scale.Y=1;
 				//if (scale.Z==0) scale.Z=1;
-
+/*
 				ISkinnedMesh::SScaleKey *keyS=AnimatedMesh->createScaleKey(joint);
 				keyS->frame=(f32)time;
 				keyS->scale=scale;
+*/
 
 
-
-				os::Printer::log("x ", core::stringc(Matrix.getScale().X).c_str());
-				os::Printer::log("y ", core::stringc(Matrix.getScale().Y).c_str());
-				os::Printer::log("z ", core::stringc(Matrix.getScale().Z).c_str());
+				//os::Printer::log("x ", core::stringc(Matrix.getScale().X).c_str());
+				//os::Printer::log("y ", core::stringc(Matrix.getScale().Y).c_str());
+				//os::Printer::log("z ", core::stringc(Matrix.getScale().Z).c_str());
 
 			}
 			break;
@@ -1688,6 +1741,20 @@ bool CXMeshFileLoader::parseUnknownDataObject()
 	return true;
 }
 
+
+//! checks for two following semicolons, returns false if they are not there
+bool CXMeshFileLoader::checkForOneFollowingSemicolons()
+{
+	if (binary)
+		return true;
+
+	findNextNoneWhiteSpace();
+	if (P[0] != ';')
+		return false;
+	++P;
+
+	return true;
+}
 
 
 //! checks for two following semicolons, returns false if they are not there
@@ -1837,11 +1904,21 @@ core::stringc CXMeshFileLoader::getNextToken()
 		if (P >= End)
 			return s;
 
-		while(P < End && !core::isspace(P[0]))
+
+		char last=0;
+
+		//&& last!=';' && last!='}' && last!='{' && last!=','
+
+		while(P < End && !core::isspace(P[0]) ) //Luke:Not only space?
 		{
+			last=P[0];
+
 			s.append(P[0]);
 			++P;
 		}
+
+		//os::Printer::log("end" );
+
 	}
 	return s;
 }
@@ -2040,7 +2117,7 @@ bool CXMeshFileLoader::readRGB(video::SColorf& color)
 	color.g = readFloat();
 	color.b = readFloat();
 	color.a = 1.0f;
-	return checkForTwoFollowingSemicolons();
+	return checkForOneFollowingSemicolons();
 }
 
 
@@ -2051,7 +2128,7 @@ bool CXMeshFileLoader::readRGBA(video::SColorf& color)
 	color.g = readFloat();
 	color.b = readFloat();
 	color.a = readFloat();
-	return checkForTwoFollowingSemicolons();
+	return checkForOneFollowingSemicolons();
 }
 
 
@@ -2064,7 +2141,7 @@ bool CXMeshFileLoader::readRGB(video::SColor& color)
 	color.setGreen( (u32)(readFloat()*255)) ;
 	color.setBlue( (u32)(readFloat()*255)) ;
 	color.setAlpha( 255 );
-	return checkForTwoFollowingSemicolons();
+	return checkForOneFollowingSemicolons();
 }
 
 
@@ -2075,7 +2152,7 @@ bool CXMeshFileLoader::readRGBA(video::SColor& color)
 	color.setGreen( (u32)(readFloat()*255)) ;
 	color.setBlue( (u32)(readFloat()*255)) ;
 	color.setAlpha( (u32)(readFloat()*255)) ;
-	return checkForTwoFollowingSemicolons();
+	return checkForOneFollowingSemicolons();
 }
 
 

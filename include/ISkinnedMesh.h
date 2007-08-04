@@ -373,10 +373,12 @@ namespace scene
 			core::vector3df Animatedscale;
 			core::quaternion Animatedrotation;
 
+			core::matrix4 GlobalInversedMatrix; //the x format pre-calculates this
+
 		private:
 			//! Internal members used by CSkinnedMesh
 			friend class CSkinnedMesh;
-			core::matrix4 GlobalInversedMatrix;
+
 			SJoint *UseAnimationFrom;
 			bool LocalAnimatedMatrix_Animated;
 

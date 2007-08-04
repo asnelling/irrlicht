@@ -683,9 +683,11 @@ void CSkinnedMesh::CalculateGlobalMatrixes(SJoint *Joint,SJoint *ParentJoint)
 	Joint->LocalAnimatedMatrix=Joint->LocalMatrix;
 	Joint->GlobalAnimatedMatrix=Joint->GlobalMatrix;
 
-	Joint->GlobalInversedMatrix = Joint->GlobalMatrix;
-	Joint->GlobalInversedMatrix.makeInverse(); // slow
-
+	if (Joint->GlobalInversedMatrix.isIdentity())//might be pre calculated
+	{
+		Joint->GlobalInversedMatrix = Joint->GlobalMatrix;
+		Joint->GlobalInversedMatrix.makeInverse(); // slow
+	}
 
 	for (u32 j=0; j<Joint->Children.size(); ++j)
 		CalculateGlobalMatrixes(Joint->Children[j],Joint);

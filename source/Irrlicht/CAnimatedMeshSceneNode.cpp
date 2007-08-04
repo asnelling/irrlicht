@@ -372,7 +372,7 @@ void CAnimatedMeshSceneNode::render()
 				// draw skeleton
 
 
-				for ( g=0; g < ((ISkinnedMesh*)Mesh)->getAllJoints().size(); g +=2 )
+				for ( g=0; g < ((ISkinnedMesh*)Mesh)->getAllJoints().size(); g +=1 )
 				{
 					ISkinnedMesh::SJoint *joint=((ISkinnedMesh*)Mesh)->getAllJoints()[g];
 

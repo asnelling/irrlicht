@@ -140,6 +140,9 @@ private:
 	//! if there is one
 	bool readHeadOfDataObject(core::stringc* outname=0);
 
+	//! checks for one following semicolons, returns false if they are not there
+	bool checkForOneFollowingSemicolons();
+
 	//! checks for two following semicolons, returns false if they are not there
 	bool checkForTwoFollowingSemicolons();
 

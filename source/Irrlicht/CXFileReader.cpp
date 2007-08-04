@@ -992,6 +992,14 @@ bool CXFileReader::getNextTokenAsString(core::stringc& out)
 }
 
 
+
+
+
+
+
+
+
+
 bool CXFileReader::parseDataObjectAnimationSet(SXAnimationSet& set)
 {
 	#ifdef _XREADER_DEBUG
