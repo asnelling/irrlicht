@@ -1641,11 +1641,11 @@
 					>
 				</File>
 				<File
-					RelativePath=".\CB3DMeshLoader.cpp"
+					RelativePath=".\CB3DMeshFileLoader.cpp"
 					>
 				</File>
 				<File
-					RelativePath=".\CB3DMeshLoader.h"
+					RelativePath=".\CB3DMeshFileLoader.h"
 					>
 				</File>
 				<File
