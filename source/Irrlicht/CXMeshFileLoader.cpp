@@ -24,7 +24,21 @@ namespace scene
 CXMeshFileLoader::CXMeshFileLoader(scene::ISceneManager* smgr)
 : SceneManager(smgr)
 {
-
+	Buffers=0;
+	AllJoints=0;
+	AnimatedMesh=0;
+	file=0;
+	MajorVersion=0;
+	MinorVersion=0;
+	binary=0;
+	binaryNumCount=0;
+	Buffer=0;
+	Size=0;
+	FloatSize=0;
+	P=0;
+	End=0;
+	ErrorHappened=0;
+	m_pgCurFrame=0;
 }
 
 
@@ -32,6 +46,10 @@ CXMeshFileLoader::CXMeshFileLoader(scene::ISceneManager* smgr)
 //! destructor
 CXMeshFileLoader::~CXMeshFileLoader()
 {
+
+
+	TemplateMaterials.clear();
+
 
 }
 
@@ -71,6 +89,26 @@ IAnimatedMesh* CXMeshFileLoader::createMesh(irr::io::IReadFile* f)
 		AnimatedMesh->drop();
 		AnimatedMesh = 0;
 	}
+
+
+
+	//Clear up
+
+	file=0;
+	MajorVersion=0;
+	MinorVersion=0;
+	binary=0;
+	binaryNumCount=0;
+	Buffer=0;
+	Size=0;
+	FloatSize=0;
+	P=0;
+	End=0;
+	ErrorHappened=0;
+	m_pgCurFrame=0;
+	TemplateMaterials.clear();
+
+
 
 	return AnimatedMesh;
 }

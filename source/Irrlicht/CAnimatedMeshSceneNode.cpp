@@ -282,7 +282,18 @@ void CAnimatedMeshSceneNode::render()
 		skinnedMesh->skinMesh();
 
 		if (JointMode &1)//read from mesh
+		{
 			skinnedMesh->recoverJointsFromMesh(JointChildSceneNodes);
+
+			//---slow---
+			for (u32 n=0;n<JointChildSceneNodes.size();++n)
+				if (JointChildSceneNodes[n]->getParent()==this)
+				{
+					JointChildSceneNodes[n]->updateAbsolutePositionOfAllChildren(); //temp, should be an option
+				}
+
+		}
+
 
 		m=skinnedMesh;
 	}
@@ -572,10 +583,12 @@ IShadowVolumeSceneNode* CAnimatedMeshSceneNode::addShadowVolumeSceneNode(s32 id,
 
 IBoneSceneNode* CAnimatedMeshSceneNode::getJointNode(const c8* jointName)
 {
+
 	if (!Mesh || Mesh->getMeshType() != EAMT_SKINNED)
 		return 0;
 
 	checkJoints();
+
 
 	ISkinnedMesh *skinnedMesh=(ISkinnedMesh*)Mesh;
 
@@ -635,18 +648,20 @@ bool CAnimatedMeshSceneNode::removeChild(ISceneNode* child)
 		return true;
 	}
 
-
-	if (ISceneNode::removeChild(child))
+	if (JointsUsed) //stop it doing weird things while the joints are being made
 	{
-		for (s32 i=0; i<(s32)JointChildSceneNodes.size(); ++i)
-		if (JointChildSceneNodes[i] == child)
+		if (ISceneNode::removeChild(child))
 		{
-			//JointChildSceneNodes[i]->drop();
-			JointChildSceneNodes[i] = 0;
+			for (s32 i=0; i<(s32)JointChildSceneNodes.size(); ++i)
+			if (JointChildSceneNodes[i] == child)
+			{
+				//JointChildSceneNodes[i]->drop();
+				JointChildSceneNodes[i] = 0;
+				return true;
+			}
+
 			return true;
 		}
-
-		return true;
 	}
 
 	return false;
@@ -884,6 +899,12 @@ void CAnimatedMeshSceneNode::animateJoints()
 
 			skinnedMesh->recoverJointsFromMesh( JointChildSceneNodes);
 
+			//---slow---
+			for (u32 n=0;n<JointChildSceneNodes.size();++n)
+				if (JointChildSceneNodes[n]->getParent()==this)
+				{
+					JointChildSceneNodes[n]->updateAbsolutePositionOfAllChildren(); //temp, should be an option
+				}
 
 			//-----------------------------------------
 			//				Transition
@@ -955,11 +976,17 @@ void CAnimatedMeshSceneNode::checkJoints()
 
 	if (!JointsUsed)
 	{
-		JointsUsed=true;
+
 
 		//Create joints for SkinnedMesh
+
 		((ISkinnedMesh*)Mesh)->createJoints( JointChildSceneNodes,this,SceneManager);
 		((ISkinnedMesh*)Mesh)->recoverJointsFromMesh( JointChildSceneNodes);
+
+
+		JointsUsed=true;
+		JointMode=1;
+
 	}
 
 }

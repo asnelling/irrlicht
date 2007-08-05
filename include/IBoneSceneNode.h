@@ -74,11 +74,18 @@ namespace scene
 			AbsoluteTransformation=transformation;
 		}
 
+
+
+		//! updates the absolute position based on the relative and the parents position
+		virtual void updateAbsolutePositionOfAllChildren()=0;
+
+
+
+
+
 		s32 positionHint;
 		s32 scaleHint;
 		s32 rotationHint;
-
-
 
 
 	};

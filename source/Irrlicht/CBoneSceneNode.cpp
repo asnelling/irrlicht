@@ -1,6 +1,8 @@
 
 #include "CBoneSceneNode.h"
 
+
+
 namespace irr
 {
 namespace scene
@@ -78,6 +80,28 @@ void CBoneSceneNode::OnAnimate(u32 timeMs)
 			(*it)->OnAnimate(timeMs);
 	}
 }
+
+
+
+
+void CBoneSceneNode::helper_updateAbsolutePositionOfAllChildren(ISceneNode *Node)
+{
+	Node->updateAbsolutePosition();
+
+	core::list<ISceneNode*>::Iterator it = Node->getChildren().begin();
+	for (; it != Node->getChildren().end(); ++it)
+	{
+		helper_updateAbsolutePositionOfAllChildren( (*it) );
+	}
+}
+
+
+void CBoneSceneNode::updateAbsolutePositionOfAllChildren()
+{
+	helper_updateAbsolutePositionOfAllChildren( this );
+}
+
+
 
 
 

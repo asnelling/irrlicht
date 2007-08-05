@@ -1181,13 +1181,13 @@ void CSkinnedMesh::normalizeWeights()
 void CSkinnedMesh::recoverJointsFromMesh(core::array<IBoneSceneNode*> &JointChildSceneNodes)
 {
 
-
 	for (u32 i=0;i<AllJoints.size();++i)
 	{
 		IBoneSceneNode* node=JointChildSceneNodes[i];
 		SJoint *joint=AllJoints[i];
 		node->setPosition( joint->LocalAnimatedMatrix.getTranslation() );
 		node->setRotation( joint->LocalAnimatedMatrix.getRotationDegrees() );
+
 		//node->setScale( B3dNode->LocalAnimatedMatrix.getScale() );
 
 		node->positionHint=joint->positionHint;
@@ -1196,10 +1196,10 @@ void CSkinnedMesh::recoverJointsFromMesh(core::array<IBoneSceneNode*> &JointChil
 
 		//node->setAbsoluteTransformation(joint->GlobalMatrix); //not going to work
 
-
 		//Note: This updateAbsolutePosition will not work well if joints are not nested like b3d
 		//node->updateAbsolutePosition();
 	}
+
 }
 
 void CSkinnedMesh::tranferJointsToMesh(core::array<IBoneSceneNode*> &JointChildSceneNodes)
@@ -1229,13 +1229,13 @@ void CSkinnedMesh::tranferJointsToMesh(core::array<IBoneSceneNode*> &JointChildS
 void CSkinnedMesh::createJoints(core::array<IBoneSceneNode*> &JointChildSceneNodes,
 	IAnimatedMeshSceneNode* AnimatedMeshSceneNode, ISceneManager* SceneManager)
 {
+
 	u32 i;
 
 	//Create new joints
 	for (i=0;i<AllJoints.size();++i)
 	{
-		IBoneSceneNode* node = new CBoneSceneNode(AnimatedMeshSceneNode, SceneManager, 0);
-		node->drop();
+		IBoneSceneNode* node = new CBoneSceneNode(0, SceneManager, 0, i, AllJoints[i]->Name.c_str());
 
 		JointChildSceneNodes.push_back(node);
 	}
@@ -1252,7 +1252,7 @@ void CSkinnedMesh::createJoints(core::array<IBoneSceneNode*> &JointChildSceneNod
 		{
 			if (i!=j && parentID==-1)
 			{
-				SJoint *parentTest=AllJoints[i];
+				SJoint *parentTest=AllJoints[j];
 				for (u32 n=0;n<parentTest->Children.size();++n)
 				{
 					if (parentTest->Children[n]==joint)
@@ -1266,7 +1266,13 @@ void CSkinnedMesh::createJoints(core::array<IBoneSceneNode*> &JointChildSceneNod
 
 		if (parentID!=-1)
 			node->setParent( JointChildSceneNodes[parentID] );
+		else
+			node->setParent( AnimatedMeshSceneNode );
+
+		node->drop();
+
 	}
+
 }
 
 void CSkinnedMesh::convertMeshToTangents()
