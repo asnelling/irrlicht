@@ -1,7 +1,7 @@
 // B3D mesh loader
 
 
-#include "irrCompileConfig.h"
+#include "IrrCompileConfig.h"
 
 #ifndef __C_B3D_MESH_LOADER_H_INCLUDED__
 #define __C_B3D_MESH_LOADER_H_INCLUDED__

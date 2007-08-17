@@ -9,7 +9,6 @@
 #include "os.h"
 #include "CShadowVolumeSceneNode.h"
 #include "IAnimatedMeshMD3.h"
-#include "IAnimatedMeshX.h"
 #include "ISkinnedMesh.h"
 #include "IDummyTransformationSceneNode.h"
 #include "IBoneSceneNode.h"

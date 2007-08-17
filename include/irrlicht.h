@@ -44,7 +44,6 @@
 #include "IAnimatedMeshMD2.h"
 #include "IAnimatedMeshMD3.h"
 #include "IQ3LevelMesh.h"
-#include "IAnimatedMeshX.h"
 #include "IAnimatedMeshSceneNode.h"
 #include "IBillboardSceneNode.h"
 #include "IBoneSceneNode.h"

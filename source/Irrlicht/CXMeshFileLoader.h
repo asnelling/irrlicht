@@ -62,10 +62,18 @@ public:
 
 		core::array< s32 > IndexCountPerFace; // default 3, but could be more
 
-		CSkinnedMesh::SSkinMeshBuffer *Buffer;
+		core::array<CSkinnedMesh::SSkinMeshBuffer*> Buffers;
 
+		core::array<video::S3DVertex> Vertices;
+
+
+
+		core::array<u32> Indices;
 
 		core::array<u32> FaceIndices; // index of material for each face
+
+
+
 		core::array<video::SMaterial> Materials; // material array
 
 
@@ -210,7 +218,7 @@ private:
 
 
 
-
+	core::array<SXMesh*> Meshes;
 
 
 

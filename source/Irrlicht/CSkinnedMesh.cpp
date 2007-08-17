@@ -1188,7 +1188,7 @@ void CSkinnedMesh::recoverJointsFromMesh(core::array<IBoneSceneNode*> &JointChil
 		node->setPosition( joint->LocalAnimatedMatrix.getTranslation() );
 		node->setRotation( joint->LocalAnimatedMatrix.getRotationDegrees() );
 
-		//node->setScale( B3dNode->LocalAnimatedMatrix.getScale() );
+		//node->setScale( joint->LocalAnimatedMatrix.getScale() );
 
 		node->positionHint=joint->positionHint;
 		node->scaleHint=joint->scaleHint;
@@ -1210,7 +1210,7 @@ void CSkinnedMesh::tranferJointsToMesh(core::array<IBoneSceneNode*> &JointChildS
 		SJoint *joint=AllJoints[i];
 		joint->LocalAnimatedMatrix.setTranslation( node->getPosition() );
 		joint->LocalAnimatedMatrix.setRotationDegrees( node->getRotation() );
-		//B3dNode->LocalAnimatedMatrix.setScale( node->getScale() );
+		//joint->LocalAnimatedMatrix.setScale( node->getScale() );
 
 		joint->positionHint=node->positionHint;
 		joint->scaleHint=node->scaleHint;
