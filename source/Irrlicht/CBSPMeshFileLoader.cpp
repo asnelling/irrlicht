@@ -55,12 +55,6 @@ bool CBSPMeshFileLoader::isALoadableFileExtension(const c8* filename)
 //! See IUnknown::drop() for more information.
 IAnimatedMesh* CBSPMeshFileLoader::createMesh(irr::io::IReadFile* file)
 {
-	IAnimatedMesh* msh = 0;
-
-	// This method loads a mesh if it can.
-
-	bool success = false;
-
 	// load quake 3 bsp
 	if (strstr(file->getFileName(), ".bsp"))
 	{

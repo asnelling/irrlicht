@@ -139,33 +139,6 @@ namespace scene
 
 private:
 
-		core::array<SSkinMeshBuffer*> *SkinningBuffers; //Meshbuffer to skin, default is to skin localBuffers
-
-		core::array<SSkinMeshBuffer*> LocalBuffers;
-
-
-		core::array<SJoint*> AllJoints;
-		core::array<SJoint*> RootJoints;
-
-		bool HasAnimation;
-
-		bool PreparedForSkinning;
-
-		f32 AnimationFrames;
-
-		f32 lastAnimatedFrame;
-		f32 lastSkinnedFrame;
-		bool BoneControlUsed;
-
-
-		bool AnimateNormals;
-
-		E_INTERPOLATION_MODE InterpolationMode;
-
-		core::aabbox3d<f32> BoundingBox;
-
-		core::array< core::array<bool> > Vertices_Moved;
-
 		void checkForAnimation();
 
 		void normalizeWeights();
@@ -187,6 +160,31 @@ private:
 
 		//void createSkelton_Helper(ISceneManager* SceneManager, core::array<IBoneSceneNode*> &JointChildSceneNodes, IAnimatedMeshSceneNode *AnimatedMeshSceneNode, ISceneNode* ParentNode, SJoint *ParentNode, SJoint *Node);
 
+
+		core::array<SSkinMeshBuffer*> *SkinningBuffers; //Meshbuffer to skin, default is to skin localBuffers
+
+		core::array<SSkinMeshBuffer*> LocalBuffers;
+
+		core::array<SJoint*> AllJoints;
+		core::array<SJoint*> RootJoints;
+
+		bool HasAnimation;
+
+		bool PreparedForSkinning;
+
+		f32 AnimationFrames;
+
+		f32 lastAnimatedFrame;
+		f32 lastSkinnedFrame;
+		bool BoneControlUsed;
+
+		bool AnimateNormals;
+
+		E_INTERPOLATION_MODE InterpolationMode;
+
+		core::aabbox3d<f32> BoundingBox;
+
+		core::array< core::array<bool> > Vertices_Moved;
 	};
 
 } // end namespace scene

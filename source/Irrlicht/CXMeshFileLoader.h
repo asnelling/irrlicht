@@ -14,7 +14,6 @@
 #include "CSkinnedMesh.h"
 
 
-
 namespace irr
 {
 namespace scene
@@ -66,19 +65,11 @@ public:
 
 		core::array<video::S3DVertex> Vertices;
 
-
-
 		core::array<u32> Indices;
 
 		core::array<u32> FaceIndices; // index of material for each face
 
-
-
 		core::array<video::SMaterial> Materials; // material array
-
-
-
-
 	};
 
 
@@ -121,17 +112,9 @@ private:
 
 	bool parseDataObjectAnimationKey(ISkinnedMesh::SJoint *joint);
 
-
-
-
 	bool parseDataObjectTextureFilename(core::stringc& texturename);
 
-
 	bool parseUnknownDataObject();
-
-
-
-
 
 	//! places pointer to next begin of a token, and ignores comments
 	void findNextNoneWhiteSpace();
@@ -160,6 +143,7 @@ private:
 
 	void readUntilEndOfLine();
 
+	core::stringc stripPathFromString(core::stringc string, bool returnPath);
 
 	u16 readBinWord();
 	u32 readBinDWord();
@@ -173,31 +157,13 @@ private:
 	bool readRGB(video::SColor& color);
 	bool readRGBA(video::SColor& color);
 
-	core::stringc stripPathFromString(core::stringc string, bool returnPath);
-
-
-
-
-
-
-
-
-
-
-
-
-	video::IVideoDriver* Driver;
+	ISceneManager*	SceneManager;
 
 	core::array<CSkinnedMesh::SSkinMeshBuffer*> *Buffers;
 	core::array<CSkinnedMesh::SJoint*> *AllJoints;
 
-	ISceneManager*	SceneManager;
 	CSkinnedMesh*	AnimatedMesh;
 	io::IReadFile*	file;
-
-
-
-
 
 	s32 MajorVersion;
 	s32 MinorVersion;
@@ -212,17 +178,9 @@ private:
 
 	bool ErrorHappened;
 
-
-
-	CSkinnedMesh::SJoint *m_pgCurFrame;
-
-
+	CSkinnedMesh::SJoint *CurFrame;
 
 	core::array<SXMesh*> Meshes;
-
-
-
-
 
 	core::array<SXTemplateMaterial> TemplateMaterials;
 };
