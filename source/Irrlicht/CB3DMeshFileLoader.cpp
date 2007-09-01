@@ -602,15 +602,15 @@ bool CB3DMeshFileLoader::readChunkTRIS(CSkinnedMesh::SJoint *InJoint, CSkinnedMe
 				AnimatedVertices_VertexID[ vertex_id[i] ] = MeshBuffer->getVertexCount()-1;
 				AnimatedVertices_BufferID[ vertex_id[i] ] = MeshBufferID;
 
-
-				// Apply Material/Colour/etc...
-				irr::video::S3DVertex *Vertex=MeshBuffer->getVertex(MeshBuffer->getVertexCount()-1);
-
-				if (Vertex->Color.getAlpha() == 255) //Note: Irrlicht docs state that 0 is opaque, are they wrong?
-					Vertex->Color.setAlpha( (s32)(B3dMaterial->alpha * 255.0f) );
-
 				if (B3dMaterial)
 				{
+					// Apply Material/Colour/etc...
+					irr::video::S3DVertex *Vertex=MeshBuffer->getVertex(MeshBuffer->getVertexCount()-1);
+
+					if (Vertex->Color.getAlpha() == 255) //Note: Irrlicht docs state that 0 is opaque, are they wrong?
+						Vertex->Color.setAlpha( (s32)(B3dMaterial->alpha * 255.0f) );
+
+
 					// Use texture's scale
 					if (B3dMaterial->Textures[0])
 					{
