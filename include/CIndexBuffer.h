@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Nikolaus Gebhardt
+// Copyright (C) 2012 Patryk Nadrowski
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -11,96 +11,32 @@ namespace irr
 {
 namespace scene
 {
-
 	class CIndexBuffer : public IIndexBuffer
 	{
-
-		class IIndexList
-		{
-		public:
-			virtual ~IIndexList(){};
-
-			virtual u32 stride() const =0;
-			virtual u32 size() const =0;
-			virtual void push_back(const u32 &element) =0;
-			virtual u32 operator [](u32 index) const =0;
-			virtual u32 getLast() =0;
-			virtual void setValue(u32 index, u32 value) =0;
-			virtual void set_used(u32 usedNow) =0;
-			virtual void reallocate(u32 new_size) =0;
-			virtual u32 allocated_size() const =0;
-			virtual void* pointer() =0;
-			virtual video::E_INDEX_TYPE getType() const =0;
-		};
-
-		template <class T>
-		class CSpecificIndexList : public IIndexList
-		{
-		public:
-			core::array<T> Indices;
-
-			virtual u32 stride() const {return sizeof(T);}
-
-			virtual u32 size() const {return Indices.size();}
-
-			virtual void push_back(const u32 &element)
-			{
-				Indices.push_back((T&)element);
-			}
-
-			virtual u32 operator [](u32 index) const
-			{
-				return (u32)(Indices[index]);
-			}
-
-			virtual u32 getLast() {return (u32)Indices.getLast();}
-
-			virtual void setValue(u32 index, u32 value)
-			{
-				Indices[index]=(T)value;
-			}
-
-			virtual void set_used(u32 usedNow)
-			{
-				Indices.set_used(usedNow);
-			}
-
-			virtual void reallocate(u32 new_size)
-			{
-				Indices.reallocate(new_size);
-			}
-
-			virtual u32 allocated_size() const
-			{
-				return Indices.allocated_size();
-			}
-
-			virtual void* pointer() {return Indices.pointer();}
-
-			virtual video::E_INDEX_TYPE getType() const
-			{
-				if (sizeof(T)==sizeof(u16))
-					return video::EIT_16BIT;
-				else
-					return video::EIT_32BIT;
-			}
-		};
-
 	public:
-		IIndexList *Indices;
-
-		CIndexBuffer(video::E_INDEX_TYPE IndexType) :Indices(0), MappingHint(EHM_NEVER), ChangedID(1)
+		CIndexBuffer(video::E_INDEX_TYPE pType = video::EIT_16BIT) : Indices(0), Type(pType), HardwareMappingHint(EHM_NEVER), ChangedID(1)
 		{
-			setType(IndexType);
+			if(Type == video::EIT_32BIT)
+				Indices = new CIndexList<u32>();
+			else // EIT_16BIT
+				Indices = new CIndexList<u16>();
 		}
 
-		CIndexBuffer(const IIndexBuffer &IndexBufferCopy) :Indices(0), MappingHint(EHM_NEVER), ChangedID(1)
+		CIndexBuffer(const CIndexBuffer &pIndexBuffer) : Indices(0), ChangedID(1)
 		{
-			setType(IndexBufferCopy.getType());
-			reallocate(IndexBufferCopy.size());
+			Type = pIndexBuffer.getType();
 
-			for (u32 n=0;n<IndexBufferCopy.size();++n)
-				push_back(IndexBufferCopy[n]);
+			HardwareMappingHint = pIndexBuffer.getHardwareMappingHint();
+
+			if(Type == video::EIT_32BIT)
+				Indices = new CIndexList<u32>();
+			else // EIT_16BIT
+				Indices = new CIndexList<u16>();
+
+			Indices->reallocate(pIndexBuffer.getIndexCount());
+
+			for(u32 i = 0; i < pIndexBuffer.getIndexCount(); ++i)
+				addIndex(pIndexBuffer.getIndex(i));
 		}
 
 		virtual ~CIndexBuffer()
@@ -108,77 +44,24 @@ namespace scene
 			delete Indices;
 		}
 
-		//virtual void setType(video::E_INDEX_TYPE IndexType);
-		virtual void setType(video::E_INDEX_TYPE IndexType)
+		virtual void clear()
 		{
-			IIndexList *NewIndices=0;
-
-			switch (IndexType)
-			{
-				case video::EIT_16BIT:
-				{
-					NewIndices=new CSpecificIndexList<u16>;
-					break;
-				}
-				case video::EIT_32BIT:
-				{
-					NewIndices=new CSpecificIndexList<u32>;
-					break;
-				}
-			}
-
-			if (Indices)
-			{
-				NewIndices->reallocate( Indices->size() );
-
-				for(u32 n=0;n<Indices->size();++n)
-					NewIndices->push_back((*Indices)[n]);
-
-				delete Indices;
-			}
-
-			Indices=NewIndices;
-		}
-
-		virtual void* getData() {return Indices->pointer();}
-
-		virtual video::E_INDEX_TYPE getType() const {return Indices->getType();}
-
-		virtual u32 stride() const {return Indices->stride();}
-
-		virtual u32 size() const
-		{
-			return Indices->size();
-		}
-
-		virtual void push_back(const u32 &element)
-		{
-			Indices->push_back(element);
-		}
-
-		virtual u32 operator [](u32 index) const
-		{
-			return (*Indices)[index];
+			Indices->clear();
 		}
 
 		virtual u32 getLast()
 		{
-			return Indices->getLast();
+			return (u32)Indices->getLast();
 		}
 
-		virtual void setValue(u32 index, u32 value)
+		virtual void set_used(u32 pUsed)
 		{
-			Indices->setValue(index, value);
+			Indices->set_used(pUsed);
 		}
 
-		virtual void set_used(u32 usedNow)
+		virtual void reallocate(u32 pSize)
 		{
-			Indices->set_used(usedNow);
-		}
-
-		virtual void reallocate(u32 new_size)
-		{
-			Indices->reallocate(new_size);
+			Indices->reallocate(pSize);
 		}
 
 		virtual u32 allocated_size() const
@@ -186,40 +69,218 @@ namespace scene
 			return Indices->allocated_size();
 		}
 
-		virtual void* pointer()
+		virtual s32 linear_reverse_search(const u32& pElement) const
+		{
+			return Indices->linear_reverse_search(pElement);
+		}
+
+		virtual video::E_INDEX_TYPE getType() const
+		{
+			return Type;
+		}
+
+		virtual void setType(video::E_INDEX_TYPE pType)
+		{
+			if(Type == pType)
+				return;
+
+			Type = pType;
+
+			IIndexList* Indices = 0;
+
+			switch(Type)
+			{
+				case video::EIT_16BIT:
+				{
+					Indices = new CIndexList<u16>();
+					break;
+				}
+				case video::EIT_32BIT:
+				{
+					Indices = new CIndexList<u32>();
+					break;
+				}
+			}
+
+			if(Indices)
+			{
+				Indices->reallocate(Indices->size());
+
+				for(u32 i = 0; i < Indices->size(); ++i)
+					Indices->addIndex(Indices->getIndex(i));
+
+				delete Indices;
+			}
+
+			Indices = Indices;
+		}
+
+		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const
+		{
+			return HardwareMappingHint;
+		}
+
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pHardwareMappingHint)
+		{
+			if(HardwareMappingHint != pHardwareMappingHint)
+				setDirty();
+
+			HardwareMappingHint = pHardwareMappingHint;
+		}
+
+		virtual void addIndex(const u32& pIndex)
+		{
+			Indices->addIndex(pIndex);
+		}
+
+		virtual u32 getIndex(u32 pID) const
+		{
+			return Indices->getIndex(pID);
+		}
+
+		virtual void* getIndices()
 		{
 			return Indices->pointer();
 		}
 
-		//! get the current hardware mapping hint
-		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const
+		virtual u32 getIndexCount() const
 		{
-			return MappingHint;
+			return Indices->size();
 		}
 
-		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint( E_HARDWARE_MAPPING NewMappingHint )
+		virtual u32 getIndexSize() const
 		{
-			MappingHint=NewMappingHint;
+			if(Type == video::EIT_32BIT)
+				return sizeof(u32);
+
+			return sizeof(u16);
 		}
 
-		//! flags the mesh as changed, reloads hardware buffers
+		virtual void setIndex(u32 pID, u32 pValue)
+		{
+			Indices->setIndex(pID, pValue);
+		}		
+
 		virtual void setDirty()
 		{
 			++ChangedID;
 		}
 
-		//! Get the currently used ID for identification of changes.
-		/** This shouldn't be used for anything outside the VideoDriver. */
-		virtual u32 getChangedID() const {return ChangedID;}
+		virtual u32 getChangedID() const
+		{
+			return ChangedID;
+		}
 
-		E_HARDWARE_MAPPING MappingHint;
+	protected:
+		class IIndexList
+		{
+		public:
+			virtual void clear() = 0;
+			virtual void* pointer() = 0;
+			virtual u32 size() const = 0;
+			virtual u32 getLast() = 0;
+			virtual void set_used(u32 pUsed) = 0;
+			virtual void reallocate(u32 pSize) = 0;
+			virtual u32 allocated_size() const = 0;
+			virtual s32 linear_reverse_search(const u32& pElement) const = 0;
+			virtual void addIndex(const u32& pIndex) = 0;
+			virtual u32 getIndex(u32 pID) const = 0;
+			virtual void setIndex(u32 pID, u32 pValue) = 0;
+		};
+
+		template <class T>
+		class CIndexList : public IIndexList
+		{
+		public:
+			CIndexList() : Data(0)
+			{
+			}
+
+			CIndexList(const CIndexList &pIndexList) : Data(0)
+			{
+				Data.reallocate(pIndexList.Data.size());
+
+				for(u32 i = 0; i < pIndexList.Data.size(); ++i)
+					Data.push_back(pIndexList.Data[i]);
+			}
+
+			~CIndexList()
+			{
+				Data.clear();
+			}
+
+			virtual void clear()
+			{
+				Data.clear();
+			}
+
+			virtual void* pointer()
+			{
+				return Data.pointer();
+			}
+
+			virtual u32 size() const
+			{
+				return Data.size();
+			}
+
+			virtual u32 getLast()
+			{
+				return (u32)Data.getLast();
+			}
+
+			virtual void set_used(u32 pUsed)
+			{
+				Data.set_used(pUsed);
+			}
+
+			virtual void reallocate(u32 pSize)
+			{
+				Data.reallocate(pSize);
+			}
+
+			virtual u32 allocated_size() const
+			{
+				return Data.allocated_size();
+			}
+
+			virtual s32 linear_reverse_search(const u32& pElement) const
+			{
+				return Data.linear_reverse_search(pElement);
+			}
+
+			virtual void addIndex(const u32& pIndex)
+			{
+				Data.push_back(pIndex);
+			}
+
+			virtual u32 getIndex(u32 pID) const
+			{
+				if(pID < Data.size())
+					return Data[pID];
+
+				return 0;
+			}
+
+			virtual void setIndex(u32 pID, u32 pValue)
+			{
+				if(pID < Data.size())
+					Data[pID] = (T)pValue;
+			}	
+
+		protected:
+			core::array<T> Data;
+		};
+
+		IIndexList* Indices;
+
+		video::E_INDEX_TYPE Type;
+
+		E_HARDWARE_MAPPING HardwareMappingHint;
+
 		u32 ChangedID;
 	};
-
-
-} // end namespace scene
-} // end namespace irr
+}
+}
 
 #endif
-

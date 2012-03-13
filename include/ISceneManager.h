@@ -19,6 +19,7 @@
 #include "SceneParameters.h"
 #include "IGeometryCreator.h"
 #include "ISkinnedMesh.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -558,15 +559,16 @@ namespace scene
 		\param alsoAddIfMeshPointerZero: Add the scene node even if a 0 pointer is passed.
 		\return Pointer to the Octree if successful, otherwise 0.
 		This pointer should not be dropped. See IReferenceCounted::drop() for more information. */
-		virtual IMeshSceneNode* addOctreeSceneNode(IAnimatedMesh* mesh, ISceneNode* parent=0,
-			s32 id=-1, s32 minimalPolysPerNode=512, bool alsoAddIfMeshPointerZero=false) = 0;
-
-		//! Adds a scene node for rendering using a octree to the scene graph.
-		/** \deprecated Use addOctreeSceneNode instead. This method may be removed by Irrlicht 1.9. */
-		_IRR_DEPRECATED_ IMeshSceneNode* addOctTreeSceneNode(IAnimatedMesh* mesh, ISceneNode* parent=0,
+		template <class T>
+		IMeshSceneNode* addOctreeSceneNode(IAnimatedMesh* mesh, ISceneNode* parent=0,
 			s32 id=-1, s32 minimalPolysPerNode=512, bool alsoAddIfMeshPointerZero=false)
 		{
-			return addOctreeSceneNode(mesh, parent, id, minimalPolysPerNode, alsoAddIfMeshPointerZero);
+			if (!alsoAddIfMeshPointerZero && (!mesh || !mesh->getFrameCount()))
+				return 0;
+
+			return addOctreeSceneNode<T>(mesh ? mesh->getMesh(0) : 0,
+						parent, id, minimalPolysPerNode,
+						alsoAddIfMeshPointerZero);
 		}
 
 		//! Adds a scene node for rendering using a octree to the scene graph.
@@ -582,15 +584,28 @@ namespace scene
 		\param alsoAddIfMeshPointerZero: Add the scene node even if a 0 pointer is passed.
 		\return Pointer to the octree if successful, otherwise 0.
 		This pointer should not be dropped. See IReferenceCounted::drop() for more information. */
-		virtual IMeshSceneNode* addOctreeSceneNode(IMesh* mesh, ISceneNode* parent=0,
-			s32 id=-1, s32 minimalPolysPerNode=256, bool alsoAddIfMeshPointerZero=false) = 0;
-
-		//! Adds a scene node for rendering using a octree to the scene graph.
-		/** \deprecated Use addOctreeSceneNode instead. This method may be removed by Irrlicht 1.9. */
-		_IRR_DEPRECATED_ IMeshSceneNode* addOctTreeSceneNode(IMesh* mesh, ISceneNode* parent=0,
+		template <class T>
+		IMeshSceneNode* addOctreeSceneNode(IMesh* mesh, ISceneNode* parent=0,
 			s32 id=-1, s32 minimalPolysPerNode=256, bool alsoAddIfMeshPointerZero=false)
 		{
-			return addOctreeSceneNode(mesh, parent, id, minimalPolysPerNode, alsoAddIfMeshPointerZero);
+			if (!alsoAddIfMeshPointerZero && !mesh)
+				return 0;
+
+			core::array<IMeshBuffer*> meshBufferA;
+
+			for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+			{
+				IMeshBuffer* meshBuffer = mesh->getMeshBuffer(i);
+
+				if (meshBuffer->getVertexBuffer()->getVertexCount() && meshBuffer->getIndexBuffer()->getIndexCount())
+				{
+					CMeshBuffer<T>* newMeshBuffer = new CMeshBuffer<T>(meshBuffer->getVertexBuffer()->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getType());
+					newMeshBuffer->Material = meshBuffer->getMaterial();
+					meshBufferA.push_back(newMeshBuffer);
+				}
+			}
+
+			return addOctreeSceneNode(meshBufferA, mesh, parent, id, minimalPolysPerNode);
 		}
 
 		//! Adds a camera scene node to the scene graph and sets it as active camera.
@@ -1621,6 +1636,11 @@ namespace scene
 		\return True if node is not visible in the current scene, else
 		false. */
 		virtual bool isCulled(const ISceneNode* node) const =0;
+
+	protected:
+
+		virtual IMeshSceneNode* addOctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshes, IMesh* origMesh, ISceneNode* parent=0,
+			s32 id=-1, s32 minimalPolysPerNode=512) = 0;
 	};
 
 

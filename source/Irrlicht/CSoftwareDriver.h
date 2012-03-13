@@ -56,9 +56,8 @@ namespace video
 		virtual const core::dimension2d<u32>& getCurrentRenderTargetSize() const;
 
 		//! draws a vertex primitive list
-		void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType);
+		void drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
+			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType);
 
 		//! Draws a 3d line.
 		virtual void draw3DLine(const core::vector3df& start,
@@ -134,13 +133,6 @@ namespace video
 
 		//! clips a triangle agains the viewing frustum
 		void clipTriangle(f32* transformedPos);
-
-
-		//! draws a vertex primitive list
-		void drawVertexPrimitiveList16(const void* vertices, u32 vertexCount,
-				const u16* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType);
-
 
 		template<class VERTEXTYPE>
 		void drawClippedIndexedTriangleListT(const VERTEXTYPE* vertices,

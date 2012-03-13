@@ -225,7 +225,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	CollisionManager = new CSceneCollisionManager(this, Driver);
 
 	// create geometry creator
-	GeometryCreator = new CGeometryCreator();
+	GeometryCreator = new CGeometryCreator(Driver);
 
 	// add file format loaders. add the least commonly used ones first,
 	// as these are checked last
@@ -234,7 +234,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	// shallow copies from the previous manager if there is one.
 
 	#ifdef _IRR_COMPILE_WITH_STL_LOADER_
-	MeshLoaderList.push_back(new CSTLMeshFileLoader());
+	MeshLoaderList.push_back(new CSTLMeshFileLoader(Driver));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_PLY_LOADER_
 	MeshLoaderList.push_back(new CPLYMeshFileLoader(this));
@@ -258,7 +258,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	MeshLoaderList.push_back(new CDMFLoader(this, FileSystem));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_OGRE_LOADER_
-	MeshLoaderList.push_back(new COgreMeshFileLoader(FileSystem, Driver));
+	MeshLoaderList.push_back(new COgreMeshFileLoader(FileSystem, this));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_HALFLIFE_LOADER_
 	MeshLoaderList.push_back(new CHalflifeMDLMeshFileLoader( this ));
@@ -270,7 +270,7 @@ CSceneManager::CSceneManager(video::IVideoDriver* driver, io::IFileSystem* fs,
 	MeshLoaderList.push_back(new CLWOMeshFileLoader(this, FileSystem));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_MD2_LOADER_
-	MeshLoaderList.push_back(new CMD2MeshFileLoader());
+	MeshLoaderList.push_back(new CMD2MeshFileLoader(Driver));
 	#endif
 	#ifdef _IRR_COMPILE_WITH_IRR_MESH_LOADER_
 	MeshLoaderList.push_back(new CIrrMeshFileLoader(this, FileSystem));
@@ -652,35 +652,17 @@ IAnimatedMeshSceneNode* CSceneManager::addAnimatedMeshSceneNode(IAnimatedMesh* m
 //! Adds a scene node for rendering using a octree to the scene graph. This a good method for rendering
 //! scenes with lots of geometry. The Octree is built on the fly from the mesh, much
 //! faster then a bsp tree.
-IMeshSceneNode* CSceneManager::addOctreeSceneNode(IAnimatedMesh* mesh, ISceneNode* parent,
-			s32 id, s32 minimalPolysPerNode, bool alsoAddIfMeshPointerZero)
+IMeshSceneNode* CSceneManager::addOctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshes, IMesh* origMesh, ISceneNode* parent,
+	s32 id, s32 minimalPolysPerNode)
 {
-	if (!alsoAddIfMeshPointerZero && (!mesh || !mesh->getFrameCount()))
-		return 0;
-
-	return addOctreeSceneNode(mesh ? mesh->getMesh(0) : 0,
-				parent, id, minimalPolysPerNode,
-				alsoAddIfMeshPointerZero);
-}
-
-
-//! Adds a scene node for rendering using a octree. This a good method for rendering
-//! scenes with lots of geometry. The Octree is built on the fly from the mesh, much
-//! faster then a bsp tree.
-IMeshSceneNode* CSceneManager::addOctreeSceneNode(IMesh* mesh, ISceneNode* parent,
-		s32 id, s32 minimalPolysPerNode, bool alsoAddIfMeshPointerZero)
-{
-	if (!alsoAddIfMeshPointerZero && !mesh)
-		return 0;
-
 	if (!parent)
 		parent = this;
 
-	COctreeSceneNode* node = new COctreeSceneNode(parent, this, id, minimalPolysPerNode);
+	COctreeSceneNode* node = new COctreeSceneNode(meshes, parent, this, id, minimalPolysPerNode);
 
 	if (node)
 	{
-		node->setMesh(mesh);
+		node->setMesh(origMesh);
 		node->drop();
 	}
 

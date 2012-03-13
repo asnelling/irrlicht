@@ -44,7 +44,7 @@ CSkyDomeSceneNode::CSkyDomeSceneNode(video::ITexture* sky, u32 horiRes, u32 vert
 
 	setAutomaticCulling(scene::EAC_OFF);
 
-	Buffer = new SMeshBuffer();
+	Buffer = new CMeshBuffer<video::S3DVertex>(mgr->getVideoDriver()->getVertexDescriptor(0));
 	Buffer->Material.Lighting = false;
 	Buffer->Material.ZBuffer = video::ECFN_NEVER;
 	Buffer->Material.ZWriteEnable = false;
@@ -70,8 +70,8 @@ void CSkyDomeSceneNode::generateMesh()
 	f32 azimuth;
 	u32 k;
 
-	Buffer->Vertices.clear();
-	Buffer->Indices.clear();
+	Buffer->getVertexBuffer()->clear();
+	Buffer->getIndexBuffer()->clear();
 
 	const f32 azimuth_step = (core::PI * 2.f) / HorizontalResolution;
 	if (SpherePercentage < 0.f)
@@ -80,8 +80,8 @@ void CSkyDomeSceneNode::generateMesh()
 		SpherePercentage = 2.f;
 	const f32 elevation_step = SpherePercentage * core::HALF_PI / (f32)VerticalResolution;
 
-	Buffer->Vertices.reallocate( (HorizontalResolution + 1) * (VerticalResolution + 1) );
-	Buffer->Indices.reallocate(3 * (2*VerticalResolution - 1) * HorizontalResolution);
+	Buffer->getVertexBuffer()->reallocate( (HorizontalResolution + 1) * (VerticalResolution + 1) );
+	Buffer->getIndexBuffer()->reallocate(3 * (2*VerticalResolution - 1) * HorizontalResolution);
 
 	video::S3DVertex vtx;
 	vtx.Color.set(255,255,255,255);
@@ -103,7 +103,7 @@ void CSkyDomeSceneNode::generateMesh()
 			vtx.Normal = -vtx.Pos;
 			vtx.Normal.normalize();
 
-			Buffer->Vertices.push_back(vtx);
+			Buffer->getVertexBuffer()->addVertex(&vtx);
 			elevation -= elevation_step;
 		}
 		azimuth += azimuth_step;
@@ -111,19 +111,19 @@ void CSkyDomeSceneNode::generateMesh()
 
 	for (k = 0; k < HorizontalResolution; ++k)
 	{
-		Buffer->Indices.push_back(VerticalResolution + 2 + (VerticalResolution + 1)*k);
-		Buffer->Indices.push_back(1 + (VerticalResolution + 1)*k);
-		Buffer->Indices.push_back(0 + (VerticalResolution + 1)*k);
+		Buffer->getIndexBuffer()->addIndex(VerticalResolution + 2 + (VerticalResolution + 1)*k);
+		Buffer->getIndexBuffer()->addIndex(1 + (VerticalResolution + 1)*k);
+		Buffer->getIndexBuffer()->addIndex(0 + (VerticalResolution + 1)*k);
 
 		for (u32 j = 1; j < VerticalResolution; ++j)
 		{
-			Buffer->Indices.push_back(VerticalResolution + 2 + (VerticalResolution + 1)*k + j);
-			Buffer->Indices.push_back(1 + (VerticalResolution + 1)*k + j);
-			Buffer->Indices.push_back(0 + (VerticalResolution + 1)*k + j);
+			Buffer->getIndexBuffer()->addIndex(VerticalResolution + 2 + (VerticalResolution + 1)*k + j);
+			Buffer->getIndexBuffer()->addIndex(1 + (VerticalResolution + 1)*k + j);
+			Buffer->getIndexBuffer()->addIndex(0 + (VerticalResolution + 1)*k + j);
 
-			Buffer->Indices.push_back(VerticalResolution + 1 + (VerticalResolution + 1)*k + j);
-			Buffer->Indices.push_back(VerticalResolution + 2 + (VerticalResolution + 1)*k + j);
-			Buffer->Indices.push_back(0 + (VerticalResolution + 1)*k + j);
+			Buffer->getIndexBuffer()->addIndex(VerticalResolution + 1 + (VerticalResolution + 1)*k + j);
+			Buffer->getIndexBuffer()->addIndex(VerticalResolution + 2 + (VerticalResolution + 1)*k + j);
+			Buffer->getIndexBuffer()->addIndex(0 + (VerticalResolution + 1)*k + j);
 		}
 	}
 	Buffer->setHardwareMappingHint(scene::EHM_STATIC);

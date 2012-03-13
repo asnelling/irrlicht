@@ -16,9 +16,9 @@
 #include "IMesh.h"
 #include "IMeshBuffer.h"
 #include "IMeshSceneNode.h"
+#include "CVertexDescriptor.h"
 #include "CFPSCounter.h"
 #include "S3DVertex.h"
-#include "SVertexIndex.h"
 #include "SLight.h"
 #include "SExposedVideoData.h"
 
@@ -119,9 +119,8 @@ namespace video
 		virtual const core::rect<s32>& getViewPort() const;
 
 		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType=EVT_STANDARD, scene::E_PRIMITIVE_TYPE pType=scene::EPT_TRIANGLES, E_INDEX_TYPE iType=EIT_16BIT);
+		virtual void drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
+			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType = scene::EPT_TRIANGLES);
 
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -374,6 +373,14 @@ namespace video
 
 		//! Draws the normals of a mesh buffer
 		virtual void drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length=10.f, SColor color=0xffffffff);
+
+		virtual bool addVertexDescriptor(const core::stringc& pName);
+
+		virtual IVertexDescriptor* getVertexDescriptor(u32 pID) const;
+
+		virtual IVertexDescriptor* getVertexDescriptor(const core::stringc& pName) const;
+
+		virtual u32 getVertexDescriptorCount() const;
 
 	protected:
 		struct SHWBufferLink
@@ -838,6 +845,8 @@ namespace video
 		bool PixelFog;
 		bool RangeFog;
 		bool AllowZWriteOnTransparent;
+
+		irr::core::array<CVertexDescriptor*> VertexDescriptor;
 
 		bool FeatureEnabled[video::EVDF_COUNT];
 	};

@@ -129,9 +129,8 @@ namespace video
 		virtual u32 getOcclusionQueryResult(scene::ISceneNode* node) const;
 
 		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType);
+		virtual void drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
+			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType);
 
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -387,12 +386,18 @@ namespace video
 		//! Convert E_BLEND_FACTOR to OpenGL equivalent
 		GLenum getGLBlend(E_BLEND_FACTOR factor) const;
 
+		const GLenum& getLinkedProgram();
+
+		void setLinkedProgram(const GLuint& pProgram);
+
 		//! Get Cg context
 		#ifdef _IRR_COMPILE_WITH_CG_
 		const CGcontext& getCgContext();
 		#endif
 
 	private:
+
+		void setVertexAttributes(IVertexDescriptor* pVertexDescriptor);
 
 		//! clears the zbuffer and color buffer
 		void clearBuffers(bool backBuffer, bool zBuffer, bool stencilBuffer, SColor color);
@@ -437,8 +442,7 @@ namespace video
 		void getColorBuffer(const void* vertices, u32 vertexCount, E_VERTEX_TYPE vType);
 
 		//! helper function doing the actual rendering.
-		void renderArray(const void* indexList, u32 primitiveCount,
-				scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType);
+		void renderArray(const void* pIndices, GLenum pIndexSize, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType);
 
 		core::stringw Name;
 		core::matrix4 Matrices[ETS_COUNT];
@@ -484,6 +488,15 @@ namespace video
 		E_RENDER_TARGET CurrentTarget;
 
 		SIrrlichtCreationParameters Params;
+
+		//! Status of vertex attribute (Disabled/Enabled). Max 16 attributes per vertex.
+		bool VertexAttributeStatus[16];
+
+		//! Linked GLSL program
+		GLuint LinkedProgram, LastLinkedProgram;
+
+		//! Last used vertex descriptor
+		IVertexDescriptor* LastVertexDescriptor;
 
 		//! All the lights that have been requested; a hardware limited
 		//! number of them will be used at once.

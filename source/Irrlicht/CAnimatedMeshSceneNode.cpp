@@ -304,7 +304,7 @@ void CAnimatedMeshSceneNode::render()
 				if (RenderFromIdentity)
 					driver->setTransform(video::ETS_WORLD, core::IdentityMatrix );
 				else if (Mesh->getMeshType() == EAMT_SKINNED)
-					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((SSkinMeshBuffer*)mb)->Transformation);
+					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((IMeshBuffer*)mb)->getTransformation());
 
 				driver->setMaterial(mat);
 				driver->drawMeshBuffer(mb);
@@ -330,7 +330,7 @@ void CAnimatedMeshSceneNode::render()
 				if (RenderFromIdentity)
 					driver->setTransform(video::ETS_WORLD, core::IdentityMatrix );
 				else if (Mesh->getMeshType() == EAMT_SKINNED)
-					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((SSkinMeshBuffer*)mb)->Transformation);
+					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((IMeshBuffer*)mb)->getTransformation());
 
 				driver->setMaterial(material);
 				driver->drawMeshBuffer(mb);
@@ -376,7 +376,7 @@ void CAnimatedMeshSceneNode::render()
 				const IMeshBuffer* mb = m->getMeshBuffer(g);
 
 				if (Mesh->getMeshType() == EAMT_SKINNED)
-					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((SSkinMeshBuffer*)mb)->Transformation);
+					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((IMeshBuffer*)mb)->getTransformation());
 				driver->draw3DBox(mb->getBoundingBox(), video::SColor(255,190,128,128));
 			}
 		}
@@ -450,7 +450,7 @@ void CAnimatedMeshSceneNode::render()
 				if (RenderFromIdentity)
 					driver->setTransform(video::ETS_WORLD, core::IdentityMatrix );
 				else if (Mesh->getMeshType() == EAMT_SKINNED)
-					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((SSkinMeshBuffer*)mb)->Transformation);
+					driver->setTransform(video::ETS_WORLD, AbsoluteTransformation * ((IMeshBuffer*)mb)->getTransformation());
 				driver->drawMeshBuffer(mb);
 			}
 		}

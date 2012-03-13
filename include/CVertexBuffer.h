@@ -1,210 +1,174 @@
-// Copyright (C) 2008-2011 Nikolaus Gebhardt
+// Copyright (C) 2012 Patryk Nadrowski
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
 #ifndef __C_VERTEX_BUFFER_H_INCLUDED__
 #define __C_VERTEX_BUFFER_H_INCLUDED__
 
+#include "S3DVertex.h"
 #include "IVertexBuffer.h"
-
 
 namespace irr
 {
 namespace scene
 {
-
+	template <class T>
 	class CVertexBuffer : public IVertexBuffer
 	{
-		class IVertexList
-		{
-		public:
-			virtual ~IVertexList(){};
-
-			virtual u32 stride() const =0;
-
-			virtual u32 size() const =0;
-
-			virtual void push_back (const video::S3DVertex &element) =0;
-			virtual video::S3DVertex& operator [](const u32 index) const =0;
-			virtual video::S3DVertex& getLast() =0;
-			virtual void set_used(u32 usedNow) =0;
-			virtual void reallocate(u32 new_size) =0;
-			virtual u32 allocated_size() const =0;
-			virtual video::S3DVertex* pointer() =0;
-			virtual video::E_VERTEX_TYPE getType() const =0;
-		};
-
-		template <class T>
-		class CSpecificVertexList : public IVertexList
-		{
-		public:
-			core::array<T> Vertices;
-
-			virtual u32 stride() const {return sizeof(T);}
-
-			virtual u32 size() const {return Vertices.size();}
-
-			virtual void push_back (const video::S3DVertex &element)
-			{Vertices.push_back((T&)element);}
-
-			virtual video::S3DVertex& operator [](const u32 index) const
-			{return (video::S3DVertex&)Vertices[index];}
-
-			virtual video::S3DVertex& getLast()
-			{return (video::S3DVertex&)Vertices.getLast();}
-
-			virtual void set_used(u32 usedNow)
-			{Vertices.set_used(usedNow);}
-
-			virtual void reallocate(u32 new_size)
-			{Vertices.reallocate(new_size);}
-
-			virtual u32 allocated_size() const
-			{
-				return Vertices.allocated_size();
-			}
-
-			virtual video::S3DVertex* pointer() {return Vertices.pointer();}
-
-			virtual video::E_VERTEX_TYPE getType() const {return T().getType();}
-		};
-
 	public:
-		IVertexList *Vertices;
-
-		CVertexBuffer(video::E_VERTEX_TYPE vertexType) : Vertices(0),
-				MappingHint(EHM_NEVER), ChangedID(1)
+		CVertexBuffer(video::IVertexDescriptor* pVertexDescriptor) : Vertices(0), vertexDescriptor(pVertexDescriptor), HardwareMappingHint(EHM_NEVER), ChangedID(1)
 		{
-			setType(vertexType);
+			if(vertexDescriptor)
+				vertexDescriptor->grab();
 		}
 
-		CVertexBuffer(const IVertexBuffer &VertexBufferCopy) :
-				Vertices(0), MappingHint(EHM_NEVER),
-				ChangedID(1)
+		CVertexBuffer(const CVertexBuffer& pVertexBuffer) : Vertices(0), ChangedID(1)
 		{
-			setType(VertexBufferCopy.getType());
-			reallocate(VertexBufferCopy.size());
+			vertexDescriptor = pVertexBuffer.getVertexDescriptor();
 
-			for (u32 n=0;n<VertexBufferCopy.size();++n)
-				push_back(VertexBufferCopy[n]);
+			if(vertexDescriptor)
+				vertexDescriptor->grab();
+
+			HardwareMappingHint = pVertexBuffer.getHardwareMappingHint();
+
+			Vertices.reallocate(pVertexBuffer.getVertexCount());
+
+			for(u32 i = 0; i < pVertexBuffer.getVertexCount(); ++i)
+				Vertices.push_back(pVertexBuffer.getVertex(i));
 		}
 
 		virtual ~CVertexBuffer()
 		{
-			delete Vertices;
+			Vertices.clear();
+
+			if(vertexDescriptor)
+				vertexDescriptor->drop();
 		}
 
-
-		virtual void setType(video::E_VERTEX_TYPE vertexType)
+		virtual void clear()
 		{
-			IVertexList *NewVertices=0;
-
-			switch (vertexType)
-			{
-				case video::EVT_STANDARD:
-				{
-					NewVertices=new CSpecificVertexList<video::S3DVertex>;
-					break;
-				}
-				case video::EVT_2TCOORDS:
-				{
-					NewVertices=new CSpecificVertexList<video::S3DVertex2TCoords>;
-					break;
-				}
-				case video::EVT_TANGENTS:
-				{
-					NewVertices=new CSpecificVertexList<video::S3DVertexTangents>;
-					break;
-				}
-			}
-			if (Vertices)
-			{
-				NewVertices->reallocate( Vertices->size() );
-
-				for(u32 n=0;n<Vertices->size();++n)
-					NewVertices->push_back((*Vertices)[n]);
-
-				delete Vertices;
-			}
-
-			Vertices=NewVertices;
+			Vertices.clear();
 		}
 
-		virtual void* getData() {return Vertices->pointer();}
-
-		virtual video::E_VERTEX_TYPE getType() const {return Vertices->getType();}
-
-		virtual u32 stride() const {return Vertices->stride();}
-
-		virtual u32 size() const
+		virtual T& getLast()
 		{
-			return Vertices->size();
+			return Vertices.getLast();
 		}
 
-		virtual void push_back (const video::S3DVertex &element)
+		virtual void set_used(u32 pUsed)
 		{
-			Vertices->push_back(element);
+			Vertices.set_used(pUsed);
 		}
 
-		virtual video::S3DVertex& operator [](const u32 index) const
+		virtual void reallocate(u32 pSize)
 		{
-			return (*Vertices)[index];
-		}
-
-		virtual video::S3DVertex& getLast()
-		{
-			return Vertices->getLast();
-		}
-
-		virtual void set_used(u32 usedNow)
-		{
-			Vertices->set_used(usedNow);
-		}
-
-		virtual void reallocate(u32 new_size)
-		{
-			Vertices->reallocate(new_size);
+			Vertices.reallocate(pSize);
 		}
 
 		virtual u32 allocated_size() const
 		{
-			return Vertices->allocated_size();
+			return Vertices.allocated_size();
 		}
 
-		virtual video::S3DVertex* pointer()
+		virtual s32 linear_reverse_search(const T& pElement) const
 		{
-			return Vertices->pointer();
+			return Vertices.linear_reverse_search(pElement);
 		}
 
-		//! get the current hardware mapping hint
+		virtual s32 linear_reverse_search(const void* pElement) const
+		{
+			return Vertices.linear_reverse_search((T&)(pElement));
+		}
+
+		virtual video::IVertexDescriptor* getVertexDescriptor() const
+		{
+			return vertexDescriptor;
+		}
+
+		virtual bool setVertexDescriptor(video::IVertexDescriptor* pVertexDescriptor)
+		{
+			if(pVertexDescriptor && pVertexDescriptor != vertexDescriptor)
+			{
+				if(vertexDescriptor)
+					vertexDescriptor->drop();
+
+				vertexDescriptor = pVertexDescriptor;
+				vertexDescriptor->grab();
+
+				return true;
+			}
+
+			return false;
+		}
+
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const
 		{
-			return MappingHint;
+			return HardwareMappingHint;
 		}
 
-		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint( E_HARDWARE_MAPPING NewMappingHint )
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pHardwareMappingHint)
 		{
-			MappingHint=NewMappingHint;
+			if(HardwareMappingHint != pHardwareMappingHint)
+				setDirty();
+
+			HardwareMappingHint = pHardwareMappingHint;
 		}
 
-		//! flags the mesh as changed, reloads hardware buffers
+		virtual void addVertex(const T& pVertex)
+		{
+			Vertices.push_back(pVertex);
+		}
+
+		virtual void addVertex(const void* pVertex)
+		{
+			T* Vertex = (T*)pVertex;
+			Vertices.push_back(*Vertex);
+		}
+
+		virtual T& getVertex(u32 pID)
+		{
+			return Vertices[pID];
+		}
+
+		virtual void* getVertices()
+		{
+			return Vertices.pointer();
+		}
+
+		virtual u32 getVertexCount() const
+		{
+			return Vertices.size();
+		}
+
+		virtual u32 getVertexSize() const
+		{
+			return sizeof(T);
+		}
+
 		virtual void setDirty()
 		{
 			++ChangedID;
 		}
 
-		//! Get the currently used ID for identification of changes.
-		/** This shouldn't be used for anything outside the VideoDriver. */
-		virtual u32 getChangedID() const {return ChangedID;}
+		virtual u32 getChangedID() const
+		{
+			return ChangedID;
+		}
 
-		E_HARDWARE_MAPPING MappingHint;
+	protected:
+		core::array<T> Vertices;
+
+		video::IVertexDescriptor* vertexDescriptor;
+
+		E_HARDWARE_MAPPING HardwareMappingHint;
+
 		u32 ChangedID;
 	};
 
-
-} // end namespace scene
-} // end namespace irr
+	typedef CVertexBuffer<video::S3DVertex> SVertexBuffer;
+	typedef CVertexBuffer<video::S3DVertex2TCoords> SVertexBufferLightMap;
+	typedef CVertexBuffer<video::S3DVertexTangents> SVertexBufferTangents;
+}
+}
 
 #endif
-

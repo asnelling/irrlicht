@@ -8,6 +8,7 @@
 #include "CMD2MeshFileLoader.h"
 #include "CAnimatedMeshMD2.h"
 #include "os.h"
+#include "IVideoDriver.h"
 
 namespace irr
 {
@@ -92,7 +93,7 @@ namespace scene
 #undef PACK_STRUCT
 
 //! Constructor
-CMD2MeshFileLoader::CMD2MeshFileLoader()
+CMD2MeshFileLoader::CMD2MeshFileLoader(video::IVideoDriver* pDriver) : Driver(pDriver)
 {
 	#ifdef _DEBUG
 	setDebugName("CMD2MeshFileLoader");
@@ -114,7 +115,7 @@ bool CMD2MeshFileLoader::isALoadableFileExtension(const io::path& filename) cons
 //! See IReferenceCounted::drop() for more information.
 IAnimatedMesh* CMD2MeshFileLoader::createMesh(io::IReadFile* file)
 {
-	IAnimatedMesh* msh = new CAnimatedMeshMD2();
+	IAnimatedMesh* msh = new CAnimatedMeshMD2(Driver);
 	if (msh)
 	{
 		if (loadFile(file, (CAnimatedMeshMD2*)msh) )
@@ -182,16 +183,16 @@ bool CMD2MeshFileLoader::loadFile(io::IReadFile* file, CAnimatedMeshMD2* mesh)
 		mesh->FrameList[i].reallocate(header.numVertices);
 
 	// allocate interpolation buffer vertices
-	mesh->InterpolationBuffer->Vertices.set_used(header.numTriangles*3);
+	mesh->InterpolationBuffer->getVertexBuffer()->set_used(header.numTriangles*3);
 
 	// populate triangles
-	mesh->InterpolationBuffer->Indices.reallocate(header.numTriangles*3);
+	mesh->InterpolationBuffer->getIndexBuffer()->reallocate(header.numTriangles*3);
 	const s32 count = header.numTriangles*3;
 	for (i=0; i<count; i+=3)
 	{
-		mesh->InterpolationBuffer->Indices.push_back(i);
-		mesh->InterpolationBuffer->Indices.push_back(i+1);
-		mesh->InterpolationBuffer->Indices.push_back(i+2);
+		mesh->InterpolationBuffer->getIndexBuffer()->addIndex(i);
+		mesh->InterpolationBuffer->getIndexBuffer()->addIndex(i+1);
+		mesh->InterpolationBuffer->getIndexBuffer()->addIndex(i+2);
 	}
 
 	//
@@ -350,11 +351,13 @@ bool CMD2MeshFileLoader::loadFile(io::IReadFile* file, CAnimatedMeshMD2* mesh)
 
 		for (s32 t=0; t<header.numTriangles; ++t)
 		{
+			video::S3DVertex* Vertices = (video::S3DVertex*)mesh->InterpolationBuffer->getVertexBuffer()->getVertices();
+
 			for (s32 n=0; n<3; ++n)
 			{
-				mesh->InterpolationBuffer->Vertices[t*3 + n].TCoords.X = (textureCoords[triangles[t].textureIndices[n]].s + 0.5f) * dmaxs;
-				mesh->InterpolationBuffer->Vertices[t*3 + n].TCoords.Y = (textureCoords[triangles[t].textureIndices[n]].t + 0.5f) * dmaxt;
-				mesh->InterpolationBuffer->Vertices[t*3 + n].Color = video::SColor(255,255,255,255);
+				Vertices[t*3 + n].TCoords.X = (textureCoords[triangles[t].textureIndices[n]].s + 0.5f) * dmaxs;
+				Vertices[t*3 + n].TCoords.Y = (textureCoords[triangles[t].textureIndices[n]].t + 0.5f) * dmaxt;
+				Vertices[t*3 + n].Color = video::SColor(255,255,255,255);
 			}
 		}
 	}

@@ -1726,6 +1726,32 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 }
 
 
+void CBurningVideoDriver::drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
+			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType)
+
+{
+	E_VERTEX_TYPE vType = EVT_STANDARD;
+
+	// Supported are only built-in Irrlicht vertex formats.
+	switch(pVertexBuffer->getVertexSize())
+	{
+	case sizeof(S3DVertex):
+		vType = EVT_STANDARD;
+		break;
+	case sizeof(S3DVertex2TCoords):
+		vType = EVT_2TCOORDS;
+		break;
+	case sizeof(S3DVertexTangents):
+		vType = EVT_TANGENTS;
+		break;
+	default:
+		return;
+	}
+
+	drawVertexPrimitiveList(pVertexBuffer->getVertices(), pVertexBuffer->getVertexCount(), pIndexBuffer->getIndices(), pPrimitiveCount, vType, pType, pIndexBuffer->getType());
+}
+
+
 void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
 				const void* indexList, u32 primitiveCount,
 				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
@@ -1734,7 +1760,11 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	if (!checkPrimitiveCount(primitiveCount))
 		return;
 
-	CNullDriver::drawVertexPrimitiveList(vertices, vertexCount, indexList, primitiveCount, vType, pType, iType);
+	// Emulate CNullDriver::drawVertexPrimitiveList call.
+	if((iType == EIT_16BIT) && (vertexCount > 65536))
+		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
+
+	PrimitivesDrawn += primitiveCount;
 
 	if ( 0 == CurrentShader )
 		return;

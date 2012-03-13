@@ -7,6 +7,8 @@
 
 #include "ISceneNode.h"
 #include "S3DVertex.h"
+#include "CVertexBuffer.h"
+#include "CIndexBuffer.h"
 
 namespace irr
 {
@@ -22,6 +24,9 @@ namespace scene
 		CSkyBoxSceneNode(video::ITexture* top, video::ITexture* bottom, video::ITexture* left,
 			video::ITexture* right, video::ITexture* front, video::ITexture* back,
 			ISceneNode* parent, ISceneManager* mgr, s32 id);
+
+        //! destructor
+        ~CSkyBoxSceneNode();
 
 		virtual void OnRegisterSceneNode();
 
@@ -45,14 +50,15 @@ namespace scene
 		virtual ESCENE_NODE_TYPE getType() const { return ESNT_SKY_BOX; }
 
 		//! Creates a clone of this scene node and its children.
-		virtual ISceneNode* clone(ISceneNode* newParent=0, ISceneManager* newManager=0); 
+		virtual ISceneNode* clone(ISceneNode* newParent=0, ISceneManager* newManager=0);
 
 	private:
 
 		core::aabbox3d<f32> Box;
-		u16 Indices[4];
-		video::S3DVertex Vertices[4*6];
 		video::SMaterial Material[6];
+
+		IVertexBuffer* VertexBuffer[6];
+		IIndexBuffer* IndexBuffer;
 	};
 
 } // end namespace scene

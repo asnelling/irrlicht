@@ -8,7 +8,7 @@
 #include "IParticleSystemSceneNode.h"
 #include "irrArray.h"
 #include "irrList.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -218,7 +218,7 @@ private:
 	u32 LastEmitTime;
 	s32 MaxParticles;
 
-	SMeshBuffer* Buffer;
+	CMeshBuffer<video::S3DVertex>* Buffer;
 
 	enum E_PARTICLES_PRIMITIVE
 	{

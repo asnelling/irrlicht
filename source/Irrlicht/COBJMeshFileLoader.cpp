@@ -9,7 +9,7 @@
 #include "IMeshManipulator.h"
 #include "IVideoDriver.h"
 #include "SMesh.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "SAnimatedMesh.h"
 #include "IReadFile.h"
 #include "IAttributes.h"
@@ -73,7 +73,7 @@ IAnimatedMesh* COBJMeshFileLoader::createMesh(io::IReadFile* file)
 	core::array<core::vector3df> normalsBuffer;
 	core::array<core::vector2df> textureCoordBuffer;
 
-	SObjMtl * currMtl = new SObjMtl();
+	SObjMtl * currMtl = new SObjMtl(SceneManager);
 	Materials.push_back(currMtl);
 	u32 smoothingGroup=0;
 
@@ -243,8 +243,8 @@ IAnimatedMesh* COBJMeshFileLoader::createMesh(io::IReadFile* file)
 				}
 				else
 				{
-					currMtl->Meshbuffer->Vertices.push_back(v);
-					vertLocation = currMtl->Meshbuffer->Vertices.size() -1;
+					currMtl->Meshbuffer->getVertexBuffer()->addVertex((void*)&v);
+					vertLocation = currMtl->Meshbuffer->getVertexBuffer()->getVertexCount() -1;
 					currMtl->VertMap.insert(v, vertLocation);
 				}
 
@@ -258,9 +258,9 @@ IAnimatedMesh* COBJMeshFileLoader::createMesh(io::IReadFile* file)
 			for ( u32 i = 1; i < faceCorners.size() - 1; ++i )
 			{
 				// Add a triangle
-				currMtl->Meshbuffer->Indices.push_back( faceCorners[i+1] );
-				currMtl->Meshbuffer->Indices.push_back( faceCorners[i] );
-				currMtl->Meshbuffer->Indices.push_back( faceCorners[0] );
+				currMtl->Meshbuffer->getIndexBuffer()->addIndex( faceCorners[i+1] );
+				currMtl->Meshbuffer->getIndexBuffer()->addIndex( faceCorners[i] );
+				currMtl->Meshbuffer->getIndexBuffer()->addIndex( faceCorners[0] );
 			}
 			faceCorners.set_used(0); // fast clear
 			faceCorners.reallocate(32);
@@ -280,18 +280,15 @@ IAnimatedMesh* COBJMeshFileLoader::createMesh(io::IReadFile* file)
 	// Combine all the groups (meshbuffers) into the mesh
 	for ( u32 m = 0; m < Materials.size(); ++m )
 	{
-		if ( Materials[m]->Meshbuffer->getIndexCount() > 0 )
+		if ( Materials[m]->Meshbuffer->getIndexBuffer()->getIndexCount() > 0 )
 		{
 			Materials[m]->Meshbuffer->recalculateBoundingBox();
 			if (Materials[m]->RecalculateNormals)
 				SceneManager->getMeshManipulator()->recalculateNormals(Materials[m]->Meshbuffer);
 			if (Materials[m]->Meshbuffer->Material.MaterialType == video::EMT_PARALLAX_MAP_SOLID)
 			{
-				SMesh tmp;
-				tmp.addMeshBuffer(Materials[m]->Meshbuffer);
-				IMesh* tangentMesh = SceneManager->getMeshManipulator()->createMeshWithTangents(&tmp);
-				mesh->addMeshBuffer(tangentMesh->getMeshBuffer(0));
-				tangentMesh->drop();
+				if(SceneManager->getMeshManipulator()->createTangents<video::S3DVertexTangents>(Materials[m]->Meshbuffer, SceneManager->getVideoDriver()->getVertexDescriptor(2), false))
+					mesh->addMeshBuffer(Materials[m]->Meshbuffer);
 			}
 			else
 				mesh->addMeshBuffer( Materials[m]->Meshbuffer );
@@ -526,7 +523,7 @@ void COBJMeshFileLoader::readMTL(const c8* fileName, const io::path& relPath)
 				c8 mtlNameBuf[WORD_BUFFER_LENGTH];
 				bufPtr = goAndCopyNextWord(mtlNameBuf, bufPtr, WORD_BUFFER_LENGTH, bufEnd);
 
-				currMaterial = new SObjMtl;
+				currMaterial = new SObjMtl(SceneManager);
 				currMaterial->Name = mtlNameBuf;
 			}
 			break;

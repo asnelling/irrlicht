@@ -10,6 +10,7 @@
 #include "IMeshCache.h"
 #include "IAnimatedMesh.h"
 #include "IMaterialRenderer.h"
+#include "IMeshManipulator.h"
 
 #include "os.h"
 
@@ -20,17 +21,16 @@ namespace scene
 
 
 //! constructor
-COctreeSceneNode::COctreeSceneNode(ISceneNode* parent, ISceneManager* mgr,
-					 s32 id, s32 minimalPolysPerNode)
-	: IMeshSceneNode(parent, mgr, id), StdOctree(0), LightMapOctree(0),
-	TangentsOctree(0), VertexType((video::E_VERTEX_TYPE)-1),
-	MinimalPolysPerNode(minimalPolysPerNode), Mesh(0),
+COctreeSceneNode::COctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshes, ISceneNode* parent,
+					ISceneManager* mgr, s32 id, s32 minimalPolysPerNode)
+	: IMeshSceneNode(parent, mgr, id), StdOctree(0), MinimalPolysPerNode(minimalPolysPerNode), Mesh(0),
 	UseVBOs(OCTREE_USE_HARDWARE), UseVisibilityAndVBOs(OCTREE_USE_VISIBILITY),
 	BoxBased(OCTREE_BOX_BASED)
 {
 #ifdef _DEBUG
 	setDebugName("COctreeSceneNode");
 #endif
+	StdMeshes = meshes;
 }
 
 
@@ -38,6 +38,9 @@ COctreeSceneNode::COctreeSceneNode(ISceneNode* parent, ISceneManager* mgr,
 COctreeSceneNode::~COctreeSceneNode()
 {
 	deleteTree();
+
+	for(u32 i = 0; i < StdMeshes.size(); ++i)
+		delete StdMeshes[i];
 }
 
 
@@ -89,7 +92,7 @@ void COctreeSceneNode::render()
 {
 	video::IVideoDriver* driver = SceneManager->getVideoDriver();
 
-	if (VertexType == -1 || !driver)
+	if (!driver)
 		return;
 
 	ICameraSceneNode* camera = SceneManager->getActiveCamera();
@@ -113,170 +116,69 @@ void COctreeSceneNode::render()
 
 	const core::aabbox3d<float> &box = frust.getBoundingBox();
 
-	switch (VertexType)
+	if (BoxBased)
+		StdOctree->calculatePolys(box);
+	else
+		StdOctree->calculatePolys(frust);
+
+	const Octree::SIndexData* d = StdOctree->getIndexData();
+
+	for (u32 i=0; i<Materials.size(); ++i)
 	{
-	case video::EVT_STANDARD:
+		if ( 0 == d[i].CurrentSize )
+			continue;
+
+		const video::IMaterialRenderer* const rnd = driver->getMaterialRenderer(Materials[i].MaterialType);
+		const bool transparent = (rnd && rnd->isTransparent());
+
+		// only render transparent buffer if this is the transparent render pass
+		// and solid only in solid pass
+		if (transparent == isTransparentPass)
 		{
-			if (BoxBased)
-				StdOctree->calculatePolys(box);
+			driver->setMaterial(Materials[i]);
+
+			if (UseVBOs)
+			{
+				if (UseVisibilityAndVBOs)
+				{
+					scene::IIndexBuffer* oldBuffer = StdMeshes[i]->getIndexBuffer();
+					oldBuffer->grab();
+
+					StdMeshes[i]->setIndexBuffer(d[i].IndexBuffer);
+					StdMeshes[i]->setDirty(scene::EBT_INDEX);
+
+					driver->drawMeshBuffer ( StdMeshes[i] );
+
+					StdMeshes[i]->setIndexBuffer(oldBuffer);
+					oldBuffer->drop();
+
+					StdMeshes[i]->setDirty(scene::EBT_INDEX);
+				}
+				else
+					driver->drawMeshBuffer ( StdMeshes[i] );
+			}
 			else
-				StdOctree->calculatePolys(frust);
-
-			const Octree<video::S3DVertex>::SIndexData* d = StdOctree->getIndexData();
-
-			for (u32 i=0; i<Materials.size(); ++i)
-			{
-				if ( 0 == d[i].CurrentSize )
-					continue;
-
-				const video::IMaterialRenderer* const rnd = driver->getMaterialRenderer(Materials[i].MaterialType);
-				const bool transparent = (rnd && rnd->isTransparent());
-
-				// only render transparent buffer if this is the transparent render pass
-				// and solid only in solid pass
-				if (transparent == isTransparentPass)
-				{
-					driver->setMaterial(Materials[i]);
-					driver->drawIndexedTriangleList(
-						&StdMeshes[i].Vertices[0], StdMeshes[i].Vertices.size(),
-						d[i].Indices, d[i].CurrentSize / 3);
-				}
-			}
-
-			// for debug purposes only
-			if (DebugDataVisible && !Materials.empty() && PassCount==1)
-			{
-				const core::aabbox3df& box = frust.getBoundingBox();
-				core::array< const core::aabbox3d<f32>* > boxes;
-				video::SMaterial m;
-				m.Lighting = false;
-				driver->setMaterial(m);
-				if ( DebugDataVisible & scene::EDS_BBOX_BUFFERS )
-				{
-					StdOctree->getBoundingBoxes(box, boxes);
-					for (u32 b=0; b!=boxes.size(); ++b)
-						driver->draw3DBox(*boxes[b]);
-				}
-
-				if ( DebugDataVisible & scene::EDS_BBOX )
-					driver->draw3DBox(Box,video::SColor(0,255,0,0));
-			}
+				driver->drawIndexedTriangleList(false, StdMeshes[i]->getVertexBuffer(), false, d[i].IndexBuffer, d[i].CurrentSize / 3);
 		}
-		break;
-	case video::EVT_2TCOORDS:
+	}
+
+	// for debug purposes only
+	if (DebugDataVisible && !Materials.empty() && PassCount==1)
+	{
+		const core::aabbox3d<float> &box = frust.getBoundingBox();
+		core::array< const core::aabbox3d<f32>* > boxes;
+		video::SMaterial m;
+		m.Lighting = false;
+		driver->setMaterial(m);
+		if ( DebugDataVisible & scene::EDS_BBOX_BUFFERS )
 		{
-			if (BoxBased)
-				LightMapOctree->calculatePolys(box);
-			else
-				LightMapOctree->calculatePolys(frust);
-
-			const Octree<video::S3DVertex2TCoords>::SIndexData* d = LightMapOctree->getIndexData();
-
-			for (u32 i=0; i<Materials.size(); ++i)
-			{
-				if ( 0 == d[i].CurrentSize )
-					continue;
-
-				const video::IMaterialRenderer* const rnd = driver->getMaterialRenderer(Materials[i].MaterialType);
-				const bool transparent = (rnd && rnd->isTransparent());
-
-				// only render transparent buffer if this is the transparent render pass
-				// and solid only in solid pass
-				if (transparent == isTransparentPass)
-				{
-					driver->setMaterial(Materials[i]);
-					if (UseVBOs)
-					{
-						if (UseVisibilityAndVBOs)
-						{
-							u16* oldPointer = LightMapMeshes[i].Indices.pointer();
-							const u32 oldSize = LightMapMeshes[i].Indices.size();
-							LightMapMeshes[i].Indices.set_free_when_destroyed(false);
-							LightMapMeshes[i].Indices.set_pointer(d[i].Indices, d[i].CurrentSize, false, false);
-							LightMapMeshes[i].setDirty(scene::EBT_INDEX);
-							driver->drawMeshBuffer ( &LightMapMeshes[i] );
-							LightMapMeshes[i].Indices.set_pointer(oldPointer, oldSize);
-							LightMapMeshes[i].setDirty(scene::EBT_INDEX);
-						}
-						else
-							driver->drawMeshBuffer ( &LightMapMeshes[i] );
-					}
-					else
-						driver->drawIndexedTriangleList(
-							&LightMapMeshes[i].Vertices[0],
-							LightMapMeshes[i].Vertices.size(),
-							d[i].Indices, d[i].CurrentSize / 3);
-				}
-			}
-
-			// for debug purposes only
-			if (DebugDataVisible && !Materials.empty() && PassCount==1)
-			{
-				const core::aabbox3d<float> &box = frust.getBoundingBox();
-				core::array< const core::aabbox3d<f32>* > boxes;
-				video::SMaterial m;
-				m.Lighting = false;
-				driver->setMaterial(m);
-				if ( DebugDataVisible & scene::EDS_BBOX_BUFFERS )
-				{
-					LightMapOctree->getBoundingBoxes(box, boxes);
-					for (u32 b=0; b<boxes.size(); ++b)
-						driver->draw3DBox(*boxes[b]);
-				}
-
-				if ( DebugDataVisible & scene::EDS_BBOX )
-					driver->draw3DBox(Box,video::SColor(0,255,0,0));
-			}
+			StdOctree->getBoundingBoxes(box, boxes);
+			for (u32 b=0; b<boxes.size(); ++b)
+				driver->draw3DBox(*boxes[b]);
 		}
-		break;
-	case video::EVT_TANGENTS:
-		{
-			if (BoxBased)
-				TangentsOctree->calculatePolys(box);
-			else
-				TangentsOctree->calculatePolys(frust);
 
-			const Octree<video::S3DVertexTangents>::SIndexData* d =  TangentsOctree->getIndexData();
-
-			for (u32 i=0; i<Materials.size(); ++i)
-			{
-				if ( 0 == d[i].CurrentSize )
-					continue;
-
-				const video::IMaterialRenderer* const rnd = driver->getMaterialRenderer(Materials[i].MaterialType);
-				const bool transparent = (rnd && rnd->isTransparent());
-
-				// only render transparent buffer if this is the transparent render pass
-				// and solid only in solid pass
-				if (transparent == isTransparentPass)
-				{
-					driver->setMaterial(Materials[i]);
-					driver->drawIndexedTriangleList(
-						&TangentsMeshes[i].Vertices[0], TangentsMeshes[i].Vertices.size(),
-						d[i].Indices, d[i].CurrentSize / 3);
-				}
-			}
-
-			// for debug purposes only
-			if (DebugDataVisible && !Materials.empty() && PassCount==1)
-			{
-				const core::aabbox3d<float> &box = frust.getBoundingBox();
-				core::array< const core::aabbox3d<f32>* > boxes;
-				video::SMaterial m;
-				m.Lighting = false;
-				driver->setMaterial(m);
-				if ( DebugDataVisible & scene::EDS_BBOX_BUFFERS )
-				{
-					TangentsOctree->getBoundingBoxes(box, boxes);
-					for (u32 b=0; b<boxes.size(); ++b)
-						driver->draw3DBox(*boxes[b]);
-				}
-
-				if ( DebugDataVisible & scene::EDS_BBOX )
-					driver->draw3DBox(Box,video::SColor(0,255,0,0));
-			}
-		}
-		break;
+		if ( DebugDataVisible & scene::EDS_BBOX )
+			driver->draw3DBox(Box,video::SColor(0,255,0,0));
 	}
 }
 
@@ -314,172 +216,42 @@ bool COctreeSceneNode::createTree(IMesh* mesh)
 	if (mesh->getMeshBufferCount())
 	{
 		// check for "larger" buffer types
-		VertexType = video::EVT_STANDARD;
-		u32 meshReserve = 0;
-		for (i=0; i<mesh->getMeshBufferCount(); ++i)
-		{
-			const IMeshBuffer* b = mesh->getMeshBuffer(i);
-			if (b->getVertexCount() && b->getIndexCount())
-			{
-				++meshReserve;
-				if (b->getVertexType() == video::EVT_2TCOORDS)
-					VertexType = video::EVT_2TCOORDS;
-				else if (b->getVertexType() == video::EVT_TANGENTS)
-					VertexType = video::EVT_TANGENTS;
-			}
-		}
+		u32 meshReserve = StdMeshes.size();
+
 		Materials.reallocate(Materials.size()+meshReserve);
+		StdMeshesMatID.reallocate(meshReserve);
 
-		switch(VertexType)
+		for ( i=0; i < mesh->getMeshBufferCount(); ++i)
 		{
-		case video::EVT_STANDARD:
+			IMeshBuffer* b = mesh->getMeshBuffer(i);
+
+			if (b->getVertexBuffer()->getVertexCount() && b->getIndexBuffer()->getIndexCount())
 			{
-				StdMeshes.reallocate(StdMeshes.size() + meshReserve);
-				for (i=0; i<mesh->getMeshBufferCount(); ++i)
+				Materials.push_back(b->getMaterial());
+
+				IMeshBuffer* nchunk = StdMeshes[i];
+				StdMeshesMatID.push_back(Materials.size() - 1);
+
+				if (UseVisibilityAndVBOs)
 				{
-					IMeshBuffer* b = mesh->getMeshBuffer(i);
-
-					if (b->getVertexCount() && b->getIndexCount())
-					{
-						Materials.push_back(b->getMaterial());
-
-						StdMeshes.push_back(Octree<video::S3DVertex>::SMeshChunk());
-						Octree<video::S3DVertex>::SMeshChunk &nchunk = StdMeshes.getLast();
-						nchunk.MaterialId = Materials.size() - 1;
-
-						u32 v;
-						nchunk.Vertices.reallocate(b->getVertexCount());
-						switch (b->getVertexType())
-						{
-						case video::EVT_STANDARD:
-							for (v=0; v<b->getVertexCount(); ++v)
-								nchunk.Vertices.push_back(((video::S3DVertex*)b->getVertices())[v]);
-							break;
-						case video::EVT_2TCOORDS:
-							for (v=0; v<b->getVertexCount(); ++v)
-								nchunk.Vertices.push_back(((video::S3DVertex2TCoords*)b->getVertices())[v]);
-							break;
-						case video::EVT_TANGENTS:
-							for (v=0; v<b->getVertexCount(); ++v)
-								nchunk.Vertices.push_back(((video::S3DVertexTangents*)b->getVertices())[v]);
-							break;
-						}
-
-						polyCount += b->getIndexCount();
-
-						nchunk.Indices.reallocate(b->getIndexCount());
-						for (v=0; v<b->getIndexCount(); ++v)
-							nchunk.Indices.push_back(b->getIndices()[v]);
-					}
+					nchunk->setHardwareMappingHint(scene::EHM_STATIC, scene::EBT_VERTEX);
+					nchunk->setHardwareMappingHint(scene::EHM_DYNAMIC, scene::EBT_INDEX);
 				}
+				else
+					nchunk->setHardwareMappingHint(scene::EHM_STATIC);
 
-				StdOctree = new Octree<video::S3DVertex>(StdMeshes, MinimalPolysPerNode);
-				nodeCount = StdOctree->getNodeCount();
+				SceneManager->getMeshManipulator()->copyVertices(b->getVertexBuffer(), nchunk->getVertexBuffer(), true);
+
+				polyCount += b->getIndexBuffer()->getIndexCount();
+				nchunk->getIndexBuffer()->reallocate(b->getIndexBuffer()->getIndexCount());
+
+				for (u32 v=0; v<b->getIndexBuffer()->getIndexCount(); ++v)
+					nchunk->getIndexBuffer()->addIndex(b->getIndexBuffer()->getIndex(v));
 			}
-			break;
-		case video::EVT_2TCOORDS:
-			{
-				LightMapMeshes.reallocate(LightMapMeshes.size() + meshReserve);
-
-				for ( i=0; i < mesh->getMeshBufferCount(); ++i)
-				{
-					IMeshBuffer* b = mesh->getMeshBuffer(i);
-
-					if (b->getVertexCount() && b->getIndexCount())
-					{
-						Materials.push_back(b->getMaterial());
-						LightMapMeshes.push_back(Octree<video::S3DVertex2TCoords>::SMeshChunk());
-						Octree<video::S3DVertex2TCoords>::SMeshChunk& nchunk = LightMapMeshes.getLast();
-						nchunk.MaterialId = Materials.size() - 1;
-
-						if (UseVisibilityAndVBOs)
-						{
-							nchunk.setHardwareMappingHint(scene::EHM_STATIC, scene::EBT_VERTEX);
-							nchunk.setHardwareMappingHint(scene::EHM_DYNAMIC, scene::EBT_INDEX);
-						}
-						else
-							nchunk.setHardwareMappingHint(scene::EHM_STATIC);
-
-						u32 v;
-						nchunk.Vertices.reallocate(b->getVertexCount());
-						switch (b->getVertexType())
-						{
-						case video::EVT_STANDARD:
-							for (v=0; v<b->getVertexCount(); ++v)
-								nchunk.Vertices.push_back(((video::S3DVertex*)b->getVertices())[v]);
-							break;
-						case video::EVT_2TCOORDS:
-							for (v=0; v<b->getVertexCount(); ++v)
-								nchunk.Vertices.push_back(((video::S3DVertex2TCoords*)b->getVertices())[v]);
-							break;
-						case video::EVT_TANGENTS:
-							for (v=0; v<b->getVertexCount(); ++v)
-								nchunk.Vertices.push_back(((video::S3DVertexTangents*)b->getVertices())[v]);
-							break;
-						}
-
-						polyCount += b->getIndexCount();
-						nchunk.Indices.reallocate(b->getIndexCount());
-						for (v=0; v<b->getIndexCount(); ++v)
-							nchunk.Indices.push_back(b->getIndices()[v]);
-					}
-				}
-
-				LightMapOctree = new Octree<video::S3DVertex2TCoords>(LightMapMeshes, MinimalPolysPerNode);
-				nodeCount = LightMapOctree->getNodeCount();
-			}
-			break;
-		case video::EVT_TANGENTS:
-			{
-				TangentsMeshes.reallocate(TangentsMeshes.size() + meshReserve);
-
-				for (u32 i=0; i<mesh->getMeshBufferCount(); ++i)
-				{
-					IMeshBuffer* b = mesh->getMeshBuffer(i);
-
-					if (b->getVertexCount() && b->getIndexCount())
-					{
-						Materials.push_back(b->getMaterial());
-						TangentsMeshes.push_back(Octree<video::S3DVertexTangents>::SMeshChunk());
-						Octree<video::S3DVertexTangents>::SMeshChunk& nchunk = TangentsMeshes.getLast();
-						nchunk.MaterialId = Materials.size() - 1;
-
-						u32 v;
-						nchunk.Vertices.reallocate(b->getVertexCount());
-						switch (b->getVertexType())
-						{
-						case video::EVT_STANDARD:
-							for (v=0; v<b->getVertexCount(); ++v)
-							{
-								const video::S3DVertex& tmpV = ((video::S3DVertex*)b->getVertices())[v];
-								nchunk.Vertices.push_back(video::S3DVertexTangents(tmpV.Pos, tmpV.Color, tmpV.TCoords));
-							}
-							break;
-						case video::EVT_2TCOORDS:
-							for (v=0; v<b->getVertexCount(); ++v)
-							{
-								const video::S3DVertex2TCoords& tmpV = ((video::S3DVertex2TCoords*)b->getVertices())[v];
-								nchunk.Vertices.push_back(video::S3DVertexTangents(tmpV.Pos, tmpV.Color, tmpV.TCoords));
-							}
-							break;
-						case video::EVT_TANGENTS:
-							for (v=0; v<b->getVertexCount(); ++v)
-								nchunk.Vertices.push_back(((video::S3DVertexTangents*)b->getVertices())[v]);
-							break;
-						}
-
-						polyCount += b->getIndexCount();
-						nchunk.Indices.reallocate(b->getIndexCount());
-						for (v=0; v<b->getIndexCount(); ++v)
-							nchunk.Indices.push_back(b->getIndices()[v]);
-					}
-				}
-
-				TangentsOctree = new Octree<video::S3DVertexTangents>(TangentsMeshes, MinimalPolysPerNode);
-				nodeCount = TangentsOctree->getNodeCount();
-			}
-			break;
 		}
+
+		StdOctree = new Octree(StdMeshes, StdMeshesMatID, MinimalPolysPerNode);
+		nodeCount = StdOctree->getNodeCount();
 	}
 
 	const u32 endTime = os::Timer::getRealTime();
@@ -553,17 +325,11 @@ void COctreeSceneNode::deserializeAttributes(io::IAttributes* in, io::SAttribute
 
 void COctreeSceneNode::deleteTree()
 {
-	delete StdOctree;
+	if(StdOctree)
+		delete StdOctree;
+
 	StdOctree = 0;
-	StdMeshes.clear();
-
-	delete LightMapOctree;
-	LightMapOctree = 0;
-	LightMapMeshes.clear();
-
-	delete TangentsOctree;
-	TangentsOctree = 0;
-	TangentsMeshes.clear();
+	StdMeshesMatID.clear();
 
 	Materials.clear();
 

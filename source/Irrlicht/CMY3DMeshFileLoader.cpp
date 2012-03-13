@@ -14,7 +14,7 @@
 #include "CMY3DMeshFileLoader.h"
 
 #include "SAnimatedMesh.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "IReadFile.h"
 #include "IAttributes.h"
 
@@ -395,13 +395,13 @@ IAnimatedMesh* CMY3DMeshFileLoader::createMesh(io::IReadFile* file)
 		// creating geometry for the mesh
 
 		// trying to find mesh buffer for this material
-		SMeshBufferLightMap* buffer = getMeshBufferByMaterialIndex(meshHeader.MatIndex);
+		CMeshBuffer<video::S3DVertex2TCoords>* buffer = getMeshBufferByMaterialIndex(meshHeader.MatIndex);
 
 		if (!buffer ||
-			(buffer->Vertices.size()+vertsNum) > SceneManager->getVideoDriver()->getMaximalPrimitiveCount())
+			(buffer->getVertexBuffer()->getVertexCount()+vertsNum) > SceneManager->getVideoDriver()->getMaximalPrimitiveCount())
 		{
 			// creating new mesh buffer for this material
-			buffer = new scene::SMeshBufferLightMap();
+			buffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
 
 			buffer->Material.MaterialType = video::EMT_LIGHTMAP_M2; // EMT_LIGHTMAP_M4 also possible
 			buffer->Material.Wireframe = false;
@@ -514,13 +514,13 @@ IAnimatedMesh* CMY3DMeshFileLoader::createMesh(io::IReadFile* file)
 
 		if (buffer->Material.MaterialType == video::EMT_TRANSPARENT_ALPHA_CHANNEL)
 		{
-			buffer->Indices.reallocate(buffer->Indices.size()+6*facesNum);
-			buffer->Vertices.reallocate(buffer->Vertices.size()+6*facesNum);
+			buffer->getIndexBuffer()->reallocate(buffer->getIndexBuffer()->getIndexCount()+6*facesNum);
+			buffer->getVertexBuffer()->reallocate(buffer->getVertexBuffer()->getVertexCount()+6*facesNum);
 		}
 		else
 		{
-			buffer->Indices.reallocate(buffer->Indices.size()+3*facesNum);
-			buffer->Vertices.reallocate(buffer->Vertices.size()+3*facesNum);
+			buffer->getIndexBuffer()->reallocate(buffer->getIndexBuffer()->getIndexCount()+3*facesNum);
+			buffer->getVertexBuffer()->reallocate(buffer->getVertexBuffer()->getVertexCount()+3*facesNum);
 		}
 		for (int f=0; f<facesNum; f++)
 		{
@@ -591,14 +591,14 @@ IAnimatedMesh* CMY3DMeshFileLoader::createMesh(io::IReadFile* file)
 
 			// store 3d data in mesh buffer
 
-			buffer->Indices.push_back(buffer->Vertices.size());
-			buffer->Vertices.push_back(VertexA);
+			buffer->getIndexBuffer()->addIndex(buffer->getVertexBuffer()->getVertexCount());
+			buffer->getVertexBuffer()->addVertex(&VertexA);
 
-			buffer->Indices.push_back(buffer->Vertices.size());
-			buffer->Vertices.push_back(VertexB);
+			buffer->getIndexBuffer()->addIndex(buffer->getVertexBuffer()->getVertexCount());
+			buffer->getVertexBuffer()->addVertex(&VertexB);
 
-			buffer->Indices.push_back(buffer->Vertices.size());
-			buffer->Vertices.push_back(VertexC);
+			buffer->getIndexBuffer()->addIndex(buffer->getVertexBuffer()->getVertexCount());
+			buffer->getVertexBuffer()->addVertex(&VertexC);
 
 			//*****************************************************************
 			//          !!!!!! W A R N I N G !!!!!!!
@@ -616,14 +616,14 @@ IAnimatedMesh* CMY3DMeshFileLoader::createMesh(io::IReadFile* file)
 				VertexB.Normal = core::vector3df(-VertexB.Normal.X, -VertexB.Normal.Y, -VertexB.Normal.Z);
 				VertexC.Normal = core::vector3df(-VertexC.Normal.X, -VertexC.Normal.Y, -VertexC.Normal.Z);
 
-				buffer->Indices.push_back(buffer->Vertices.size());
-				buffer->Vertices.push_back(VertexC);
+				buffer->getIndexBuffer()->addIndex(buffer->getVertexBuffer()->getVertexCount());
+				buffer->getVertexBuffer()->addVertex(&VertexC);
 
-				buffer->Indices.push_back(buffer->Vertices.size());
-				buffer->Vertices.push_back(VertexB);
+				buffer->getIndexBuffer()->addIndex(buffer->getVertexBuffer()->getVertexCount());
+				buffer->getVertexBuffer()->addVertex(&VertexB);
 
-				buffer->Indices.push_back(buffer->Vertices.size());
-				buffer->Vertices.push_back(VertexA);
+				buffer->getIndexBuffer()->addIndex(buffer->getVertexBuffer()->getVertexCount());
+				buffer->getVertexBuffer()->addVertex(&VertexA);
 			}
 		}
 		file->read(&id, sizeof(id));
@@ -637,7 +637,7 @@ IAnimatedMesh* CMY3DMeshFileLoader::createMesh(io::IReadFile* file)
 
 	for (u32 num=0; num<MeshBufferEntry.size(); ++num)
 	{
-		SMeshBufferLightMap* buffer = MeshBufferEntry[num].MeshBuffer;
+		CMeshBuffer<video::S3DVertex2TCoords>* buffer = MeshBufferEntry[num].MeshBuffer;
 
 		if (!buffer)
 			continue;
@@ -858,7 +858,7 @@ CMY3DMeshFileLoader::SMyMaterialEntry* CMY3DMeshFileLoader::getMaterialEntryByIn
 
 
 
-SMeshBufferLightMap* CMY3DMeshFileLoader::getMeshBufferByMaterialIndex(u32 matInd)
+CMeshBuffer<video::S3DVertex2TCoords>* CMY3DMeshFileLoader::getMeshBufferByMaterialIndex(u32 matInd)
 {
 	for (u32 m=0; m<MeshBufferEntry.size(); ++m)
 	{

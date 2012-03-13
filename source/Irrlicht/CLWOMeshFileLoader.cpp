@@ -2,6 +2,9 @@
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
+#include "IrrCompileConfig.h"
+#ifdef _IRR_COMPILE_WITH_LWO_LOADER_
+
 #include "CLWOMeshFileLoader.h"
 #include "os.h"
 #include "SAnimatedMesh.h"
@@ -71,7 +74,7 @@ struct CLWOMeshFileLoader::tLWOMaterial
 		AlphaValue(0.0f), VertexColorIntensity(0.0f), VertexColor() {}
 
 	core::stringc Name;
-	scene::SMeshBuffer *Meshbuffer;
+	CMeshBuffer<video::S3DVertex> *Meshbuffer;
 	core::stringc ReflMap;
 	u16 TagType;
 	u16 Flags;
@@ -203,22 +206,22 @@ IAnimatedMesh* CLWOMeshFileLoader::createMesh(io::IReadFile* file)
 			vertexCount[MaterialMapping[polyIndex]] += Indices[polyIndex].size();
 		for (i=0; i<Materials.size(); ++i)
 		{
-			Materials[i]->Meshbuffer->Vertices.reallocate(vertexCount[i]);
-			Materials[i]->Meshbuffer->Indices.reallocate(vertexCount[i]);
+			Materials[i]->Meshbuffer->getVertexBuffer()->reallocate(vertexCount[i]);
+			Materials[i]->Meshbuffer->getIndexBuffer()->reallocate(vertexCount[i]);
 		}
 	}
 	// create actual geometry for lwo2
 	for (u32 polyIndex=0; polyIndex<Indices.size(); ++polyIndex)
 	{
 		const u16 tag = MaterialMapping[polyIndex];
-		scene::SMeshBuffer *mb=Materials[tag]->Meshbuffer;
+		CMeshBuffer<video::S3DVertex> *mb=Materials[tag]->Meshbuffer;
 		const core::array<u32>& poly = Indices[polyIndex];
 		const u32 polySize=poly.size();
 		const u16 uvTag = Materials[tag]->Texture[0].UVTag;
 		const u16 duvTag = Materials[tag]->Texture[0].DUVTag;
 		video::S3DVertex vertex;
 		vertex.Color=0xffffffff;
-		const u32 vertCount=mb->Vertices.size();
+		const u32 vertCount=mb->getVertexBuffer()->getVertexCount();
 		for (u32 i=0; i<polySize; ++i)
 		{
 			const u32 j=poly[i];
@@ -245,16 +248,16 @@ IAnimatedMesh* CLWOMeshFileLoader::createMesh(io::IReadFile* file)
 					}
 				}
 			}
-			mb->Vertices.push_back(vertex);
+			mb->getVertexBuffer()->addVertex(&vertex);
 		}
 		// triangulate as trifan
 		if (polySize>2)
 		{
 			for (u32 i=1; i<polySize-1; ++i)
 			{
-				mb->Indices.push_back(vertCount);
-				mb->Indices.push_back(vertCount+i);
-				mb->Indices.push_back(vertCount+i+1);
+				mb->getIndexBuffer()->addIndex(vertCount);
+				mb->getIndexBuffer()->addIndex(vertCount+i);
+				mb->getIndexBuffer()->addIndex(vertCount+i+1);
 			}
 		}
 	}
@@ -265,16 +268,19 @@ IAnimatedMesh* CLWOMeshFileLoader::createMesh(io::IReadFile* file)
 	{
 #ifdef LWO_READER_DEBUG
 		os::Printer::log("LWO loader: Material name", Materials[i]->Name);
-		os::Printer::log("LWO loader: Vertex count", core::stringc(Materials[i]->Meshbuffer->Vertices.size()));
+		os::Printer::log("LWO loader: Vertex count", core::stringc(Materials[i]->Meshbuffer->getVertexBuffer()->getVertexCount()));
 #endif
-		if (!Materials[i]->Meshbuffer->Vertices.size())
+		if (!Materials[i]->Meshbuffer->getVertexBuffer()->getVertexCount())
 		{
 			Materials[i]->Meshbuffer->drop();
 			delete Materials[i];
 			continue;
 		}
-		for (u32 j=0; j<Materials[i]->Meshbuffer->Vertices.size(); ++j)
-			Materials[i]->Meshbuffer->Vertices[j].Color=Materials[i]->Meshbuffer->Material.DiffuseColor;
+
+		video::S3DVertex* Vertices = (video::S3DVertex*)Materials[i]->Meshbuffer->getVertexBuffer()->getVertices();
+
+		for (u32 j=0; j<Materials[i]->Meshbuffer->getVertexBuffer()->getVertexCount(); ++j)
+			Vertices[j].Color=Materials[i]->Meshbuffer->Material.DiffuseColor;
 		Materials[i]->Meshbuffer->recalculateBoundingBox();
 
 		// load textures
@@ -367,12 +373,8 @@ IAnimatedMesh* CLWOMeshFileLoader::createMesh(io::IReadFile* file)
 		// add bump maps
 		if (Materials[i]->Meshbuffer->Material.MaterialType==video::EMT_NORMAL_MAP_SOLID)
 		{
-			SMesh* tmpmesh = new SMesh();
-			tmpmesh->addMeshBuffer(Materials[i]->Meshbuffer);
-			SceneManager->getMeshManipulator()->createMeshWithTangents(tmpmesh, true, true);
-			Mesh->addMeshBuffer(tmpmesh->getMeshBuffer(0));
-			tmpmesh->getMeshBuffer(0)->drop();
-			tmpmesh->drop();
+			if(SceneManager->getMeshManipulator()->createTangents<video::S3DVertexTangents>(Materials[i]->Meshbuffer, SceneManager->getVideoDriver()->getVertexDescriptor(2), false))
+				Mesh->addMeshBuffer(Materials[i]->Meshbuffer);
 		}
 		else
 		{
@@ -505,7 +507,7 @@ bool CLWOMeshFileLoader::readChunks()
 					{
 						tLWOMaterial *mat=new tLWOMaterial();
 						mat->Name="";
-						mat->Meshbuffer=new scene::SMeshBuffer();
+						mat->Meshbuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
 						size -= readString(mat->Name);
 						if (FormatVersion!=2)
 							mat->TagType = 1; // format 2 has more types
@@ -631,7 +633,7 @@ void CLWOMeshFileLoader::readObj1(u32 size)
 #endif
 		size -=2*numVerts+4;
 		// detail meshes ?
-		scene::SMeshBuffer *mb;
+		CMeshBuffer<video::S3DVertex> *mb;
 		if (material<0)
 			mb=Materials[-material-1]->Meshbuffer;
 		else
@@ -639,7 +641,7 @@ void CLWOMeshFileLoader::readObj1(u32 size)
 		// back to vertex list start
 		File->seek(pos, false);
 
-		const u16 vertCount=mb->Vertices.size();
+		const u16 vertCount=mb->getVertexBuffer()->getVertexCount();
 		for (u16 i=0; i<numVerts; ++i)
 		{
 			File->read(&vertIndex, 2);
@@ -647,13 +649,13 @@ void CLWOMeshFileLoader::readObj1(u32 size)
 			vertIndex=os::Byteswap::byteswap(vertIndex);
 #endif
 			vertex.Pos=Points[vertIndex];
-			mb->Vertices.push_back(vertex);
+			mb->getVertexBuffer()->addVertex(&vertex);
 		}
 		for (u16 i=1; i<numVerts-1; ++i)
 		{
-			mb->Indices.push_back(vertCount);
-			mb->Indices.push_back(vertCount+i);
-			mb->Indices.push_back(vertCount+i+1);
+			mb->getIndexBuffer()->addIndex(vertCount);
+			mb->getIndexBuffer()->addIndex(vertCount+i);
+			mb->getIndexBuffer()->addIndex(vertCount+i+1);
 		}
 		// skip material number and detail surface count
 		// detail surface can be read just as a normal one now
@@ -2111,4 +2113,7 @@ video::ITexture* CLWOMeshFileLoader::loadTexture(const core::stringc& file)
 
 } // end namespace scene
 } // end namespace irr
+
+#endif // _IRR_COMPILE_WITH_LWO_LOADER_
+
 

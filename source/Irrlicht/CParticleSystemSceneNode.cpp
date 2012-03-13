@@ -40,7 +40,7 @@ CParticleSystemSceneNode::CParticleSystemSceneNode(bool createDefaultEmitter,
 	setDebugName("CParticleSystemSceneNode");
 	#endif
 
-	Buffer = new SMeshBuffer();
+	Buffer = new CMeshBuffer<video::S3DVertex>(mgr->getVideoDriver()->getVertexDescriptor(0));
 	if (createDefaultEmitter)
 	{
 		IParticleEmitter* e = createBoxEmitter();
@@ -332,6 +332,8 @@ void CParticleSystemSceneNode::render()
 	reallocateBuffers();
 
 	// create particle vertex data
+	video::S3DVertex* Vertices = static_cast<video::S3DVertex*>(Buffer->getVertexBuffer()->getVertices());
+
 	s32 idx = 0;
 	for (u32 i=0; i<Particles.size(); ++i)
 	{
@@ -356,21 +358,21 @@ void CParticleSystemSceneNode::render()
 			const core::vector3df vertical ( m[1] * f, m[5] * f, m[9] * f );
 		#endif
 
-		Buffer->Vertices[0+idx].Pos = particle.pos + horizontal + vertical;
-		Buffer->Vertices[0+idx].Color = particle.color;
-		Buffer->Vertices[0+idx].Normal = view;
+		Vertices[0+idx].Pos = particle.pos + horizontal + vertical;
+		Vertices[0+idx].Color = particle.color;
+		Vertices[0+idx].Normal = view;
 
-		Buffer->Vertices[1+idx].Pos = particle.pos + horizontal - vertical;
-		Buffer->Vertices[1+idx].Color = particle.color;
-		Buffer->Vertices[1+idx].Normal = view;
+		Vertices[1+idx].Pos = particle.pos + horizontal - vertical;
+		Vertices[1+idx].Color = particle.color;
+		Vertices[1+idx].Normal = view;
 
-		Buffer->Vertices[2+idx].Pos = particle.pos - horizontal - vertical;
-		Buffer->Vertices[2+idx].Color = particle.color;
-		Buffer->Vertices[2+idx].Normal = view;
+		Vertices[2+idx].Pos = particle.pos - horizontal - vertical;
+		Vertices[2+idx].Color = particle.color;
+		Vertices[2+idx].Normal = view;
 
-		Buffer->Vertices[3+idx].Pos = particle.pos - horizontal + vertical;
-		Buffer->Vertices[3+idx].Color = particle.color;
-		Buffer->Vertices[3+idx].Normal = view;
+		Vertices[3+idx].Pos = particle.pos - horizontal + vertical;
+		Vertices[3+idx].Color = particle.color;
+		Vertices[3+idx].Normal = view;
 
 		idx +=4;
 	}
@@ -383,8 +385,8 @@ void CParticleSystemSceneNode::render()
 
 	driver->setMaterial(Buffer->Material);
 
-	driver->drawVertexPrimitiveList(Buffer->getVertices(), Particles.size()*4,
-		Buffer->getIndices(), Particles.size()*2, video::EVT_STANDARD, EPT_TRIANGLES,Buffer->getIndexType());
+	driver->drawVertexPrimitiveList(false, Buffer->getVertexBuffer(), false, Buffer->getIndexBuffer(), Particles.size()*2, EPT_TRIANGLES);
+
 
 	// for debug purposes only:
 	if ( DebugDataVisible & scene::EDS_BBOX )
@@ -520,36 +522,39 @@ void CParticleSystemSceneNode::setParticleSize(const core::dimension2d<f32> &siz
 
 void CParticleSystemSceneNode::reallocateBuffers()
 {
-	if (Particles.size() * 4 > Buffer->getVertexCount() ||
-			Particles.size() * 6 > Buffer->getIndexCount())
+	if (Particles.size() * 4 > Buffer->getVertexBuffer()->getVertexCount() ||
+			Particles.size() * 6 > Buffer->getIndexBuffer()->getIndexCount())
 	{
-		u32 oldSize = Buffer->getVertexCount();
-		Buffer->Vertices.set_used(Particles.size() * 4);
+		u32 oldSize = Buffer->getVertexBuffer()->getVertexCount();
+
+		Buffer->getVertexBuffer()->set_used(Particles.size() * 4);
+
+		video::S3DVertex* Vertices = static_cast<video::S3DVertex*>(Buffer->getVertexBuffer()->getVertices());
 
 		u32 i;
 
 		// fill remaining vertices
-		for (i=oldSize; i<Buffer->Vertices.size(); i+=4)
+		for (i=oldSize; i<Buffer->getVertexBuffer()->getVertexCount(); i+=4)
 		{
-			Buffer->Vertices[0+i].TCoords.set(0.0f, 0.0f);
-			Buffer->Vertices[1+i].TCoords.set(0.0f, 1.0f);
-			Buffer->Vertices[2+i].TCoords.set(1.0f, 1.0f);
-			Buffer->Vertices[3+i].TCoords.set(1.0f, 0.0f);
+			Vertices[0+i].TCoords.set(0.0f, 0.0f);
+			Vertices[1+i].TCoords.set(0.0f, 1.0f);
+			Vertices[2+i].TCoords.set(1.0f, 1.0f);
+			Vertices[3+i].TCoords.set(1.0f, 0.0f);
 		}
 
 		// fill remaining indices
-		u32 oldIdxSize = Buffer->getIndexCount();
+		u32 oldIdxSize = Buffer->getIndexBuffer()->getIndexCount();
 		u32 oldvertices = oldSize;
-		Buffer->Indices.set_used(Particles.size() * 6);
+		Buffer->getIndexBuffer()->set_used(Particles.size() * 6);
 
-		for (i=oldIdxSize; i<Buffer->Indices.size(); i+=6)
+		for (i=oldIdxSize; i<Buffer->getIndexBuffer()->getIndexCount(); i+=6)
 		{
-			Buffer->Indices[0+i] = (u16)0+oldvertices;
-			Buffer->Indices[1+i] = (u16)2+oldvertices;
-			Buffer->Indices[2+i] = (u16)1+oldvertices;
-			Buffer->Indices[3+i] = (u16)0+oldvertices;
-			Buffer->Indices[4+i] = (u16)3+oldvertices;
-			Buffer->Indices[5+i] = (u16)2+oldvertices;
+			Buffer->getIndexBuffer()->setIndex(0+i, 0+oldvertices);
+			Buffer->getIndexBuffer()->setIndex(1+i, 2+oldvertices);
+			Buffer->getIndexBuffer()->setIndex(2+i, 1+oldvertices);
+			Buffer->getIndexBuffer()->setIndex(3+i, 0+oldvertices);
+			Buffer->getIndexBuffer()->setIndex(4+i, 3+oldvertices);
+			Buffer->getIndexBuffer()->setIndex(5+i, 2+oldvertices);
 			oldvertices += 4;
 		}
 	}

@@ -5,26 +5,42 @@
 #ifndef __T_MESH_BUFFER_H_INCLUDED__
 #define __T_MESH_BUFFER_H_INCLUDED__
 
-#include "irrArray.h"
 #include "IMeshBuffer.h"
+#include "IVertexDescriptor.h"
 
 namespace irr
 {
 namespace scene
 {
-	//! Template implementation of the IMeshBuffer interface
+	//! Implementation of the IMeshBuffer interface
 	template <class T>
 	class CMeshBuffer : public IMeshBuffer
 	{
 	public:
-		//! Default constructor for empty meshbuffer
-		CMeshBuffer():ChangedID_Vertex(1),ChangedID_Index(1),MappingHint_Vertex(EHM_NEVER), MappingHint_Index(EHM_NEVER)
+		//! Constructor
+		CMeshBuffer(video::IVertexDescriptor* pVertexDescriptor, video::E_INDEX_TYPE pType = video::EIT_16BIT) : BoundingBoxNeedsRecalculated(true)
 		{
 			#ifdef _DEBUG
-			setDebugName("SMeshBuffer");
+			setDebugName("CMeshBuffer");
 			#endif
+
+			if(pVertexDescriptor)
+				VertexBuffer = new CVertexBuffer<T>(pVertexDescriptor);
+			else
+				VertexBuffer = 0;
+
+			IndexBuffer = new CIndexBuffer(pType);
 		}
 
+		//! Destructor
+		virtual ~CMeshBuffer()
+		{
+			if(VertexBuffer)
+				VertexBuffer->drop();
+
+			if(IndexBuffer)
+				IndexBuffer->drop();
+		}
 
 		//! Get material of this meshbuffer
 		/** \return Material of this buffer */
@@ -41,60 +57,41 @@ namespace scene
 			return Material;
 		}
 
-
-		//! Get pointer to vertices
-		/** \return Pointer to vertices. */
-		virtual const void* getVertices() const
+		virtual IVertexBuffer* getVertexBuffer() const
 		{
-			return Vertices.const_pointer();
+			return VertexBuffer;
 		}
 
-
-		//! Get pointer to vertices
-		/** \return Pointer to vertices. */
-		virtual void* getVertices()
+		virtual bool setVertexBuffer(IVertexBuffer* pVertexBuffer)
 		{
-			return Vertices.pointer();
+			if(!pVertexBuffer || VertexBuffer == pVertexBuffer)
+				return false;
+
+			VertexBuffer->drop();
+			pVertexBuffer->grab();
+
+			VertexBuffer = pVertexBuffer;
+
+			return true;
 		}
 
-
-		//! Get number of vertices
-		/** \return Number of vertices. */
-		virtual u32 getVertexCount() const
+		virtual IIndexBuffer* getIndexBuffer() const
 		{
-			return Vertices.size();
+			return IndexBuffer;
 		}
 
-		//! Get type of index data which is stored in this meshbuffer.
-		/** \return Index type of this buffer. */
-		virtual video::E_INDEX_TYPE getIndexType() const
+		virtual bool setIndexBuffer(IIndexBuffer* pIndexBuffer)
 		{
-			return video::EIT_16BIT;
+			if(!pIndexBuffer || IndexBuffer == pIndexBuffer)
+				return false;
+
+			IndexBuffer->drop();
+			pIndexBuffer->grab();
+
+			IndexBuffer = pIndexBuffer;
+
+			return true;
 		}
-
-		//! Get pointer to indices
-		/** \return Pointer to indices. */
-		virtual const u16* getIndices() const
-		{
-			return Indices.const_pointer();
-		}
-
-
-		//! Get pointer to indices
-		/** \return Pointer to indices. */
-		virtual u16* getIndices()
-		{
-			return Indices.pointer();
-		}
-
-
-		//! Get number of indices
-		/** \return Number of indices. */
-		virtual u32 getIndexCount() const
-		{
-			return Indices.size();
-		}
-
 
 		//! Get the axis aligned bounding box
 		/** \return Axis aligned bounding box of this buffer. */
@@ -103,102 +100,96 @@ namespace scene
 			return BoundingBox;
 		}
 
-
 		//! Set the axis aligned bounding box
 		/** \param box New axis aligned bounding box for this buffer. */
 		//! set user axis aligned bounding box
-		virtual void setBoundingBox(const core::aabbox3df& box)
+		virtual void setBoundingBox(const core::aabbox3df& pBox)
 		{
-			BoundingBox = box;
+			BoundingBox = pBox;
 		}
 
+		//! Call this after changing the positions of any vertex.
+		virtual void boundingBoxNeedsRecalculated()
+		{
+			BoundingBoxNeedsRecalculated = true;
+		}
 
 		//! Recalculate the bounding box.
 		/** should be called if the mesh changed. */
 		virtual void recalculateBoundingBox()
 		{
-			if (Vertices.empty())
+			if(!BoundingBoxNeedsRecalculated)
+				return;
+
+			BoundingBoxNeedsRecalculated = false;
+
+			if(!VertexBuffer->getVertexCount() || !VertexBuffer->getVertexDescriptor())
 				BoundingBox.reset(0,0,0);
 			else
 			{
-				BoundingBox.reset(Vertices[0].Pos);
-				for (u32 i=1; i<Vertices.size(); ++i)
-					BoundingBox.addInternalPoint(Vertices[i].Pos);
+				video::IVertexAttribute* attribute = VertexBuffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+				if(!attribute)
+				{
+					BoundingBox.reset(0,0,0);
+					return;
+				}
+
+				u8* offset = static_cast<u8*>(VertexBuffer->getVertices());
+				offset += attribute->getOffset();
+
+				core::vector3df position(0.0f);
+
+				memcpy(&position, offset, sizeof(core::vector3df));
+
+				BoundingBox.reset(position);
+
+				for(u32 j = 1; j < VertexBuffer->getVertexCount(); ++j)
+				{
+					offset += VertexBuffer->getVertexSize();
+					memcpy(&position, offset, sizeof(core::vector3df));
+					BoundingBox.addInternalPoint(position);
+				}
 			}
 		}
-
-
-		//! Get type of vertex data stored in this buffer.
-		/** \return Type of vertex data. */
-		virtual video::E_VERTEX_TYPE getVertexType() const
-		{
-			return T().getType();
-		}
-
-		//! returns position of vertex i
-		virtual const core::vector3df& getPosition(u32 i) const
-		{
-			return Vertices[i].Pos;
-		}
-
-		//! returns position of vertex i
-		virtual core::vector3df& getPosition(u32 i)
-		{
-			return Vertices[i].Pos;
-		}
-
-		//! returns normal of vertex i
-		virtual const core::vector3df& getNormal(u32 i) const
-		{
-			return Vertices[i].Normal;
-		}
-
-		//! returns normal of vertex i
-		virtual core::vector3df& getNormal(u32 i)
-		{
-			return Vertices[i].Normal;
-		}
-
-		//! returns texture coord of vertex i
-		virtual const core::vector2df& getTCoords(u32 i) const
-		{
-			return Vertices[i].TCoords;
-		}
-
-		//! returns texture coord of vertex i
-		virtual core::vector2df& getTCoords(u32 i)
-		{
-			return Vertices[i].TCoords;
-		}
-
 
 		//! Append the vertices and indices to the current buffer
 		/** Only works for compatible types, i.e. either the same type
 		or the main buffer is of standard type. Otherwise, behavior is
 		undefined.
 		*/
-		virtual void append(const void* const vertices, u32 numVertices, const u16* const indices, u32 numIndices)
+		virtual void append(IVertexBuffer* pVertexBuffer, IIndexBuffer* pIndexBuffer)
 		{
-			if (vertices == getVertices())
+			if(pVertexBuffer == VertexBuffer || pVertexBuffer->getVertexDescriptor() != VertexBuffer->getVertexDescriptor() || pVertexBuffer->getVertexSize() != VertexBuffer->getVertexSize())
 				return;
 
-			const u32 vertexCount = getVertexCount();
-			u32 i;
+			VertexBuffer->reallocate(VertexBuffer->getVertexCount() + pVertexBuffer->getVertexCount());
 
-			Vertices.reallocate(vertexCount+numVertices);
-			for (i=0; i<numVertices; ++i)
+			video::IVertexAttribute* attribute = VertexBuffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+			u8* offset = static_cast<u8*>(VertexBuffer->getVertices());
+
+			for(u32 i = 0; i < pVertexBuffer->getVertexCount(); ++i)
 			{
-				Vertices.push_back(reinterpret_cast<const T*>(vertices)[i]);
-				BoundingBox.addInternalPoint(reinterpret_cast<const T*>(vertices)[i].Pos);
+				VertexBuffer->addVertex(offset);
+
+				if(attribute)
+				{
+					u8* positionBuffer = offset + attribute->getOffset();
+
+					core::vector3df position(0.0f);
+					memcpy(&position, positionBuffer, sizeof(core::vector3df));
+					BoundingBox.addInternalPoint(position);
+				}
+
+				offset += VertexBuffer->getVertexSize();
 			}
 
-			Indices.reallocate(getIndexCount()+numIndices);
-			for (i=0; i<numIndices; ++i)
-			{
-				Indices.push_back(indices[i]+vertexCount);
-			}
+			IndexBuffer->reallocate(IndexBuffer->getIndexCount() + pIndexBuffer->getIndexCount());
+
+			for(u32 i = 0; i < pIndexBuffer->getIndexCount(); ++i)
+				IndexBuffer->addIndex(pIndexBuffer->getIndex(i));
 		}
-
 
 		//! Append the meshbuffer to the current buffer
 		/** Only works for compatible types, i.e. either the same type
@@ -206,93 +197,78 @@ namespace scene
 		undefined.
 		\param other Meshbuffer to be appended to this one.
 		*/
-		virtual void append(const IMeshBuffer* const other)
+		virtual void append(IMeshBuffer* pMeshBuffer)
 		{
-			/*
-			if (this==other)
+			if(this == pMeshBuffer)
 				return;
 
-			const u32 vertexCount = getVertexCount();
-			u32 i;
-
-			Vertices.reallocate(vertexCount+other->getVertexCount());
-			for (i=0; i<other->getVertexCount(); ++i)
-			{
-				Vertices.push_back(reinterpret_cast<const T*>(other->getVertices())[i]);
-			}
-
-			Indices.reallocate(getIndexCount()+other->getIndexCount());
-			for (i=0; i<other->getIndexCount(); ++i)
-			{
-				Indices.push_back(other->getIndices()[i]+vertexCount);
-			}
-			BoundingBox.addInternalBox(other->getBoundingBox());
-			*/
+			append(pMeshBuffer->getVertexBuffer(), pMeshBuffer->getIndexBuffer());
 		}
-
 
 		//! get the current hardware mapping hint
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex() const
 		{
-			return MappingHint_Vertex;
+			return VertexBuffer->getHardwareMappingHint();
 		}
 
 		//! get the current hardware mapping hint
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Index() const
 		{
-			return MappingHint_Index;
+			return IndexBuffer->getHardwareMappingHint();
 		}
 
 		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint( E_HARDWARE_MAPPING NewMappingHint, E_BUFFER_TYPE Buffer=EBT_VERTEX_AND_INDEX )
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE pType = EBT_VERTEX_AND_INDEX)
 		{
-			if (Buffer==EBT_VERTEX_AND_INDEX || Buffer==EBT_VERTEX)
-				MappingHint_Vertex=NewMappingHint;
-			if (Buffer==EBT_VERTEX_AND_INDEX || Buffer==EBT_INDEX)
-				MappingHint_Index=NewMappingHint;
-		}
+			if(pType == EBT_VERTEX_AND_INDEX || pType == EBT_VERTEX)
+				VertexBuffer->setHardwareMappingHint(pMappingHint);
 
+			if(pType == EBT_VERTEX_AND_INDEX || pType == EBT_INDEX)
+				IndexBuffer->setHardwareMappingHint(pMappingHint);
+		}
 
 		//! flags the mesh as changed, reloads hardware buffers
-		virtual void setDirty(E_BUFFER_TYPE Buffer=EBT_VERTEX_AND_INDEX)
+		virtual void setDirty(E_BUFFER_TYPE pType = EBT_VERTEX_AND_INDEX)
 		{
-			if (Buffer==EBT_VERTEX_AND_INDEX ||Buffer==EBT_VERTEX)
-				++ChangedID_Vertex;
-			if (Buffer==EBT_VERTEX_AND_INDEX || Buffer==EBT_INDEX)
-				++ChangedID_Index;
+			if(pType == EBT_VERTEX_AND_INDEX || pType == EBT_VERTEX)
+				VertexBuffer->setDirty();
+
+			if(pType == EBT_VERTEX_AND_INDEX || pType == EBT_INDEX)
+				IndexBuffer->setDirty();
 		}
 
 		//! Get the currently used ID for identification of changes.
 		/** This shouldn't be used for anything outside the VideoDriver. */
-		virtual u32 getChangedID_Vertex() const {return ChangedID_Vertex;}
+		virtual u32 getChangedID_Vertex() const
+		{
+			return VertexBuffer->getChangedID();
+		}
 
 		//! Get the currently used ID for identification of changes.
 		/** This shouldn't be used for anything outside the VideoDriver. */
-		virtual u32 getChangedID_Index() const {return ChangedID_Index;}
+		virtual u32 getChangedID_Index() const
+		{
+			return IndexBuffer->getChangedID();
+		}
 
-		u32 ChangedID_Vertex;
-		u32 ChangedID_Index;
-
-		//! hardware mapping hint
-		E_HARDWARE_MAPPING MappingHint_Vertex;
-		E_HARDWARE_MAPPING MappingHint_Index;
+		virtual core::matrix4& getTransformation()
+		{
+			return Transformation;
+		}
 
 		//! Material for this meshbuffer.
 		video::SMaterial Material;
 		//! Vertices of this buffer
-		core::array<T> Vertices;
+		scene::IVertexBuffer* VertexBuffer;
 		//! Indices into the vertices of this buffer.
-		core::array<u16> Indices;
+		scene::IIndexBuffer* IndexBuffer;
 		//! Bounding box of this meshbuffer.
 		core::aabbox3d<f32> BoundingBox;
-	};
 
-	//! Standard meshbuffer
-	typedef CMeshBuffer<video::S3DVertex> SMeshBuffer;
-	//! Meshbuffer with two texture coords per vertex, e.g. for lightmaps
-	typedef CMeshBuffer<video::S3DVertex2TCoords> SMeshBufferLightMap;
-	//! Meshbuffer with vertices having tangents stored, e.g. for normal mapping
-	typedef CMeshBuffer<video::S3DVertexTangents> SMeshBufferTangents;
+		core::matrix4 Transformation;
+
+		bool BoundingBoxNeedsRecalculated;
+	};
 } // end namespace scene
 } // end namespace irr
 

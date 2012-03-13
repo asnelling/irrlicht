@@ -79,7 +79,6 @@ public:
 
 protected:
 
-	bool hasSecondTextureCoordinates(video::E_VERTEX_TYPE type) const;
 	inline irr::core::stringw toString(const irr::core::vector3df& vec) const;
 	inline irr::core::stringw uvToString(const irr::core::vector2df& vec) const;
 	inline irr::core::stringw toString(const irr::core::vector2df& vec) const;

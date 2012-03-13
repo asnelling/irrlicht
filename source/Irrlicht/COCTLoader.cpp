@@ -17,7 +17,7 @@
 #include "IFileSystem.h"
 #include "os.h"
 #include "SAnimatedMesh.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 #include "irrString.h"
 #include "ISceneManager.h"
 
@@ -122,7 +122,7 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 	SMesh * Mesh = new SMesh();
 	for (i=0; i<(header.numTextures+1) * (header.numLightmaps+1); ++i)
 	{
-		scene::SMeshBufferLightMap* buffer = new scene::SMeshBufferLightMap();
+		CMeshBuffer<video::S3DVertex2TCoords>* buffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
 
 		buffer->Material.MaterialType = video::EMT_LIGHTMAP;
 		buffer->Material.Lighting = false;
@@ -145,8 +145,8 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 
 		const u32 textureID = core::min_(s32(faces[i].textureID), s32(header.numTextures - 1)) + 1;
 		const u32 lightmapID = core::min_(s32(faces[i].lightmapID),s32(header.numLightmaps - 1)) + 1;
-		SMeshBufferLightMap * meshBuffer = (SMeshBufferLightMap*)Mesh->getMeshBuffer(lightmapID * (header.numTextures + 1) + textureID);
-		const u32 base = meshBuffer->Vertices.size();
+		CMeshBuffer<video::S3DVertex2TCoords>* meshBuffer = (CMeshBuffer<video::S3DVertex2TCoords>*)Mesh->getMeshBuffer(lightmapID * (header.numTextures + 1) + textureID);
+		const u32 base = meshBuffer->getVertexBuffer()->getVertexCount();
 
 		// Add this face's verts
 		u32 v;
@@ -170,7 +170,7 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 				vert.TCoords2.set(vv->lc[0], vv->lc[1]);
 			}
 
-			meshBuffer->Vertices.push_back(vert);
+			meshBuffer->getVertexBuffer()->addVertex(&vert);
 		}
 
 		// Now add the indices
@@ -183,9 +183,9 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 		{
 			const u32 center = (v & 1)? h - 1: l + 1;
 
-			meshBuffer->Indices.push_back(base + h);
-			meshBuffer->Indices.push_back(base + l);
-			meshBuffer->Indices.push_back(base + center);
+			meshBuffer->getIndexBuffer()->addIndex(base + h);
+			meshBuffer->getIndexBuffer()->addIndex(base + l);
+			meshBuffer->getIndexBuffer()->addIndex(base + center);
 
 			if (v & 1)
 				--h;
@@ -262,7 +262,7 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 		for (u32 j = 0; j < header.numTextures + 1; j++)
 		{
 			u32 mb = i * (header.numTextures + 1) + j;
-			SMeshBufferLightMap * meshBuffer = (SMeshBufferLightMap*)Mesh->getMeshBuffer(mb);
+			CMeshBuffer<video::S3DVertex2TCoords> * meshBuffer = (CMeshBuffer<video::S3DVertex2TCoords>*)Mesh->getMeshBuffer(mb);
 			meshBuffer->Material.setTexture(0, tex[j]);
 			meshBuffer->Material.setTexture(1, lig[i]);
 
@@ -287,8 +287,8 @@ IAnimatedMesh* COCTLoader::createMesh(io::IReadFile* file)
 	i = 0;
 	while(i < Mesh->MeshBuffers.size())
 	{
-		if (Mesh->MeshBuffers[i]->getVertexCount() == 0 ||
-			Mesh->MeshBuffers[i]->getIndexCount() == 0 ||
+		if (Mesh->MeshBuffers[i]->getVertexBuffer()->getVertexCount() == 0 ||
+			Mesh->MeshBuffers[i]->getIndexBuffer()->getIndexCount() == 0 ||
 			Mesh->MeshBuffers[i]->getMaterial().getTexture(0) == 0)
 		{
 			// Meshbuffer is empty -- drop it

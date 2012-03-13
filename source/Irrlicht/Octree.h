@@ -29,43 +29,26 @@ namespace irr
 //! template octree.
 /** T must be a vertex type which has a member
 called .Pos, which is a core::vertex3df position. */
-template <class T>
 class Octree
 {
 public:
 
-	struct SMeshChunk : public scene::CMeshBuffer<T>
-	{
-		SMeshChunk ()
-			: scene::CMeshBuffer<T>(), MaterialId(0)
-		{
-			scene::CMeshBuffer<T>::grab();
-		}
-
-		virtual ~SMeshChunk ()
-		{
-			//removeAllHardwareBuffers
-		}
-
-		s32 MaterialId;
-	};
-
 	struct SIndexChunk
 	{
-		core::array<u16> Indices;
+		scene::CIndexBuffer IndexBuffer;
 		s32 MaterialId;
 	};
 
 	struct SIndexData
 	{
-		u16* Indices;
+		scene::IIndexBuffer* IndexBuffer;
 		s32 CurrentSize;
 		s32 MaxSize;
 	};
 
 
 	//! Constructor
-	Octree(const core::array<SMeshChunk>& meshes, s32 minimalPolysPerNode=128) :
+	Octree(const core::array<scene::IMeshBuffer*>& meshes, const core::array<s32>& meshesMatID, s32 minimalPolysPerNode=128) :
 		IndexData(0), IndexDataCount(meshes.size()), NodeCount(0)
 	{
 		IndexData = new SIndexData[IndexDataCount];
@@ -73,22 +56,27 @@ public:
 		// construct array of all indices
 
 		core::array<SIndexChunk>* indexChunks = new core::array<SIndexChunk>;
+
 		indexChunks->reallocate(meshes.size());
+
 		for (u32 i=0; i!=meshes.size(); ++i)
 		{
 			IndexData[i].CurrentSize = 0;
-			IndexData[i].MaxSize = meshes[i].Indices.size();
-			IndexData[i].Indices = new u16[IndexData[i].MaxSize];
+			IndexData[i].MaxSize = meshes[i]->getIndexBuffer()->getIndexCount();
+			IndexData[i].IndexBuffer = new scene::CIndexBuffer(meshes[i]->getIndexBuffer()->getType());
+			IndexData[i].IndexBuffer->reallocate(IndexData[i].MaxSize);
 
 			indexChunks->push_back(SIndexChunk());
-			SIndexChunk& tic = indexChunks->getLast();
 
-			tic.MaterialId = meshes[i].MaterialId;
-			tic.Indices = meshes[i].Indices;
+			SIndexChunk& tic = indexChunks->getLast();
+			tic.MaterialId = meshesMatID[i];
+
+			for(u32 j = 0; j < meshes[i]->getIndexBuffer()->getIndexCount(); ++j)
+				tic.IndexBuffer.addIndex(meshes[i]->getIndexBuffer()->getIndex(j));
 		}
 
 		// create tree
-		Root = new OctreeNode(NodeCount, 0, meshes, indexChunks, minimalPolysPerNode);
+		Root = new OctreeNode(NodeCount, 0, meshes, meshesMatID, indexChunks, minimalPolysPerNode);
 	}
 
 	//! returns all ids of polygons partially or fully enclosed
@@ -137,7 +125,7 @@ public:
 	~Octree()
 	{
 		for (u32 i=0; i<IndexDataCount; ++i)
-			delete [] IndexData[i].Indices;
+			delete IndexData[i].IndexBuffer;
 
 		delete [] IndexData;
 		delete Root;
@@ -151,7 +139,7 @@ private:
 
 		// constructor
 		OctreeNode(u32& nodeCount, u32 currentdepth,
-			const core::array<SMeshChunk>& allmeshdata,
+			const core::array<scene::IMeshBuffer*>& meshes, const core::array<s32>& meshesMatID,
 			core::array<SIndexChunk>* indices,
 			s32 minimalPolysPerNode) : IndexData(0),
 			Depth(currentdepth+1)
@@ -175,9 +163,19 @@ private:
 
 			for (i=0; i<indices->size(); ++i)
 			{
-				if (!(*indices)[i].Indices.empty())
+				video::IVertexAttribute* attribute = meshes[i]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+				if(!attribute)
+					continue;
+
+				u8* offset = static_cast<u8*>(meshes[i]->getVertexBuffer()->getVertices());
+				offset += attribute->getOffset();
+
+				if((*indices)[i].IndexBuffer.getIndexCount() > 0)
 				{
-					Box.reset(allmeshdata[i].Vertices[(*indices)[i].Indices[0]].Pos);
+					core::vector3df* position = (core::vector3df*)(offset + meshes[i]->getVertexBuffer()->getVertexSize() * (*indices)[i].IndexBuffer.getIndex(0));
+
+					Box.reset(*position);
 					found = true;
 					break;
 				}
@@ -194,9 +192,21 @@ private:
 			// now lets calculate our bounding box
 			for (i=0; i<indices->size(); ++i)
 			{
-				totalPrimitives += (*indices)[i].Indices.size();
-				for (u32 j=0; j<(*indices)[i].Indices.size(); ++j)
-					Box.addInternalPoint(allmeshdata[i].Vertices[(*indices)[i].Indices[j]].Pos);
+				video::IVertexAttribute* attribute = meshes[i]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+				if(!attribute)
+					continue;
+
+				u8* offset = static_cast<u8*>(meshes[i]->getVertexBuffer()->getVertices());
+				offset += attribute->getOffset();
+
+				totalPrimitives += (*indices)[i].IndexBuffer.getIndexCount();
+
+				for (u32 j=0; j<(*indices)[i].IndexBuffer.getIndexCount(); ++j)
+				{
+					core::vector3df* position = (core::vector3df*)(offset + meshes[i]->getVertexBuffer()->getVertexSize() * (*indices)[i].IndexBuffer.getIndex(j));
+					Box.addInternalPoint(*position);
+				}
 			}
 
 			core::vector3df middle = Box.getCenter();
@@ -205,7 +215,7 @@ private:
 
 			// calculate all children
 			core::aabbox3d<f32> box;
-			core::array<u16> keepIndices;
+			core::array<u32> keepIndices;
 
 			if (totalPrimitives > minimalPolysPerNode && !Box.isEmpty())
 			for (u32 ch=0; ch!=8; ++ch)
@@ -216,41 +226,54 @@ private:
 				// create indices for child
 				bool added = false;
 				core::array<SIndexChunk>* cindexChunks = new core::array<SIndexChunk>;
-				cindexChunks->reallocate(allmeshdata.size());
-				for (i=0; i<allmeshdata.size(); ++i)
+				cindexChunks->reallocate(meshes.size());
+				for (i=0; i<meshes.size(); ++i)
 				{
+					video::IVertexAttribute* attribute = meshes[i]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+
+					if(!attribute)
+						continue;
+
+					u8* offset = static_cast<u8*>(meshes[i]->getVertexBuffer()->getVertices());
+					offset += attribute->getOffset();
+
 					cindexChunks->push_back(SIndexChunk());
 					SIndexChunk& tic = cindexChunks->getLast();
-					tic.MaterialId = allmeshdata[i].MaterialId;
+					tic.MaterialId = meshesMatID[i];
 
-					for (u32 t=0; t<(*indices)[i].Indices.size(); t+=3)
+					for (u32 t=0; t<(*indices)[i].IndexBuffer.getIndexCount(); t+=3)
 					{
-						if (box.isPointInside(allmeshdata[i].Vertices[(*indices)[i].Indices[t]].Pos) &&
-							box.isPointInside(allmeshdata[i].Vertices[(*indices)[i].Indices[t+1]].Pos) &&
-							box.isPointInside(allmeshdata[i].Vertices[(*indices)[i].Indices[t+2]].Pos))
+						core::vector3df* position0 = (core::vector3df*)(offset + meshes[i]->getVertexBuffer()->getVertexSize() * (*indices)[i].IndexBuffer.getIndex(t));
+						core::vector3df* position1 = (core::vector3df*)(offset + meshes[i]->getVertexBuffer()->getVertexSize() * (*indices)[i].IndexBuffer.getIndex(t+1));
+						core::vector3df* position2 = (core::vector3df*)(offset + meshes[i]->getVertexBuffer()->getVertexSize() * (*indices)[i].IndexBuffer.getIndex(t+2));
+
+						if (box.isPointInside(*position0) && box.isPointInside(*position1) && box.isPointInside(*position2))
 						{
-							tic.Indices.push_back((*indices)[i].Indices[t]);
-							tic.Indices.push_back((*indices)[i].Indices[t+1]);
-							tic.Indices.push_back((*indices)[i].Indices[t+2]);
+							tic.IndexBuffer.addIndex((*indices)[i].IndexBuffer.getIndex(t));
+							tic.IndexBuffer.addIndex((*indices)[i].IndexBuffer.getIndex(t+1));
+							tic.IndexBuffer.addIndex((*indices)[i].IndexBuffer.getIndex(t+2));
 
 							added = true;
 						}
 						else
 						{
-							keepIndices.push_back((*indices)[i].Indices[t]);
-							keepIndices.push_back((*indices)[i].Indices[t+1]);
-							keepIndices.push_back((*indices)[i].Indices[t+2]);
+							keepIndices.push_back((*indices)[i].IndexBuffer.getIndex(t));
+							keepIndices.push_back((*indices)[i].IndexBuffer.getIndex(t+1));
+							keepIndices.push_back((*indices)[i].IndexBuffer.getIndex(t+2));
 						}
 					}
 
-					(*indices)[i].Indices.set_used(keepIndices.size());
-					memcpy( (*indices)[i].Indices.pointer(), keepIndices.pointer(), keepIndices.size()*sizeof(u16));
+					(*indices)[i].IndexBuffer.set_used(keepIndices.size());
+
+					for (u32 t=0; t<keepIndices.size(); ++t)
+						(*indices)[i].IndexBuffer.setIndex(t, keepIndices[t]);
+
 					keepIndices.set_used(0);
 				}
 
 				if (added)
 					Children[ch] = new OctreeNode(nodeCount, Depth,
-						allmeshdata, cindexChunks, minimalPolysPerNode);
+						meshes, meshesMatID, cindexChunks, minimalPolysPerNode);
 				else
 					delete cindexChunks;
 
@@ -290,14 +313,38 @@ private:
 				const u32 cnt = IndexData->size();
 				u32 i; // new ISO for scoping problem in some compilers
 
-				for (i=0; i<cnt; ++i)
+				for (i=0; i!=cnt; ++i)
 				{
-					const s32 idxcnt = (*IndexData)[i].Indices.size();
+					s32 idxcnt = (*IndexData)[i].IndexBuffer.getIndexCount();
 
 					if (idxcnt)
 					{
-						memcpy(&idxdata[i].Indices[idxdata[i].CurrentSize],
-							&(*IndexData)[i].Indices[0], idxcnt * sizeof(s16));
+						if(idxdata[i].IndexBuffer->getType() != (*IndexData)[i].IndexBuffer.getType())
+							continue;
+
+						u32 IndexType = sizeof(s16);
+						
+						if(idxdata[i].IndexBuffer->getType() == video::EIT_32BIT)
+							IndexType = sizeof(s32);
+
+						void* src = (*IndexData)[i].IndexBuffer.getIndices();
+						void* dst = idxdata[i].IndexBuffer->getIndices();
+
+						if(idxdata[i].IndexBuffer->getType() == video::EIT_32BIT)
+						{
+							s32* dst2 = (s32*)dst;
+							dst2 += idxdata[i].CurrentSize;
+							dst = dst2;
+						}
+						else
+						{
+							s16* dst2 = (s16*)dst;
+							dst2 += idxdata[i].CurrentSize;
+							dst = dst2;
+						}
+
+						memcpy(dst, src, idxcnt * IndexType);
+
 						idxdata[i].CurrentSize += idxcnt;
 					}
 				}
@@ -334,17 +381,40 @@ private:
 				}
 			}
 
-
 			const u32 cnt = IndexData->size();
 
 			for (i=0; i!=cnt; ++i)
 			{
-				s32 idxcnt = (*IndexData)[i].Indices.size();
+				s32 idxcnt = (*IndexData)[i].IndexBuffer.getIndexCount();
 
 				if (idxcnt)
 				{
-					memcpy(&idxdata[i].Indices[idxdata[i].CurrentSize],
-						&(*IndexData)[i].Indices[0], idxcnt * sizeof(s16));
+					if(idxdata[i].IndexBuffer->getType() != (*IndexData)[i].IndexBuffer.getType())
+						continue;
+
+					u32 IndexType = sizeof(s16);
+						
+					if(idxdata[i].IndexBuffer->getType() == video::EIT_32BIT)
+						IndexType = sizeof(s32);
+
+					void* src = (*IndexData)[i].IndexBuffer.getIndices();
+					void* dst = idxdata[i].IndexBuffer->getIndices();
+
+					if(idxdata[i].IndexBuffer->getType() == video::EIT_32BIT)
+					{
+						s32* dst2 = (s32*)dst;
+						dst2 += idxdata[i].CurrentSize;
+						dst = dst2;
+					}
+					else
+					{
+						s16* dst2 = (s16*)dst;
+						dst2 += idxdata[i].CurrentSize;
+						dst = dst2;
+					}
+
+					memcpy(dst, src, idxcnt * IndexType);
+
 					idxdata[i].CurrentSize += idxcnt;
 				}
 			}

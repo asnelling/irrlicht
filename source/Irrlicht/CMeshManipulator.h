@@ -12,80 +12,40 @@ namespace irr
 namespace scene
 {
 
-//! An interface for easy manipulation of meshes.
-/** Scale, set alpha value, flip surfaces, and so on. This exists for fixing
-problems with wrong imported or exported meshes quickly after loading. It is
-not intended for doing mesh modifications and/or animations during runtime.
-*/
 class CMeshManipulator : public IMeshManipulator
 {
 public:
-	//! Flips the direction of surfaces.
-	/** Changes backfacing triangles to frontfacing triangles and vice versa.
-	\param mesh: Mesh on which the operation is performed. */
-	virtual void flipSurfaces(scene::IMesh* mesh) const;
+	virtual void flipSurfaces(IMesh* pMesh) const;
 
-	//! Recalculates all normals of the mesh.
-	/** \param mesh: Mesh on which the operation is performed.
-	    \param smooth: Whether to use smoothed normals. */
-	virtual void recalculateNormals(scene::IMesh* mesh, bool smooth = false, bool angleWeighted = false) const;
+	virtual void setVertexColor(IMeshBuffer* pMeshBuffer, video::SColor pColor, bool pOnlyAlpha) const;
 
-	//! Recalculates all normals of the mesh buffer.
-	/** \param buffer: Mesh buffer on which the operation is performed.
-	    \param smooth: Whether to use smoothed normals. */
-	virtual void recalculateNormals(IMeshBuffer* buffer, bool smooth = false, bool angleWeighted = false) const;
+	virtual void setVertexColorAlpha(IMeshBuffer* pMeshBuffer, s32 pAlpha) const;
 
-	//! Clones a static IMesh into a modifiable SMesh.
-	virtual SMesh* createMeshCopy(scene::IMesh* mesh) const;
+	virtual void setVertexColors(IMeshBuffer* pMeshBuffer, video::SColor pColor) const;
 
-	//! Creates a planar texture mapping on the mesh
-	/** \param mesh: Mesh on which the operation is performed.
-	\param resolution: resolution of the planar mapping. This is the value
-	specifying which is the relation between world space and 
-	texture coordinate space. */
-	virtual void makePlanarTextureMapping(scene::IMesh* mesh, f32 resolution=0.001f) const;
+	virtual void scale(IMeshBuffer* pMeshBuffer, const core::vector3df& pFactor) const;
 
-	//! Creates a planar texture mapping on the meshbuffer
-	virtual void makePlanarTextureMapping(scene::IMeshBuffer* meshbuffer, f32 resolution=0.001f) const;
+	virtual void scaleTCoords(IMeshBuffer* pMeshBuffer, const core::vector2df& pFactor, u32 pLevel = 0) const;
 
-	//! Creates a planar texture mapping on the meshbuffer
-	void makePlanarTextureMapping(scene::IMeshBuffer* buffer, f32 resolutionS, f32 resolutionT, u8 axis, const core::vector3df& offset) const;
+	virtual void transform(IMeshBuffer* pMeshBuffer, const core::matrix4& pMatrix) const;
 
-	//! Creates a planar texture mapping on the mesh
-	void makePlanarTextureMapping(scene::IMesh* mesh, f32 resolutionS, f32 resolutionT, u8 axis, const core::vector3df& offset) const;
+	virtual void recalculateNormals(IMeshBuffer* pMeshBuffer, bool pSmooth, bool pAngleWeighted) const;
 
-	//! Recalculates tangents, requires a tangent mesh buffer
-	virtual void recalculateTangents(IMeshBuffer* buffer, bool recalculateNormals=false, bool smooth=false, bool angleWeighted=false) const;
+	virtual void recalculateTangents(IMeshBuffer* pMeshBuffer, bool pRecalculateNormals, bool pSmooth, bool pAngleWeighted) const;
 
-	//! Recalculates tangents, requires a tangent mesh
-	virtual void recalculateTangents(IMesh* mesh, bool recalculateNormals=false, bool smooth=false, bool angleWeighted=false) const;
+	virtual void makePlanarTextureMapping(IMeshBuffer* pMeshBuffer, f32 pResolution = 0.001f) const;
 
-	//! Creates a copy of the mesh, which will only consist of S3DVertexTangents vertices.
-	virtual IMesh* createMeshWithTangents(IMesh* mesh, bool recalculateNormals=false, bool smooth=false, bool angleWeighted=false, bool recalculateTangents=true) const;
+	virtual void makePlanarTextureMapping(IMeshBuffer* pMeshBuffer, f32 pResolutionS, f32 pResolutionT, u8 pAxis, const core::vector3df& pOffset) const;
 
-	//! Creates a copy of the mesh, which will only consist of S3D2TCoords vertices.
-	virtual IMesh* createMeshWith2TCoords(IMesh* mesh) const;
+	virtual bool copyVertices(IVertexBuffer* pSrcBuffer, IVertexBuffer* pDestBuffer, bool pCopyCustomAttribute) const;
+	
+	virtual s32 getPolyCount(IMesh* pMesh) const;
 
-	//! Creates a copy of the mesh, which will only consist of S3DVertex vertices.
-	virtual IMesh* createMeshWith1TCoords(IMesh* mesh) const;
+	virtual s32 getPolyCount(IAnimatedMesh* pMesh) const;
 
-	//! Creates a copy of the mesh, which will only consist of unique triangles, i.e. no vertices are shared.
-	virtual IMesh* createMeshUniquePrimitives(IMesh* mesh) const;
+	virtual IAnimatedMesh* createAnimatedMesh(IMesh* pMesh, E_ANIMATED_MESH_TYPE pType) const;
 
-	//! Creates a copy of the mesh, which will have all duplicated vertices removed, i.e. maximal amount of vertices are shared via indexing.
-	virtual IMesh* createMeshWelded(IMesh *mesh, f32 tolerance=core::ROUNDING_ERROR_f32) const;
-
-	//! Returns amount of polygons in mesh.
-	virtual s32 getPolyCount(scene::IMesh* mesh) const;
-
-	//! Returns amount of polygons in mesh.
-	virtual s32 getPolyCount(scene::IAnimatedMesh* mesh) const;
-
-	//! create a new AnimatedMesh and adds the mesh to it
-	virtual IAnimatedMesh * createAnimatedMesh(scene::IMesh* mesh,scene::E_ANIMATED_MESH_TYPE type) const;
-
-	//! create a mesh optimized for the vertex cache
-	virtual IMesh* createForsythOptimizedMesh(const scene::IMesh *mesh) const;
+	virtual IMesh* createForsythOptimizedMesh(const IMesh* pMesh) const;
 };
 
 } // end namespace scene

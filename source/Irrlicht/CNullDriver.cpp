@@ -15,6 +15,7 @@
 #include "CMeshManipulator.h"
 #include "CColorConverter.h"
 #include "IAttributeExchangingObject.h"
+#include "CVertexDescriptor.h"
 
 
 namespace irr
@@ -106,12 +107,35 @@ CNullDriver::CNullDriver(io::IFileSystem* io, const core::dimension2d<u32>& scre
 //	DriverAttributes->addInt("ShaderLanguageVersion", 0);
 //	DriverAttributes->addInt("AntiAlias", 0);
 
+	addVertexDescriptor("standard");
+	VertexDescriptor[0]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
+	VertexDescriptor[0]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
+	VertexDescriptor[0]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
+	VertexDescriptor[0]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
+
+	addVertexDescriptor("2tcoords");
+	VertexDescriptor[1]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
+	VertexDescriptor[1]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
+	VertexDescriptor[1]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
+	VertexDescriptor[1]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
+	VertexDescriptor[1]->addAttribute("inTexCoord1", 2, EVAS_TEXCOORD1, EVAT_FLOAT);
+
+	addVertexDescriptor("tangents");
+	VertexDescriptor[2]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
+	VertexDescriptor[2]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inTangent", 3, EVAS_TANGENT, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inBinormal", 3, EVAS_BINORMAL, EVAT_FLOAT);
+
 	setFog();
 
 	setTextureCreationFlag(ETCF_ALWAYS_32_BIT, true);
 	setTextureCreationFlag(ETCF_CREATE_MIP_MAPS, true);
 
 	ViewPort = core::rect<s32>(core::position2d<s32>(0,0), core::dimension2di(screenSize));
+
+	// builtin vertex descriptors
 
 	// create manipulator
 	MeshManipulator = new scene::CMeshManipulator();
@@ -227,6 +251,9 @@ CNullDriver::~CNullDriver()
 
 	// delete hardware mesh buffers
 	removeAllHardwareBuffers();
+
+	for(i=0; i < VertexDescriptor.size(); ++i)
+		VertexDescriptor[i]->drop();
 }
 
 
@@ -644,11 +671,12 @@ const core::rect<s32>& CNullDriver::getViewPort() const
 
 
 //! draws a vertex primitive list
-void CNullDriver::drawVertexPrimitiveList(const void* vertices, u32 vertexCount, const void* indexList, u32 primitiveCount, E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
+void CNullDriver::drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer, bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType)
 {
-	if ((iType==EIT_16BIT) && (vertexCount>65536))
+	if((pIndexBuffer->getType() == EIT_16BIT) && (pVertexBuffer->getVertexCount() > 65536))
 		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
-	PrimitivesDrawn += primitiveCount;
+
+	PrimitivesDrawn += pPrimitiveCount;
 }
 
 
@@ -685,7 +713,7 @@ void CNullDriver::draw3DTriangle(const core::triangle3df& triangle, SColor color
 	vertices[2].Normal=vertices[0].Normal;
 	vertices[2].TCoords.set(1.f,0.f);
 	const u16 indexList[] = {0,1,2};
-	drawVertexPrimitiveList(vertices, 3, indexList, 1, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
+	//drawVertexPrimitiveList(vertices, 3, indexList, 1, scene::EPT_TRIANGLES, EIT_16BIT);
 }
 
 
@@ -1516,14 +1544,14 @@ void CNullDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 	if (HWBuffer)
 		drawHardwareBuffer(HWBuffer);
 	else
-		drawVertexPrimitiveList(mb->getVertices(), mb->getVertexCount(), mb->getIndices(), mb->getIndexCount()/3, mb->getVertexType(), scene::EPT_TRIANGLES, mb->getIndexType());
+		drawVertexPrimitiveList(false, mb->getVertexBuffer(), false, mb->getIndexBuffer(), mb->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
 }
 
 
 //! Draws the normals of a mesh buffer
 void CNullDriver::drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length, SColor color)
 {
-	const u32 count = mb->getVertexCount();
+	/*const u32 count = mb->getVertexCount();
 	const bool normalize = mb->getMaterial().NormalizeNormals;
 
 	for (u32 i=0; i < count; ++i)
@@ -1534,7 +1562,45 @@ void CNullDriver::drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length
 
 		const core::vector3df& pos = mb->getPosition(i);
 		draw3DLine(pos, pos + (normalizedNormal * length), color);
-	}
+	}*/
+}
+
+
+bool CNullDriver::addVertexDescriptor(const core::stringc& pName)
+{
+	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
+		if(pName == VertexDescriptor[i]->getName())
+			return false;
+
+	CVertexDescriptor* vertexDescriptor = new CVertexDescriptor(pName);
+	VertexDescriptor.push_back(vertexDescriptor);
+
+	return true;
+}
+
+
+IVertexDescriptor* CNullDriver::getVertexDescriptor(u32 pID) const
+{
+	if(pID < VertexDescriptor.size())
+		return VertexDescriptor[pID];
+
+	return 0;
+}
+
+
+IVertexDescriptor* CNullDriver::getVertexDescriptor(const core::stringc& pName) const
+{
+	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
+		if(pName == VertexDescriptor[i]->getName())
+			return VertexDescriptor[i];
+
+	return 0;
+}
+
+
+u32 CNullDriver::getVertexDescriptorCount() const
+{
+	return VertexDescriptor.size();
 }
 
 
@@ -1604,7 +1670,7 @@ bool CNullDriver::isHardwareBufferRecommend(const scene::IMeshBuffer* mb)
 	if (!mb || (mb->getHardwareMappingHint_Index()==scene::EHM_NEVER && mb->getHardwareMappingHint_Vertex()==scene::EHM_NEVER))
 		return false;
 
-	if (mb->getVertexCount()<MinVertexCountForVBO)
+	if (mb->getVertexBuffer()->getVertexCount()<MinVertexCountForVBO)
 		return false;
 
 	return true;

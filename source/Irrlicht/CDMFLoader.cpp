@@ -25,10 +25,11 @@
 #include "ISceneManager.h"
 #include "IAttributes.h"
 #include "SAnimatedMesh.h"
-#include "SSkinMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "irrString.h"
 #include "irrMath.h"
 #include "dmfsupport.h"
+#include "IMeshManipulator.h"
 
 namespace irr
 {
@@ -124,7 +125,7 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 		for (i=0; i<header.numMaterials; i++)
 		{
 			//create a new SMeshBufferLightMap for each material
-			SSkinMeshBuffer* buffer = new SSkinMeshBuffer();
+			CMeshBuffer<video::S3DVertex>* buffer = new CMeshBuffer<video::S3DVertex>(SceneMgr->getVideoDriver()->getVertexDescriptor(0));
 			buffer->Material.MaterialType = video::EMT_LIGHTMAP_LIGHTING;
 			buffer->Material.Wireframe = false;
 			buffer->Material.Lighting = true;
@@ -149,20 +150,22 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 						verts[faces[i].firstVert+1].pos,
 						verts[faces[i].firstVert+2].pos).getNormal().normalize();
 
-			SSkinMeshBuffer* meshBuffer = (SSkinMeshBuffer*)mesh->getMeshBuffer(
+			IMeshBuffer* meshBuffer = (IMeshBuffer*)mesh->getMeshBuffer(
 					faces[i].materialID);
 
-			const bool use2TCoords = meshBuffer->Vertices_2TCoords.size() ||
-				materiali[faces[i].materialID].lightmapName.size();
-			if (use2TCoords && meshBuffer->Vertices_Standard.size())
-				meshBuffer->convertTo2TCoords();
-			const u32 base = meshBuffer->Vertices_2TCoords.size()?meshBuffer->Vertices_2TCoords.size():meshBuffer->Vertices_Standard.size();
+			bool use2TCoords = false;
+			
+			if(materiali[faces[i].materialID].lightmapName.size())
+				bool use2TCoords = true;
+
+			if (use2TCoords)
+				SceneMgr->getMeshManipulator()->convertVertices<video::S3DVertex2TCoords>(meshBuffer, SceneMgr->getVideoDriver()->getVertexDescriptor(1), false);
+
+			const u32 base = meshBuffer->getVertexBuffer()->getVertexCount();
 
 			// Add this face's verts
 			if (use2TCoords)
 			{
-				// make sure we have the proper type set
-				meshBuffer->VertexType=video::EVT_2TCOORDS;
 				for (u32 v = 0; v < faces[i].numVerts; v++)
 				{
 					const dmfVert& vv = verts[faces[i].firstVert + v];
@@ -173,7 +176,7 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 					{
 						vert.TCoords.set(vv.tc.X,-vv.tc.Y);
 					}
-					meshBuffer->Vertices_2TCoords.push_back(vert);
+					meshBuffer->getVertexBuffer()->addVertex(&vert);
 				}
 			}
 			else
@@ -188,7 +191,7 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 					{
 						vert.TCoords.set(vv.tc.X,-vv.tc.Y);
 					}
-					meshBuffer->Vertices_Standard.push_back(vert);
+					meshBuffer->getVertexBuffer()->addVertex(&vert);
 				}
 			}
 
@@ -204,9 +207,9 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 				else // even
 					c = l + 1;
 
-				meshBuffer->Indices.push_back(base + h);
-				meshBuffer->Indices.push_back(base + l);
-				meshBuffer->Indices.push_back(base + c);
+				meshBuffer->getIndexBuffer()->addIndex(base + h);
+				meshBuffer->getIndexBuffer()->addIndex(base + l);
+				meshBuffer->getIndexBuffer()->addIndex(base + c);
 
 				if (v & 1) // odd
 					h--;
@@ -226,8 +229,8 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 	i = 0;
 	while(i < mesh->MeshBuffers.size())
 	{
-		if (mesh->MeshBuffers[i]->getVertexCount() == 0 ||
-			mesh->MeshBuffers[i]->getIndexCount() == 0)
+		if (mesh->MeshBuffers[i]->getVertexBuffer()->getVertexCount() == 0 ||
+			mesh->MeshBuffers[i]->getIndexBuffer()->getIndexCount() == 0)
 		{
 			// Meshbuffer is empty -- drop it
 			mesh->MeshBuffers[i]->drop();

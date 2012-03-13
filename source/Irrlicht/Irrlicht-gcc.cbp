@@ -426,7 +426,6 @@
 			<Add alias="All" targets="Win32 - Debug - dll;Win32 - Release - accurate math - dll;Win32 - Release - fast math - dll;" />
 		</VirtualTargets>
 		<Unit filename="../../changes.txt" />
-		<Unit filename="../../include/CDynamicMeshBuffer.h" />
 		<Unit filename="../../include/CIndexBuffer.h" />
 		<Unit filename="../../include/CMeshBuffer.h" />
 		<Unit filename="../../include/CVertexBuffer.h" />
@@ -461,7 +460,6 @@
 		<Unit filename="../../include/IColladaMeshWriter.h" />
 		<Unit filename="../../include/ICursorControl.h" />
 		<Unit filename="../../include/IDummyTransformationSceneNode.h" />
-		<Unit filename="../../include/IDynamicMeshBuffer.h" />
 		<Unit filename="../../include/IEventReceiver.h" />
 		<Unit filename="../../include/IFileArchive.h" />
 		<Unit filename="../../include/IFileList.h" />
@@ -550,6 +548,7 @@
 		<Unit filename="../../include/ITimer.h" />
 		<Unit filename="../../include/ITriangleSelector.h" />
 		<Unit filename="../../include/IVertexBuffer.h" />
+		<Unit filename="../../include/IVertexDescriptor.h" />
 		<Unit filename="../../include/IVideoDriver.h" />
 		<Unit filename="../../include/IVideoModeList.h" />
 		<Unit filename="../../include/IVolumeLightSceneNode.h" />
@@ -569,14 +568,7 @@
 		<Unit filename="../../include/SMaterial.h" />
 		<Unit filename="../../include/SMaterialLayer.h" />
 		<Unit filename="../../include/SMesh.h" />
-		<Unit filename="../../include/SMeshBuffer.h" />
-		<Unit filename="../../include/SMeshBufferLightMap.h" />
-		<Unit filename="../../include/SMeshBufferTangents.h" />
 		<Unit filename="../../include/SParticle.h" />
-		<Unit filename="../../include/SSharedMeshBuffer.h" />
-		<Unit filename="../../include/SSkinMeshBuffer.h" />
-		<Unit filename="../../include/SVertexIndex.h" />
-		<Unit filename="../../include/SVertexManipulator.h" />
 		<Unit filename="../../include/SViewFrustum.h" />
 		<Unit filename="../../include/SceneParameters.h" />
 		<Unit filename="../../include/aabbox3d.h" />
@@ -993,6 +985,8 @@
 		<Unit filename="CTriangleBBSelector.h" />
 		<Unit filename="CTriangleSelector.cpp" />
 		<Unit filename="CTriangleSelector.h" />
+		<Unit filename="CVertexDescriptor.cpp" />
+		<Unit filename="CVertexDescriptor.h" />
 		<Unit filename="CVideoModeList.cpp" />
 		<Unit filename="CVideoModeList.h" />
 		<Unit filename="CVolumeLightSceneNode.cpp" />

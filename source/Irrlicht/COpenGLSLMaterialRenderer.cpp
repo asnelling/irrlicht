@@ -215,6 +215,8 @@ void COpenGLSLMaterialRenderer::OnSetMaterial(const video::SMaterial& material,
 	for (u32 i=0; i<MATERIAL_MAX_TEXTURES; ++i)
 		Driver->setActiveTexture(i, material.getTexture(i));
 	Driver->setBasicRenderStates(material, lastMaterial, resetAllRenderstates);
+
+	Driver->setLinkedProgram(Program2);
 }
 
 
@@ -227,6 +229,8 @@ void COpenGLSLMaterialRenderer::OnUnsetMaterial()
 
 	if (BaseMaterial)
 		BaseMaterial->OnUnsetMaterial();
+
+	Driver->setLinkedProgram(0);
 }
 
 
@@ -547,7 +551,16 @@ bool COpenGLSLMaterialRenderer::setPixelShaderConstant(const c8* name, const f32
 			Driver->extGlUniformMatrix4fv(Location, count/16, false, floats);
 			break;
 		default:
-			Driver->extGlUniform1iv(Location, count, reinterpret_cast<const GLint*>(floats));
+			// INT setPixelShaderConstant patch will be apply.
+
+			if(count == 1) // before it sampler number > 0 wasn't set properly.
+			{
+				GLint Var = floats[0];
+				Driver->extGlUniform1iv(Location, count, &Var);
+			}
+			else
+				Driver->extGlUniform1iv(Location, count, reinterpret_cast<const GLint*>(floats));
+
 			break;
 	}
 	return true;

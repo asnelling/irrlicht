@@ -7,6 +7,8 @@
 
 #include "IBillboardSceneNode.h"
 #include "S3DVertex.h"
+#include "CVertexBuffer.h"
+#include "CIndexBuffer.h"
 
 namespace irr
 {
@@ -24,6 +26,9 @@ public:
 		const core::vector3df& position, const core::dimension2d<f32>& size,
 		video::SColor colorTop=video::SColor(0xFFFFFFFF),
 		video::SColor colorBottom=video::SColor(0xFFFFFFFF));
+
+	//! destructor
+	~CBillboardSceneNode();
 
 	//! pre render event
 	virtual void OnRegisterSceneNode();
@@ -87,8 +92,8 @@ private:
 	core::aabbox3d<f32> BBox;
 	video::SMaterial Material;
 
-	video::S3DVertex vertices[4];
-	u16 indices[6];
+	IVertexBuffer* VertexBuffer;
+	IIndexBuffer* IndexBuffer;
 };
 
 

@@ -17,7 +17,7 @@
 #include "SMesh.h"
 #include "IVideoDriver.h"
 #include "SAnimatedMesh.h"
-#include "SMeshBufferLightMap.h"
+#include "CMeshBuffer.h"
 
 #ifdef _DEBUG
 #define _IRR_DEBUG_CSM_LOADER_
@@ -466,7 +466,7 @@ namespace scene
 				lmapName += "LMAP_";
 				lmapName += io::path(surface->getLightMapId());
 
-				scene::SMeshBufferLightMap *buffer = new scene::SMeshBufferLightMap();
+				CMeshBuffer<video::S3DVertex2TCoords>* buffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
 				buffer->Material.setTexture(0, texture);
 				if (surface->getLightMapId())
 				{
@@ -475,7 +475,7 @@ namespace scene
 					buffer->Material.MaterialType = video::EMT_LIGHTMAP_ADD;
 				}
 
-				buffer->Vertices.reallocate(surface->getVertexCount());
+				buffer->getVertexBuffer()->reallocate(surface->getVertexCount());
 				for(u32 v = 0; v < surface->getVertexCount(); ++v)
 				{
 					const Vertex& vtxPtr = surface->getVertexAt(v);
@@ -486,16 +486,16 @@ namespace scene
 					vtx.TCoords.set(vtxPtr.getTextureCoordinates().X, 1.f-vtxPtr.getTextureCoordinates().Y);
 					vtx.TCoords2.set(vtxPtr.getLightMapCoordinates().X, 1.f-vtxPtr.getLightMapCoordinates().Y);
 
-					buffer->Vertices.push_back(vtx);
+					buffer->getVertexBuffer()->addVertex(&vtx);
 				}
 
-				buffer->Indices.reallocate(surface->getTriangleCount()*3);
+				buffer->getIndexBuffer()->reallocate(surface->getTriangleCount()*3);
 				for(u32 t = 0; t < surface->getTriangleCount(); ++t)
 				{
 					const Triangle& tri = surface->getTriangleAt(t);
-					buffer->Indices.push_back(tri.c);
-					buffer->Indices.push_back(tri.b);
-					buffer->Indices.push_back(tri.a);
+					buffer->getIndexBuffer()->addIndex(tri.c);
+					buffer->getIndexBuffer()->addIndex(tri.b);
+					buffer->getIndexBuffer()->addIndex(tri.a);
 				}
 
 				buffer->recalculateBoundingBox();

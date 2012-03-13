@@ -9,8 +9,9 @@
 #include "IFileSystem.h"
 #include "ISceneManager.h"
 #include "irrString.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "irrMap.h"
+#include "IVideoDriver.h"
 
 namespace irr
 {
@@ -42,10 +43,10 @@ private:
 
 	struct SObjMtl
 	{
-		SObjMtl() : Meshbuffer(0), Bumpiness (1.0f), Illumination(0),
-			RecalculateNormals(false)
+		SObjMtl(scene::ISceneManager* smgr) : Meshbuffer(0), Bumpiness (1.0f), Illumination(0),
+			RecalculateNormals(false), SceneManager(smgr)
 		{
-			Meshbuffer = new SMeshBuffer();
+			Meshbuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
 			Meshbuffer->Material.Shininess = 0.0f;
 			Meshbuffer->Material.AmbientColor = video::SColorf(0.2f, 0.2f, 0.2f, 1.0f).toSColor();
 			Meshbuffer->Material.DiffuseColor = video::SColorf(0.8f, 0.8f, 0.8f, 1.0f).toSColor();
@@ -55,19 +56,20 @@ private:
 		SObjMtl(const SObjMtl& o)
 			: Name(o.Name), Group(o.Group),
 			Bumpiness(o.Bumpiness), Illumination(o.Illumination),
-			RecalculateNormals(false)
+			RecalculateNormals(false), SceneManager(o.SceneManager)
 		{
-			Meshbuffer = new SMeshBuffer();
+			Meshbuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
 			Meshbuffer->Material = o.Meshbuffer->Material;
 		}
 
 		core::map<video::S3DVertex, int> VertMap;
-		scene::SMeshBuffer *Meshbuffer;
+		scene::CMeshBuffer<video::S3DVertex> *Meshbuffer;
 		core::stringc Name;
 		core::stringc Group;
 		f32 Bumpiness;
 		c8 Illumination;
 		bool RecalculateNormals;
+		scene::ISceneManager* SceneManager;
 	};
 
 	// helper method for material reading

@@ -8,7 +8,7 @@
 #define __C_SKINNED_MESH_H_INCLUDED__
 
 #include "ISkinnedMesh.h"
-#include "SMeshBuffer.h"
+#include "CMeshBuffer.h"
 #include "S3DVertex.h"
 #include "irrString.h"
 #include "matrix4.h"
@@ -104,9 +104,6 @@ namespace scene
 		//! Sets Interpolation Mode
 		virtual void setInterpolationMode(E_INTERPOLATION_MODE mode);
 
-		//! Convertes the mesh to contain tangent information
-		virtual void convertMeshToTangents();
-
 		//! Does the mesh have no animation
 		virtual bool isStatic();
 
@@ -117,7 +114,7 @@ namespace scene
 		//these functions will use the needed arrays, set values, etc to help the loaders
 
 		//! exposed for loaders to add mesh buffers
-		virtual core::array<SSkinMeshBuffer*> &getMeshBuffers();
+		virtual core::array<IMeshBuffer*> &getMeshBuffers();
 
 		//! alternative method for adding joints
 		virtual core::array<SJoint*> &getAllJoints();
@@ -129,7 +126,7 @@ namespace scene
 		virtual void finalize();
 
 		//! Adds a new meshbuffer to the mesh, access it as last one
-		virtual SSkinMeshBuffer *addMeshBuffer();
+		virtual void addMeshBuffer(IMeshBuffer* pBuffer);
 
 		//! Adds a new joint to the mesh, access it as last one
 		virtual SJoint *addJoint(SJoint *parent=0);
@@ -178,14 +175,9 @@ private:
 
 		void skinJoint(SJoint *Joint, SJoint *ParentJoint);
 
-		void calculateTangents(core::vector3df& normal,
-			core::vector3df& tangent, core::vector3df& binormal,
-			core::vector3df& vt1, core::vector3df& vt2, core::vector3df& vt3,
-			core::vector2df& tc1, core::vector2df& tc2, core::vector2df& tc3);
+		core::array<IMeshBuffer*> *SkinningBuffers; //Meshbuffer to skin, default is to skin localBuffers
 
-		core::array<SSkinMeshBuffer*> *SkinningBuffers; //Meshbuffer to skin, default is to skin localBuffers
-
-		core::array<SSkinMeshBuffer*> LocalBuffers;
+		core::array<IMeshBuffer*> LocalBuffers;
 
 		core::array<SJoint*> AllJoints;
 		core::array<SJoint*> RootJoints;

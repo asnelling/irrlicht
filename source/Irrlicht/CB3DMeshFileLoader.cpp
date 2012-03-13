@@ -14,6 +14,7 @@
 #include "IVideoDriver.h"
 #include "IFileSystem.h"
 #include "os.h"
+#include "IMeshManipulator.h"
 
 #ifdef _DEBUG
 #define _B3D_READER_DEBUG
@@ -264,7 +265,9 @@ bool CB3DMeshFileLoader::readChunkMESH(CSkinnedMesh::SJoint *inJoint)
 		}
 		else if ( strncmp( B3dStack.getLast().name, "TRIS", 4 ) == 0 )
 		{
-			scene::SSkinMeshBuffer *meshBuffer = AnimatedMesh->addMeshBuffer();
+			CMeshBuffer<video::S3DVertex>* meshBuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
+
+			AnimatedMesh->addMeshBuffer(meshBuffer);
 
 			if (brushID!=-1)
 			{
@@ -279,23 +282,52 @@ bool CB3DMeshFileLoader::readChunkMESH(CSkinnedMesh::SJoint *inJoint)
 			{
 				s32 i;
 
-				for ( i=0; i<(s32)meshBuffer->Indices.size(); i+=3)
-				{
-					core::plane3df p(meshBuffer->getVertex(meshBuffer->Indices[i+0])->Pos,
-							meshBuffer->getVertex(meshBuffer->Indices[i+1])->Pos,
-							meshBuffer->getVertex(meshBuffer->Indices[i+2])->Pos);
+				video::IVertexAttribute* attributeP = 0;
+				video::IVertexAttribute* attributeN = 0;
 
-					meshBuffer->getVertex(meshBuffer->Indices[i+0])->Normal += p.Normal;
-					meshBuffer->getVertex(meshBuffer->Indices[i+1])->Normal += p.Normal;
-					meshBuffer->getVertex(meshBuffer->Indices[i+2])->Normal += p.Normal;
+				for(u32 t = 0; t < meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttributeCount(); ++t)
+				{
+					if(meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(t)->getSemantic() == video::EVAS_POSITION)
+						attributeP = meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(t);
+					else if(meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(t)->getSemantic() == video::EVAS_NORMAL)
+						attributeN = meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(t);
 				}
 
-				for ( i = 0; i<(s32)meshBuffer->getVertexCount(); ++i )
+				if(attributeP && attributeN)
 				{
-					meshBuffer->getVertex(i)->Normal.normalize();
-					BaseVertices[VerticesStart+i].Normal=meshBuffer->getVertex(i)->Normal;
+					u8* Vertices = static_cast<u8*>(meshBuffer->getVertexBuffer()->getVertices());
+
+					u8* positionOffset = Vertices + attributeP->getOffset();
+					u8* normalOffset = Vertices + attributeN->getOffset();
+
+					for ( i=0; i<(s32)meshBuffer->getIndexBuffer()->getIndexCount(); i+=3)
+					{
+						core::vector3df* position0 = (core::vector3df*)(positionOffset + meshBuffer->getVertexBuffer()->getVertexSize() * meshBuffer->getIndexBuffer()->getIndex(i+0));
+						core::vector3df* position1 = (core::vector3df*)(positionOffset + meshBuffer->getVertexBuffer()->getVertexSize() * meshBuffer->getIndexBuffer()->getIndex(i+1));
+						core::vector3df* position2 = (core::vector3df*)(positionOffset + meshBuffer->getVertexBuffer()->getVertexSize() * meshBuffer->getIndexBuffer()->getIndex(i+2));
+
+						core::vector3df* normal0 = (core::vector3df*)(normalOffset + meshBuffer->getVertexBuffer()->getVertexSize() * meshBuffer->getIndexBuffer()->getIndex(i+0));
+						core::vector3df* normal1 = (core::vector3df*)(normalOffset + meshBuffer->getVertexBuffer()->getVertexSize() * meshBuffer->getIndexBuffer()->getIndex(i+1));
+						core::vector3df* normal2 = (core::vector3df*)(normalOffset + meshBuffer->getVertexBuffer()->getVertexSize() * meshBuffer->getIndexBuffer()->getIndex(i+2));
+
+						core::plane3df p(*position0, *position1, *position2);
+
+						*normal0 += p.Normal;
+						*normal1 += p.Normal;
+						*normal2 += p.Normal;
+					}
+
+					for ( i = 0; i<(s32)meshBuffer->getVertexBuffer()->getVertexCount(); ++i )
+					{
+						core::vector3df* normal = (core::vector3df*)(normalOffset + meshBuffer->getVertexBuffer()->getVertexSize() * i);
+
+						(*normal).normalize();
+						BaseVertices[VerticesStart+i].Normal = *normal;
+					}
 				}
 			}
+
+			meshBuffer->drop();
 		}
 		else
 		{
@@ -426,7 +458,7 @@ bool CB3DMeshFileLoader::readChunkVRTS(CSkinnedMesh::SJoint *inJoint)
 }
 
 
-bool CB3DMeshFileLoader::readChunkTRIS(scene::SSkinMeshBuffer *meshBuffer, u32 meshBufferID, s32 vertices_Start)
+bool CB3DMeshFileLoader::readChunkTRIS(scene::IMeshBuffer *meshBuffer, u32 meshBufferID, s32 vertices_Start)
 {
 #ifdef _B3D_READER_DEBUG
 	os::Printer::log("read ChunkTRIS");
@@ -446,13 +478,13 @@ bool CB3DMeshFileLoader::readChunkTRIS(scene::SSkinMeshBuffer *meshBuffer, u32 m
 	{
 		loadTextures(Materials[triangle_brush_id]);
 		B3dMaterial = &Materials[triangle_brush_id];
-		meshBuffer->Material = B3dMaterial->Material;
+		meshBuffer->getMaterial() = B3dMaterial->Material;
 	}
 	else
 		B3dMaterial = 0;
 
 	const s32 memoryNeeded = B3dStack.getLast().length / sizeof(s32);
-	meshBuffer->Indices.reallocate(memoryNeeded + meshBuffer->Indices.size() + 1);
+	meshBuffer->getIndexBuffer()->reallocate(memoryNeeded + meshBuffer->getIndexBuffer()->getIndexCount() + 1);
 
 	while((B3dStack.getLast().startposition + B3dStack.getLast().length) > B3DFile->getPos()) // this chunk repeats
 	{
@@ -491,22 +523,36 @@ bool CB3DMeshFileLoader::readChunkTRIS(scene::SSkinMeshBuffer *meshBuffer, u32 m
 			{
 				//Check for lightmapping:
 				if (BaseVertices[ vertex_id[i] ].TCoords2 != core::vector2df(0.f,0.f))
-					meshBuffer->convertTo2TCoords(); //Will only affect the meshbuffer the first time this is called
+					SceneManager->getMeshManipulator()->convertVertices<video::S3DVertex2TCoords>(meshBuffer, SceneManager->getVideoDriver()->getVertexDescriptor(1), false); //Will only affect the meshbuffer the first time this is called
 
 				//Add the vertex to the meshbuffer:
-				if (meshBuffer->VertexType == video::EVT_STANDARD)
-					meshBuffer->Vertices_Standard.push_back( BaseVertices[ vertex_id[i] ] );
+				if (meshBuffer->getVertexBuffer()->getVertexSize() == sizeof(video::S3DVertex2TCoords))
+					meshBuffer->getVertexBuffer()->addVertex( &BaseVertices[ vertex_id[i] ] );
 				else
-					meshBuffer->Vertices_2TCoords.push_back(BaseVertices[ vertex_id[i] ] );
+				{
+					video::S3DVertex vtx = BaseVertices[ vertex_id[i] ];
+					meshBuffer->getVertexBuffer()->addVertex( &vtx );
+				}
 
 				//create vertex id to meshbuffer index link:
-				AnimatedVertices_VertexID[ vertex_id[i] ] = meshBuffer->getVertexCount()-1;
+				AnimatedVertices_VertexID[ vertex_id[i] ] = meshBuffer->getVertexBuffer()->getVertexCount()-1;
 				AnimatedVertices_BufferID[ vertex_id[i] ] = meshBufferID;
 
 				if (B3dMaterial)
 				{
 					// Apply Material/Color/etc...
-					video::S3DVertex *Vertex=meshBuffer->getVertex(meshBuffer->getVertexCount()-1);
+					video::S3DVertex *Vertex=0;
+					
+					if (meshBuffer->getVertexBuffer()->getVertexSize() == sizeof(video::S3DVertex2TCoords))
+					{
+						video::S3DVertex2TCoords* Vertices = (video::S3DVertex2TCoords*)meshBuffer->getVertexBuffer()->getVertices();
+						Vertex = &Vertices[meshBuffer->getVertexBuffer()->getVertexCount()-1];
+					}
+					else
+					{
+						video::S3DVertex* Vertices = (video::S3DVertex*)meshBuffer->getVertexBuffer()->getVertices();
+						Vertex = &Vertices[meshBuffer->getVertexBuffer()->getVertexCount()-1];
+					}
 
 					if (!HasVertexColors)
 						Vertex->Color=B3dMaterial->Material.DiffuseColor;
@@ -530,9 +576,9 @@ bool CB3DMeshFileLoader::readChunkTRIS(scene::SSkinMeshBuffer *meshBuffer, u32 m
 			}
 		}
 
-		meshBuffer->Indices.push_back( AnimatedVertices_VertexID[ vertex_id[0] ] );
-		meshBuffer->Indices.push_back( AnimatedVertices_VertexID[ vertex_id[1] ] );
-		meshBuffer->Indices.push_back( AnimatedVertices_VertexID[ vertex_id[2] ] );
+		meshBuffer->getIndexBuffer()->addIndex( AnimatedVertices_VertexID[ vertex_id[0] ] );
+		meshBuffer->getIndexBuffer()->addIndex( AnimatedVertices_VertexID[ vertex_id[1] ] );
+		meshBuffer->getIndexBuffer()->addIndex( AnimatedVertices_VertexID[ vertex_id[2] ] );
 	}
 
 	B3dStack.erase(B3dStack.size()-1);

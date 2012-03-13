@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Nikolaus Gebhardt
+// Copyright (C) 2012 Patryk Nadrowski
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -7,46 +7,47 @@
 
 #include "IReferenceCounted.h"
 #include "irrArray.h"
-#include "S3DVertex.h"
+#include "IVertexDescriptor.h"
+#include "EHardwareBufferFlags.h"
 
 namespace irr
 {
 namespace scene
 {
-
 	class IVertexBuffer : public virtual IReferenceCounted
 	{
 	public:
-		virtual void* getData() =0;
-		virtual video::E_VERTEX_TYPE getType() const =0;
-		virtual void setType(video::E_VERTEX_TYPE vertexType) =0;
-		virtual u32 stride() const =0;
-		virtual u32 size() const =0;
-		virtual void push_back(const video::S3DVertex &element) =0;
-		virtual video::S3DVertex& operator [](const u32 index) const =0;
-		virtual video::S3DVertex& getLast() =0;
-		virtual void set_used(u32 usedNow) =0;
-		virtual void reallocate(u32 new_size) =0;
-		virtual u32 allocated_size() const =0;
-		virtual video::S3DVertex* pointer() =0;
+		virtual void clear() = 0;
 
-		//! get the current hardware mapping hint
-		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const =0;
+		virtual void set_used(u32 pUsed) = 0;
 
-		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint( E_HARDWARE_MAPPING NewMappingHint ) =0;
+		virtual void reallocate(u32 pSize) = 0;
 
-		//! flags the meshbuffer as changed, reloads hardware buffers
-		virtual void setDirty() =0;
+		virtual u32 allocated_size() const = 0;
 
-		//! Get the currently used ID for identification of changes.
-		/** This shouldn't be used for anything outside the VideoDriver. */
+		virtual s32 linear_reverse_search(const void* pElement) const = 0;
+
+		virtual video::IVertexDescriptor* getVertexDescriptor() const = 0;
+
+		virtual bool setVertexDescriptor(video::IVertexDescriptor* pVertexDescriptor) = 0;
+
+		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const = 0;
+
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pHardwareMappingHint) = 0;
+
+		virtual void addVertex(const void* pVertex) = 0;
+
+		virtual void* getVertices() = 0;
+
+		virtual u32 getVertexCount() const = 0;
+
+		virtual u32 getVertexSize() const = 0;
+
+		virtual void setDirty() = 0;
+
 		virtual u32 getChangedID() const = 0;
 	};
-
-
-} // end namespace scene
-} // end namespace irr
+}
+}
 
 #endif
-
