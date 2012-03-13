@@ -1076,7 +1076,19 @@ void CQuake3EventHandler::LoadMap ( const stringw &mapName, s32 collision )
 	//s32 minimalNodes = b0 ? core::s32_max ( 2048, b0->getVertexCount() / 32 ) : 2048;
 	s32 minimalNodes = 2048;
 
-	MapParent = smgr->addOctreeSceneNode(geometry, 0, -1, minimalNodes);
+	switch(geometry->getMeshBuffer(0)->getVertexBuffer()->getVertexSize())
+	{
+	case sizeof(video::S3DVertex):
+		MapParent = smgr->addOctreeSceneNode<video::S3DVertex>(geometry, 0, -1, minimalNodes);
+		break;
+	case sizeof(video::S3DVertex2TCoords):
+		MapParent = smgr->addOctreeSceneNode<video::S3DVertex2TCoords>(geometry, 0, -1, minimalNodes);
+		break;
+	case sizeof(video::S3DVertexTangents):
+		MapParent = smgr->addOctreeSceneNode<video::S3DVertexTangents>(geometry, 0, -1, minimalNodes);
+		break;
+	}
+
 	MapParent->setName ( mapName );
 	if ( Meta )
 	{

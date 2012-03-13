@@ -189,7 +189,7 @@ namespace scene
 		virtual void finalize() = 0;
 
 		//! Adds a new meshbuffer to the mesh, access it as last one
-		virtual void addMeshBuffer(IMeshBuffer* pBuffer) = 0;
+		virtual void addMeshBuffer(IMeshBuffer* buffer) = 0;
 
 		//! Adds a new joint to the mesh, access it as last one
 		virtual SJoint* addJoint(SJoint *parent=0) = 0;

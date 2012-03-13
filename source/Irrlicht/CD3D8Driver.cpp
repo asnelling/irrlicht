@@ -863,14 +863,14 @@ const core::rect<s32>& CD3D8Driver::getViewPort() const
 }
 
 
-void CD3D8Driver::drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
-	bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void CD3D8Driver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+	bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
 
 {
 	E_VERTEX_TYPE vType = EVT_STANDARD;
 
 	// Supported are only built-in Irrlicht vertex formats.
-	switch(pVertexBuffer->getVertexSize())
+	switch(vertexBuffer->getVertexSize())
 	{
 	case sizeof(S3DVertex):
 		vType = EVT_STANDARD;
@@ -885,7 +885,7 @@ void CD3D8Driver::drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBu
 		return;
 	}
 
-	drawVertexPrimitiveList(pVertexBuffer->getVertices(), pVertexBuffer->getVertexCount(), pIndexBuffer->getIndices(), pPrimitiveCount, vType, pType, pIndexBuffer->getType());
+	drawVertexPrimitiveList(vertexBuffer->getVertices(), vertexBuffer->getVertexCount(), indexBuffer->getIndices(), primitiveCount, vType, pType, indexBuffer->getType());
 }
 
 

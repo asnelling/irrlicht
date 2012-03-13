@@ -28,25 +28,25 @@ namespace scene
 
 		virtual u32 getLast() = 0;
 
-		virtual void set_used(u32 pUsed) = 0;
+		virtual void set_used(u32 used) = 0;
 
-		virtual void reallocate(u32 pSize) = 0;
+		virtual void reallocate(u32 size) = 0;
 
 		virtual u32 allocated_size() const = 0;
 
-		virtual s32 linear_reverse_search(const u32& pElement) const = 0;
+		virtual s32 linear_reverse_search(const u32& element) const = 0;
 
 		virtual video::E_INDEX_TYPE getType() const = 0;
 
-		virtual void setType(video::E_INDEX_TYPE IndexType) = 0;
+		virtual void setType(video::E_INDEX_TYPE type) = 0;
 
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const = 0;
 
-		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pHardwareMappingHint) = 0;
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING hardwareMappingHint) = 0;
 
-		virtual void addIndex(const u32& pIndex) = 0;
+		virtual void addIndex(const u32& index) = 0;
 
-		virtual u32 getIndex(u32 pID) const = 0;
+		virtual u32 getIndex(u32 id) const = 0;
 
 		virtual void* getIndices() = 0;
 
@@ -54,7 +54,7 @@ namespace scene
 
 		virtual u32 getIndexSize() const = 0;
 
-		virtual void setIndex(u32 pID, u32 pValue) = 0;
+		virtual void setIndex(u32 id, u32 index) = 0;
 
 		virtual void setDirty() = 0;
 

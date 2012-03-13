@@ -519,14 +519,27 @@ struct SMeshNodeControl
 		SceneNode = node;
 		scene::IMeshManipulator * meshManip = smgr->getMeshManipulator();
 
-		scene::IMesh * mesh2T = meshManip->createMeshWith2TCoords(node->getMesh());
-		SceneNode2T = smgr->addMeshSceneNode(mesh2T, 0, -1, SceneNode->getPosition(), SceneNode->getRotation(), SceneNode->getScale() );
-		mesh2T->drop();
+		scene::IMesh * mesh2T = meshManip->createMeshCopy<video::S3DVertex>(node->getMesh(), Driver->getVertexDescriptor(0));
 
-		scene::IMesh * meshTangents = meshManip->createMeshWithTangents(node->getMesh(), false, false, false);
-		SceneNodeTangents = smgr->addMeshSceneNode(meshTangents, 0, -1
-											, SceneNode->getPosition(), SceneNode->getRotation(), SceneNode->getScale() );
-		meshTangents->drop();
+		if(mesh2T)
+		{
+			for(u32 l = 0; l < mesh2T->getMeshBufferCount(); ++l)
+				smgr->getMeshManipulator()->convertVertices<video::S3DVertex2TCoords>(mesh2T->getMeshBuffer(l), Driver->getVertexDescriptor(1), false);
+
+			SceneNode2T = smgr->addMeshSceneNode(mesh2T, 0, -1, SceneNode->getPosition(), SceneNode->getRotation(), SceneNode->getScale() );
+			mesh2T->drop();
+		}
+
+		scene::IMesh * meshTangents = meshManip->createMeshCopy<video::S3DVertex>(node->getMesh(), Driver->getVertexDescriptor(0));
+
+		if(meshTangents)
+		{
+			for(u32 l = 0; l < meshTangents->getMeshBufferCount(); ++l)
+				smgr->getMeshManipulator()->createTangents<video::S3DVertexTangents>(meshTangents->getMeshBuffer(l), Driver->getVertexDescriptor(2), false);
+
+			SceneNodeTangents = smgr->addMeshSceneNode(meshTangents, 0, -1, SceneNode->getPosition(), SceneNode->getRotation(), SceneNode->getScale() );
+			meshTangents->drop();
+		}
 
 		video::SMaterial & material = SceneNode->getMaterial(0);
 		material.Lighting = true;
@@ -557,7 +570,7 @@ struct SMeshNodeControl
 		core::position2d<s32> posVertexColors( posTex.X, posTex.Y + 15);
 		ControlVertexColors = new CColorControl( guiEnv, posVertexColors, L"Vertex colors", guiEnv->getRootGUIElement());
 
-		video::S3DVertex * vertices =  (video::S3DVertex *)node->getMesh()->getMeshBuffer(0)->getVertices();
+		video::S3DVertex * vertices =  (video::S3DVertex *)node->getMesh()->getMeshBuffer(0)->getVertexBuffer()->getVertices();
 		if ( vertices )
 		{
 			ControlVertexColors->setColor(vertices[0].Color);

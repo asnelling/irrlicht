@@ -124,7 +124,7 @@ int main()
 	scene::ISceneNode* node = 0;
 
 	if (mesh)
-		node = smgr->addOctreeSceneNode(mesh->getMesh(0), 0, -1, 1024);
+		node = smgr->addOctreeSceneNode<video::S3DVertex2TCoords>(mesh->getMesh(0), 0, -1, 1024);
 //		node = smgr->addMeshSceneNode(mesh->getMesh(0));
 
 	/*

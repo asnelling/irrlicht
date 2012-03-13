@@ -14,7 +14,7 @@ namespace scene
 	class CIndexBuffer : public IIndexBuffer
 	{
 	public:
-		CIndexBuffer(video::E_INDEX_TYPE pType = video::EIT_16BIT) : Indices(0), Type(pType), HardwareMappingHint(EHM_NEVER), ChangedID(1)
+		CIndexBuffer(video::E_INDEX_TYPE type = video::EIT_16BIT) : Indices(0), Type(type), HardwareMappingHint(EHM_NEVER), ChangedID(1)
 		{
 			if(Type == video::EIT_32BIT)
 				Indices = new CIndexList<u32>();
@@ -22,21 +22,21 @@ namespace scene
 				Indices = new CIndexList<u16>();
 		}
 
-		CIndexBuffer(const CIndexBuffer &pIndexBuffer) : Indices(0), ChangedID(1)
+		CIndexBuffer(const CIndexBuffer &indexBuffer) : Indices(0), ChangedID(1)
 		{
-			Type = pIndexBuffer.getType();
+			Type = indexBuffer.getType();
 
-			HardwareMappingHint = pIndexBuffer.getHardwareMappingHint();
+			HardwareMappingHint = indexBuffer.getHardwareMappingHint();
 
 			if(Type == video::EIT_32BIT)
 				Indices = new CIndexList<u32>();
 			else // EIT_16BIT
 				Indices = new CIndexList<u16>();
 
-			Indices->reallocate(pIndexBuffer.getIndexCount());
+			Indices->reallocate(indexBuffer.getIndexCount());
 
-			for(u32 i = 0; i < pIndexBuffer.getIndexCount(); ++i)
-				addIndex(pIndexBuffer.getIndex(i));
+			for(u32 i = 0; i < indexBuffer.getIndexCount(); ++i)
+				addIndex(indexBuffer.getIndex(i));
 		}
 
 		virtual ~CIndexBuffer()
@@ -54,14 +54,14 @@ namespace scene
 			return (u32)Indices->getLast();
 		}
 
-		virtual void set_used(u32 pUsed)
+		virtual void set_used(u32 used)
 		{
-			Indices->set_used(pUsed);
+			Indices->set_used(used);
 		}
 
-		virtual void reallocate(u32 pSize)
+		virtual void reallocate(u32 size)
 		{
-			Indices->reallocate(pSize);
+			Indices->reallocate(size);
 		}
 
 		virtual u32 allocated_size() const
@@ -69,9 +69,9 @@ namespace scene
 			return Indices->allocated_size();
 		}
 
-		virtual s32 linear_reverse_search(const u32& pElement) const
+		virtual s32 linear_reverse_search(const u32& element) const
 		{
-			return Indices->linear_reverse_search(pElement);
+			return Indices->linear_reverse_search(element);
 		}
 
 		virtual video::E_INDEX_TYPE getType() const
@@ -79,12 +79,12 @@ namespace scene
 			return Type;
 		}
 
-		virtual void setType(video::E_INDEX_TYPE pType)
+		virtual void setType(video::E_INDEX_TYPE type)
 		{
-			if(Type == pType)
+			if(Type == type)
 				return;
 
-			Type = pType;
+			Type = type;
 
 			IIndexList* Indices = 0;
 
@@ -120,22 +120,22 @@ namespace scene
 			return HardwareMappingHint;
 		}
 
-		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pHardwareMappingHint)
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING hardwareMappingHint)
 		{
-			if(HardwareMappingHint != pHardwareMappingHint)
+			if(HardwareMappingHint != hardwareMappingHint)
 				setDirty();
 
-			HardwareMappingHint = pHardwareMappingHint;
+			HardwareMappingHint = hardwareMappingHint;
 		}
 
-		virtual void addIndex(const u32& pIndex)
+		virtual void addIndex(const u32& index)
 		{
-			Indices->addIndex(pIndex);
+			Indices->addIndex(index);
 		}
 
-		virtual u32 getIndex(u32 pID) const
+		virtual u32 getIndex(u32 id) const
 		{
-			return Indices->getIndex(pID);
+			return Indices->getIndex(id);
 		}
 
 		virtual void* getIndices()
@@ -156,9 +156,9 @@ namespace scene
 			return sizeof(u16);
 		}
 
-		virtual void setIndex(u32 pID, u32 pValue)
+		virtual void setIndex(u32 id, u32 index)
 		{
-			Indices->setIndex(pID, pValue);
+			Indices->setIndex(id, index);
 		}		
 
 		virtual void setDirty()
@@ -179,13 +179,13 @@ namespace scene
 			virtual void* pointer() = 0;
 			virtual u32 size() const = 0;
 			virtual u32 getLast() = 0;
-			virtual void set_used(u32 pUsed) = 0;
-			virtual void reallocate(u32 pSize) = 0;
+			virtual void set_used(u32 used) = 0;
+			virtual void reallocate(u32 size) = 0;
 			virtual u32 allocated_size() const = 0;
-			virtual s32 linear_reverse_search(const u32& pElement) const = 0;
-			virtual void addIndex(const u32& pIndex) = 0;
-			virtual u32 getIndex(u32 pID) const = 0;
-			virtual void setIndex(u32 pID, u32 pValue) = 0;
+			virtual s32 linear_reverse_search(const u32& element) const = 0;
+			virtual void addIndex(const u32& index) = 0;
+			virtual u32 getIndex(u32 id) const = 0;
+			virtual void setIndex(u32 id, u32 index) = 0;
 		};
 
 		template <class T>
@@ -196,12 +196,12 @@ namespace scene
 			{
 			}
 
-			CIndexList(const CIndexList &pIndexList) : Data(0)
+			CIndexList(const CIndexList &indexList) : Data(0)
 			{
-				Data.reallocate(pIndexList.Data.size());
+				Data.reallocate(indexList.Data.size());
 
-				for(u32 i = 0; i < pIndexList.Data.size(); ++i)
-					Data.push_back(pIndexList.Data[i]);
+				for(u32 i = 0; i < indexList.Data.size(); ++i)
+					Data.push_back(indexList.Data[i]);
 			}
 
 			~CIndexList()
@@ -229,14 +229,14 @@ namespace scene
 				return (u32)Data.getLast();
 			}
 
-			virtual void set_used(u32 pUsed)
+			virtual void set_used(u32 used)
 			{
-				Data.set_used(pUsed);
+				Data.set_used(used);
 			}
 
-			virtual void reallocate(u32 pSize)
+			virtual void reallocate(u32 size)
 			{
-				Data.reallocate(pSize);
+				Data.reallocate(size);
 			}
 
 			virtual u32 allocated_size() const
@@ -244,28 +244,28 @@ namespace scene
 				return Data.allocated_size();
 			}
 
-			virtual s32 linear_reverse_search(const u32& pElement) const
+			virtual s32 linear_reverse_search(const u32& element) const
 			{
-				return Data.linear_reverse_search(pElement);
+				return Data.linear_reverse_search(element);
 			}
 
-			virtual void addIndex(const u32& pIndex)
+			virtual void addIndex(const u32& index)
 			{
-				Data.push_back(pIndex);
+				Data.push_back(index);
 			}
 
-			virtual u32 getIndex(u32 pID) const
+			virtual u32 getIndex(u32 id) const
 			{
-				if(pID < Data.size())
-					return Data[pID];
+				if(id < Data.size())
+					return Data[id];
 
 				return 0;
 			}
 
-			virtual void setIndex(u32 pID, u32 pValue)
+			virtual void setIndex(u32 id, u32 index)
 			{
-				if(pID < Data.size())
-					Data[pID] = (T)pValue;
+				if(id < Data.size())
+					Data[id] = (T)index;
 			}	
 
 		protected:

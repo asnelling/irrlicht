@@ -18,18 +18,18 @@ namespace scene
 	{
 	public:
 		//! Constructor
-		CMeshBuffer(video::IVertexDescriptor* pVertexDescriptor, video::E_INDEX_TYPE pType = video::EIT_16BIT) : BoundingBoxNeedsRecalculated(true)
+		CMeshBuffer(video::IVertexDescriptor* vertexDescriptor, video::E_INDEX_TYPE type = video::EIT_16BIT) : BoundingBoxNeedsRecalculated(true)
 		{
 			#ifdef _DEBUG
 			setDebugName("CMeshBuffer");
 			#endif
 
-			if(pVertexDescriptor)
-				VertexBuffer = new CVertexBuffer<T>(pVertexDescriptor);
+			if(vertexDescriptor)
+				VertexBuffer = new CVertexBuffer<T>(vertexDescriptor);
 			else
 				VertexBuffer = 0;
 
-			IndexBuffer = new CIndexBuffer(pType);
+			IndexBuffer = new CIndexBuffer(type);
 		}
 
 		//! Destructor
@@ -62,15 +62,15 @@ namespace scene
 			return VertexBuffer;
 		}
 
-		virtual bool setVertexBuffer(IVertexBuffer* pVertexBuffer)
+		virtual bool setVertexBuffer(IVertexBuffer* vertexBuffer)
 		{
-			if(!pVertexBuffer || VertexBuffer == pVertexBuffer)
+			if(!vertexBuffer || VertexBuffer == vertexBuffer)
 				return false;
 
 			VertexBuffer->drop();
-			pVertexBuffer->grab();
+			vertexBuffer->grab();
 
-			VertexBuffer = pVertexBuffer;
+			VertexBuffer = vertexBuffer;
 
 			return true;
 		}
@@ -80,15 +80,15 @@ namespace scene
 			return IndexBuffer;
 		}
 
-		virtual bool setIndexBuffer(IIndexBuffer* pIndexBuffer)
+		virtual bool setIndexBuffer(IIndexBuffer* indexBuffer)
 		{
-			if(!pIndexBuffer || IndexBuffer == pIndexBuffer)
+			if(!indexBuffer || IndexBuffer == indexBuffer)
 				return false;
 
 			IndexBuffer->drop();
-			pIndexBuffer->grab();
+			indexBuffer->grab();
 
-			IndexBuffer = pIndexBuffer;
+			IndexBuffer = indexBuffer;
 
 			return true;
 		}
@@ -103,9 +103,9 @@ namespace scene
 		//! Set the axis aligned bounding box
 		/** \param box New axis aligned bounding box for this buffer. */
 		//! set user axis aligned bounding box
-		virtual void setBoundingBox(const core::aabbox3df& pBox)
+		virtual void setBoundingBox(const core::aabbox3df& boundingBox)
 		{
-			BoundingBox = pBox;
+			BoundingBox = boundingBox;
 		}
 
 		//! Call this after changing the positions of any vertex.
@@ -118,8 +118,8 @@ namespace scene
 		/** should be called if the mesh changed. */
 		virtual void recalculateBoundingBox()
 		{
-			if(!BoundingBoxNeedsRecalculated)
-				return;
+			/*if(!BoundingBoxNeedsRecalculated)
+				return;*/
 
 			BoundingBoxNeedsRecalculated = false;
 
@@ -158,18 +158,18 @@ namespace scene
 		or the main buffer is of standard type. Otherwise, behavior is
 		undefined.
 		*/
-		virtual void append(IVertexBuffer* pVertexBuffer, IIndexBuffer* pIndexBuffer)
+		virtual void append(IVertexBuffer* vertexBuffer, IIndexBuffer* indexBuffer)
 		{
-			if(pVertexBuffer == VertexBuffer || pVertexBuffer->getVertexDescriptor() != VertexBuffer->getVertexDescriptor() || pVertexBuffer->getVertexSize() != VertexBuffer->getVertexSize())
+			if(vertexBuffer == VertexBuffer || vertexBuffer->getVertexDescriptor() != VertexBuffer->getVertexDescriptor() || vertexBuffer->getVertexSize() != VertexBuffer->getVertexSize())
 				return;
 
-			VertexBuffer->reallocate(VertexBuffer->getVertexCount() + pVertexBuffer->getVertexCount());
+			VertexBuffer->reallocate(VertexBuffer->getVertexCount() + vertexBuffer->getVertexCount());
 
-			video::IVertexAttribute* attribute = VertexBuffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+			video::IVertexAttribute* attribute = vertexBuffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
-			u8* offset = static_cast<u8*>(VertexBuffer->getVertices());
+			u8* offset = static_cast<u8*>(vertexBuffer->getVertices());
 
-			for(u32 i = 0; i < pVertexBuffer->getVertexCount(); ++i)
+			for(u32 i = 0; i < vertexBuffer->getVertexCount(); ++i)
 			{
 				VertexBuffer->addVertex(offset);
 
@@ -182,13 +182,13 @@ namespace scene
 					BoundingBox.addInternalPoint(position);
 				}
 
-				offset += VertexBuffer->getVertexSize();
+				offset += vertexBuffer->getVertexSize();
 			}
 
-			IndexBuffer->reallocate(IndexBuffer->getIndexCount() + pIndexBuffer->getIndexCount());
+			IndexBuffer->reallocate(IndexBuffer->getIndexCount() + indexBuffer->getIndexCount());
 
-			for(u32 i = 0; i < pIndexBuffer->getIndexCount(); ++i)
-				IndexBuffer->addIndex(pIndexBuffer->getIndex(i));
+			for(u32 i = 0; i < indexBuffer->getIndexCount(); ++i)
+				IndexBuffer->addIndex(indexBuffer->getIndex(i));
 		}
 
 		//! Append the meshbuffer to the current buffer
@@ -197,12 +197,12 @@ namespace scene
 		undefined.
 		\param other Meshbuffer to be appended to this one.
 		*/
-		virtual void append(IMeshBuffer* pMeshBuffer)
+		virtual void append(IMeshBuffer* meshBuffer)
 		{
-			if(this == pMeshBuffer)
+			if(this == meshBuffer)
 				return;
 
-			append(pMeshBuffer->getVertexBuffer(), pMeshBuffer->getIndexBuffer());
+			append(meshBuffer->getVertexBuffer(), meshBuffer->getIndexBuffer());
 		}
 
 		//! get the current hardware mapping hint
@@ -218,22 +218,22 @@ namespace scene
 		}
 
 		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE pType = EBT_VERTEX_AND_INDEX)
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX)
 		{
-			if(pType == EBT_VERTEX_AND_INDEX || pType == EBT_VERTEX)
+			if(type == EBT_VERTEX_AND_INDEX || type == EBT_VERTEX)
 				VertexBuffer->setHardwareMappingHint(pMappingHint);
 
-			if(pType == EBT_VERTEX_AND_INDEX || pType == EBT_INDEX)
+			if(type == EBT_VERTEX_AND_INDEX || type == EBT_INDEX)
 				IndexBuffer->setHardwareMappingHint(pMappingHint);
 		}
 
 		//! flags the mesh as changed, reloads hardware buffers
-		virtual void setDirty(E_BUFFER_TYPE pType = EBT_VERTEX_AND_INDEX)
+		virtual void setDirty(E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX)
 		{
-			if(pType == EBT_VERTEX_AND_INDEX || pType == EBT_VERTEX)
+			if(type == EBT_VERTEX_AND_INDEX || type == EBT_VERTEX)
 				VertexBuffer->setDirty();
 
-			if(pType == EBT_VERTEX_AND_INDEX || pType == EBT_INDEX)
+			if(type == EBT_VERTEX_AND_INDEX || type == EBT_INDEX)
 				IndexBuffer->setDirty();
 		}
 

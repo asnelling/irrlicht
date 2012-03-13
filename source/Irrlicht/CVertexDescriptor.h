@@ -14,8 +14,8 @@ namespace video
 	class CVertexAttribute : public IVertexAttribute
 	{
 	public:
-		CVertexAttribute(const CVertexAttribute& pVertexAttribute);
-		CVertexAttribute(const core::stringc& pName, u32 pElementCount, E_VERTEX_ATTRIBUTE_SEMANTIC pSemantic, E_VERTEX_ATTRIBUTE_TYPE pType, u32 pOffset);
+		CVertexAttribute(const CVertexAttribute& vertexAttribute);
+		CVertexAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 offset);
 		virtual ~CVertexAttribute();
 
 		virtual const core::stringc& getName() const;
@@ -30,7 +30,7 @@ namespace video
 
 		virtual u32 getOffset() const;
 
-		virtual void setOffset(u32 pOffset);
+		virtual void setOffset(u32 offset);
 
 	protected:
 		core::stringc Name;
@@ -49,31 +49,29 @@ namespace video
 	class CVertexDescriptor : public IVertexDescriptor
 	{
 	public:
-		CVertexDescriptor(const CVertexDescriptor& pVertexDescriptor);
-		CVertexDescriptor(const core::stringc& pName);
+		CVertexDescriptor(const CVertexDescriptor& vertexDescriptor);
+		CVertexDescriptor(const core::stringc& name);
 		virtual ~CVertexDescriptor();
 
 		virtual const core::stringc& getName() const;
 
 		virtual u32 getVertexSize() const;
 
-		virtual bool addAttribute(const core::stringc& pName, u32 pElementCount, E_VERTEX_ATTRIBUTE_SEMANTIC pSemantic, E_VERTEX_ATTRIBUTE_TYPE pType);
+		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type);
 
-		virtual IVertexAttribute* getAttribute(u32 pID) const;
+		virtual IVertexAttribute* getAttribute(u32 id) const;
 
-		virtual IVertexAttribute* getAttributeByName(const core::stringc& pName) const;
+		virtual IVertexAttribute* getAttributeByName(const core::stringc& name) const;
 
-		virtual IVertexAttribute* getAttributeBySemantic(E_VERTEX_ATTRIBUTE_SEMANTIC pSemantic) const;
+		virtual IVertexAttribute* getAttributeBySemantic(E_VERTEX_ATTRIBUTE_SEMANTIC semantic) const;
 
 		virtual u32 getAttributeCount() const;
 
-		virtual bool removeAttribute(u32 pID);
+		virtual bool removeAttribute(u32 id);
 
 		virtual void removeAllAttribute();
 
 	protected:
-		void updatePointers();
-
 		core::stringc Name;
 
 		u32 VertexSize;

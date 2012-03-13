@@ -1191,12 +1191,12 @@ void CSkinnedMesh::updateBoundingBox(void)
 }
 
 
-void CSkinnedMesh::addMeshBuffer(IMeshBuffer* pBuffer)
+void CSkinnedMesh::addMeshBuffer(IMeshBuffer* buffer)
 {
-	if (pBuffer)
+	if (buffer)
 	{
-		pBuffer->grab();
-		LocalBuffers.push_back(pBuffer);
+		buffer->grab();
+		LocalBuffers.push_back(buffer);
 	}
 }
 

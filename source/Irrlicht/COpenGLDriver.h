@@ -129,8 +129,8 @@ namespace video
 		virtual u32 getOcclusionQueryResult(scene::ISceneNode* node) const;
 
 		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
-			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType);
+		virtual void drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
 
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -381,7 +381,7 @@ namespace video
 		void removeDepthTexture(ITexture* texture);
 
 		//! Convert E_PRIMITIVE_TYPE to OpenGL equivalent
-		GLenum primitiveTypeToGL(scene::E_PRIMITIVE_TYPE type) const;
+		GLenum primitiveTypeToGL(scene::E_PRIMITIVE_TYPE pType) const;
 
 		//! Convert E_BLEND_FACTOR to OpenGL equivalent
 		GLenum getGLBlend(E_BLEND_FACTOR factor) const;
@@ -397,7 +397,7 @@ namespace video
 
 	private:
 
-		void setVertexAttributes(IVertexDescriptor* pVertexDescriptor);
+		void setVertexAttributes(IVertexDescriptor* vertexDescriptor);
 
 		//! clears the zbuffer and color buffer
 		void clearBuffers(bool backBuffer, bool zBuffer, bool stencilBuffer, SColor color);
@@ -442,7 +442,7 @@ namespace video
 		void getColorBuffer(const void* vertices, u32 vertexCount, E_VERTEX_TYPE vType);
 
 		//! helper function doing the actual rendering.
-		void renderArray(const void* pIndices, GLenum pIndexSize, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType);
+		void renderArray(const void* pIndices, GLenum pIndexSize, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
 
 		core::stringw Name;
 		core::matrix4 Matrices[ETS_COUNT];

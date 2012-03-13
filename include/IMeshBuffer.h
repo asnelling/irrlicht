@@ -52,11 +52,11 @@ namespace scene
 
 		virtual IVertexBuffer* getVertexBuffer() const = 0;
 
-		virtual bool setVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
+		virtual bool setVertexBuffer(IVertexBuffer* vertexBuffer) = 0;
 
 		virtual IIndexBuffer* getIndexBuffer() const = 0;
 
-		virtual bool setIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
+		virtual bool setIndexBuffer(IIndexBuffer* indexBuffer) = 0;
 
 		//! Get the axis aligned bounding box of this meshbuffer.
 		/** \return Axis aligned bounding box of this buffer. */
@@ -73,12 +73,12 @@ namespace scene
 		//! Recalculates the bounding box. Should be called if the mesh changed.
 		virtual void recalculateBoundingBox() = 0;
 
-		virtual void append(IVertexBuffer* pVertexBuffer, IIndexBuffer* pIndexBuffer) = 0;
+		virtual void append(IVertexBuffer* vertexBuffer, IIndexBuffer* indexBuffer) = 0;
 
 		//! Append the meshbuffer to the current buffer
 		/** Only works for compatible vertex types
-		\param pMeshBuffer Buffer to append to this one. */
-		virtual void append(IMeshBuffer* pMeshBuffer) = 0;
+		\param meshBuffer Buffer to append to this one. */
+		virtual void append(IMeshBuffer* meshBuffer) = 0;
 
 		//! get the current hardware mapping hint
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex() const = 0;
@@ -87,10 +87,10 @@ namespace scene
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Index() const = 0;
 
 		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE pType = EBT_VERTEX_AND_INDEX) = 0;
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX) = 0;
 
 		//! flags the meshbuffer as changed, reloads hardware buffers
-		virtual void setDirty(E_BUFFER_TYPE pType = EBT_VERTEX_AND_INDEX) = 0;
+		virtual void setDirty(E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX) = 0;
 
 		//! Get the currently used ID for identification of changes.
 		/** This shouldn't be used for anything outside the VideoDriver. */

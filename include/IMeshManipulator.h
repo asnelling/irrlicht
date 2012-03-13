@@ -31,12 +31,12 @@ namespace scene
 		/** Changes backfacing triangles to frontfacing
 		triangles and vice versa.
 		\param mesh Mesh on which the operation is performed. */
-		virtual void flipSurfaces(IMesh* pMesh) const = 0;
+		virtual void flipSurfaces(IMesh* mesh) const = 0;
 
 		//! Sets the alpha vertex color value of the whole mesh to a new value.
 		/** \param buffer Meshbuffer on which the operation is performed.
 		\param alpha New alpha value. Must be a value between 0 and 255. */
-		virtual void setVertexColorAlpha(IMeshBuffer* pMeshBuffer, s32 pAlpha) const = 0;
+		virtual void setVertexColorAlpha(IMeshBuffer* meshBuffer, s32 alpha) const = 0;
 
 		//! Sets the alpha vertex color value of the whole mesh to a new value.
 		/** \param mesh Mesh on which the operation is performed.
@@ -50,7 +50,7 @@ namespace scene
 		//! Sets the colors of all vertices to one color
 		/** \param buffer Meshbuffer on which the operation is performed.
 		\param color New color. */
-		virtual void setVertexColors(IMeshBuffer* pMeshBuffer, video::SColor pColor) const = 0;
+		virtual void setVertexColors(IMeshBuffer* meshBuffer, video::SColor color) const = 0;
 
 		//! Sets the colors of all vertices to one color
 		/** \param mesh Mesh on which the operation is performed.
@@ -64,7 +64,7 @@ namespace scene
 		//! Scales the actual meshbuffer, not a scene node.
 		/** \param buffer Meshbuffer on which the operation is performed.
 		\param factor Scale factor for each axis. */
-		virtual void scale(IMeshBuffer* pMeshBuffer, const core::vector3df& pFactor) const = 0;
+		virtual void scale(IMeshBuffer* meshBuffer, const core::vector3df& factor) const = 0;
 
 		//! Scales the actual mesh, not a scene node.
 		/** \param mesh Mesh on which the operation is performed.
@@ -85,7 +85,7 @@ namespace scene
 		/** \param buffer Meshbuffer on which the operation is performed.
 		\param factor Vector which defines the scale for each axis.
 		\param level Number of texture coord. */
-		virtual void scaleTCoords(IMeshBuffer* pMeshBuffer, const core::vector2df& pFactor, u32 pLevel = 0) const = 0;
+		virtual void scaleTCoords(IMeshBuffer* meshBuffer, const core::vector2df& factor, u32 level = 0) const = 0;
 
 		//! Scale the texture coords of a mesh.
 		/** \param mesh Mesh on which the operation is performed.
@@ -100,7 +100,7 @@ namespace scene
 		//! Applies a transformation to a meshbuffer
 		/** \param buffer Meshbuffer on which the operation is performed.
 		\param m transformation matrix. */
-		virtual void transform(IMeshBuffer* pMeshBuffer, const core::matrix4& pMatrix) const = 0;
+		virtual void transform(IMeshBuffer* meshBuffer, const core::matrix4& mat) const = 0;
 
 		//! Applies a transformation to a mesh
 		/** \param mesh Mesh on which the operation is performed.
@@ -121,7 +121,7 @@ namespace scene
 		/** \param buffer: Mesh buffer on which the operation is performed.
 		\param smooth: If the normals shall be smoothed.
 		\param angleWeighted: If the normals shall be smoothed in relation to their angles. More expensive, but also higher precision. */
-		virtual void recalculateNormals(IMeshBuffer* pMeshBuffer, bool pSmooth = false, bool pAngleWeighted = false) const = 0;
+		virtual void recalculateNormals(IMeshBuffer* meshBuffer, bool smooth = false, bool angleWeighted = false) const = 0;
 
 		//! Recalculates all normals of the mesh.
 		/** \param mesh: Mesh on which the operation is performed.
@@ -133,7 +133,7 @@ namespace scene
 				recalculateNormals(mesh->getMeshBuffer(i), smooth, angleWeighted);
 		}
 
-		virtual void recalculateTangents(IMeshBuffer* pMeshBuffer, bool pRecalculateNormals = false, bool pSmooth = false, bool pAngleWeighted = false) const = 0;
+		virtual void recalculateTangents(IMeshBuffer* meshBuffer, bool recalculateNormals = false, bool smooth = false, bool angleWeighted = false) const = 0;
 
 		void recalculateTangents(IMesh* mesh, bool recNormals = false, bool smooth = false, bool angleWeighted = false) const
 		{
@@ -146,7 +146,7 @@ namespace scene
 		\param resolution: resolution of the planar mapping. This is
 		the value specifying which is the relation between world space
 		and texture coordinate space. */
-		virtual void makePlanarTextureMapping(IMeshBuffer* pMeshBuffer, f32 pResolution = 0.001f) const = 0;
+		virtual void makePlanarTextureMapping(IMeshBuffer* meshBuffer, f32 resolution = 0.001f) const = 0;
 
 		//! Creates a planar texture mapping on the mesh
 		/** \param mesh: Mesh on which the operation is performed.
@@ -167,7 +167,7 @@ namespace scene
 		\param axis The axis along which the texture is projected. The allowed values are 0 (X), 1(Y), and 2(Z).
 		\param offset Vector added to the vertex positions (in object coordinates).
 		*/
-		virtual void makePlanarTextureMapping(IMeshBuffer* pMeshBuffer, f32 pResolutionS, f32 pResolutionT, u8 pAxis, const core::vector3df& pOffset) const = 0;
+		virtual void makePlanarTextureMapping(IMeshBuffer* meshBuffer, f32 resolutionS, f32 resolutionT, u8 axis, const core::vector3df& offset) const = 0;
 
 		//! Creates a planar texture mapping on the buffer
 		/** This method is currently implemented towards the LWO planar mapping. A more general biasing might be required.
@@ -185,30 +185,30 @@ namespace scene
 				makePlanarTextureMapping(mesh->getMeshBuffer(i), resolutionS, resolutionT, axis, offset);
 		}
 
-		virtual bool copyVertices(IVertexBuffer* pSrcBuffer, IVertexBuffer* pDestBuffer, bool pCopyCustomAttribute) const = 0;
+		virtual bool copyVertices(IVertexBuffer* srcBuffer, IVertexBuffer* dstBuffer, bool copyCustomAttribute) const = 0;
 
 		//! Clones a static IMesh into a modifiable SMesh.
 		/** All meshbuffers in the returned SMesh.
-		\param mesh pMesh to copy.
+		\param mesh mesh to copy.
 		\return mesh mesh. If you no longer need the
 		cloned mesh, you should call SMesh::drop(). See
 		IReferenceCounted::drop() for more information. */
 		template<class T>
-		SMesh* createMeshCopy(scene::IMesh* pMesh, video::IVertexDescriptor* pVertexDescriptor) const
+		SMesh* createMeshCopy(scene::IMesh* mesh, video::IVertexDescriptor* vertexDescriptor) const
 		{
-			if(!pMesh)
+			if(!mesh)
 				return 0;
 
-			if(pVertexDescriptor->getVertexSize() != sizeof(T))
+			if(vertexDescriptor->getVertexSize() != sizeof(T))
 				return 0;
 
-			SMesh* mesh = new SMesh();
+			SMesh* newMesh = new SMesh();
 
-			for(u32 i = 0; i < pMesh->getMeshBufferCount(); ++i)
+			for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
 			{
-				IMeshBuffer* meshBuffer = pMesh->getMeshBuffer(i);
+				IMeshBuffer* meshBuffer = mesh->getMeshBuffer(i);
 
-				CMeshBuffer<T>* buffer = new CMeshBuffer<T>(pVertexDescriptor, meshBuffer->getIndexBuffer()->getType());
+				CMeshBuffer<T>* buffer = new CMeshBuffer<T>(vertexDescriptor, meshBuffer->getIndexBuffer()->getType());
 				buffer->Material = meshBuffer->getMaterial();
 
 				if(!buffer->getVertexBuffer())
@@ -220,66 +220,66 @@ namespace scene
 				for(u32 j = 0; j < meshBuffer->getIndexBuffer()->getIndexCount(); ++j)
 					buffer->getIndexBuffer()->addIndex(meshBuffer->getIndexBuffer()->getIndex(j));
 
-				mesh->addMeshBuffer(buffer);
+				newMesh->addMeshBuffer(buffer);
 				buffer->drop();
 			}
 
-			mesh->BoundingBox = pMesh->getBoundingBox();
+			newMesh->BoundingBox = mesh->getBoundingBox();
 
-			return mesh;
+			return newMesh;
 		}
 
 		template <class T>
-		bool convertVertices(IMeshBuffer* pMeshBuffer, video::IVertexDescriptor* pVertexDescriptor, bool pCopyCustomAttribute)
+		bool convertVertices(IMeshBuffer* meshBuffer, video::IVertexDescriptor* vertexDescriptor, bool copyCustomAttribute)
 		{
-			if(!pMeshBuffer || !pVertexDescriptor)
+			if(!meshBuffer || !vertexDescriptor)
 				return false;
 
 			// Is the same vertex type?
 
-			if(pVertexDescriptor == pMeshBuffer->getVertexBuffer()->getVertexDescriptor())
+			if(vertexDescriptor == meshBuffer->getVertexBuffer()->getVertexDescriptor())
 				return false;
 
 			// Is Descriptor compatible with vertex size?
 
-			if(pVertexDescriptor->getVertexSize() != sizeof(T))
+			if(vertexDescriptor->getVertexSize() != sizeof(T))
 				return false;
 
 			// Create new buffers and copy old data.
 
-			CVertexBuffer<T>* VertexBuffer = new CVertexBuffer<T>(pVertexDescriptor);
-			copyVertices(pMeshBuffer->getVertexBuffer(), VertexBuffer, true);
+			CVertexBuffer<T>* VertexBuffer = new CVertexBuffer<T>(vertexDescriptor);
+			copyVertices(meshBuffer->getVertexBuffer(), VertexBuffer, true);
 
-			pMeshBuffer->setVertexBuffer(VertexBuffer);
+			meshBuffer->setVertexBuffer(VertexBuffer);
 
 			return true;
 		}
 
 		template <class T>
-		bool createTangents(IMeshBuffer* pMeshBuffer, video::IVertexDescriptor* pVertexDescriptor, bool pCopyCustomAttribute)
+		bool createTangents(IMeshBuffer* meshBuffer, video::IVertexDescriptor* vertexDescriptor, bool copyCustomAttribute)
 		{
-			if(!pMeshBuffer || !pVertexDescriptor)
+			if(!meshBuffer || !vertexDescriptor)
 				return false;
 
 			// Check Descriptor format for required 5 components.
 
 			int Found = 0;
 
-			for(u32 i = 0; i < pVertexDescriptor->getAttributeCount(); ++i)
+			for(u32 i = 0; i < vertexDescriptor->getAttributeCount(); ++i)
 			{
-				if(pVertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_POSITION)
+				if(vertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_POSITION)
 					Found++;
 
-				if(pVertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_NORMAL)
+				if(vertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_NORMAL)
 					Found++;
 
-				if(pVertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_TEXCOORD0)
+				if(vertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_TEXCOORD0)
 					Found++;
 
-				if(pVertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_TANGENT)
+				if(vertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_TANGENT)
 					Found++;
 
-				if(pVertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_BINORMAL)
+				if(vertexDescriptor->getAttribute(i)->getSemantic() == video::EVAS_BINORMAL)
 					Found++;
 			}
 
@@ -288,89 +288,89 @@ namespace scene
 
 			// Create new buffers and copy old data.
 
-			if(pVertexDescriptor != pMeshBuffer->getVertexBuffer()->getVertexDescriptor() && !convertVertices<T>(pMeshBuffer, pVertexDescriptor, pCopyCustomAttribute))
+			if(vertexDescriptor != meshBuffer->getVertexBuffer()->getVertexDescriptor() && !convertVertices<T>(meshBuffer, vertexDescriptor, copyCustomAttribute))
 				return false;
 
 			// Calculate tangents.
 
-			recalculateTangents(pMeshBuffer, false, false, false);
+			recalculateTangents(meshBuffer, false, false, false);
 
 			return true;
 		}
 
 		template <class T>
-		bool createUniquePrimitives(IMeshBuffer* pMeshBuffer) const
+		bool createUniquePrimitives(IMeshBuffer* meshBuffer) const
 		{
-			if(!pMeshBuffer)
+			if(!meshBuffer)
 				return false;
 
 			// Is Descriptor compatible with vertex size?
 
-			if(pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getVertexSize() != sizeof(T))
+			if(meshBuffer->getVertexBuffer()->getVertexDescriptor()->getVertexSize() != sizeof(T))
 				return false;
 
 			// Create Vertex Buffer.
 
-			CVertexBuffer<T>* VertexBuffer = new CVertexBuffer<T>(pMeshBuffer->getVertexBuffer()->getVertexDescriptor());
-			VertexBuffer->reallocate(pMeshBuffer->getIndexBuffer()->getIndexCount());
+			CVertexBuffer<T>* VertexBuffer = new CVertexBuffer<T>(meshBuffer->getVertexBuffer()->getVertexDescriptor());
+			VertexBuffer->reallocate(meshBuffer->getIndexBuffer()->getIndexCount());
 
-			T* Vertices = static_cast<T*>(pMeshBuffer->getVertexBuffer()->getVertices());
+			T* Vertices = static_cast<T*>(meshBuffer->getVertexBuffer()->getVertices());
 
 			// Copy vertices.
 
-			for(u32 i = 0; i < pMeshBuffer->getIndexBuffer()->getIndexCount(); i+=3)
+			for(u32 i = 0; i < meshBuffer->getIndexBuffer()->getIndexCount(); i+=3)
 			{
-				VertexBuffer->addVertex(Vertices[pMeshBuffer->getIndexBuffer()->getIndex(i+0)]);
-				VertexBuffer->addVertex(Vertices[pMeshBuffer->getIndexBuffer()->getIndex(i+1)]);
-				VertexBuffer->addVertex(Vertices[pMeshBuffer->getIndexBuffer()->getIndex(i+2)]);
+				VertexBuffer->addVertex(Vertices[meshBuffer->getIndexBuffer()->getIndex(i+0)]);
+				VertexBuffer->addVertex(Vertices[meshBuffer->getIndexBuffer()->getIndex(i+1)]);
+				VertexBuffer->addVertex(Vertices[meshBuffer->getIndexBuffer()->getIndex(i+2)]);
 
-				pMeshBuffer->getIndexBuffer()->setIndex(i+0, i+0);
-				pMeshBuffer->getIndexBuffer()->setIndex(i+1, i+1);
-				pMeshBuffer->getIndexBuffer()->setIndex(i+2, i+2);
+				meshBuffer->getIndexBuffer()->setIndex(i+0, i+0);
+				meshBuffer->getIndexBuffer()->setIndex(i+1, i+1);
+				meshBuffer->getIndexBuffer()->setIndex(i+2, i+2);
 			}
 
-			pMeshBuffer->setVertexBuffer(VertexBuffer);
+			meshBuffer->setVertexBuffer(VertexBuffer);
 
-			pMeshBuffer->recalculateBoundingBox();
+			meshBuffer->recalculateBoundingBox();
 
 			return true;
 		}
 
 		template <class T>
-		bool createWelded(IMeshBuffer* pMeshBuffer, f32 pTolerance = core::ROUNDING_ERROR_f32, bool pCheck4Component = true, bool pCheck3Component = true, bool pCheck2Component = true, bool pCheck1Component = true) const
+		bool createWelded(IMeshBuffer* meshBuffer, f32 tolerance = core::ROUNDING_ERROR_f32, bool check4Component = true, bool check3Component = true, bool check2Component = true, bool check1Component = true) const
 		{
-			if(!pMeshBuffer)
+			if(!meshBuffer)
 				return false;
 
 			// Is Descriptor compatible with vertex size?
 
-			if(pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getVertexSize() != sizeof(T))
+			if(meshBuffer->getVertexBuffer()->getVertexDescriptor()->getVertexSize() != sizeof(T))
 				return false;
 
 			// Create Vertex and Index Buffers.
 
-			CVertexBuffer<T>* VertexBuffer = new CVertexBuffer<T>(pMeshBuffer->getVertexBuffer()->getVertexDescriptor());
-			CIndexBuffer* IndexBuffer = new CIndexBuffer(pMeshBuffer->getIndexBuffer()->getType());
+			CVertexBuffer<T>* VertexBuffer = new CVertexBuffer<T>(meshBuffer->getVertexBuffer()->getVertexDescriptor());
+			CIndexBuffer* IndexBuffer = new CIndexBuffer(meshBuffer->getIndexBuffer()->getType());
 
-			VertexBuffer->reallocate(pMeshBuffer->getVertexBuffer()->getVertexCount());
-			IndexBuffer->set_used(pMeshBuffer->getIndexBuffer()->getIndexCount());
+			VertexBuffer->reallocate(meshBuffer->getVertexBuffer()->getVertexCount());
+			IndexBuffer->set_used(meshBuffer->getIndexBuffer()->getIndexCount());
 
 			core::array<u32> Redirects;
-			Redirects.set_used(pMeshBuffer->getVertexBuffer()->getVertexCount());
+			Redirects.set_used(meshBuffer->getVertexBuffer()->getVertexCount());
 
-			u8* Vertices = static_cast<u8*>(pMeshBuffer->getVertexBuffer()->getVertices());
+			u8* Vertices = static_cast<u8*>(meshBuffer->getVertexBuffer()->getVertices());
 
 			// Create indices.
 
-			bool CheckComponents[4] =
+			bool checkComponents[4] =
 			{
-				pCheck1Component,
-				pCheck2Component,
-				pCheck3Component,
-				pCheck4Component
+				check1Component,
+				check2Component,
+				check3Component,
+				check4Component
 			};
 
-			for(u32 i = 0; i < pMeshBuffer->getVertexBuffer()->getVertexCount(); ++i)
+			for(u32 i = 0; i < meshBuffer->getVertexBuffer()->getVertexCount(); ++i)
 			{
 				bool found = false;
 
@@ -379,24 +379,24 @@ namespace scene
 					bool Equal = true;
 					bool Compare = false;
 
-					for(u32 l = 0; l < pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttributeCount() && Equal; ++l)
+					for(u32 l = 0; l < meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttributeCount() && Equal; ++l)
 					{
-						u32 ElementCount = pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getElementCount();
+						u32 ElementCount = meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getElementCount();
 
 						if(ElementCount > 4)
 							continue;
 
-						switch(pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getType())
+						switch(meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getType())
 						{
 						case video::EVAT_BYTE:
 							{
-								s8* valueA = (s8*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * i);
-								s8* valueB = (s8*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * j);
+								s8* valueA = (s8*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
+								s8* valueB = (s8*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
 								if(CheckComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
-										if(!core::equals((s32)(valueA[k]), (s32)(valueB[k]), (s32)pTolerance))
+										if(!core::equals((s32)(valueA[k]), (s32)(valueB[k]), (s32)tolerance))
 											Equal = false;
 
 									Compare = true;
@@ -405,13 +405,13 @@ namespace scene
 							break;
 						case video::EVAT_UBYTE:
 							{
-								u8* valueA = (u8*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * i);
-								u8* valueB = (u8*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * j);
+								u8* valueA = (u8*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
+								u8* valueB = (u8*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
 								if(CheckComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
-										if(!core::equals((u32)(valueA[k]), (u32)(valueB[k]), (u32)pTolerance))
+										if(!core::equals((u32)(valueA[k]), (u32)(valueB[k]), (u32)tolerance))
 											Equal = false;
 
 									Compare = true;
@@ -420,13 +420,13 @@ namespace scene
 							break;
 						case video::EVAT_SHORT:
 							{
-								s16* valueA = (s16*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * i);
-								s16* valueB = (s16*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * j);
+								s16* valueA = (s16*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
+								s16* valueB = (s16*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
 								if(CheckComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
-										if(!core::equals((s32)(valueA[k]), (s32)(valueB[k]), (s32)pTolerance))
+										if(!core::equals((s32)(valueA[k]), (s32)(valueB[k]), (s32)tolerance))
 											Equal = false;
 
 									Compare = true;
@@ -435,13 +435,13 @@ namespace scene
 							break;
 						case video::EVAT_USHORT:
 							{
-								u16* valueA = (u16*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * i);
-								u16* valueB = (u16*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * j);
+								u16* valueA = (u16*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
+								u16* valueB = (u16*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
 								if(CheckComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
-										if(!core::equals((u32)(valueA[k]), (u32)(valueB[k]), (u32)pTolerance))
+										if(!core::equals((u32)(valueA[k]), (u32)(valueB[k]), (u32)tolerance))
 											Equal = false;
 
 									Compare = true;
@@ -450,13 +450,13 @@ namespace scene
 							break;
 						case video::EVAT_INT:
 							{
-								s32* valueA = (s32*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * i);
-								s32* valueB = (s32*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * j);
+								s32* valueA = (s32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
+								s32* valueB = (s32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
 								if(CheckComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
-										if(!core::equals((s32)(valueA[k]), (s32)(valueB[k]), (s32)pTolerance))
+										if(!core::equals((s32)(valueA[k]), (s32)(valueB[k]), (s32)tolerance))
 											Equal = false;
 
 									Compare = true;
@@ -465,13 +465,13 @@ namespace scene
 							break;
 						case video::EVAT_UINT:
 							{
-								u32* valueA = (u32*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * i);
-								u32* valueB = (u32*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * j);
+								u32* valueA = (u32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
+								u32* valueB = (u32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
 								if(CheckComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
-										if(!core::equals((u32)(valueA[k]), (u32)(valueB[k]), (u32)pTolerance))
+										if(!core::equals((u32)(valueA[k]), (u32)(valueB[k]), (u32)tolerance))
 											Equal = false;
 
 									Compare = true;
@@ -480,13 +480,13 @@ namespace scene
 							break;
 						case video::EVAT_FLOAT:
 							{
-								f32* valueA = (f32*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * i);
-								f32* valueB = (f32*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * j);
+								f32* valueA = (f32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
+								f32* valueB = (f32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
 								if(CheckComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
-										if(!core::equals((f32)(valueA[k]), (f32)(valueB[k]), (f32)pTolerance))
+										if(!core::equals((f32)(valueA[k]), (f32)(valueB[k]), (f32)tolerance))
 											Equal = false;
 
 									Compare = true;
@@ -495,13 +495,13 @@ namespace scene
 							break;
 						case video::EVAT_DOUBLE:
 							{
-								f64* valueA = (f64*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * i);
-								f64* valueB = (f64*)(Vertices + pMeshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + pMeshBuffer->getVertexBuffer()->getVertexSize() * j);
+								f64* valueA = (f64*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
+								f64* valueB = (f64*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
 								if(CheckComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
-										if(!core::equals((f64)(valueA[k]), (f64)(valueB[k]), (f64)pTolerance))
+										if(!core::equals((f64)(valueA[k]), (f64)(valueB[k]), (f64)tolerance))
 											Equal = false;
 
 									Compare = true;
@@ -522,17 +522,17 @@ namespace scene
 				if(!found)
 				{
 					Redirects[i] = VertexBuffer->getVertexCount();
-					VertexBuffer->addVertex(Vertices + pMeshBuffer->getVertexBuffer()->getVertexSize() * i);
+					VertexBuffer->addVertex(Vertices + meshBuffer->getVertexBuffer()->getVertexSize() * i);
 				}
 			}
 
-			for(u32 i = 0; i < pMeshBuffer->getIndexBuffer()->getIndexCount(); ++i)
-				IndexBuffer->setIndex(i, Redirects[pMeshBuffer->getIndexBuffer()->getIndex(i)]);
+			for(u32 i = 0; i < meshBuffer->getIndexBuffer()->getIndexCount(); ++i)
+				IndexBuffer->setIndex(i, Redirects[meshBuffer->getIndexBuffer()->getIndex(i)]);
 
-			pMeshBuffer->setVertexBuffer(VertexBuffer);
-			pMeshBuffer->setIndexBuffer(IndexBuffer);
+			meshBuffer->setVertexBuffer(VertexBuffer);
+			meshBuffer->setIndexBuffer(IndexBuffer);
 
-			pMeshBuffer->recalculateBoundingBox();
+			meshBuffer->recalculateBoundingBox();
 
 			return true;
 		}
@@ -540,12 +540,12 @@ namespace scene
 		//! Get amount of polygons in mesh.
 		/** \param mesh Input mesh
 		\return Number of polygons in mesh. */
-		virtual s32 getPolyCount(IMesh* pMesh) const = 0;
+		virtual s32 getPolyCount(IMesh* mesh) const = 0;
 
 		//! Get amount of polygons in mesh.
 		/** \param mesh Input mesh
 		\return Number of polygons in mesh. */
-		virtual s32 getPolyCount(IAnimatedMesh* pMesh) const = 0;
+		virtual s32 getPolyCount(IAnimatedMesh* mesh) const = 0;
 
 		//! Create a new AnimatedMesh and adds the mesh to it
 		/** \param mesh Input mesh
@@ -554,7 +554,7 @@ namespace scene
 		content. When you don't need the animated mesh anymore, you
 		should call IAnimatedMesh::drop(). See
 		IReferenceCounted::drop() for more information. */
-		virtual IAnimatedMesh * createAnimatedMesh(IMesh* pMesh, E_ANIMATED_MESH_TYPE pType = EAMT_UNKNOWN) const = 0;
+		virtual IAnimatedMesh * createAnimatedMesh(IMesh* mesh, E_ANIMATED_MESH_TYPE type = EAMT_UNKNOWN) const = 0;
 
 		//! Vertex cache optimization according to the Forsyth paper
 		/** More information can be found at
@@ -565,7 +565,7 @@ namespace scene
 
 		\param mesh Source mesh for the operation.
 		\return A new mesh optimized for the vertex cache. */
-		virtual IMesh* createForsythOptimizedMesh(const IMesh *pMesh) const = 0;
+		virtual IMesh* createForsythOptimizedMesh(const IMesh *mesh) const = 0;
 };
 
 } // end namespace scene

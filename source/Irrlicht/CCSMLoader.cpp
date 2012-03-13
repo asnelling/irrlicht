@@ -409,7 +409,7 @@ namespace scene
 	scene::IMesh* CCSMLoader::createIrrlichtMesh(const CSMFile* csmFile,
 		const core::stringc& textureRoot, const io::path& lmprefix)
 	{
-		scene::SMesh *pMesh = new scene::SMesh();
+		scene::SMesh *mesh = new scene::SMesh();
 		video::IVideoDriver* driver = SceneManager->getVideoDriver();
 
 		for(u32 l = 0; l<csmFile->getLightMapCount(); l++)
@@ -499,13 +499,13 @@ namespace scene
 				}
 
 				buffer->recalculateBoundingBox();
-				pMesh->addMeshBuffer(buffer);
+				mesh->addMeshBuffer(buffer);
 				buffer->drop();
 			}
 		}
 
-		pMesh->recalculateBoundingBox();
-		return pMesh;
+		mesh->recalculateBoundingBox();
+		return mesh;
 	}
 
 	void Group::clear()

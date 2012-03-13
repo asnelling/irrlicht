@@ -671,12 +671,12 @@ const core::rect<s32>& CNullDriver::getViewPort() const
 
 
 //! draws a vertex primitive list
-void CNullDriver::drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer, bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void CNullDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer, bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
 {
-	if((pIndexBuffer->getType() == EIT_16BIT) && (pVertexBuffer->getVertexCount() > 65536))
+	if((indexBuffer->getType() == EIT_16BIT) && (vertexBuffer->getVertexCount() > 65536))
 		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
 
-	PrimitivesDrawn += pPrimitiveCount;
+	PrimitivesDrawn += primitiveCount;
 }
 
 
@@ -1579,10 +1579,10 @@ bool CNullDriver::addVertexDescriptor(const core::stringc& pName)
 }
 
 
-IVertexDescriptor* CNullDriver::getVertexDescriptor(u32 pID) const
+IVertexDescriptor* CNullDriver::getVertexDescriptor(u32 id) const
 {
-	if(pID < VertexDescriptor.size())
-		return VertexDescriptor[pID];
+	if(id < VertexDescriptor.size())
+		return VertexDescriptor[id];
 
 	return 0;
 }

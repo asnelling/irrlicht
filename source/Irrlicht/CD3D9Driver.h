@@ -149,8 +149,8 @@ namespace video
 		virtual u32 getOcclusionQueryResult(scene::ISceneNode* node) const;
 
 		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
-			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType);
+		virtual void drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
 
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -341,7 +341,7 @@ namespace video
 		};
 
 		//! sets right vertex shader
-		void setVertexDeclaration(IVertexDescriptor* pVertexDescriptor);
+		void setVertexDeclaration(IVertexDescriptor* vertexDescriptor);
 
 		//! sets the needed renderstates
 		bool setRenderStates3DMode();
@@ -399,7 +399,7 @@ namespace video
 
 		void createMaterialRenderers();
 
-		void draw2D3DVertexPrimitiveList(const void* pVertices, u32 pVertexCount, u32 pVertexSize, const void* pIndices, D3DFORMAT pIndexType, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType, bool is3D);
+		void draw2D3DVertexPrimitiveList(const void* pVertices, u32 pVertexCount, u32 pVertexSize, const void* pIndices, D3DFORMAT pIndexType, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType, bool is3D);
 
 		D3DTEXTUREADDRESS getTextureWrapMode(const u8 clamp);
 

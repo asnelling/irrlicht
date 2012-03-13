@@ -627,15 +627,15 @@ namespace video
 		\param vertices Pointer to array of vertices.
 		\param vertexCount Amount of vertices in the array.
 		\param indexList Pointer to array of indices. These define the vertices used
-		for each primitive. Depending on the pType, indices are interpreted as single
+		for each primitive. Depending on the type, indices are interpreted as single
 		objects (for point like primitives), pairs (for lines), triplets (for
 		triangles), or quads.
 		\param primCount Amount of Primitives
 		\param vType Vertex type, e.g. video::EVT_STANDARD for S3DVertex.
-		\param pType Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
+		\param type Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
 		\param iType Index type, e.g. video::EIT_16BIT for 16bit indices. */
-		virtual void drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
-			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType = scene::EPT_TRIANGLES) = 0;
+		virtual void drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType = scene::EPT_TRIANGLES) = 0;
 
 		//! Draws a vertex primitive list in 2d
 		/** Compared to the general (3d) version of this method, this
@@ -649,13 +649,13 @@ namespace video
 		\param vertices Pointer to array of vertices.
 		\param vertexCount Amount of vertices in the array.
 		\param indexList Pointer to array of indices. These define the
-		vertices used for each primitive. Depending on the pType,
+		vertices used for each primitive. Depending on the type,
 		indices are interpreted as single objects (for point like
 		primitives), pairs (for lines), triplets (for triangles), or
 		quads.
 		\param primCount Amount of Primitives
 		\param vType Vertex type, e.g. video::EVT_STANDARD for S3DVertex.
-		\param pType Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
+		\param type Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
 		\param iType Index type, e.g. video::EIT_16BIT for 16bit indices. */
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
 				const void* indexList, u32 primCount,
@@ -664,17 +664,17 @@ namespace video
 				E_INDEX_TYPE iType=EIT_16BIT) =0;
 
 		//! Draws an indexed triangle list.
-		void drawIndexedTriangleList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
-			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount)
+		void drawIndexedTriangleList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount)
 		{
-			drawVertexPrimitiveList(pHardwareVertex, pVertexBuffer, pHardwareIndex, pIndexBuffer, pPrimitiveCount, scene::EPT_TRIANGLES);
+			drawVertexPrimitiveList(hardwareVertex, vertexBuffer, hardwareIndex, indexBuffer, primitiveCount, scene::EPT_TRIANGLES);
 		}
 
 		//! Draws an indexed triangle fan.
-		void drawIndexedTriangleFan(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
-			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount)
+		void drawIndexedTriangleFan(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount)
 		{
-			drawVertexPrimitiveList(pHardwareVertex, pVertexBuffer, pHardwareIndex, pIndexBuffer, pPrimitiveCount, scene::EPT_TRIANGLE_FAN);
+			drawVertexPrimitiveList(hardwareVertex, vertexBuffer, hardwareIndex, indexBuffer, primitiveCount, scene::EPT_TRIANGLE_FAN);
 		}
 
 		//! Draws a 3d line.
@@ -1387,7 +1387,7 @@ namespace video
 
 		virtual bool addVertexDescriptor(const core::stringc& pName) = 0;
 
-		virtual IVertexDescriptor* getVertexDescriptor(u32 pID) const = 0;
+		virtual IVertexDescriptor* getVertexDescriptor(u32 id) const = 0;
 
 		virtual IVertexDescriptor* getVertexDescriptor(const core::stringc& pName) const = 0;
 

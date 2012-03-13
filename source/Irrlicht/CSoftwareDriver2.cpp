@@ -1726,14 +1726,14 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 }
 
 
-void CBurningVideoDriver::drawVertexPrimitiveList(bool pHardwareVertex, scene::IVertexBuffer* pVertexBuffer,
-			bool pHardwareIndex, scene::IIndexBuffer* pIndexBuffer, u32 pPrimitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void CBurningVideoDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
 
 {
 	E_VERTEX_TYPE vType = EVT_STANDARD;
 
 	// Supported are only built-in Irrlicht vertex formats.
-	switch(pVertexBuffer->getVertexSize())
+	switch(vertexBuffer->getVertexSize())
 	{
 	case sizeof(S3DVertex):
 		vType = EVT_STANDARD;
@@ -1748,7 +1748,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(bool pHardwareVertex, scene::I
 		return;
 	}
 
-	drawVertexPrimitiveList(pVertexBuffer->getVertices(), pVertexBuffer->getVertexCount(), pIndexBuffer->getIndices(), pPrimitiveCount, vType, pType, pIndexBuffer->getType());
+	drawVertexPrimitiveList(vertexBuffer->getVertices(), vertexBuffer->getVertexCount(), indexBuffer->getIndices(), primitiveCount, vType, pType, indexBuffer->getType());
 }
 
 

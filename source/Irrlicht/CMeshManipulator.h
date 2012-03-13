@@ -15,37 +15,37 @@ namespace scene
 class CMeshManipulator : public IMeshManipulator
 {
 public:
-	virtual void flipSurfaces(IMesh* pMesh) const;
+	virtual void flipSurfaces(IMesh* mesh) const;
 
-	virtual void setVertexColor(IMeshBuffer* pMeshBuffer, video::SColor pColor, bool pOnlyAlpha) const;
+	virtual void setVertexColor(IMeshBuffer* meshBuffer, video::SColor color, bool onlyAlpha) const;
 
-	virtual void setVertexColorAlpha(IMeshBuffer* pMeshBuffer, s32 pAlpha) const;
+	virtual void setVertexColorAlpha(IMeshBuffer* meshBuffer, s32 alpha) const;
 
-	virtual void setVertexColors(IMeshBuffer* pMeshBuffer, video::SColor pColor) const;
+	virtual void setVertexColors(IMeshBuffer* meshBuffer, video::SColor color) const;
 
-	virtual void scale(IMeshBuffer* pMeshBuffer, const core::vector3df& pFactor) const;
+	virtual void scale(IMeshBuffer* meshBuffer, const core::vector3df& factor) const;
 
-	virtual void scaleTCoords(IMeshBuffer* pMeshBuffer, const core::vector2df& pFactor, u32 pLevel = 0) const;
+	virtual void scaleTCoords(IMeshBuffer* meshBuffer, const core::vector2df& factor, u32 level = 0) const;
 
-	virtual void transform(IMeshBuffer* pMeshBuffer, const core::matrix4& pMatrix) const;
+	virtual void transform(IMeshBuffer* meshBuffer, const core::matrix4& mat) const;
 
-	virtual void recalculateNormals(IMeshBuffer* pMeshBuffer, bool pSmooth, bool pAngleWeighted) const;
+	virtual void recalculateNormals(IMeshBuffer* meshBuffer, bool smooth, bool angleWeighted) const;
 
-	virtual void recalculateTangents(IMeshBuffer* pMeshBuffer, bool pRecalculateNormals, bool pSmooth, bool pAngleWeighted) const;
+	virtual void recalculateTangents(IMeshBuffer* meshBuffer, bool recalculateNormals, bool smooth, bool angleWeighted) const;
 
-	virtual void makePlanarTextureMapping(IMeshBuffer* pMeshBuffer, f32 pResolution = 0.001f) const;
+	virtual void makePlanarTextureMapping(IMeshBuffer* meshBuffer, f32 resolution = 0.001f) const;
 
-	virtual void makePlanarTextureMapping(IMeshBuffer* pMeshBuffer, f32 pResolutionS, f32 pResolutionT, u8 pAxis, const core::vector3df& pOffset) const;
+	virtual void makePlanarTextureMapping(IMeshBuffer* meshBuffer, f32 resolutionS, f32 resolutionT, u8 axis, const core::vector3df& offset) const;
 
-	virtual bool copyVertices(IVertexBuffer* pSrcBuffer, IVertexBuffer* pDestBuffer, bool pCopyCustomAttribute) const;
+	virtual bool copyVertices(IVertexBuffer* srcBuffer, IVertexBuffer* dstBuffer, bool copyCustomAttribute) const;
 	
-	virtual s32 getPolyCount(IMesh* pMesh) const;
+	virtual s32 getPolyCount(IMesh* mesh) const;
 
-	virtual s32 getPolyCount(IAnimatedMesh* pMesh) const;
+	virtual s32 getPolyCount(IAnimatedMesh* mesh) const;
 
-	virtual IAnimatedMesh* createAnimatedMesh(IMesh* pMesh, E_ANIMATED_MESH_TYPE pType) const;
+	virtual IAnimatedMesh* createAnimatedMesh(IMesh* mesh, E_ANIMATED_MESH_TYPE type) const;
 
-	virtual IMesh* createForsythOptimizedMesh(const IMesh* pMesh) const;
+	virtual IMesh* createForsythOptimizedMesh(const IMesh* mesh) const;
 };
 
 } // end namespace scene

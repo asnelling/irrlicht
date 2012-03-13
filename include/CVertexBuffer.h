@@ -16,25 +16,25 @@ namespace scene
 	class CVertexBuffer : public IVertexBuffer
 	{
 	public:
-		CVertexBuffer(video::IVertexDescriptor* pVertexDescriptor) : Vertices(0), vertexDescriptor(pVertexDescriptor), HardwareMappingHint(EHM_NEVER), ChangedID(1)
+		CVertexBuffer(video::IVertexDescriptor* vertexDescriptor) : Vertices(0), vertexDescriptor(vertexDescriptor), HardwareMappingHint(EHM_NEVER), ChangedID(1)
 		{
 			if(vertexDescriptor)
 				vertexDescriptor->grab();
 		}
 
-		CVertexBuffer(const CVertexBuffer& pVertexBuffer) : Vertices(0), ChangedID(1)
+		CVertexBuffer(const CVertexBuffer& vertexBuffer) : Vertices(0), ChangedID(1)
 		{
-			vertexDescriptor = pVertexBuffer.getVertexDescriptor();
+			vertexDescriptor = vertexBuffer.getVertexDescriptor();
 
 			if(vertexDescriptor)
 				vertexDescriptor->grab();
 
-			HardwareMappingHint = pVertexBuffer.getHardwareMappingHint();
+			HardwareMappingHint = vertexBuffer.getHardwareMappingHint();
 
-			Vertices.reallocate(pVertexBuffer.getVertexCount());
+			Vertices.reallocate(vertexBuffer.getVertexCount());
 
-			for(u32 i = 0; i < pVertexBuffer.getVertexCount(); ++i)
-				Vertices.push_back(pVertexBuffer.getVertex(i));
+			for(u32 i = 0; i < vertexBuffer.getVertexCount(); ++i)
+				Vertices.push_back(vertexBuffer.getVertex(i));
 		}
 
 		virtual ~CVertexBuffer()
@@ -55,14 +55,14 @@ namespace scene
 			return Vertices.getLast();
 		}
 
-		virtual void set_used(u32 pUsed)
+		virtual void set_used(u32 used)
 		{
-			Vertices.set_used(pUsed);
+			Vertices.set_used(used);
 		}
 
-		virtual void reallocate(u32 pSize)
+		virtual void reallocate(u32 size)
 		{
-			Vertices.reallocate(pSize);
+			Vertices.reallocate(size);
 		}
 
 		virtual u32 allocated_size() const
@@ -70,14 +70,14 @@ namespace scene
 			return Vertices.allocated_size();
 		}
 
-		virtual s32 linear_reverse_search(const T& pElement) const
+		virtual s32 linear_reverse_search(const T& element) const
 		{
-			return Vertices.linear_reverse_search(pElement);
+			return Vertices.linear_reverse_search(element);
 		}
 
-		virtual s32 linear_reverse_search(const void* pElement) const
+		virtual s32 linear_reverse_search(const void* element) const
 		{
-			return Vertices.linear_reverse_search((T&)(pElement));
+			return Vertices.linear_reverse_search((T&)(element));
 		}
 
 		virtual video::IVertexDescriptor* getVertexDescriptor() const
@@ -85,14 +85,14 @@ namespace scene
 			return vertexDescriptor;
 		}
 
-		virtual bool setVertexDescriptor(video::IVertexDescriptor* pVertexDescriptor)
+		virtual bool setVertexDescriptor(video::IVertexDescriptor* vertexDescriptor)
 		{
-			if(pVertexDescriptor && pVertexDescriptor != vertexDescriptor)
+			if(vertexDescriptor && vertexDescriptor != vertexDescriptor)
 			{
 				if(vertexDescriptor)
 					vertexDescriptor->drop();
 
-				vertexDescriptor = pVertexDescriptor;
+				vertexDescriptor = vertexDescriptor;
 				vertexDescriptor->grab();
 
 				return true;
@@ -106,28 +106,28 @@ namespace scene
 			return HardwareMappingHint;
 		}
 
-		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pHardwareMappingHint)
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING hardwareMappingHint)
 		{
-			if(HardwareMappingHint != pHardwareMappingHint)
+			if(HardwareMappingHint != hardwareMappingHint)
 				setDirty();
 
-			HardwareMappingHint = pHardwareMappingHint;
+			HardwareMappingHint = hardwareMappingHint;
 		}
 
-		virtual void addVertex(const T& pVertex)
+		virtual void addVertex(const T& vertex)
 		{
-			Vertices.push_back(pVertex);
+			Vertices.push_back(vertex);
 		}
 
-		virtual void addVertex(const void* pVertex)
+		virtual void addVertex(const void* vertex)
 		{
-			T* Vertex = (T*)pVertex;
+			T* Vertex = (T*)vertex;
 			Vertices.push_back(*Vertex);
 		}
 
-		virtual T& getVertex(u32 pID)
+		virtual T& getVertex(u32 id)
 		{
-			return Vertices[pID];
+			return Vertices[id];
 		}
 
 		virtual void* getVertices()

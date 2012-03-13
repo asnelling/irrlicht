@@ -68,17 +68,17 @@ namespace video
 
 		virtual u32 getVertexSize() const = 0;
 
-		virtual bool addAttribute(const core::stringc& pName, u32 pElementCount, E_VERTEX_ATTRIBUTE_SEMANTIC pSemantic, E_VERTEX_ATTRIBUTE_TYPE pType) = 0;
+		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type) = 0;
 
-		virtual IVertexAttribute* getAttribute(u32 pID) const = 0;
+		virtual IVertexAttribute* getAttribute(u32 id) const = 0;
 
-		virtual IVertexAttribute* getAttributeByName(const core::stringc& pName) const = 0;
+		virtual IVertexAttribute* getAttributeByName(const core::stringc& name) const = 0;
 
-		virtual IVertexAttribute* getAttributeBySemantic(E_VERTEX_ATTRIBUTE_SEMANTIC pSemantic) const = 0;
+		virtual IVertexAttribute* getAttributeBySemantic(E_VERTEX_ATTRIBUTE_SEMANTIC semantic) const = 0;
 
 		virtual u32 getAttributeCount() const = 0;
 
-		virtual bool removeAttribute(u32 pID) = 0;
+		virtual bool removeAttribute(u32 id) = 0;
 
 		virtual void removeAllAttribute() = 0;
 	};

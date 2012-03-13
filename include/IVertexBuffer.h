@@ -19,23 +19,23 @@ namespace scene
 	public:
 		virtual void clear() = 0;
 
-		virtual void set_used(u32 pUsed) = 0;
+		virtual void set_used(u32 used) = 0;
 
-		virtual void reallocate(u32 pSize) = 0;
+		virtual void reallocate(u32 size) = 0;
 
 		virtual u32 allocated_size() const = 0;
 
-		virtual s32 linear_reverse_search(const void* pElement) const = 0;
+		virtual s32 linear_reverse_search(const void* element) const = 0;
 
 		virtual video::IVertexDescriptor* getVertexDescriptor() const = 0;
 
-		virtual bool setVertexDescriptor(video::IVertexDescriptor* pVertexDescriptor) = 0;
+		virtual bool setVertexDescriptor(video::IVertexDescriptor* vertexDescriptor) = 0;
 
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const = 0;
 
-		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pHardwareMappingHint) = 0;
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING hardwareMappingHint) = 0;
 
-		virtual void addVertex(const void* pVertex) = 0;
+		virtual void addVertex(const void* vertex) = 0;
 
 		virtual void* getVertices() = 0;
 
