@@ -86,6 +86,17 @@ COpenGLSLMaterialRenderer::COpenGLSLMaterialRenderer(COpenGLDriver* driver,
 //! Destructor
 COpenGLSLMaterialRenderer::~COpenGLSLMaterialRenderer()
 {
+	if (Program2)
+	{
+		if (Driver->getActiveGLSLProgram() == Program2)
+			Driver->setActiveGLSLProgram(0);
+	}
+	else if (Program)
+	{
+		if (Driver->getActiveGLSLProgram() == Program)
+			Driver->setActiveGLSLProgram(0);
+	}	
+
 	if (CallBack)
 		CallBack->drop();
 
@@ -216,12 +227,19 @@ void COpenGLSLMaterialRenderer::OnSetMaterial(const video::SMaterial& material,
 		Driver->setActiveTexture(i, material.getTexture(i));
 	Driver->setBasicRenderStates(material, lastMaterial, resetAllRenderstates);
 
-	Driver->setLinkedProgram(Program2);
+	if (Program2)
+		Driver->setActiveGLSLProgram(Program2);
+	else if (Program)
+		Driver->setActiveGLSLProgram(Program);
+	else
+		Driver->setActiveGLSLProgram(0);
 }
 
 
 void COpenGLSLMaterialRenderer::OnUnsetMaterial()
 {
+	Driver->setActiveGLSLProgram(0);
+
 	if (Program)
 		Driver->extGlUseProgramObject(0);
 	if (Program2)
@@ -229,8 +247,6 @@ void COpenGLSLMaterialRenderer::OnUnsetMaterial()
 
 	if (BaseMaterial)
 		BaseMaterial->OnUnsetMaterial();
-
-	Driver->setLinkedProgram(0);
 }
 
 

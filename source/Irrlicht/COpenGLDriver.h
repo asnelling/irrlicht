@@ -83,7 +83,7 @@ namespace video
 
 		struct SHWBufferLink_opengl : public SHWBufferLink
 		{
-			SHWBufferLink_opengl(const scene::IMeshBuffer *_MeshBuffer): SHWBufferLink(_MeshBuffer), vbo_verticesID(0),vbo_indicesID(0){}
+			SHWBufferLink_opengl(const scene::IMeshBuffer *meshBuffer): SHWBufferLink(meshBuffer), vbo_verticesID(0), vbo_indicesID(0), vbo_verticesSize(0), vbo_indicesSize(0){}
 
 			GLuint vbo_verticesID; //tmp
 			GLuint vbo_indicesID; //tmp
@@ -381,14 +381,16 @@ namespace video
 		void removeDepthTexture(ITexture* texture);
 
 		//! Convert E_PRIMITIVE_TYPE to OpenGL equivalent
-		GLenum primitiveTypeToGL(scene::E_PRIMITIVE_TYPE pType) const;
+		GLenum primitiveTypeToGL(scene::E_PRIMITIVE_TYPE type) const;
 
 		//! Convert E_BLEND_FACTOR to OpenGL equivalent
 		GLenum getGLBlend(E_BLEND_FACTOR factor) const;
 
-		const GLenum& getLinkedProgram();
+		GLuint getActiveGLSLProgram();
+		void setActiveGLSLProgram(GLuint program);
 
-		void setLinkedProgram(const GLuint& pProgram);
+		GLuint getActiveARBProgram();
+		void setActiveARBProgram(GLuint program);
 
 		//! Get Cg context
 		#ifdef _IRR_COMPILE_WITH_CG_
@@ -492,8 +494,11 @@ namespace video
 		//! Status of vertex attribute (Disabled/Enabled). Max 16 attributes per vertex.
 		bool VertexAttributeStatus[16];
 
-		//! Linked GLSL program
-		GLuint LinkedProgram, LastLinkedProgram;
+		//! Active GLSL program
+		GLuint ActiveGLSLProgram;
+
+		//! Active ARB program
+		GLuint ActiveARBProgram;
 
 		//! Last used vertex descriptor
 		IVertexDescriptor* LastVertexDescriptor;

@@ -37,7 +37,8 @@ COpenGLDriver::COpenGLDriver(const irr::SIrrlichtCreationParameters& params,
 	CurrentRenderMode(ERM_NONE), ResetRenderStates(true), Transformation3DChanged(true),
 	AntiAlias(params.AntiAlias), RenderTargetTexture(0),
 	CurrentRendertargetSize(0,0), ColorFormat(ECF_R8G8B8),
-	CurrentTarget(ERT_FRAME_BUFFER), Params(params), LinkedProgram(0), LastLinkedProgram(0), LastVertexDescriptor(0),
+	CurrentTarget(ERT_FRAME_BUFFER), Params(params),
+	ActiveGLSLProgram(0), ActiveARBProgram(0), LastVertexDescriptor(0),
 	HDc(0), Window(static_cast<HWND>(params.WindowId)), Win32Device(device),
 	DeviceType(EIDT_WIN32)
 {
@@ -478,7 +479,8 @@ COpenGLDriver::COpenGLDriver(const SIrrlichtCreationParameters& params,
 	CurrentRenderMode(ERM_NONE), ResetRenderStates(true), Transformation3DChanged(true),
 	AntiAlias(params.AntiAlias), RenderTargetTexture(0),
 	CurrentRendertargetSize(0,0), ColorFormat(ECF_R8G8B8),
-	CurrentTarget(ERT_FRAME_BUFFER), Params(params), LinkedProgram(0), LastLinkedProgram(0), LastVertexDescriptor(0),
+	CurrentTarget(ERT_FRAME_BUFFER), Params(params),
+	ActiveGLSLProgram(0), ActiveARBProgram(0), LastVertexDescriptor(0),
 	OSXDevice(device), DeviceType(EIDT_OSX)
 {
 	#ifdef _DEBUG
@@ -508,7 +510,8 @@ COpenGLDriver::COpenGLDriver(const SIrrlichtCreationParameters& params,
 	CurrentRenderMode(ERM_NONE), ResetRenderStates(true),
 	Transformation3DChanged(true), AntiAlias(params.AntiAlias),
 	RenderTargetTexture(0), CurrentRendertargetSize(0,0), ColorFormat(ECF_R8G8B8),
-	CurrentTarget(ERT_FRAME_BUFFER), Params(params), LinkedProgram(0), LastLinkedProgram(0), LastVertexDescriptor(0),
+	CurrentTarget(ERT_FRAME_BUFFER), Params(params),
+	ActiveGLSLProgram(0), ActiveARBProgram(0), LastVertexDescriptor(0),
 	X11Device(device), DeviceType(EIDT_X11)
 {
 	#ifdef _DEBUG
@@ -604,7 +607,8 @@ COpenGLDriver::COpenGLDriver(const SIrrlichtCreationParameters& params,
 	CurrentRenderMode(ERM_NONE), ResetRenderStates(true),
 	Transformation3DChanged(true), AntiAlias(params.AntiAlias),
 	RenderTargetTexture(0), CurrentRendertargetSize(0,0), ColorFormat(ECF_R8G8B8),
-	CurrentTarget(ERT_FRAME_BUFFER), Params(params), LinkedProgram(0), LastLinkedProgram(0), LastVertexDescriptor(0),
+	CurrentTarget(ERT_FRAME_BUFFER), Params(params),
+	ActiveGLSLProgram(0), ActiveARBProgram(0), LastVertexDescriptor(0),
 	SDLDevice(device), DeviceType(EIDT_SDL)
 {
 	#ifdef _DEBUG
@@ -1048,10 +1052,10 @@ bool COpenGLDriver::updateVertexHardwareBuffer(SHWBufferLink_opengl* buffer)
 	IVertexDescriptor* vertexDescriptor = meshBuffer->getVertexBuffer()->getVertexDescriptor();
 
 	if(!vertexDescriptor)
-		vertexDescriptor = VertexDescriptor[0];
+		return false;
 	/*
 	const c8* vbuffer = static_cast<const c8*>(Vertices);
-
+	
 		//core::array<c8> buffer;
 		if (!FeatureAvailable[IRR_ARB_vertex_array_bgra] && !FeatureAvailable[IRR_EXT_vertex_array_bgra])
 		{
@@ -1127,11 +1131,11 @@ bool COpenGLDriver::updateVertexHardwareBuffer(SHWBufferLink_opengl* buffer)
 		buffer->vbo_verticesSize = VertexCount * VertexSize;
 
 		if(buffer->Mapped_Vertex == scene::EHM_STATIC)
-			extGlBufferData(GL_ARRAY_BUFFER,  VertexCount * VertexSize, buffer, GL_STATIC_DRAW);
+			extGlBufferData(GL_ARRAY_BUFFER,  VertexCount * VertexSize, Vertices, GL_STATIC_DRAW);
 		else if(buffer->Mapped_Vertex == scene::EHM_DYNAMIC)
-				extGlBufferData(GL_ARRAY_BUFFER,  VertexCount * VertexSize, buffer, GL_DYNAMIC_DRAW);
+			extGlBufferData(GL_ARRAY_BUFFER,  VertexCount * VertexSize, Vertices, GL_DYNAMIC_DRAW);
 		else //scene::EHM_STREAM
-			extGlBufferData(GL_ARRAY_BUFFER,  VertexCount * VertexSize, buffer, GL_STREAM_DRAW);
+			extGlBufferData(GL_ARRAY_BUFFER,  VertexCount * VertexSize, Vertices, GL_STREAM_DRAW);
 	}
 
 	extGlBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1462,6 +1466,11 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 	if(!primitiveCount || !vertexBuffer->getVertexCount())
 		return;
 
+	IVertexDescriptor* vertexDescriptor = vertexBuffer->getVertexDescriptor();
+
+	if(!vertexDescriptor)
+		return;
+
 	if(!checkPrimitiveCount(primitiveCount))
 		return;
 
@@ -1505,15 +1514,10 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 		}
 	}*/
 
-
-	IVertexDescriptor* vertexDescriptor = vertexBuffer->getVertexDescriptor();
-
-	if(!vertexDescriptor)
-		vertexDescriptor = VertexDescriptor[0];
-
 	// Enable semantics and attributes.
 
-	GLuint program = getLinkedProgram();
+	GLuint glslProgram = getActiveGLSLProgram();
+	GLuint arbProgram = getActiveARBProgram();
 
 	for(u32 i = 0; i < vertexDescriptor->getAttributeCount() && i < 16; ++i)
 	{
@@ -1641,9 +1645,9 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 		case EVAS_BLEND_INDICES:
 		case EVAS_CUSTOM:
 			{
-				if(program)
+				if(glslProgram)
 				{
-					GLuint location = extGlGetAttribLocation(program, vertexDescriptor->getAttribute(i)->getName().c_str());
+					GLuint location = extGlGetAttribLocation(glslProgram, vertexDescriptor->getAttribute(i)->getName().c_str());
 
 					if(location != -1)
 					{
@@ -1661,7 +1665,7 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 						}
 					}
 				}
-				else // ARB program;
+				else if(arbProgram)
 				{
 					GLuint location = -1;
 
@@ -1690,8 +1694,8 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 						}
 					}
 				}
-				break;
 			}
+			break;
 		}
 	}
 
@@ -1757,7 +1761,6 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 		}
 	}
 
-	LastLinkedProgram = program;
 	LastVertexDescriptor = vertexDescriptor;
 }
 
@@ -4742,9 +4745,9 @@ core::dimension2du COpenGLDriver::getMaxTextureSize() const
 
 
 //! Convert E_PRIMITIVE_TYPE to OpenGL equivalent
-GLenum COpenGLDriver::primitiveTypeToGL(scene::E_PRIMITIVE_TYPE pType) const
+GLenum COpenGLDriver::primitiveTypeToGL(scene::E_PRIMITIVE_TYPE type) const
 {
-	switch (pType)
+	switch (type)
 	{
 		case scene::EPT_POINTS:
 			return GL_POINTS;
@@ -4797,14 +4800,24 @@ GLenum COpenGLDriver::getGLBlend(E_BLEND_FACTOR factor) const
 	return r;
 }
 
-const GLenum& COpenGLDriver::getLinkedProgram()
+GLuint COpenGLDriver::getActiveGLSLProgram()
 {
-	return LinkedProgram;
+	return ActiveGLSLProgram;
 }
 
-void COpenGLDriver::setLinkedProgram(const GLuint& pProgram)
+void COpenGLDriver::setActiveGLSLProgram(GLuint program)
 {
-	LinkedProgram = pProgram;
+	ActiveGLSLProgram = program;
+}
+
+GLuint COpenGLDriver::getActiveARBProgram()
+{
+	return ActiveARBProgram;
+}
+
+void COpenGLDriver::setActiveARBProgram(GLuint program)
+{
+	ActiveARBProgram = program;
 }
 
 #ifdef _IRR_COMPILE_WITH_CG_

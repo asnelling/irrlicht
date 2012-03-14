@@ -1066,7 +1066,7 @@ bool CD3D9Driver::updateVertexHardwareBuffer(SHWBufferLink_d3d9* buffer)
 	IVertexDescriptor* vertexDescriptor = meshBuffer->getVertexBuffer()->getVertexDescriptor();
 
 	if(!vertexDescriptor)
-		vertexDescriptor = VertexDescriptor[0];
+		return false;
 
 	if(!buffer->vertexBuffer || (bufferSize > buffer->vertexBufferSize))
 	{
