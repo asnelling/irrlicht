@@ -567,16 +567,7 @@ bool COpenGLSLMaterialRenderer::setPixelShaderConstant(const c8* name, const f32
 			Driver->extGlUniformMatrix4fv(Location, count/16, false, floats);
 			break;
 		default:
-			// INT setPixelShaderConstant patch will be apply.
-
-			if(count == 1) // before it sampler number > 0 wasn't set properly.
-			{
-				GLint Var = floats[0];
-				Driver->extGlUniform1iv(Location, count, &Var);
-			}
-			else
-				Driver->extGlUniform1iv(Location, count, reinterpret_cast<const GLint*>(floats));
-
+			Driver->extGlUniform1iv(Location, count, reinterpret_cast<const GLint*>(floats));
 			break;
 	}
 	return true;

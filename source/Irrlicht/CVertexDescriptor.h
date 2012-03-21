@@ -49,9 +49,12 @@ namespace video
 	class CVertexDescriptor : public IVertexDescriptor
 	{
 	public:
-		CVertexDescriptor(const CVertexDescriptor& vertexDescriptor);
-		CVertexDescriptor(const core::stringc& name);
+		CVertexDescriptor(const core::stringc& name, u32 id);
 		virtual ~CVertexDescriptor();
+
+		virtual u32 getID() const;
+
+		virtual void setID(u32 id);
 
 		virtual const core::stringc& getName() const;
 
@@ -72,6 +75,8 @@ namespace video
 		virtual void removeAllAttribute();
 
 	protected:
+		u32 ID;
+
 		core::stringc Name;
 
 		u32 VertexSize;

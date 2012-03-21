@@ -1572,7 +1572,7 @@ bool CNullDriver::addVertexDescriptor(const core::stringc& pName)
 		if(pName == VertexDescriptor[i]->getName())
 			return false;
 
-	CVertexDescriptor* vertexDescriptor = new CVertexDescriptor(pName);
+	CVertexDescriptor* vertexDescriptor = new CVertexDescriptor(pName, VertexDescriptor.size());
 	VertexDescriptor.push_back(vertexDescriptor);
 
 	return true;

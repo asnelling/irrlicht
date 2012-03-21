@@ -35,6 +35,32 @@ namespace video
 {
 	class COpenGLTexture;
 
+	class CVertexDescriptor_opengl : public CVertexDescriptor
+	{
+	public:
+		CVertexDescriptor_opengl(const core::stringc& name, u32 id, u32 layerCount);
+		virtual ~CVertexDescriptor_opengl();
+
+		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type);
+
+		virtual bool removeAttribute(u32 id);
+
+		virtual void removeAllAttribute();
+
+		virtual s32 getLocation(u32 materialType, u32 id) const;
+
+		// -1 -> location entry doesn't exist, eg. material type or id is wrong; 0 - location isn't cached, so use glGetAttribLocation call; 1 - location is cached
+		virtual s32 getLocationStatus(u32 materialType, u32 id) const;
+
+		virtual void setLocation(u32 materialType, u32 id, u32 location);
+
+		virtual void addLocationLayer();
+
+	protected:
+		core::array< core::array<bool> > Cache;
+		core::array< core::array<s32> > Location;
+	};
+
 	class COpenGLDriver : public CNullDriver, public IMaterialRendererServices, public COpenGLExtensionHandler
 	{
 		friend class COpenGLTexture;
@@ -79,7 +105,6 @@ namespace video
 
 		//! sets transformation
 		virtual void setTransform(E_TRANSFORMATION_STATE state, const core::matrix4& mat);
-
 
 		struct SHWBufferLink_opengl : public SHWBufferLink
 		{
@@ -263,6 +288,9 @@ namespace video
 		//! the window was resized.
 		virtual void OnResize(const core::dimension2d<u32>& size);
 
+		//! Adds a new material renderer to the video device.
+		virtual s32 addMaterialRenderer(IMaterialRenderer* renderer, const char* name = 0);
+
 		//! Returns type of video driver
 		virtual E_DRIVER_TYPE getDriverType() const;
 
@@ -379,6 +407,8 @@ namespace video
 
 		ITexture* createDepthTexture(ITexture* texture, bool shared=true);
 		void removeDepthTexture(ITexture* texture);
+
+		virtual bool addVertexDescriptor(const core::stringc& pName);
 
 		//! Convert E_PRIMITIVE_TYPE to OpenGL equivalent
 		GLenum primitiveTypeToGL(scene::E_PRIMITIVE_TYPE type) const;

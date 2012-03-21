@@ -83,25 +83,7 @@ namespace video
 		Offset = offset;
 	}
 
-	CVertexDescriptor::CVertexDescriptor(const CVertexDescriptor& vertexDescriptor) : VertexSize(0)
-	{
-		Name = vertexDescriptor.getName();
-
-		for(u32 i = 0; i < EVAS_CUSTOM+1; ++i)
-			AttributePointer[i] = -1;
-
-		for(u32 i = 0; i < vertexDescriptor.getAttributeCount(); ++i)
-		{
-			CVertexAttribute* attribute = (CVertexAttribute*)vertexDescriptor.getAttribute(i);
-			Attribute.push_back(*attribute);
-
-			AttributePointer[(u32)attribute->getSemantic()] = i;
-
-			VertexSize += (attribute->getTypeSize() * attribute->getElementCount());
-		}
-	}
-
-	CVertexDescriptor::CVertexDescriptor(const core::stringc& name) : Name(name), VertexSize(0)
+	CVertexDescriptor::CVertexDescriptor(const core::stringc& name, u32 id) : ID(id), Name(name), VertexSize(0)
 	{
 		for(u32 i = 0; i < EVAS_CUSTOM+1; ++i)
 			AttributePointer[i] = -1;
@@ -110,6 +92,16 @@ namespace video
 	CVertexDescriptor::~CVertexDescriptor()
 	{
 		Attribute.clear();
+	}
+
+	u32 CVertexDescriptor::getID() const
+	{
+		return ID;
+	}
+
+	void CVertexDescriptor::setID(u32 id)
+	{
+		ID = id;
 	}
 
 	const core::stringc& CVertexDescriptor::getName() const

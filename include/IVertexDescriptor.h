@@ -64,6 +64,8 @@ namespace video
 	class IVertexDescriptor : public virtual IReferenceCounted
 	{
 	public:
+		virtual u32 getID() const = 0;
+
 		virtual const core::stringc& getName() const = 0;
 
 		virtual u32 getVertexSize() const = 0;

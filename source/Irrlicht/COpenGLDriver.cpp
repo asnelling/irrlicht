@@ -26,6 +26,117 @@ namespace irr
 namespace video
 {
 
+CVertexDescriptor_opengl::CVertexDescriptor_opengl(const core::stringc& name, u32 id, u32 layerCount) : CVertexDescriptor(name, id)
+{
+	for(u32 i = 0; i < layerCount; ++i)
+		addLocationLayer();
+}
+		
+CVertexDescriptor_opengl::~CVertexDescriptor_opengl()
+{
+	for(u32 i = 0; i < Cache.size(); ++i)
+	{
+		Cache[i].clear();
+		Location[i].clear();
+	}
+}
+
+bool CVertexDescriptor_opengl::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type)
+{
+	if(CVertexDescriptor::addAttribute(name, elementCount, semantic, type))
+	{
+		for(u32 i = 0; i < Cache.size(); ++i)
+		{
+			Cache[i].push_back(false);
+			Location[i].push_back(-1);
+		}
+
+		return true;
+	}
+
+	return false;	
+}
+
+bool CVertexDescriptor_opengl::removeAttribute(u32 id)
+{
+	if(CVertexDescriptor::removeAttribute(id))
+	{
+		for(u32 i = 0; i < Cache.size(); ++i)
+		{
+			Cache[i].erase(id);
+			Location[i].erase(id);
+		}
+
+		return true;
+	}
+
+	return false;	
+}
+
+void CVertexDescriptor_opengl::removeAllAttribute()
+{
+	CVertexDescriptor::removeAllAttribute();
+
+	for(u32 i = 0; i < Cache.size(); ++i)
+	{
+		Cache[i].clear();
+		Location[i].clear();
+	}
+}
+
+s32 CVertexDescriptor_opengl::getLocation(u32 materialType, u32 id) const
+{
+	if(materialType < Location.size() && id < Location[materialType].size())
+	{
+		return Location[materialType][id];
+	}
+
+	return -1;
+}
+
+s32 CVertexDescriptor_opengl::getLocationStatus(u32 materialType, u32 id) const
+{
+	if(materialType < Cache.size() && id < Cache[materialType].size())
+	{
+		int Status = 0;
+
+		if(Cache[materialType][id])
+			Status = 1;
+
+		return Status;
+	}
+
+	return -1;
+}
+
+void CVertexDescriptor_opengl::setLocation(u32 materialType, u32 id, u32 location)
+{
+	if(materialType < Location.size() && id < Location[materialType].size())
+	{
+		Cache[materialType][id] = true;
+		Location[materialType][id] = location;
+	}
+}
+
+void CVertexDescriptor_opengl::addLocationLayer()
+{
+	core::array<bool> cache;
+	core::array<s32> location;
+
+	cache.reallocate(Attribute.size());
+	location.reallocate(Attribute.size());
+
+	for(u32 i = 0; i < Attribute.size(); ++i)
+	{
+		cache.push_back(false);
+		location.push_back(-1);
+	}
+
+	Cache.push_back(cache);
+	Location.push_back(location);
+}
+
+
 // -----------------------------------------------------------------------
 // WINDOWS CONSTRUCTOR
 // -----------------------------------------------------------------------
@@ -672,6 +783,36 @@ COpenGLDriver::~COpenGLDriver()
 
 bool COpenGLDriver::genericDriverInit()
 {
+	// Create opengl vertex descriptors for built-in vertex structures.
+
+	for(u32 i=0; i < VertexDescriptor.size(); ++i)
+		VertexDescriptor[i]->drop();
+
+	VertexDescriptor.clear();
+
+	addVertexDescriptor("standard");
+	VertexDescriptor[0]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
+	VertexDescriptor[0]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
+	VertexDescriptor[0]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
+	VertexDescriptor[0]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
+
+	addVertexDescriptor("2tcoords");
+	VertexDescriptor[1]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
+	VertexDescriptor[1]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
+	VertexDescriptor[1]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
+	VertexDescriptor[1]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
+	VertexDescriptor[1]->addAttribute("inTexCoord1", 2, EVAS_TEXCOORD1, EVAT_FLOAT);
+
+	addVertexDescriptor("tangents");
+	VertexDescriptor[2]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
+	VertexDescriptor[2]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inTangent", 3, EVAS_TANGENT, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inBinormal", 3, EVAS_BINORMAL, EVAT_FLOAT);
+
+	// Create driver.
+
 	Name=L"OpenGL ";
 	Name.append(glGetString(GL_VERSION));
 	s32 pos=Name.findNext(L' ', 7);
@@ -1466,7 +1607,7 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 	if(!primitiveCount || !vertexBuffer->getVertexCount())
 		return;
 
-	IVertexDescriptor* vertexDescriptor = vertexBuffer->getVertexDescriptor();
+	CVertexDescriptor_opengl* vertexDescriptor = (CVertexDescriptor_opengl*)vertexBuffer->getVertexDescriptor();
 
 	if(!vertexDescriptor)
 		return;
@@ -1647,7 +1788,21 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 			{
 				if(glslProgram)
 				{
-					GLuint location = extGlGetAttribLocation(glslProgram, vertexDescriptor->getAttribute(i)->getName().c_str());
+					s32 status = vertexDescriptor->getLocationStatus((u32)Material.MaterialType, i);
+					GLint location = -1;
+
+					if(status != -1)
+					{
+						if(status)
+						{
+							location = vertexDescriptor->getLocation((u32)Material.MaterialType, i);
+						}
+						else
+						{
+							location = extGlGetAttribLocation(glslProgram, vertexDescriptor->getAttribute(i)->getName().c_str());
+							vertexDescriptor->setLocation((u32)Material.MaterialType, i, location);
+						}
+					}					
 
 					if(location != -1)
 					{
@@ -1667,7 +1822,7 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 				}
 				else if(arbProgram)
 				{
-					GLuint location = -1;
+					GLint location = -1;
 
 					if(semantic == EVAS_TANGENT)
 						location = 4;
@@ -3960,6 +4115,23 @@ void COpenGLDriver::OnResize(const core::dimension2d<u32>& size)
 }
 
 
+//! Adds a new material renderer to the video device.
+s32 COpenGLDriver::addMaterialRenderer(IMaterialRenderer* renderer, const char* name)
+{
+	s32 id = CNullDriver::addMaterialRenderer(renderer, name);
+
+	if (id != -1)
+	{
+		for(u32 i = 0; i < VertexDescriptor.size(); ++i)
+		{
+			((CVertexDescriptor_opengl*)VertexDescriptor[i])->addLocationLayer();
+		}
+	}
+
+	return id;
+}
+
+
 //! Returns type of video driver
 E_DRIVER_TYPE COpenGLDriver::getDriverType() const
 {
@@ -4691,6 +4863,19 @@ void COpenGLDriver::removeDepthTexture(ITexture* texture)
 			return;
 		}
 	}
+}
+
+
+bool COpenGLDriver::addVertexDescriptor(const core::stringc& pName)
+{
+	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
+		if(pName == VertexDescriptor[i]->getName())
+			return false;
+
+	CVertexDescriptor* vertexDescriptor = new CVertexDescriptor_opengl(pName, VertexDescriptor.size(), MaterialRenderers.size());
+	VertexDescriptor.push_back(vertexDescriptor);
+
+	return true;
 }
 
 

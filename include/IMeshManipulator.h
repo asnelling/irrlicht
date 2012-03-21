@@ -393,7 +393,7 @@ namespace scene
 								s8* valueA = (s8*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
 								s8* valueB = (s8*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
-								if(CheckComponents[ElementCount-1])
+								if(checkComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
 										if(!core::equals((s32)(valueA[k]), (s32)(valueB[k]), (s32)tolerance))
@@ -408,7 +408,7 @@ namespace scene
 								u8* valueA = (u8*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
 								u8* valueB = (u8*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
-								if(CheckComponents[ElementCount-1])
+								if(checkComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
 										if(!core::equals((u32)(valueA[k]), (u32)(valueB[k]), (u32)tolerance))
@@ -423,7 +423,7 @@ namespace scene
 								s16* valueA = (s16*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
 								s16* valueB = (s16*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
-								if(CheckComponents[ElementCount-1])
+								if(checkComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
 										if(!core::equals((s32)(valueA[k]), (s32)(valueB[k]), (s32)tolerance))
@@ -438,7 +438,7 @@ namespace scene
 								u16* valueA = (u16*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
 								u16* valueB = (u16*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
-								if(CheckComponents[ElementCount-1])
+								if(checkComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
 										if(!core::equals((u32)(valueA[k]), (u32)(valueB[k]), (u32)tolerance))
@@ -453,7 +453,7 @@ namespace scene
 								s32* valueA = (s32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
 								s32* valueB = (s32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
-								if(CheckComponents[ElementCount-1])
+								if(checkComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
 										if(!core::equals((s32)(valueA[k]), (s32)(valueB[k]), (s32)tolerance))
@@ -468,7 +468,7 @@ namespace scene
 								u32* valueA = (u32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
 								u32* valueB = (u32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
-								if(CheckComponents[ElementCount-1])
+								if(checkComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
 										if(!core::equals((u32)(valueA[k]), (u32)(valueB[k]), (u32)tolerance))
@@ -483,7 +483,7 @@ namespace scene
 								f32* valueA = (f32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
 								f32* valueB = (f32*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
-								if(CheckComponents[ElementCount-1])
+								if(checkComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
 										if(!core::equals((f32)(valueA[k]), (f32)(valueB[k]), (f32)tolerance))
@@ -498,7 +498,7 @@ namespace scene
 								f64* valueA = (f64*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * i);
 								f64* valueB = (f64*)(Vertices + meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(l)->getOffset() + meshBuffer->getVertexBuffer()->getVertexSize() * j);
 
-								if(CheckComponents[ElementCount-1])
+								if(checkComponents[ElementCount-1])
 								{
 									for(u32 k = 0; k < ElementCount; ++k)
 										if(!core::equals((f64)(valueA[k]), (f64)(valueB[k]), (f64)tolerance))
