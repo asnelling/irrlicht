@@ -71,8 +71,19 @@ namespace scene
 		\param factor Scale factor for each axis. */
 		void scale(IMesh* mesh, const core::vector3df& factor) const
 		{
+			core::aabbox3df BufferBox;
+
 			for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+			{
 				scale(mesh->getMeshBuffer(i), factor);
+
+				if (0 == i)
+					BufferBox.reset(mesh->getMeshBuffer(i)->getBoundingBox());
+				else
+					BufferBox.addInternalBox(mesh->getMeshBuffer(i)->getBoundingBox());
+			}
+
+			mesh->setBoundingBox(BufferBox);
 		}
 
 		//! Scales the actual mesh, not a scene node.
@@ -107,8 +118,19 @@ namespace scene
 		\param m transformation matrix. */
 		void transform(IMesh* mesh, const core::matrix4& m) const
 		{
+			core::aabbox3df BufferBox;
+
 			for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
+			{
 				transform(mesh->getMeshBuffer(i), m);
+
+				if (0 == i)
+					BufferBox.reset(mesh->getMeshBuffer(i)->getBoundingBox());
+				else
+					BufferBox.addInternalBox(mesh->getMeshBuffer(i)->getBoundingBox());
+			}
+
+			mesh->setBoundingBox(BufferBox);
 		}
 
 		//! Applies a transformation to a mesh

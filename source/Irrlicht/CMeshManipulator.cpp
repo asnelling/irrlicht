@@ -104,6 +104,8 @@ void CMeshManipulator::scale(IMeshBuffer* meshBuffer, const core::vector3df& fac
 
 		offset += meshBuffer->getVertexBuffer()->getVertexSize();
 	}
+
+	meshBuffer->recalculateBoundingBox();
 }
 
 void CMeshManipulator::scaleTCoords(IMeshBuffer* meshBuffer, const core::vector2df& factor, u32 level) const
@@ -161,6 +163,8 @@ void CMeshManipulator::transform(IMeshBuffer* meshBuffer, const core::matrix4& m
 
 		offset += meshBuffer->getVertexBuffer()->getVertexSize();
 	}
+
+	meshBuffer->recalculateBoundingBox();
 }
 
 static inline core::vector3df getAngleWeight(const core::vector3df& v1,
