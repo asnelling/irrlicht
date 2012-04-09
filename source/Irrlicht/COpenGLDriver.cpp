@@ -98,12 +98,10 @@ s32 CVertexDescriptor_opengl::getLocationStatus(u32 materialType, u32 id) const
 {
 	if(materialType < Cache.size() && id < Cache[materialType].size())
 	{
-		int Status = 0;
-
 		if(Cache[materialType][id])
-			Status = 1;
+			return 1;
 
-		return Status;
+		return 0;
 	}
 
 	return -1;
@@ -1906,6 +1904,8 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 				}
 			}
+			break;
+		default:
 			break;
 		}
 

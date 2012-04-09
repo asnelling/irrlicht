@@ -14,7 +14,7 @@
 #include "fast_atof.h"
 #include "os.h"
 #include "ISceneManager.h"
-#include "IVIdeoDriver.h"
+#include "IVideoDriver.h"
 
 namespace irr
 {

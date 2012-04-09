@@ -77,7 +77,8 @@ namespace scene
 
 		virtual s32 linear_reverse_search(const void* element) const
 		{
-			return Vertices.linear_reverse_search((T&)(element));
+			T* Element = (T*)element;
+			return Vertices.linear_reverse_search(*Element);
 		}
 
 		virtual video::IVertexDescriptor* getVertexDescriptor() const
