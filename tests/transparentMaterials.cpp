@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Christian Stehno, Colin MacDonald
+// Copyright (C) 2008-2012 Christian Stehno, Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -26,6 +26,8 @@ bool testTransparentAlphaChannelRef(video::E_DRIVER_TYPE driverType)
 		device->drop();
 		return true;
 	}
+
+	stabilizeScreenBackground(driver);
 
 	logTestString("Testing driver %ls\n", driver->getName());
 
@@ -77,6 +79,8 @@ bool testTransparentAlphaChannel(video::E_DRIVER_TYPE driverType)
 		return true;
 	}
 
+	stabilizeScreenBackground(driver);
+
 	logTestString("Testing driver %ls\n", driver->getName());
 
 	driver->setTextureCreationFlag(video::ETCF_ALWAYS_32_BIT, true);
@@ -126,6 +130,8 @@ bool testTransparentVertexAlpha(video::E_DRIVER_TYPE driverType)
 		device->drop();
 		return true;
 	}
+
+	stabilizeScreenBackground(driver);
 
 	logTestString("Testing driver %ls\n", driver->getName());
 
@@ -183,6 +189,8 @@ bool testTransparentReflection2Layer(video::E_DRIVER_TYPE driverType)
 		device->drop();
 		return true;
 	}
+
+	stabilizeScreenBackground(driver);
 
 	logTestString("Testing driver %ls\n", driver->getName());
 
@@ -244,6 +252,8 @@ bool testTransparentAddColor(video::E_DRIVER_TYPE driverType)
 		return true;
 	}
 
+	stabilizeScreenBackground(driver);
+
 	logTestString("Testing driver %ls\n", driver->getName());
 
 	driver->setTextureCreationFlag(video::ETCF_ALWAYS_32_BIT, true);
@@ -293,6 +303,8 @@ bool testTransparentVertexAlphaMore(E_DRIVER_TYPE driverType)
 		return true;
 	}
 
+	stabilizeScreenBackground(driver);
+
 	logTestString("Testing driver %ls\n", driver->getName());
 
 	IAnimatedMesh* mesh = smgr->getMesh("../media/sydney.md2");
@@ -341,7 +353,7 @@ bool transparentMaterials(void)
 {
 	bool result = true;
 	TestWithAllDrivers(testTransparentAlphaChannel);
-	// FIXME Rogerborg 8-January-2011. Burning's video currently produces unexpected results,
+	// FIXME Rogerborg 8-January-2010. Burning's video currently produces unexpected results,
 	// blending using the full alpha value instead of using a boolean mask. This test is being
 	// added now anyway to help verify the fix when it's done; it should just require an
 	// update of the reference image.

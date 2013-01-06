@@ -1,9 +1,11 @@
-// Copyright (C) 2008-2011 Colin MacDonald
+// Copyright (C) 2008-2012 Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
 
 using namespace irr;
+
+
 
 // Tests screenshots features
 bool testShots(video::E_DRIVER_TYPE type)
@@ -25,12 +27,15 @@ bool testShots(video::E_DRIVER_TYPE type)
 	node = smgr->addAnimatedMeshSceneNode(mesh);
 	if (!node)
 		return false;
+
+	stabilizeScreenBackground(driver);
+
 	node->setPosition(core::vector3df(20, 0, 30));
 	node->setMaterialFlag(video::EMF_LIGHTING, false);
 	node->setMaterialTexture(0, driver->getTexture("../media/sydney.bmp"));
 	node->setLoopMode(false);
 
-	(void)smgr->addCameraSceneNode();
+	smgr->addCameraSceneNode();
 
 	node->setMD2Animation(scene::EMAT_DEATH_FALLBACK);
 	node->setCurrentFrame((f32)(node->getEndFrame()));
@@ -45,6 +50,21 @@ bool testShots(video::E_DRIVER_TYPE type)
 	{
 		video::IImage* img = driver->createScreenShot((video::ECOLOR_FORMAT)i);
 		logTestString("Color Format %d %ssupported\n", i, (img && img->getColorFormat() == i)?"":"un");
+
+#if 0	// Enable for a quick check while testing.
+		// If someone adds comparison images please use another scene without animation
+		// and maybe a texture using the full color spectrum.
+		if ( img )
+		{
+			irr::core::stringc screenshotFilename = "results/";
+			screenshotFilename += shortDriverName(driver);
+			screenshotFilename += "screenshot";
+			screenshotFilename += core::stringc(i);
+			screenshotFilename += ".png";
+			driver->writeImageToFile(img, screenshotFilename.c_str());
+		}
+#endif
+
 		if (img)
 			img->drop();
 	}

@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Colin MacDonald
+// Copyright (C) 2008-2012 Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -12,14 +12,14 @@ bool billboardSize(void)
 {
 	// Use EDT_BURNINGSVIDEO since it is not dependent on (e.g.) OpenGL driver versions.
 	IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO, core::dimension2d<u32>(160, 120), 32);
-	assert(device);
+	assert_log(device);
 	if (!device)
 		return false;
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	scene::ISceneManager * smgr = device->getSceneManager();
 
-	scene::ICameraSceneNode* cam = smgr->addCameraSceneNode();
+	smgr->addCameraSceneNode();
 	scene::IBillboardSceneNode* bill = smgr->addBillboardSceneNode();
 	bill->setPosition(core::vector3df(0,0,50));
 	bill = smgr->addBillboardSceneNode();
@@ -110,18 +110,20 @@ bool billboardSize(void)
 }
 
 // Test billboard orientation
+// Should generate a properly readable (i.e. not mirrored or flipped)
+// font file display.
 bool billboardOrientation(void)
 {
 	// Use EDT_BURNINGSVIDEO since it is not dependent on (e.g.) OpenGL driver versions.
 	IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO, core::dimension2d<u32>(160, 120), 32);
-	assert(device);
+	assert_log(device);
 	if (!device)
 		return false;
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	scene::ISceneManager * smgr = device->getSceneManager();
 
-	scene::ICameraSceneNode* cam = smgr->addCameraSceneNode();
+	smgr->addCameraSceneNode();
 	scene::IBillboardSceneNode* bill = smgr->addBillboardSceneNode(0, core::dimension2df(40,40));
 	bill->setPosition(core::vector3df(0,-15,10));
 	bill->getMaterial(0).Lighting=false;

@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -518,8 +518,8 @@ namespace video
 		position of a pixel instead a color value.
 		\param zeroTexels \deprecated If set to true, then any texels that match
 		the color key will have their color, as well as their alpha, set to zero
-		(i.e. black). This behaviour matches the legacy (buggy) behaviour prior
-		to release 1.5 and is provided for backwards compatibility only. 
+		(i.e. black). This behavior matches the legacy (buggy) behavior prior
+		to release 1.5 and is provided for backwards compatibility only.
 		This parameter may be removed by Irrlicht 1.9. */
 		virtual void makeColorKeyTexture(video::ITexture* texture,
 						video::SColor color,
@@ -535,7 +535,7 @@ namespace video
 		described above.
 		\param zeroTexels \deprecated If set to true, then any texels that match
 		the color key will have their color, as well as their alpha, set to zero
-		(i.e. black). This behaviour matches the legacy (buggy) behaviour prior
+		(i.e. black). This behavior matches the legacy (buggy) behavior prior
 		to release 1.5 and is provided for backwards compatibility only.
 		This parameter may be removed by Irrlicht 1.9. */
 		virtual void makeColorKeyTexture(video::ITexture* texture,
@@ -860,7 +860,7 @@ namespace video
 		virtual void draw2DRectangleOutline(const core::recti& pos,
 				SColor color=SColor(255,255,255,255)) =0;
 
-		//! Draws a 2d line.
+		//! Draws a 2d line. Both start and end will be included in coloring.
 		/** \param start Screen coordinates of the start of the line
 		in pixels.
 		\param end Screen coordinates of the start of the line in

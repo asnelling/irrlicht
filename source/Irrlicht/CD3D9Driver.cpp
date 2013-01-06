@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -378,6 +378,7 @@ bool CD3D9Driver::initDriver(HWND hwnd, bool pureSoftware)
 	// create device
 
 	DWORD fpuPrecision = Params.HighPrecisionFPU ? D3DCREATE_FPU_PRESERVE : 0;
+	DWORD multithreaded = Params.DriverMultithreaded ? D3DCREATE_MULTITHREADED : 0;
 	if (pureSoftware)
 	{
 		if (FAILED(pID3D->CreateDevice(Params.DisplayAdapter, D3DDEVTYPE_REF, hwnd,
@@ -387,15 +388,15 @@ bool CD3D9Driver::initDriver(HWND hwnd, bool pureSoftware)
 	else
 	{
 		HRESULT hr = pID3D->CreateDevice(adapter, devtype, hwnd,
-				fpuPrecision | D3DCREATE_HARDWARE_VERTEXPROCESSING, &present, &pID3DDevice);
+				fpuPrecision | multithreaded | D3DCREATE_HARDWARE_VERTEXPROCESSING, &present, &pID3DDevice);
 
 		if(FAILED(hr))
 			hr = pID3D->CreateDevice(adapter, devtype, hwnd,
-					fpuPrecision | D3DCREATE_MIXED_VERTEXPROCESSING , &present, &pID3DDevice);
+					fpuPrecision | multithreaded | D3DCREATE_MIXED_VERTEXPROCESSING , &present, &pID3DDevice);
 
 		if(FAILED(hr))
 			hr = pID3D->CreateDevice(adapter, devtype, hwnd,
-					fpuPrecision | D3DCREATE_SOFTWARE_VERTEXPROCESSING, &present, &pID3DDevice);
+					fpuPrecision | multithreaded | D3DCREATE_SOFTWARE_VERTEXPROCESSING, &present, &pID3DDevice);
 
 		if (FAILED(hr))
 			os::Printer::log("Was not able to create Direct3D9 device.", ELL_ERROR);
@@ -764,6 +765,9 @@ bool CD3D9Driver::setActiveTexture(u32 stage, const video::ITexture* texture)
 	else
 	{
 		pID3DDevice->SetTexture(stage, ((const CD3D9Texture*)texture)->getDX9Texture());
+
+		if (stage <= 4)
+            pID3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0 + stage, ((const CD3D9Texture*)texture)->getDX9Texture());
 	}
 	return true;
 }
@@ -1973,23 +1977,28 @@ void CD3D9Driver::draw2DLine(const core::position2d<s32>& start,
 				const core::position2d<s32>& end,
 				SColor color)
 {
-	// thanks to Vash TheStampede who sent in his implementation
-	S3DVertex vtx[2];
-	vtx[0] = S3DVertex((f32)start.X, (f32)start.Y, 0.0f,
-						0.0f, 0.0f, 0.0f, // normal
-						color, 0.0f, 0.0f); // texture
+	if (start==end)
+		drawPixel(start.X, start.Y, color);
+	else
+	{
+		// thanks to Vash TheStampede who sent in his implementation
+		S3DVertex vtx[2];
+		vtx[0] = S3DVertex((f32)start.X+0.375f, (f32)start.Y+0.375f, 0.0f,
+							0.0f, 0.0f, 0.0f, // normal
+							color, 0.0f, 0.0f); // texture
 
-	vtx[1] = S3DVertex((f32)end.X, (f32)end.Y, 0.0f,
-						0.0f, 0.0f, 0.0f,
-						color, 0.0f, 0.0f);
+		vtx[1] = S3DVertex((f32)end.X+0.375f, (f32)end.Y+0.375f, 0.0f,
+							0.0f, 0.0f, 0.0f,
+							color, 0.0f, 0.0f);
 
-	setRenderStates2DMode(color.getAlpha() < 255, false, false);
-	setActiveTexture(0,0);
+		setRenderStates2DMode(color.getAlpha() < 255, false, false);
+		setActiveTexture(0,0);
 
-	setVertexDeclaration(VertexDescriptor[0]);
+		setVertexDeclaration(VertexDescriptor[0]);
 
-	pID3DDevice->DrawPrimitiveUP(D3DPT_LINELIST, 1,
-					&vtx[0], sizeof(S3DVertex) );
+		pID3DDevice->DrawPrimitiveUP(D3DPT_LINELIST, 1,
+						&vtx[0], sizeof(S3DVertex) );
+	}
 }
 
 
@@ -2005,7 +2014,7 @@ void CD3D9Driver::drawPixel(u32 x, u32 y, const SColor & color)
 
 	setVertexDeclaration(VertexDescriptor[0]);
 
-	S3DVertex vertex((f32)x, (f32)y, 0.f, 0.f, 0.f, 0.f, color, 0.f, 0.f);
+	S3DVertex vertex((f32)x+0.375f, (f32)y+0.375f, 0.f, 0.f, 0.f, 0.f, color, 0.f, 0.f);
 
 	pID3DDevice->DrawPrimitiveUP(D3DPT_POINTLIST, 1, &vertex, sizeof(vertex));
 }
@@ -2198,7 +2207,7 @@ void CD3D9Driver::setBasicRenderStates(const SMaterial& material, const SMateria
 	{
 		switch (material.ZBuffer)
 		{
-		case ECFN_NEVER:
+		case ECFN_DISABLED:
 			pID3DDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
 			break;
 		case ECFN_LESSEQUAL:
@@ -2229,6 +2238,9 @@ void CD3D9Driver::setBasicRenderStates(const SMaterial& material, const SMateria
 			pID3DDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
 			pID3DDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
 			break;
+		case ECFN_NEVER:
+			pID3DDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+			pID3DDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_NEVER);
 		}
 	}
 
@@ -2486,8 +2498,15 @@ void CD3D9Driver::setRenderStatesStencilShadowMode(bool zfail, u32 debugDataVisi
 		pID3DDevice->SetRenderState(D3DRS_STENCILMASK, 0xffffffff);
 		pID3DDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xffffffff);
 
-		if (!(debugDataVisible & (scene::EDS_SKELETON|scene::EDS_MESH_WIRE_OVERLAY)))
-			pID3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0);
+		pID3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
+		pID3DDevice->SetRenderState( D3DRS_SRCBLEND, D3DBLEND_ZERO );
+		pID3DDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_ONE );
+
+		pID3DDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+		pID3DDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
+
+		//if (!(debugDataVisible & (scene::EDS_SKELETON|scene::EDS_MESH_WIRE_OVERLAY)))
+		//	pID3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0);
 		if ((debugDataVisible & scene::EDS_MESH_WIRE_OVERLAY))
 			pID3DDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
 	}
@@ -2497,14 +2516,14 @@ void CD3D9Driver::setRenderStatesStencilShadowMode(bool zfail, u32 debugDataVisi
 		// USE THE ZPASS METHOD
 		pID3DDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
 		pID3DDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP);
-		pID3DDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_INCR);
+		//pID3DDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_INCR);	// does not matter, will be set later
 	}
 	else
 	if (CurrentRenderMode != ERM_SHADOW_VOLUME_ZFAIL && zfail)
 	{
 		// USE THE ZFAIL METHOD
 		pID3DDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
-		pID3DDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_INCR);
+		//pID3DDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_INCR);	// does not matter, will be set later
 		pID3DDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
 	}
 
@@ -2784,11 +2803,14 @@ const wchar_t* CD3D9Driver::getName() const
 //! volume. Then, use IVideoDriver::drawStencilShadow() to visualize the shadow.
 void CD3D9Driver::drawStencilShadowVolume(const core::array<core::vector3df>& triangles, bool zfail, u32 debugDataVisible)
 {
-	const u32 count = triangles.size();
-	if (!Params.Stencilbuffer || !count)
+	if (!Params.Stencilbuffer)
 		return;
 
 	setRenderStatesStencilShadowMode(zfail, debugDataVisible);
+
+	const u32 count = triangles.size();
+	if (!count)
+		return;
 
 	if (!zfail)
 	{
@@ -3066,6 +3088,31 @@ const core::matrix4& CD3D9Driver::getTransform(E_TRANSFORMATION_STATE state) con
 }
 
 
+//! Get a vertex shader constant index.
+s32 CD3D9Driver::getVertexShaderConstantID(const c8* name)
+{
+	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
+	{
+		CD3D9MaterialRenderer* r = (CD3D9MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->getVariableID(true, name);
+	}
+
+	return -1;
+}
+
+//! Get a pixel shader constant index.
+s32 CD3D9Driver::getPixelShaderConstantID(const c8* name)
+{
+	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
+	{
+		CD3D9MaterialRenderer* r = (CD3D9MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->getVariableID(false, name);
+	}
+
+	return -1;
+}
+
+
 //! Sets a vertex shader constant.
 void CD3D9Driver::setVertexShaderConstant(const f32* data, s32 startRegister, s32 constantAmount)
 {
@@ -3082,26 +3129,52 @@ void CD3D9Driver::setPixelShaderConstant(const f32* data, s32 startRegister, s32
 }
 
 
-//! Sets a constant for the vertex shader based on a name.
-bool CD3D9Driver::setVertexShaderConstant(const c8* name, const f32* floats, int count)
+//! Sets a constant for the vertex shader based on an index.
+bool CD3D9Driver::setVertexShaderConstant(s32 index, const f32* floats, int count)
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
 		CD3D9MaterialRenderer* r = (CD3D9MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(true, name, floats, count);
+		return r->setVariable(true, index, floats, count);
 	}
 
 	return false;
 }
 
 
-//! Sets a constant for the pixel shader based on a name.
-bool CD3D9Driver::setPixelShaderConstant(const c8* name, const f32* floats, int count)
+//! Int interface for the above.
+bool CD3D9Driver::setVertexShaderConstant(s32 index, const s32* ints, int count)
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
 		CD3D9MaterialRenderer* r = (CD3D9MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(false, name, floats, count);
+		return r->setVariable(true, index, ints, count);
+	}
+
+	return false;
+}
+
+
+//! Sets a constant for the pixel shader based on an index.
+bool CD3D9Driver::setPixelShaderConstant(s32 index, const f32* floats, int count)
+{
+	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
+	{
+		CD3D9MaterialRenderer* r = (CD3D9MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(false, index, floats, count);
+	}
+
+	return false;
+}
+
+
+//! Int interface for the above.
+bool CD3D9Driver::setPixelShaderConstant(s32 index, const s32* ints, int count)
+{
+	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
+	{
+		CD3D9MaterialRenderer* r = (CD3D9MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(false, index, ints, count);
 	}
 
 	return false;
@@ -3355,7 +3428,7 @@ bool CD3D9Driver::setClipPlane(u32 index, const core::plane3df& plane, bool enab
 	if (index >= MaxUserClipPlanes)
 		return false;
 
-	HRESULT ok = pID3DDevice->SetClipPlane(index, (const float*)&plane);
+	HRESULT ok = pID3DDevice->SetClipPlane(index, (const float*)&(plane.Normal.X));
 	if (D3D_OK == ok)
 		enableClipPlane(index, enable);
 	return true;

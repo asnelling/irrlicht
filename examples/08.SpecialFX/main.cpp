@@ -188,7 +188,7 @@ int main()
 	ps->setMaterialFlag(video::EMF_LIGHTING, false);
 	ps->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 	ps->setMaterialTexture(0, driver->getTexture("../../media/fire.bmp"));
-	ps->setMaterialType(video::EMT_TRANSPARENT_VERTEX_ALPHA);
+	ps->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
 
 	/*
 	Next we add a volumetric light node, which adds a glowing fake area light to
@@ -269,6 +269,7 @@ int main()
 
 	scene::ICameraSceneNode* camera = smgr->addCameraSceneNodeFPS();
 	camera->setPosition(core::vector3df(-50,50,-150));
+	camera->setFarValue(10000.0f); // this increase a shadow visible range.
 
 	// disable mouse cursor
 	device->getCursorControl()->setVisible(false);

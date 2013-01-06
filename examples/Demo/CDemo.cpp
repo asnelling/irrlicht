@@ -322,6 +322,7 @@ void CDemo::switchToNextScene()
 
 			camera = sm->addCameraSceneNodeFPS(0, 100.0f, .4f, -1, keyMap, 9, false, 3.f);
 			camera->setPosition(core::vector3df(108,140,-140));
+			camera->setFarValue(5000.0f);
 
 			scene::ISceneNodeAnimatorCollisionResponse* collider =
 				sm->createCollisionResponseAnimator(
@@ -431,7 +432,7 @@ void CDemo::loadSceneData()
 			model2->setMD2Animation(scene::EMAT_RUN);
 			model2->setMaterialTexture(0, device->getVideoDriver()->getTexture("../../media/sydney.bmp"));
 			model2->setMaterialFlag(video::EMF_LIGHTING, true);
-			model1->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
+			model2->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
 			model2->addShadowVolumeSceneNode();
 		}
 	}
@@ -539,8 +540,7 @@ void CDemo::loadSceneData()
 	campFire->setMaterialFlag(video::EMF_LIGHTING, false);
 	campFire->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 	campFire->setMaterialTexture(0, driver->getTexture("../../media/fireball.bmp"));
-	campFire->setMaterialType(video::EMT_ONETEXTURE_BLEND);
-	campFire->getMaterial(0).MaterialTypeParam=video::pack_textureBlendFunc(video::EBF_ONE, video::EBF_ONE_MINUS_SRC_ALPHA, video::EMFN_MODULATE_1X, video::EAS_VERTEX_COLOR);
+	campFire->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
 
 	// load music
 
@@ -704,7 +704,7 @@ void CDemo::createParticleImpacts()
 
 			scene::IParticleEmitter* em = pas->createBoxEmitter(
 				core::aabbox3d<f32>(-5,-5,-5,5,5,5),
-				Impacts[i].outVector, 20,40, video::SColor(0,255,255,255),video::SColor(0,255,255,255),
+				Impacts[i].outVector, 20,40, video::SColor(50,255,255,255),video::SColor(50,255,255,255),
 				1200,1600, 20);
 
 			pas->setEmitter(em);
@@ -717,7 +717,7 @@ void CDemo::createParticleImpacts()
 			pas->setMaterialFlag(video::EMF_LIGHTING, false);
 			pas->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 			pas->setMaterialTexture(0, device->getVideoDriver()->getTexture("../../media/smoke.bmp"));
-			pas->setMaterialType(video::EMT_TRANSPARENT_VERTEX_ALPHA);
+			pas->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
 
 			scene::ISceneNodeAnimator* anim = sm->createDeleteAnimator(2000);
 			pas->addAnimator(anim);

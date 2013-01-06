@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -116,7 +116,7 @@ public:
 
 	//! adds an image. The returned pointer must not be dropped.
 	virtual IGUIImage* addImage(const core::rect<s32>& rectangle,
-		IGUIElement* parent=0, s32 id=-1, const wchar_t* text=0);
+		IGUIElement* parent=0, s32 id=-1, const wchar_t* text=0, bool useAlphaChannel=true);
 
 	//! adds a checkbox
 	virtual IGUICheckBox* addCheckBox(bool checked, const core::rect<s32>& rectangle, IGUIElement* parent=0, s32 id=-1, const wchar_t* text=0);
@@ -310,6 +310,7 @@ private:
 	io::IFileSystem* FileSystem;
 	IEventReceiver* UserReceiver;
 	IOSOperator* Operator;
+	static const io::path DefaultFontName;
 };
 
 } // end namespace gui

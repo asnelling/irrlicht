@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -168,7 +168,7 @@ public:
 
 	virtual core::stringw getStringW()
 	{
-		return core::stringw(Value);
+		return core::stringw((double)Value);
 	}
 
 	virtual void setInt(s32 intValue)
@@ -1734,11 +1734,11 @@ public:
 	{
 		if (IsStringW)
 		{
-			ValueW = core::stringw(floatValue);
+			ValueW = core::stringw((double)floatValue);
 		}
 		else
 		{
-			Value = core::stringc(floatValue);
+			Value = core::stringc((double)floatValue);
 		}
 	};
 
@@ -2023,7 +2023,9 @@ public:
 
 	virtual void setString(const char* text)
 	{
-		sscanf(text, "0x%x", (unsigned int*)(&Value));
+		u32 tmp;
+		sscanf(text, "0x%x", &tmp);
+		Value = (void *) tmp;
 	}
 
 	virtual E_ATTRIBUTE_TYPE getType() const

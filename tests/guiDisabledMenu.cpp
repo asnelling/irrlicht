@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Colin MacDonald
+// Copyright (C) 2008-2012 Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -16,7 +16,7 @@ bool guiDisabledMenu(void)
 {
 	IrrlichtDevice *device = createDevice( video::EDT_BURNINGSVIDEO,
 											dimension2d<u32>(160, 40), 32);
-	assert(device);
+	assert_log(device);
 	if (!device)
 		return false;
 

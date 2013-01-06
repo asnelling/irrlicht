@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -11,6 +11,8 @@
 #include <sys/utsname.h>
 #include <time.h>
 #include "IEventReceiver.h"
+#include "ISceneManager.h"
+#include "IGUIEnvironment.h"
 #include "os.h"
 #include "CTimer.h"
 #include "irrString.h"
@@ -140,6 +142,24 @@ CIrrDeviceLinux::~CIrrDeviceLinux()
 		CursorControl->setVisible(false);
 		static_cast<CCursorControl*>(CursorControl)->clearCursors();
 	}
+
+	// Must free OpenGL textures etc before destroying context, so can't wait for stub destructor
+	if ( GUIEnvironment )
+	{
+		GUIEnvironment->drop();
+		GUIEnvironment = NULL;
+	}
+	if ( SceneManager )
+	{
+		SceneManager->drop();
+		SceneManager = NULL;
+	}
+	if ( VideoDriver )
+	{
+		VideoDriver->drop();
+		VideoDriver = NULL;
+	}
+
 	if (display)
 	{
 		#ifdef _IRR_COMPILE_WITH_OPENGL_
@@ -1144,7 +1164,7 @@ bool CIrrDeviceLinux::run()
 //! Pause the current process for the minimum time allowed only to allow other processes to execute
 void CIrrDeviceLinux::yield()
 {
-	struct timespec ts = {0,0};
+	struct timespec ts = {0,1};
 	nanosleep(&ts, NULL);
 }
 
@@ -1314,7 +1334,7 @@ void CIrrDeviceLinux::setResizable(bool resize)
 video::IVideoModeList* CIrrDeviceLinux::getVideoModeList()
 {
 #ifdef _IRR_COMPILE_WITH_X11_
-	if (!VideoModeList.getVideoModeCount())
+	if (!VideoModeList->getVideoModeCount())
 	{
 		bool temporaryDisplay = false;
 
@@ -1344,11 +1364,11 @@ video::IVideoModeList* CIrrDeviceLinux::getVideoModeList()
 
 				// find fitting mode
 
-				VideoModeList.setDesktop(defaultDepth, core::dimension2d<u32>(
+				VideoModeList->setDesktop(defaultDepth, core::dimension2d<u32>(
 					modes[0]->hdisplay, modes[0]->vdisplay));
 				for (int i = 0; i<modeCount; ++i)
 				{
-					VideoModeList.addMode(core::dimension2d<u32>(
+					VideoModeList->addMode(core::dimension2d<u32>(
 						modes[i]->hdisplay, modes[i]->vdisplay), defaultDepth);
 				}
 				XFree(modes);
@@ -1362,11 +1382,11 @@ video::IVideoModeList* CIrrDeviceLinux::getVideoModeList()
 				XRRScreenConfiguration *config=XRRGetScreenInfo(display,DefaultRootWindow(display));
 				oldRandrMode=XRRConfigCurrentConfiguration(config,&oldRandrRotation);
 				XRRScreenSize *modes=XRRConfigSizes(config,&modeCount);
-				VideoModeList.setDesktop(defaultDepth, core::dimension2d<u32>(
+				VideoModeList->setDesktop(defaultDepth, core::dimension2d<u32>(
 					modes[oldRandrMode].width, modes[oldRandrMode].height));
 				for (int i = 0; i<modeCount; ++i)
 				{
-					VideoModeList.addMode(core::dimension2d<u32>(
+					VideoModeList->addMode(core::dimension2d<u32>(
 						modes[i].width, modes[i].height), defaultDepth);
 				}
 				XRRFreeScreenConfigInfo(config);
@@ -1385,7 +1405,7 @@ video::IVideoModeList* CIrrDeviceLinux::getVideoModeList()
 	}
 #endif
 
-	return &VideoModeList;
+	return VideoModeList;
 }
 
 
@@ -2090,7 +2110,11 @@ Cursor CIrrDeviceLinux::TextureToCursor(irr::video::ITexture * tex, const core::
 
 
 CIrrDeviceLinux::CCursorControl::CCursorControl(CIrrDeviceLinux* dev, bool null)
-	: Device(dev), IsVisible(true), Null(null), UseReferenceRect(false)
+	: Device(dev)
+#ifdef _IRR_COMPILE_WITH_X11_
+	, PlatformBehavior(gui::ECPB_NONE), lastQuery(0)
+#endif
+	, IsVisible(true), Null(null), UseReferenceRect(false)
 	, ActiveIcon(gui::ECI_NORMAL), ActiveIconStartTime(0)
 {
 #ifdef _IRR_COMPILE_WITH_X11_
@@ -2136,6 +2160,8 @@ CIrrDeviceLinux::CCursorControl::~CCursorControl()
 #ifdef _IRR_COMPILE_WITH_X11_
 void CIrrDeviceLinux::CCursorControl::clearCursors()
 {
+	if (!Null)
+		XFreeCursor(Device->display, invisCursor);
 	for ( u32 i=0; i < Cursors.size(); ++i )
 	{
 		for ( u32 f=0; f < Cursors[i].Frames.size(); ++f )

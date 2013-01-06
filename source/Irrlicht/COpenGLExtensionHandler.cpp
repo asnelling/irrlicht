@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -43,8 +43,9 @@ COpenGLExtensionHandler::COpenGLExtensionHandler() :
 	pGlGetInfoLogARB(0), pGlGetShaderInfoLog(0), pGlGetProgramInfoLog(0),
 	pGlGetObjectParameterivARB(0), pGlGetShaderiv(0), pGlGetProgramiv(0),
 	pGlGetUniformLocationARB(0), pGlGetUniformLocation(0),
-	pGlUniform1ivARB(0), pGlUniform1fvARB(0), pGlUniform2fvARB(0), pGlUniform3fvARB(0), pGlUniform4fvARB(0), pGlUniformMatrix2fvARB(0),
-	pGlUniformMatrix3fvARB(0), pGlUniformMatrix4fvARB(0),
+	pGlUniform1fvARB(0), pGlUniform2fvARB(0), pGlUniform3fvARB(0), pGlUniform4fvARB(0),
+	pGlUniform1ivARB(0), pGlUniform2ivARB(0), pGlUniform3ivARB(0), pGlUniform4ivARB(0),
+	pGlUniformMatrix2fvARB(0), pGlUniformMatrix3fvARB(0), pGlUniformMatrix4fvARB(0),
 	pGlGetActiveUniformARB(0), pGlGetActiveUniform(0),
 	pGlDisableVertexAttribArray(0), pGlEnableVertexAttribArray(0),
 	pGlGetAttribLocation(0), pGlVertexAttribPointer(0),
@@ -250,6 +251,8 @@ void COpenGLExtensionHandler::dumpFramebufferFormats() const
 				memset(vals,0,sizeof(vals));
 #define tmplog(x,y) os::Printer::log(x, core::stringc(y).c_str())
 				const BOOL res = wglGetPixelFormatAttribiv_ARB(hdc,i,0,nums,atts,vals);
+				if (FALSE==res)
+					continue;
 				tmplog("Pixel format ",i);
 				u32 j=0;
 				tmplog("Draw to window " , vals[j]);
@@ -377,10 +380,9 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 #ifdef _IRR_WINDOWS_API_
 	#define IRR_OGL_LOAD_EXTENSION(x) wglGetProcAddress(reinterpret_cast<const char*>(x))
-#elif defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined (_IRR_COMPILE_WITH_SDL_DEVICE_)
-	#if defined(_IRR_COMPILE_WITH_SDL_DEVICE_) && !defined(_IRR_COMPILE_WITH_X11_DEVICE_)
-		#define IRR_OGL_LOAD_EXTENSION(x) SDL_GL_GetProcAddress(reinterpret_cast<const char*>(x))
-	#else
+#elif defined(_IRR_COMPILE_WITH_SDL_DEVICE_) && !defined(_IRR_COMPILE_WITH_X11_DEVICE_)
+	#define IRR_OGL_LOAD_EXTENSION(x) SDL_GL_GetProcAddress(reinterpret_cast<const char*>(x))
+#else
 	// Accessing the correct function is quite complex
 	// All libraries should support the ARB version, however
 	// since GLX 1.4 the non-ARB version is the official one
@@ -404,9 +406,8 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 		#define IRR_OGL_LOAD_EXTENSION(X) IRR_OGL_LOAD_EXTENSION_FUNCP(reinterpret_cast<const GLubyte*>(X))
 	#else
 		#define IRR_OGL_LOAD_EXTENSION(X) glXGetProcAddressARB(reinterpret_cast<const GLubyte*>(X))
-	#endif
-	#endif
-#endif
+	#endif // workaround
+#endif // Windows, SDL, or Linux
 
 	// get multitexturing function pointers
 	pGlActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) IRR_OGL_LOAD_EXTENSION("glActiveTextureARB");
@@ -449,11 +450,14 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 	pGlGetProgramiv = (PFNGLGETPROGRAMIVPROC) IRR_OGL_LOAD_EXTENSION("glGetProgramiv");
 	pGlGetUniformLocationARB = (PFNGLGETUNIFORMLOCATIONARBPROC) IRR_OGL_LOAD_EXTENSION("glGetUniformLocationARB");
 	pGlGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) IRR_OGL_LOAD_EXTENSION("glGetUniformLocation");
-	pGlUniform4fvARB = (PFNGLUNIFORM4FVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform4fvARB");
-	pGlUniform1ivARB = (PFNGLUNIFORM1IVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform1ivARB");
 	pGlUniform1fvARB = (PFNGLUNIFORM1FVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform1fvARB");
 	pGlUniform2fvARB = (PFNGLUNIFORM2FVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform2fvARB");
 	pGlUniform3fvARB = (PFNGLUNIFORM3FVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform3fvARB");
+	pGlUniform4fvARB = (PFNGLUNIFORM4FVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform4fvARB");
+	pGlUniform1ivARB = (PFNGLUNIFORM1IVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform1ivARB");
+	pGlUniform2ivARB = (PFNGLUNIFORM2IVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform2ivARB");
+	pGlUniform3ivARB = (PFNGLUNIFORM3IVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform3ivARB");
+	pGlUniform4ivARB = (PFNGLUNIFORM4IVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniform4ivARB");
 	pGlUniformMatrix2fvARB = (PFNGLUNIFORMMATRIX2FVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniformMatrix2fvARB");
 	pGlUniformMatrix3fvARB = (PFNGLUNIFORMMATRIX3FVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniformMatrix3fvARB");
 	pGlUniformMatrix4fvARB = (PFNGLUNIFORMMATRIX4FVARBPROC) IRR_OGL_LOAD_EXTENSION("glUniformMatrix4fvARB");
@@ -550,13 +554,10 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 	pGlBlendEquationEXT = (PFNGLBLENDEQUATIONEXTPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationEXT");
 	pGlBlendEquation = (PFNGLBLENDEQUATIONPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquation");
 
+	// get vsync extension
 	#if defined(WGL_EXT_swap_control) && !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
-		// get vsync extension
 		pWglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC) IRR_OGL_LOAD_EXTENSION("wglSwapIntervalEXT");
 	#endif
-
-#elif defined(_IRR_COMPILE_WITH_X11_DEVICE_) || defined (_IRR_COMPILE_WITH_SDL_DEVICE_)
-	// get vsync extension
 	#if defined(GLX_SGI_swap_control) && !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 		pGlxSwapIntervalSGI = (PFNGLXSWAPINTERVALSGIPROC)IRR_OGL_LOAD_EXTENSION("glXSwapIntervalSGI");
 	#endif
@@ -566,15 +567,31 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 	#if defined(GLX_MESA_swap_control) && !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)
 		pGlxSwapIntervalMESA = (PFNGLXSWAPINTERVALMESAPROC)IRR_OGL_LOAD_EXTENSION("glXSwapIntervalMESA");
 	#endif
-#endif // _IRR_WINDOWS_API_
+#endif // use extension pointer
 
-	GLint num;
+	GLint num=0;
 	// set some properties
 #if defined(GL_ARB_multitexture) || defined(GL_VERSION_1_3)
 	if (Version>102 || FeatureAvailable[IRR_ARB_multitexture])
 	{
+#if defined(GL_MAX_TEXTURE_UNITS)
 		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &num);
+#elif defined(GL_MAX_TEXTURE_UNITS_ARB)
+		glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &num);
+#endif
 		MaxSupportedTextures=static_cast<u8>(num);
+	}
+#endif
+#if defined(GL_ARB_vertex_shader) || defined(GL_VERSION_2_0)
+	if (Version>=200 || FeatureAvailable[IRR_ARB_vertex_shader])
+	{
+		num=0;
+#if defined(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS)
+		glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &num);
+#elif defined(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB)
+		glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB, &num);
+#endif
+		MaxSupportedTextures=core::max_(MaxSupportedTextures,static_cast<u8>(num));
 	}
 #endif
 	glGetIntegerv(GL_MAX_LIGHTS, &num);

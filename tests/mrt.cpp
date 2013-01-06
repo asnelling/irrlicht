@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Christian Stehno, Colin MacDonald
+// Copyright (C) 2008-2012 Christian Stehno, Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -16,6 +16,8 @@ static bool testWithDriver(video::E_DRIVER_TYPE driverType)
 	// We need at least GLSL 1.10 or HLSL 1.1
 //	if (driver->getDriverAttributes().getAttributeAsInt("ShaderLanguageVersion")<=100)
 //		return true;
+
+	stabilizeScreenBackground(driver);
 
 	logTestString("Testing driver %ls\n", driver->getName());
 

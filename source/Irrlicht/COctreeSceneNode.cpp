@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -11,8 +11,8 @@
 #include "IAnimatedMesh.h"
 #include "IMaterialRenderer.h"
 #include "IMeshManipulator.h"
-
 #include "os.h"
+#include "CShadowVolumeSceneNode.h"
 
 namespace irr
 {
@@ -23,7 +23,7 @@ namespace scene
 //! constructor
 COctreeSceneNode::COctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshes, ISceneNode* parent,
 					ISceneManager* mgr, s32 id, s32 minimalPolysPerNode)
-	: IMeshSceneNode(parent, mgr, id), StdOctree(0), MinimalPolysPerNode(minimalPolysPerNode), Mesh(0),
+	: IMeshSceneNode(parent, mgr, id), StdOctree(0), MinimalPolysPerNode(minimalPolysPerNode), Mesh(0), Shadow(0),
 	UseVBOs(OCTREE_USE_HARDWARE), UseVisibilityAndVBOs(OCTREE_USE_VISIBILITY),
 	BoxBased(OCTREE_BOX_BASED)
 {
@@ -37,6 +37,8 @@ COctreeSceneNode::COctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshe
 //! destructor
 COctreeSceneNode::~COctreeSceneNode()
 {
+	if (Shadow)
+		Shadow->drop();
 	deleteTree();
 
 	for(u32 i = 0; i < StdMeshes.size(); ++i)
@@ -104,6 +106,9 @@ void COctreeSceneNode::render()
 	++PassCount;
 
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
+
+	if (Shadow)
+		Shadow->updateShadowVolumes();
 
 	SViewFrustum frust = *camera->getViewFrustum();
 
@@ -180,6 +185,40 @@ void COctreeSceneNode::render()
 		if ( DebugDataVisible & scene::EDS_BBOX )
 			driver->draw3DBox(Box,video::SColor(0,255,0,0));
 	}
+}
+
+
+//! Removes a child from this scene node.
+//! Implemented here, to be able to remove the shadow properly, if there is one,
+//! or to remove attached childs.
+bool COctreeSceneNode::removeChild(ISceneNode* child)
+{
+	if (child && Shadow == child)
+	{
+		Shadow->drop();
+		Shadow = 0;
+	}
+
+	return ISceneNode::removeChild(child);
+}
+
+
+//! Creates shadow volume scene node as child of this node
+//! and returns a pointer to it.
+IShadowVolumeSceneNode* COctreeSceneNode::addShadowVolumeSceneNode(
+		const IMesh* shadowMesh, s32 id, bool zfailmethod, f32 infinity)
+{
+	if (!SceneManager->getVideoDriver()->queryFeature(video::EVDF_STENCIL_BUFFER))
+		return 0;
+
+	if (!shadowMesh)
+		shadowMesh = Mesh; // if null is given, use the mesh of node
+
+	if (Shadow)
+		Shadow->drop();
+
+	Shadow = new CShadowVolumeSceneNode(shadowMesh, this, SceneManager, id,  zfailmethod, infinity);
+	return Shadow;
 }
 
 

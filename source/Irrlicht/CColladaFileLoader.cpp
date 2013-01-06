@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -123,6 +123,9 @@ namespace
 
 	const char* const inputSemanticNames[] = {"POSITION", "VERTEX", "NORMAL", "TEXCOORD",
 		"UV", "TANGENT", "IMAGE", "TEXTURE", 0};
+
+	// We have to read ambient lights like other light types here, so we need a type for it
+	const video::E_LIGHT_TYPE ELT_AMBIENT = video::E_LIGHT_TYPE(video::ELT_COUNT+1);
 }
 
 	//! following class is for holding and creating instances of library
@@ -176,6 +179,12 @@ namespace
 			#ifdef COLLADA_READER_DEBUG
 			os::Printer::log("COLLADA: Constructing light instance", Id.c_str(), ELL_DEBUG);
 			#endif
+
+			if ( LightData.Type == ELT_AMBIENT )
+			{
+				mgr->setAmbientLight( LightData.DiffuseColor );
+				return 0;
+			}
 
 			scene::ILightSceneNode* l = mgr->addLightSceneNode(parent);
 			if (l)
@@ -287,10 +296,11 @@ namespace
 			{
 				s->setName(getId());
 				s->getRelativeTransformationMatrix() = Transformation;
+				s->updateAbsolutePosition();
 				core::stringc t;
 				for (u32 i=0; i<16; ++i)
 				{
-					t+=core::stringc(Transformation[i]);
+					t+=core::stringc((double)Transformation[i]);
 					t+=" ";
 				}
 			#ifdef COLLADA_READER_DEBUG
@@ -1541,7 +1551,22 @@ void CColladaFileLoader::readEffect(io::IXMLReaderUTF8* reader, SColladaEffect *
 		effect->Mat.MaterialType = irr::video::EMT_TRANSPARENT_VERTEX_ALPHA;
 		effect->Mat.ZWriteEnable = false;
 	}
-	effect->Mat.setFlag(video::EMF_TEXTURE_WRAP, !effect->Parameters->getAttributeAsBool("wrap_s"));
+
+	video::E_TEXTURE_CLAMP twu = video::ETC_REPEAT;
+	s32 idx = effect->Parameters->findAttribute(wrapsName.c_str());
+	if ( idx >= 0 )
+		twu = (video::E_TEXTURE_CLAMP)(effect->Parameters->getAttributeAsInt(idx));
+	video::E_TEXTURE_CLAMP twv = video::ETC_REPEAT;
+	idx = effect->Parameters->findAttribute(wraptName.c_str());
+	if ( idx >= 0 )
+		twv = (video::E_TEXTURE_CLAMP)(effect->Parameters->getAttributeAsInt(idx));
+	
+	for (u32 i=0; i<video::MATERIAL_MAX_TEXTURES; ++i)
+	{
+		effect->Mat.TextureLayer[i].TextureWrapU = twu;
+		effect->Mat.TextureLayer[i].TextureWrapV = twv;
+	}
+
 	effect->Mat.setFlag(video::EMF_BILINEAR_FILTER, effect->Parameters->getAttributeAsBool("bilinear"));
 	effect->Mat.setFlag(video::EMF_TRILINEAR_FILTER, effect->Parameters->getAttributeAsBool("trilinear"));
 	effect->Mat.setFlag(video::EMF_ANISOTROPIC_FILTER, effect->Parameters->getAttributeAsBool("anisotropic"));
@@ -2377,7 +2402,7 @@ void CColladaFileLoader::readLightPrefab(io::IXMLReaderUTF8* reader)
 						prefab->LightData.Type=video::ELT_SPOT;
 					else
 					if (ambientSectionName == reader->getNodeName())
-						prefab->LightData.Type=video::ELT_POINT; // TODO: This needs some change
+						prefab->LightData.Type=ELT_AMBIENT;
 					else
 					if (colorNodeName == reader->getNodeName())
 						prefab->LightData.DiffuseColor=readColorNode(reader);
@@ -2860,7 +2885,15 @@ void CColladaFileLoader::readParameter(io::IXMLReaderUTF8* reader, io::IAttribut
 					reader->read();
 					const core::stringc val = reader->getNodeData();
 					if (val == "WRAP")
-						parameters->addBool("wrap_s", true);
+						parameters->addInt(wrapsName.c_str(), (int)video::ETC_REPEAT);
+					else if ( val== "MIRROR")
+						parameters->addInt(wrapsName.c_str(), (int)video::ETC_MIRROR);
+					else if ( val== "CLAMP")
+						parameters->addInt(wrapsName.c_str(), (int)video::ETC_CLAMP_TO_EDGE);
+					else if ( val== "BORDER")
+						parameters->addInt(wrapsName.c_str(), (int)video::ETC_CLAMP_TO_BORDER);
+					else if ( val== "NONE")
+						parameters->addInt(wrapsName.c_str(), (int)video::ETC_CLAMP_TO_BORDER);
 				}
 				else
 				if (wraptName == reader->getNodeName())
@@ -2868,7 +2901,15 @@ void CColladaFileLoader::readParameter(io::IXMLReaderUTF8* reader, io::IAttribut
 					reader->read();
 					const core::stringc val = reader->getNodeData();
 					if (val == "WRAP")
-						parameters->addBool("wrap_t", true);
+						parameters->addInt(wraptName.c_str(), (int)video::ETC_REPEAT);
+					else if ( val== "MIRROR")
+						parameters->addInt(wraptName.c_str(), (int)video::ETC_MIRROR);
+					else if ( val== "CLAMP")
+						parameters->addInt(wraptName.c_str(), (int)video::ETC_CLAMP_TO_EDGE);
+					else if ( val== "BORDER")
+						parameters->addInt(wraptName.c_str(), (int)video::ETC_CLAMP_TO_BORDER);
+					else if ( val== "NONE")
+						parameters->addInt(wraptName.c_str(), (int)video::ETC_CLAMP_TO_BORDER);
 				}
 				else
 				if (minfilterName == reader->getNodeName())

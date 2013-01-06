@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -608,7 +608,7 @@ namespace
 
 	HKL KEYBOARD_INPUT_HKL=0;
 	unsigned int KEYBOARD_INPUT_CODEPAGE = 1252;
-};
+}
 
 SEnvMapper* getEnvMapperFromHWnd(HWND hWnd)
 {
@@ -854,12 +854,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_ACTIVATE:
 		// we need to take care for screen changes, e.g. Alt-Tab
 		dev = getDeviceFromHWnd(hWnd);
-		if (dev)
+		if (dev && dev->isFullscreen())
 		{
 			if ((wParam&0xFF)==WA_INACTIVE)
+			{
+				// If losing focus we minimize the app to show other one
+				ShowWindow(hWnd,SW_MINIMIZE);
+				// and switch back to default resolution
 				dev->switchToFullScreen(true);
+			}
 			else
+			{
+				// Otherwise we retore the fullscreen Irrlicht app
+				SetForegroundWindow(hWnd);
+				ShowWindow(hWnd, SW_RESTORE);
+				// and set the fullscreen resolution again
 				dev->switchToFullScreen();
+			}
 		}
 		break;
 
@@ -899,8 +910,7 @@ namespace irr
 
 //! constructor
 CIrrDeviceWin32::CIrrDeviceWin32(const SIrrlichtCreationParameters& params)
-: CIrrDeviceStub(params), HWnd(0), ChangedToFullScreen(false),
-	IsNonNTWindows(false), Resized(false),
+: CIrrDeviceStub(params), HWnd(0), ChangedToFullScreen(false), Resized(false),
 	ExternalWindow(false), Win32CursorControl(0), JoyControl(0)
 {
 	#ifdef _DEBUG
@@ -915,6 +925,13 @@ CIrrDeviceWin32::CIrrDeviceWin32(const SIrrlichtCreationParameters& params)
 
 	// get handle to exe file
 	HINSTANCE hInstance = GetModuleHandle(0);
+
+	// Store original desktop mode.
+
+	memset(&DesktopMode, 0, sizeof(DesktopMode));
+	DesktopMode.dmSize = sizeof(DesktopMode);
+
+	EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &DesktopMode);
 
 	// create the window if we need to and we do not use the null device
 	if (!CreationParams.WindowId && CreationParams.DriverType != video::EDT_NULL)
@@ -1026,7 +1043,7 @@ CIrrDeviceWin32::CIrrDeviceWin32(const SIrrlichtCreationParameters& params)
 	EnvMap.push_back(em);
 
 	// set this as active window
-	if ( HWnd )
+	if (!ExternalWindow)
 	{
 		SetActiveWindow(HWnd);
 		SetForegroundWindow(HWnd);
@@ -1035,6 +1052,9 @@ CIrrDeviceWin32::CIrrDeviceWin32(const SIrrlichtCreationParameters& params)
 	// get the codepage used for keyboard input
 	KEYBOARD_INPUT_HKL = GetKeyboardLayout(0);
 	KEYBOARD_INPUT_CODEPAGE = LocaleIdToCodepage( LOWORD(KEYBOARD_INPUT_HKL) );
+
+	// inform driver about the window size etc.
+	resizeIfNecessary();
 }
 
 
@@ -1150,21 +1170,7 @@ bool CIrrDeviceWin32::run()
 
 	static_cast<CCursorControl*>(CursorControl)->update();
 
-	MSG msg;
-
-	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-	{
-		// No message translation because we don't use WM_CHAR and it would conflict with our
-		// deadkey handling.
-
-		if (ExternalWindow && msg.hwnd == HWnd)
-			WndProc(HWnd, msg.message, msg.wParam, msg.lParam);
-		else
-			DispatchMessage(&msg);
-
-		if (msg.message == WM_QUIT)
-			Close = true;
-	}
+	handleSystemMessages();
 
 	if (!Close)
 		resizeIfNecessary();
@@ -1199,7 +1205,7 @@ void CIrrDeviceWin32::sleep(u32 timeMs, bool pauseTimer)
 
 void CIrrDeviceWin32::resizeIfNecessary()
 {
-	if (!Resized)
+	if (!Resized || !getVideoDriver())
 		return;
 
 	RECT r;
@@ -1228,28 +1234,12 @@ void CIrrDeviceWin32::resizeIfNecessary()
 //! sets the caption of the window
 void CIrrDeviceWin32::setWindowCaption(const wchar_t* text)
 {
-	DWORD dwResult;
-	if (IsNonNTWindows)
-	{
-		const core::stringc s = text;
-#if defined(_WIN64) || defined(WIN64)
-		SetWindowTextA(HWnd, s.c_str());
-#else
-		SendMessageTimeout(HWnd, WM_SETTEXT, 0,
-				reinterpret_cast<LPARAM>(s.c_str()),
-				SMTO_ABORTIFHUNG, 2000, &dwResult);
-#endif
-	}
-	else
-	{
-#if defined(_WIN64) || defined(WIN64)
-		SetWindowTextW(HWnd, text);
-#else
-		SendMessageTimeoutW(HWnd, WM_SETTEXT, 0,
-				reinterpret_cast<LPARAM>(text),
-				SMTO_ABORTIFHUNG, 2000, &dwResult);
-#endif
-	}
+	// We use SendMessage instead of SetText to ensure proper
+	// function even in cases where the HWND was created in a different thread
+	DWORD_PTR dwResult;
+	SendMessageTimeoutW(HWnd, WM_SETTEXT, 0,
+			reinterpret_cast<LPARAM>(text),
+			SMTO_ABORTIFHUNG, 2000, &dwResult);
 }
 
 
@@ -1356,18 +1346,23 @@ bool CIrrDeviceWin32::switchToFullScreen(bool reset)
 {
 	if (!CreationParams.Fullscreen)
 		return true;
+
 	if (reset)
 	{
 		if (ChangedToFullScreen)
-			return (ChangeDisplaySettings(NULL,0)==DISP_CHANGE_SUCCESSFUL);
+		{
+			return (ChangeDisplaySettings(&DesktopMode,0)==DISP_CHANGE_SUCCESSFUL);
+		}
 		else
 			return true;
 	}
 
+	// use default values from current setting
+
 	DEVMODE dm;
 	memset(&dm, 0, sizeof(dm));
 	dm.dmSize = sizeof(dm);
-	// use default values from current setting
+
 	EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm);
 	dm.dmPelsWidth = CreationParams.WindowSize.Width;
 	dm.dmPelsHeight = CreationParams.WindowSize.Height;
@@ -1423,7 +1418,7 @@ CIrrDeviceWin32::CCursorControl* CIrrDeviceWin32::getWin32CursorControl()
 //! by the gfx adapter.
 video::IVideoModeList* CIrrDeviceWin32::getVideoModeList()
 {
-	if (!VideoModeList.getVideoModeCount())
+	if (!VideoModeList->getVideoModeCount())
 	{
 		// enumerate video modes.
 		DWORD i=0;
@@ -1433,17 +1428,17 @@ video::IVideoModeList* CIrrDeviceWin32::getVideoModeList()
 
 		while (EnumDisplaySettings(NULL, i, &mode))
 		{
-			VideoModeList.addMode(core::dimension2d<u32>(mode.dmPelsWidth, mode.dmPelsHeight),
+			VideoModeList->addMode(core::dimension2d<u32>(mode.dmPelsWidth, mode.dmPelsHeight),
 				mode.dmBitsPerPel);
 
 			++i;
 		}
 
 		if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &mode))
-			VideoModeList.setDesktop(mode.dmBitsPerPel, core::dimension2d<u32>(mode.dmPelsWidth, mode.dmPelsHeight));
+			VideoModeList->setDesktop(mode.dmBitsPerPel, core::dimension2d<u32>(mode.dmPelsWidth, mode.dmPelsHeight));
 	}
 
-	return &VideoModeList;
+	return VideoModeList;
 }
 
 typedef BOOL (WINAPI *PGPI)(DWORD, DWORD, DWORD, DWORD, PDWORD);
@@ -1626,12 +1621,12 @@ void CIrrDeviceWin32::getWindowsVersion(core::stringc& out)
 			sprintf(tmp, "version %ld.%ld %s (Build %ld)",
 					osvi.dwMajorVersion,
 					osvi.dwMinorVersion,
-					osvi.szCSDVersion,
+					irr::core::stringc(osvi.szCSDVersion).c_str(),
 					osvi.dwBuildNumber & 0xFFFF);
 		}
 		else
 		{
-			sprintf(tmp, "%s (Build %ld)", osvi.szCSDVersion,
+			sprintf(tmp, "%s (Build %ld)", irr::core::stringc(osvi.szCSDVersion).c_str(),
 			osvi.dwBuildNumber & 0xFFFF);
 		}
 
@@ -1639,8 +1634,6 @@ void CIrrDeviceWin32::getWindowsVersion(core::stringc& out)
 		break;
 
 	case VER_PLATFORM_WIN32_WINDOWS:
-
-		IsNonNTWindows = true;
 
 		if (osvi.dwMajorVersion == 4 && osvi.dwMinorVersion == 0)
 		{
@@ -1662,8 +1655,6 @@ void CIrrDeviceWin32::getWindowsVersion(core::stringc& out)
 		break;
 
 	case VER_PLATFORM_WIN32s:
-
-		IsNonNTWindows = true;
 		out.append("Microsoft Win32s ");
 		break;
 	}
@@ -1794,6 +1785,28 @@ bool CIrrDeviceWin32::getGammaRamp( f32 &red, f32 &green, f32 &blue, f32 &bright
 
 }
 
+
+//! Process system events
+void CIrrDeviceWin32::handleSystemMessages()
+{
+	MSG msg;
+
+	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+	{
+		// No message translation because we don't use WM_CHAR and it would conflict with our
+		// deadkey handling.
+
+		if (ExternalWindow && msg.hwnd == HWnd)
+			WndProc(HWnd, msg.message, msg.wParam, msg.lParam);
+		else
+			DispatchMessage(&msg);
+
+		if (msg.message == WM_QUIT)
+			Close = true;
+	}
+}
+
+
 //! Remove all messages pending in the system message loop
 void CIrrDeviceWin32::clearSystemMessages()
 {
@@ -1896,8 +1909,6 @@ HCURSOR CIrrDeviceWin32::TextureToCursor(HWND hwnd, irr::video::ITexture * tex, 
 
 	ReleaseDC(hwnd, dc);
 
-
-	//
 	// create the cursor
 
 	ICONINFO iconinfo;

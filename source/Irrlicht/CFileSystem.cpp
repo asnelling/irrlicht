@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -458,9 +458,10 @@ bool CFileSystem::removeFileArchive(u32 index)
 //! removes an archive from the file system.
 bool CFileSystem::removeFileArchive(const io::path& filename)
 {
+	const path absPath = getAbsolutePath(filename);
 	for (u32 i=0; i < FileArchives.size(); ++i)
 	{
-		if (filename == FileArchives[i]->getFileList()->getPath())
+		if (absPath == FileArchives[i]->getFileList()->getPath())
 			return removeFileArchive(i);
 	}
 	_IRR_IMPLEMENT_MANAGED_MARSHALLING_BUGFIX;
@@ -592,7 +593,11 @@ bool CFileSystem::changeWorkingDirectoryTo(const io::path& newDirectory)
 		success = (_chdir(newDirectory.c_str()) == 0);
 	#endif
 #else
-		success = (chdir(newDirectory.c_str()) == 0);
+    #if defined(_IRR_WCHAR_FILESYSTEM)
+		success = (_wchdir(newDirectory.c_str()) == 0);
+    #else
+        success = (chdir(newDirectory.c_str()) == 0);
+    #endif
 #endif
 	}
 
@@ -776,7 +781,7 @@ path CFileSystem::getRelativeFilename(const path& filename, const path& director
 	#endif
 
 
-	for (; i<list1.size() && i<list2.size() 
+	for (; i<list1.size() && i<list2.size()
 #if defined (_IRR_WINDOWS_API_)
 		&& (io::path(*it1).make_lower()==io::path(*it2).make_lower())
 #else
@@ -833,9 +838,14 @@ IFileList* CFileSystem::createFileList()
 
 		r = new CFileList(Path, true, false);
 
-		struct _tfinddata_t c_file;
-		long hFile;
+		// TODO: Should be unified once mingw adapts the proper types
+#if defined(__GNUC__)
+		long hFile; //mingw return type declaration
+#else
+		intptr_t hFile;
+#endif
 
+		struct _tfinddata_t c_file;
 		if( (hFile = _tfindfirst( _T("*"), &c_file )) != -1L )
 		{
 			do
@@ -963,13 +973,17 @@ bool CFileSystem::existFile(const io::path& filename) const
 #else
 	_IRR_IMPLEMENT_MANAGED_MARSHALLING_BUGFIX;
 #if defined(_MSC_VER)
-#if defined(_IRR_WCHAR_FILESYSTEM)
-	return (_waccess(filename.c_str(), 0) != -1);
-#else
-	return (_access(filename.c_str(), 0) != -1);
-#endif
+    #if defined(_IRR_WCHAR_FILESYSTEM)
+        return (_waccess(filename.c_str(), 0) != -1);
+    #else
+        return (_access(filename.c_str(), 0) != -1);
+    #endif
 #elif defined(F_OK)
-	return (access(filename.c_str(), F_OK) != -1);
+    #if defined(_IRR_WCHAR_FILESYSTEM)
+        return (_waccess(filename.c_str(), F_OK) != -1);
+    #else
+        return (access(filename.c_str(), F_OK) != -1);
+	#endif
 #else
     return (access(filename.c_str(), 0) != -1);
 #endif
@@ -980,6 +994,7 @@ bool CFileSystem::existFile(const io::path& filename) const
 //! Creates a XML Reader from a file.
 IXMLReader* CFileSystem::createXMLReader(const io::path& filename)
 {
+#ifdef _IRR_COMPILE_WITH_XML_
 	IReadFile* file = createAndOpenFile(filename);
 	if (!file)
 		return 0;
@@ -987,22 +1002,32 @@ IXMLReader* CFileSystem::createXMLReader(const io::path& filename)
 	IXMLReader* reader = createXMLReader(file);
 	file->drop();
 	return reader;
+#else
+	noXML();
+	return 0;
+#endif
 }
 
 
 //! Creates a XML Reader from a file.
 IXMLReader* CFileSystem::createXMLReader(IReadFile* file)
 {
+#ifdef _IRR_COMPILE_WITH_XML_
 	if (!file)
 		return 0;
 
 	return createIXMLReader(file);
+#else
+	noXML();
+	return 0;
+#endif
 }
 
 
 //! Creates a XML Reader from a file.
 IXMLReaderUTF8* CFileSystem::createXMLReaderUTF8(const io::path& filename)
 {
+#ifdef _IRR_COMPILE_WITH_XML_
 	IReadFile* file = createAndOpenFile(filename);
 	if (!file)
 		return 0;
@@ -1010,22 +1035,32 @@ IXMLReaderUTF8* CFileSystem::createXMLReaderUTF8(const io::path& filename)
 	IXMLReaderUTF8* reader = createIXMLReaderUTF8(file);
 	file->drop();
 	return reader;
+#else
+	noXML();
+	return 0;
+#endif
 }
 
 
 //! Creates a XML Reader from a file.
 IXMLReaderUTF8* CFileSystem::createXMLReaderUTF8(IReadFile* file)
 {
+#ifdef _IRR_COMPILE_WITH_XML_
 	if (!file)
 		return 0;
 
 	return createIXMLReaderUTF8(file);
+#else
+	noXML();
+	return 0;
+#endif
 }
 
 
 //! Creates a XML Writer from a file.
 IXMLWriter* CFileSystem::createXMLWriter(const io::path& filename)
 {
+#ifdef _IRR_COMPILE_WITH_XML_
 	IWriteFile* file = createAndWriteFile(filename);
 	IXMLWriter* writer = 0;
 	if (file)
@@ -1034,13 +1069,22 @@ IXMLWriter* CFileSystem::createXMLWriter(const io::path& filename)
 		file->drop();
 	}
 	return writer;
+#else
+	noXML();
+	return 0;
+#endif
 }
 
 
 //! Creates a XML Writer from a file.
 IXMLWriter* CFileSystem::createXMLWriter(IWriteFile* file)
 {
+#ifdef _IRR_COMPILE_WITH_XML_
 	return new CXMLWriter(file);
+#else
+	noXML();
+	return 0;
+#endif
 }
 
 

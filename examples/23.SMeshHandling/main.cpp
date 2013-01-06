@@ -222,7 +222,9 @@ public:
 			}
 			Mesh->MeshBuffers.erase(i,Mesh->getMeshBufferCount()-i);
 		}
-
+		// set dirty flag to make sure that hardware copies of this
+		// buffer are also updated, see IMesh::setHardwareMappingHint
+		Mesh->setDirty();
 		Mesh->recalculateBoundingBox();
 	}
 
@@ -272,9 +274,9 @@ public:
 			{
 				const u16 n = (y-y0) * Width + x;
 				buf->getIndexBuffer()->setIndex(i, n);
-				buf->getIndexBuffer()->setIndex(++i, n + Height);
-				buf->getIndexBuffer()->setIndex(++i, n + Height + 1);
-				buf->getIndexBuffer()->setIndex(++i, n + Height + 1);
+				buf->getIndexBuffer()->setIndex(++i, n + Width);
+				buf->getIndexBuffer()->setIndex(++i, n + Width + 1);
+				buf->getIndexBuffer()->setIndex(++i, n + Width + 1);
 				buf->getIndexBuffer()->setIndex(++i, n + 1);
 				buf->getIndexBuffer()->setIndex(++i, n);
 				++i;

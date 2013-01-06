@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -467,6 +467,9 @@ namespace scene
 		//! Saves the current scene into a file.
 		virtual bool saveScene(io::IWriteFile* file, ISceneUserDataSerializer* userDataSerializer=0, ISceneNode* node=0);
 
+		//! Saves the current scene into a file.
+		virtual bool saveScene(io::IXMLWriter* writer, const io::path& currentPath, ISceneUserDataSerializer* userDataSerializer=0, ISceneNode* node=0);
+
 		//! Loads a scene. Note that the current scene is not cleared before.
 		virtual bool loadScene(const io::path& filename, ISceneUserDataSerializer* userDataSerializer=0, ISceneNode* rootNode=0);
 
@@ -493,6 +496,12 @@ namespace scene
 
 		//! Register a custom callbacks manager which gets callbacks during scene rendering.
 		virtual void setLightManager(ILightManager* lightManager);
+
+		//! Get current render time.
+		virtual E_SCENE_NODE_RENDER_PASS getCurrentRendertime() const { return CurrentRendertime; }
+
+		//! Set current render time.
+		virtual void setCurrentRendertime(E_SCENE_NODE_RENDER_PASS currentRendertime) { CurrentRendertime = currentRendertime; }
 
 		//! Get an instance of a geometry creator.
 		virtual const IGeometryCreator* getGeometryCreator(void) const { return GeometryCreator; }
@@ -618,7 +627,7 @@ namespace scene
 		video::SColorf AmbientLight;
 
 		//! String parameters
-		io::CAttributes Parameters;
+		io::CAttributes* Parameters;
 
 		//! Mesh cache
 		IMeshCache* MeshCache;

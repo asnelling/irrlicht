@@ -1,4 +1,4 @@
-// Copyright (C) 2009-2011 Gaz Davidson
+// Copyright (C) 2009-2012 Gaz Davidson
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -471,7 +471,7 @@ void CPLYMeshFileLoader::fillBuffer()
 	if (EndOfFile)
 		return;
 
-	u32 length = EndPointer - StartPointer;
+	u32 length = (u32)(EndPointer - StartPointer);
 	if (length && StartPointer != Buffer)
 	{
 		// copy the remaining data to the start of the buffer
@@ -649,7 +649,7 @@ c8* CPLYMeshFileLoader::getNextWord()
 		++pos;
 	}
 	--pos;
-	WordLength = pos-StartPointer;
+	WordLength = (s32)(pos-StartPointer);
 	// return pointer to the start of the word
 	return StartPointer;
 }

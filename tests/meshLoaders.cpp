@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Colin MacDonald
+// Copyright (C) 2008-2012 Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -10,13 +10,13 @@ using namespace irr;
 bool meshLoaders(void)
 {
 	IrrlichtDevice *device = createDevice(video::EDT_NULL, core::dimension2d<u32>(160, 120), 32);
-	assert(device);
+	assert_log(device);
 	if (!device)
 		return false;
 
 	scene::ISceneManager * smgr = device->getSceneManager();
 	scene::IAnimatedMesh* mesh = smgr->getMesh("../media/ninja.b3d");
-	assert(mesh);
+	assert_log(mesh);
 
 	bool result = (mesh != 0);
 

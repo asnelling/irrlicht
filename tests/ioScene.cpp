@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Colin MacDonald
+// Copyright (C) 2008-2012 Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -14,7 +14,7 @@ using namespace gui;
 static bool saveScene(void)
 {
 	IrrlichtDevice *device = createDevice( EDT_NULL, dimension2d<u32>(160, 120), 32);
-	assert(device);
+	assert_log(device);
 	if (!device)
 		return false;
 
@@ -90,6 +90,7 @@ static bool loadScene(void)
 
 	bool result = false;
 	device->run();
+	device->getTimer()->setTime(666);	// scene has animations and current scene seems to be saved at that time ... really - best result with just that number :-)
 	if (driver->beginScene(true, true, video::SColor(0, 80, 80, 80)))
 	{
 		smgr->drawAll();

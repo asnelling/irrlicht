@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Christian Stehno, Colin MacDonald
+// Copyright (C) 2008-2012 Christian Stehno, Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -47,6 +47,8 @@ bool octree()
 	video::IVideoDriver* driver = device->getVideoDriver();
 	scene::ISceneManager* smgr = device->getSceneManager();
 
+	stabilizeScreenBackground(driver);
+
 	scene::IMetaTriangleSelector * meta = smgr->createMetaTriangleSelector();
 
 	device->getFileSystem()->addFileArchive("../media/map-20kdm2.pk3");
@@ -54,10 +56,10 @@ bool octree()
 	if (q3levelmesh)
 	{
 		scene::ISceneNode* q3node = smgr->addOctreeSceneNode(q3levelmesh->getMesh(0));
-      
+
 		q3node->setPosition(core::vector3df(-1350,-130,-1400));
 
-		scene::ITriangleSelector * selector = 
+		scene::ITriangleSelector * selector =
 			smgr->createOctreeTriangleSelector(q3levelmesh->getMesh(0), q3node, 128);
 		meta->addTriangleSelector(selector);
 		selector->drop();
@@ -156,6 +158,8 @@ bool triangle()
 
 	video::IVideoDriver* driver = device->getVideoDriver();
 	scene::ISceneManager* smgr = device->getSceneManager();
+
+	stabilizeScreenBackground(driver);
 
 	scene::IMetaTriangleSelector * meta = smgr->createMetaTriangleSelector();
 

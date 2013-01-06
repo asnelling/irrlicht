@@ -2,6 +2,9 @@
 
 using namespace irr;
 
+namespace
+{
+
 bool testWithDriver(video::E_DRIVER_TYPE driverType)
 {
 	IrrlichtDevice *device =
@@ -10,6 +13,8 @@ bool testWithDriver(video::E_DRIVER_TYPE driverType)
 		return true;
 
 	video::IVideoDriver* driver = device->getVideoDriver();
+
+	stabilizeScreenBackground(driver);
 
 	logTestString("Testing driver %ls\n", driver->getName());
 
@@ -37,6 +42,7 @@ bool testWithDriver(video::E_DRIVER_TYPE driverType)
 	device->drop();
 
 	return result ;
+}
 }
 
 bool drawRectOutline(void)

@@ -2252,6 +2252,9 @@
     <ClCompile Include="CVertexDescriptor.cpp">
       <Filter>Irrlicht\video</Filter>
     </ClCompile>
+    <ClCompile Include="leakHunter.cpp">
+      <Filter>Irrlicht\irr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Irrlicht.rc" />

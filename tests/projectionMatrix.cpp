@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Christian Stehno, Colin MacDonald
+// Copyright (C) 2008-2012 Christian Stehno, Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -18,6 +18,8 @@ static bool runTestWithDriver(E_DRIVER_TYPE driverType)
 		return true; // Treat a failure to create a driver as benign; this saves a lot of #ifdefs
 
 	IVideoDriver* driver = device->getVideoDriver();
+
+	stabilizeScreenBackground(driver);
 
 	logTestString("Testing driver %ls\n", driver->getName());
 

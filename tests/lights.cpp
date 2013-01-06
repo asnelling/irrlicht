@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Christian Stehno, Colin MacDonald
+// Copyright (C) 2008-2012 Christian Stehno, Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -20,6 +20,9 @@ static bool testLightTypes(video::E_DRIVER_TYPE driverType)
 		device->drop();
 		return true;
 	}
+
+	stabilizeScreenBackground(driver);
+
 	logTestString("Testing driver %ls\n", driver->getName());
 
 //	smgr->setAmbientLight(video::SColorf(0.3f,0.3f,0.3f));

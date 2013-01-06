@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -382,6 +382,9 @@ namespace irr
 		//! create the driver
 		void createDriver();
 
+		//! Process system events
+		void handleSystemMessages();
+
 		void getWindowsVersion(core::stringc& version);
 
 		void resizeIfNecessary();
@@ -389,10 +392,10 @@ namespace irr
 		HWND HWnd;
 
 		bool ChangedToFullScreen;
-		bool IsNonNTWindows;
 		bool Resized;
 		bool ExternalWindow;
 		CCursorControl* Win32CursorControl;
+		DEVMODE DesktopMode;
 
 		SJoystickWin32Control* JoyControl;
 	};

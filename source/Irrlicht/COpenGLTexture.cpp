@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -23,7 +23,7 @@ namespace video
 COpenGLTexture::COpenGLTexture(IImage* origImage, const io::path& name, void* mipmapData, COpenGLDriver* driver)
 	: ITexture(name), ColorFormat(ECF_A8R8G8B8), Driver(driver), Image(0), MipImage(0),
 	TextureName(0), InternalFormat(GL_RGBA), PixelFormat(GL_BGRA_EXT),
-	PixelType(GL_UNSIGNED_BYTE), MipLevelStored(0),
+	PixelType(GL_UNSIGNED_BYTE), MipLevelStored(0), MipmapLegacyMode(true),
 	IsRenderTarget(false), AutomaticMipmapUpdate(false),
 	ReadOnlyLock(false), KeepImage(true)
 {
@@ -60,8 +60,8 @@ COpenGLTexture::COpenGLTexture(IImage* origImage, const io::path& name, void* mi
 COpenGLTexture::COpenGLTexture(const io::path& name, COpenGLDriver* driver)
 	: ITexture(name), ColorFormat(ECF_A8R8G8B8), Driver(driver), Image(0), MipImage(0),
 	TextureName(0), InternalFormat(GL_RGBA), PixelFormat(GL_BGRA_EXT),
-	PixelType(GL_UNSIGNED_BYTE), MipLevelStored(0),
-	HasMipMaps(true), IsRenderTarget(false), AutomaticMipmapUpdate(false),
+	PixelType(GL_UNSIGNED_BYTE), MipLevelStored(0), HasMipMaps(true),
+	MipmapLegacyMode(true), IsRenderTarget(false), AutomaticMipmapUpdate(false),
 	ReadOnlyLock(false), KeepImage(true)
 {
 	#ifdef _DEBUG
@@ -144,8 +144,8 @@ GLint COpenGLTexture::getOpenGLFormatAndParametersFromColorFormat(ECOLOR_FORMAT 
 			internalformat =  GL_RGBA;
 			break;
 		case ECF_R5G6B5:
-			colorformat=GL_BGR;
-			type=GL_UNSIGNED_SHORT_5_6_5_REV;
+			colorformat=GL_RGB;
+			type=GL_UNSIGNED_SHORT_5_6_5;
 			internalformat =  GL_RGB;
 			break;
 		case ECF_R8G8B8:
@@ -169,6 +169,7 @@ GLint COpenGLTexture::getOpenGLFormatAndParametersFromColorFormat(ECOLOR_FORMAT 
 
 			internalformat =  GL_R16F;
 #else
+			ColorFormat = ECF_A8R8G8B8;
 			internalformat =  GL_RGB8;
 #endif
 		}
@@ -182,6 +183,7 @@ GLint COpenGLTexture::getOpenGLFormatAndParametersFromColorFormat(ECOLOR_FORMAT 
 
 			internalformat =  GL_RG16F;
 #else
+			ColorFormat = ECF_A8R8G8B8;
 			internalformat =  GL_RGB8;
 #endif
 		}
@@ -195,6 +197,7 @@ GLint COpenGLTexture::getOpenGLFormatAndParametersFromColorFormat(ECOLOR_FORMAT 
 
 			internalformat =  GL_RGBA16F_ARB;
 #else
+			ColorFormat = ECF_A8R8G8B8;
 			internalformat =  GL_RGBA8;
 #endif
 		}
@@ -208,6 +211,7 @@ GLint COpenGLTexture::getOpenGLFormatAndParametersFromColorFormat(ECOLOR_FORMAT 
 
 			internalformat =  GL_R32F;
 #else
+			ColorFormat = ECF_A8R8G8B8;
 			internalformat =  GL_RGB8;
 #endif
 		}
@@ -221,6 +225,7 @@ GLint COpenGLTexture::getOpenGLFormatAndParametersFromColorFormat(ECOLOR_FORMAT 
 
 			internalformat =  GL_RG32F;
 #else
+			ColorFormat = ECF_A8R8G8B8;
 			internalformat =  GL_RGB8;
 #endif
 		}
@@ -234,6 +239,7 @@ GLint COpenGLTexture::getOpenGLFormatAndParametersFromColorFormat(ECOLOR_FORMAT 
 
 			internalformat =  GL_RGBA32F_ARB;
 #else
+			ColorFormat = ECF_A8R8G8B8;
 			internalformat =  GL_RGBA8;
 #endif
 		}
@@ -309,12 +315,12 @@ void COpenGLTexture::uploadTexture(bool newTexture, void* mipmapData, u32 level)
 	// make sure we don't change the internal format of existing images
 	if (!newTexture)
 		InternalFormat=oldInternalFormat;
+        
+    Driver->setActiveTexture(0, this);
+	Driver->getBridgeCalls()->setTexture(0, true);
 
-	Driver->setActiveTexture(0, this);
 	if (Driver->testGLError())
 		os::Printer::log("Could not bind Texture", ELL_ERROR);
-
-	bool mipmapLegacyMode = true;
 
 	// mipmap handling for main texture
 	if (!level && newTexture)
@@ -324,20 +330,22 @@ void COpenGLTexture::uploadTexture(bool newTexture, void* mipmapData, u32 level)
 		// auto generate if possible and no mipmap data is given
 		if (HasMipMaps && !mipmapData && Driver->queryFeature(EVDF_MIP_MAP_AUTO_UPDATE))
 		{
-			if(!Driver->queryFeature(EVDF_FRAMEBUFFER_OBJECT))
+			if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_SPEED))
+				glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_FASTEST);
+			else if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_QUALITY))
+				glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
+			else
+				glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_DONT_CARE);
+
+			AutomaticMipmapUpdate=true;
+
+			if (!Driver->queryFeature(EVDF_FRAMEBUFFER_OBJECT))
 			{
-				if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_SPEED))
-					glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_FASTEST);
-				else if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_QUALITY))
-					glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
-				else
-					glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_DONT_CARE);
-				// automatically generate and update mipmaps
 				glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE );
-				AutomaticMipmapUpdate=true;
+				MipmapLegacyMode=true;
 			}
 			else
-				mipmapLegacyMode = false;
+				MipmapLegacyMode=false;
 		}
 		else
 #endif
@@ -352,6 +360,10 @@ void COpenGLTexture::uploadTexture(bool newTexture, void* mipmapData, u32 level)
 			// enable bilinear mipmap filter
 			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
 			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            
+            StatesCache.BilinearFilter = true;
+            StatesCache.TrilinearFilter = false;
+            StatesCache.MipMapStatus = true;
 		}
 		else
 #else
@@ -362,6 +374,10 @@ void COpenGLTexture::uploadTexture(bool newTexture, void* mipmapData, u32 level)
 			// enable bilinear filter without mipmaps
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            
+            StatesCache.BilinearFilter = true;
+            StatesCache.TrilinearFilter = false;
+            StatesCache.MipMapStatus = false;
 		}
 	}
 
@@ -375,15 +391,10 @@ void COpenGLTexture::uploadTexture(bool newTexture, void* mipmapData, u32 level)
 			image->getDimension().Height, PixelFormat, PixelType, source);
 	image->unlock();
 
-	if (!mipmapLegacyMode)
+	if (!MipmapLegacyMode && AutomaticMipmapUpdate)
 	{
 		glEnable(GL_TEXTURE_2D);
 		Driver->extGlGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		AutomaticMipmapUpdate=true;
 	}
 
 	if (Driver->testGLError())
@@ -650,9 +661,17 @@ void COpenGLTexture::bindRTT()
 void COpenGLTexture::unbindRTT()
 {
 	Driver->setActiveTexture(0, this);
+	Driver->getBridgeCalls()->setTexture(0, true);
 
 	// Copy Our ViewPort To The Texture
 	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, getSize().Width, getSize().Height);
+}
+
+
+//! Get an access to texture states cache.
+COpenGLTexture::SStatesCache& COpenGLTexture::getStatesCache() const
+{
+	return StatesCache;
 }
 
 
@@ -677,6 +696,8 @@ COpenGLFBOTexture::COpenGLFBOTexture(const core::dimension2d<u32>& size,
 	if (ECF_UNKNOWN == format)
 		format = getBestColorFormat(driver->getColorFormat());
 
+	ColorFormat = format;
+
 	GLint FilteringType;
 	InternalFormat = getOpenGLFormatAndParametersFromColorFormat(format, FilteringType, PixelFormat, PixelType);
 
@@ -690,12 +711,27 @@ COpenGLFBOTexture::COpenGLFBOTexture(const core::dimension2d<u32>& size,
 
 	// generate color texture
 	glGenTextures(1, &TextureName);
-	Driver->setActiveTexture(0, this);
+    
+    Driver->setActiveTexture(0, this);
+	Driver->getBridgeCalls()->setTexture(0, true);
+    
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, FilteringType);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    if(FilteringType == GL_NEAREST)
+        StatesCache.BilinearFilter = false;
+    else
+        StatesCache.BilinearFilter = true;
+        
+    StatesCache.WrapU = ETC_CLAMP_TO_EDGE;
+    StatesCache.WrapV = ETC_CLAMP_TO_EDGE;
+            
 	glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, ImageSize.Width,
 		ImageSize.Height, 0, PixelFormat, PixelType, 0);
+#ifdef _DEBUG
+	driver->testGLError();
+#endif
 
 	// attach color texture to frame buffer
 	Driver->extGlFramebufferTexture2D(GL_FRAMEBUFFER_EXT,
@@ -703,6 +739,10 @@ COpenGLFBOTexture::COpenGLFBOTexture(const core::dimension2d<u32>& size,
 						GL_TEXTURE_2D,
 						TextureName,
 						0);
+#ifdef _DEBUG
+	checkFBOStatus(Driver);
+#endif
+
 #endif
 	unbindRTT();
 }
@@ -787,7 +827,7 @@ COpenGLFBODepthTexture::COpenGLFBODepthTexture(
 #endif
 		{
 			// generate depth texture
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, ImageSize.Width,
+			glTexImage2D(GL_TEXTURE_2D, 0, Driver->getZBufferBits(), ImageSize.Width,
 				ImageSize.Height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
 
 			// generate stencil texture
@@ -807,7 +847,7 @@ COpenGLFBODepthTexture::COpenGLFBODepthTexture(
 		Driver->extGlGenRenderbuffers(1, &DepthRenderBuffer);
 		Driver->extGlBindRenderbuffer(GL_RENDERBUFFER_EXT, DepthRenderBuffer);
 		Driver->extGlRenderbufferStorage(GL_RENDERBUFFER_EXT,
-				GL_DEPTH_COMPONENT, ImageSize.Width,
+				Driver->getZBufferBits(), ImageSize.Width,
 				ImageSize.Height);
 	}
 #endif

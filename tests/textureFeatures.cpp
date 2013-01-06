@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Christian Stehno, Colin MacDonald
+// Copyright (C) 2008-2012 Christian Stehno, Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -24,6 +24,8 @@ bool renderMipLevels(video::E_DRIVER_TYPE driverType)
 		device->drop();
 		return true;
 	}
+
+	stabilizeScreenBackground(driver);
 
 	logTestString("Testing driver %ls\n", driver->getName());
 
@@ -103,6 +105,8 @@ bool lockAllMipLevels(video::E_DRIVER_TYPE driverType)
 		device->drop();
 		return true;
 	}
+
+	stabilizeScreenBackground(driver);
 
 	logTestString("Testing driver %ls\n", driver->getName());
 
@@ -219,6 +223,8 @@ bool lockWithAutoMipmap(video::E_DRIVER_TYPE driverType)
 		device->drop();
 		return true;
 	}
+
+	stabilizeScreenBackground(driver);
 
 	logTestString("Testing driver %ls\n", driver->getName());
 

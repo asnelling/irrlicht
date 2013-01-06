@@ -1,4 +1,4 @@
-// Copyright (C) 2008-2011 Colin MacDonald
+// Copyright (C) 2008-2012 Colin MacDonald
 // No rights reserved: this software is in the public domain.
 
 #include "testUtils.h"
@@ -27,6 +27,9 @@ static bool viewPortText(E_DRIVER_TYPE driverType)
 	IVideoDriver* driver = device->getVideoDriver();
 	ISceneManager * smgr = device->getSceneManager();
 	IGUIEnvironment* env = smgr->getGUIEnvironment();
+
+	stabilizeScreenBackground(driver);
+
 	env->addCheckBox(true, core::recti(10,60,28,82));
 
 	logTestString("Testing driver %ls\n", driver->getName());

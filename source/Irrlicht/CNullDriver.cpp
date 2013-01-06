@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in irrlicht.h
 
@@ -214,7 +214,7 @@ CNullDriver::CNullDriver(io::IFileSystem* io, const core::dimension2d<u32>& scre
 	InitMaterial2D.AntiAliasing=video::EAAM_OFF;
 	InitMaterial2D.Lighting=false;
 	InitMaterial2D.ZWriteEnable=false;
-	InitMaterial2D.ZBuffer=video::ECFN_NEVER;
+	InitMaterial2D.ZBuffer=video::ECFN_DISABLED;
 	InitMaterial2D.UseMipMaps=false;
 	for (u32 i=0; i<video::MATERIAL_MAX_TEXTURES; ++i)
 	{
@@ -801,7 +801,8 @@ void CNullDriver::draw2DImage(const video::ITexture* texture, const core::rect<s
 	const core::rect<s32>& sourceRect, const core::rect<s32>* clipRect,
 	const video::SColor* const colors, bool useAlphaChannelOfTexture)
 {
-	draw2DImage(texture, core::position2d<s32>(destRect.UpperLeftCorner),
+	if (destRect.isValid())
+		draw2DImage(texture, core::position2d<s32>(destRect.UpperLeftCorner),
 				sourceRect, clipRect, colors?colors[0]:video::SColor(0xffffffff),
 				useAlphaChannelOfTexture);
 }
@@ -1044,7 +1045,7 @@ void CNullDriver::makeColorKeyTexture(video::ITexture* texture,
 
 		for (u32 pixel = 0; pixel < pixels; ++ pixel)
 		{
-			// If the colour matches the reference colour, ignoring alphas,
+			// If the color matches the reference color, ignoring alphas,
 			// set the alpha to zero.
 			if(((*p) & 0x7fff) == refZeroAlpha)
 			{
@@ -1078,7 +1079,7 @@ void CNullDriver::makeColorKeyTexture(video::ITexture* texture,
 		const u32 pixels = pitch * dim.Height;
 		for (u32 pixel = 0; pixel < pixels; ++ pixel)
 		{
-			// If the colour matches the reference colour, ignoring alphas,
+			// If the color matches the reference color, ignoring alphas,
 			// set the alpha to zero.
 			if(((*p) & 0x00ffffff) == refZeroAlpha)
 			{
@@ -1093,6 +1094,7 @@ void CNullDriver::makeColorKeyTexture(video::ITexture* texture,
 
 		texture->unlock();
 	}
+	texture->regenerateMipMapLevels();
 }
 
 

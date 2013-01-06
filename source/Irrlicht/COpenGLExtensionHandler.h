@@ -1,4 +1,4 @@
-// Copyright (C) 2002-2011 Nikolaus Gebhardt
+// Copyright (C) 2002-2012 Nikolaus Gebhardt
 // This file is part of the "Irrlicht Engine".
 // For conditions of distribution and use, see copyright notice in Irrlicht.h
 
@@ -30,7 +30,6 @@
 	#endif
 
 #elif defined(_IRR_COMPILE_WITH_OSX_DEVICE_)
-	#include "CIrrDeviceMacOSX.h"
 	#if defined(_IRR_OPENGL_USE_EXTPOINTER_)
 		#define GL_GLEXT_LEGACY 1
 	#endif
@@ -1037,11 +1036,18 @@ class COpenGLExtensionHandler
 	void extGlGetProgramiv(GLuint program, GLenum type, GLint *param);
 	GLint extGlGetUniformLocationARB(GLhandleARB program, const char *name);
 	GLint extGlGetUniformLocation(GLuint program, const char *name);
-	void extGlUniform4fv(GLint location, GLsizei count, const GLfloat *v);
-	void extGlUniform1iv(GLint loc, GLsizei count, const GLint *v);
 	void extGlUniform1fv(GLint loc, GLsizei count, const GLfloat *v);
 	void extGlUniform2fv(GLint loc, GLsizei count, const GLfloat *v);
 	void extGlUniform3fv(GLint loc, GLsizei count, const GLfloat *v);
+	void extGlUniform4fv(GLint loc, GLsizei count, const GLfloat *v);
+	void extGlUniform1bv(GLint loc, GLsizei count, const bool *v);
+	void extGlUniform2bv(GLint loc, GLsizei count, const bool *v);
+	void extGlUniform3bv(GLint loc, GLsizei count, const bool *v);
+	void extGlUniform4bv(GLint loc, GLsizei count, const bool *v);
+	void extGlUniform1iv(GLint loc, GLsizei count, const GLint *v);
+	void extGlUniform2iv(GLint loc, GLsizei count, const GLint *v);
+	void extGlUniform3iv(GLint loc, GLsizei count, const GLint *v);
+	void extGlUniform4iv(GLint loc, GLsizei count, const GLint *v);
 	void extGlUniformMatrix2fv(GLint loc, GLsizei count, GLboolean transpose, const GLfloat *v);
 	void extGlUniformMatrix3fv(GLint loc, GLsizei count, GLboolean transpose, const GLfloat *v);
 	void extGlUniformMatrix4fv(GLint loc, GLsizei count, GLboolean transpose, const GLfloat *v);
@@ -1146,11 +1152,14 @@ class COpenGLExtensionHandler
 		PFNGLGETSHADERIVPROC pGlGetProgramiv;
 		PFNGLGETUNIFORMLOCATIONARBPROC pGlGetUniformLocationARB;
 		PFNGLGETUNIFORMLOCATIONPROC pGlGetUniformLocation;
-		PFNGLUNIFORM1IVARBPROC pGlUniform1ivARB;
 		PFNGLUNIFORM1FVARBPROC pGlUniform1fvARB;
 		PFNGLUNIFORM2FVARBPROC pGlUniform2fvARB;
 		PFNGLUNIFORM3FVARBPROC pGlUniform3fvARB;
 		PFNGLUNIFORM4FVARBPROC pGlUniform4fvARB;
+		PFNGLUNIFORM1IVARBPROC pGlUniform1ivARB;
+		PFNGLUNIFORM2IVARBPROC pGlUniform2ivARB;
+		PFNGLUNIFORM3IVARBPROC pGlUniform3ivARB;
+		PFNGLUNIFORM4IVARBPROC pGlUniform4ivARB;
 		PFNGLUNIFORMMATRIX2FVARBPROC pGlUniformMatrix2fvARB;
 		PFNGLUNIFORMMATRIX3FVARBPROC pGlUniformMatrix3fvARB;
 		PFNGLUNIFORMMATRIX4FVARBPROC pGlUniformMatrix4fvARB;
@@ -1277,6 +1286,8 @@ inline void COpenGLExtensionHandler::extGlClientActiveTexture(GLenum texture)
 
 inline void COpenGLExtensionHandler::extGlGenPrograms(GLsizei n, GLuint *programs)
 {
+	if (programs)
+		memset(programs,0,n*sizeof(GLuint));
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGenProgramsARB)
 		pGlGenProgramsARB(n, programs);
@@ -1347,7 +1358,7 @@ inline void COpenGLExtensionHandler::extGlDeletePrograms(GLsizei n, const GLuint
 #endif
 }
 
-inline void COpenGLExtensionHandler::extGlProgramLocalParameter4fv(GLenum n, GLuint i, const GLfloat * f)
+inline void COpenGLExtensionHandler::extGlProgramLocalParameter4fv(GLenum n, GLuint i, const GLfloat *f)
 {
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlProgramLocalParameter4fvARB)
@@ -1569,7 +1580,8 @@ inline void COpenGLExtensionHandler::extGlDeleteShader(GLuint shader)
 
 inline void COpenGLExtensionHandler::extGlGetAttachedObjects(GLhandleARB program, GLsizei maxcount, GLsizei* count, GLhandleARB* shaders)
 {
-	*count=0;
+	if (count)
+		*count=0;
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGetAttachedObjectsARB)
 		pGlGetAttachedObjectsARB(program, maxcount, count, shaders);
@@ -1582,7 +1594,8 @@ inline void COpenGLExtensionHandler::extGlGetAttachedObjects(GLhandleARB program
 
 inline void COpenGLExtensionHandler::extGlGetAttachedShaders(GLuint program, GLsizei maxcount, GLsizei* count, GLuint* shaders)
 {
-	*count=0;
+	if (count)
+		*count=0;
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGetAttachedShaders)
 		pGlGetAttachedShaders(program, maxcount, count, shaders);
@@ -1595,6 +1608,8 @@ inline void COpenGLExtensionHandler::extGlGetAttachedShaders(GLuint program, GLs
 
 inline void COpenGLExtensionHandler::extGlGetInfoLog(GLhandleARB object, GLsizei maxLength, GLsizei *length, GLcharARB *infoLog)
 {
+	if (length)
+		*length=0;
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGetInfoLogARB)
 		pGlGetInfoLogARB(object, maxLength, length, infoLog);
@@ -1607,6 +1622,8 @@ inline void COpenGLExtensionHandler::extGlGetInfoLog(GLhandleARB object, GLsizei
 
 inline void COpenGLExtensionHandler::extGlGetShaderInfoLog(GLuint shader, GLsizei maxLength, GLsizei *length, GLchar *infoLog)
 {
+	if (length)
+		*length=0;
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGetShaderInfoLog)
 		pGlGetShaderInfoLog(shader, maxLength, length, infoLog);
@@ -1619,6 +1636,8 @@ inline void COpenGLExtensionHandler::extGlGetShaderInfoLog(GLuint shader, GLsize
 
 inline void COpenGLExtensionHandler::extGlGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog)
 {
+	if (length)
+		*length=0;
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGetProgramInfoLog)
 		pGlGetProgramInfoLog(program, maxLength, length, infoLog);
@@ -1691,30 +1710,6 @@ inline GLint COpenGLExtensionHandler::extGlGetUniformLocation(GLuint program, co
 	return 0;
 }
 
-inline void COpenGLExtensionHandler::extGlUniform4fv(GLint location, GLsizei count, const GLfloat *v)
-{
-#ifdef _IRR_OPENGL_USE_EXTPOINTER_
-	if (pGlUniform4fvARB)
-		pGlUniform4fvARB(location, count, v);
-#elif defined(GL_ARB_shader_objects)
-	glUniform4fvARB(location, count, v);
-#else
-	os::Printer::log("glUniform4fv not supported", ELL_ERROR);
-#endif
-}
-
-inline void COpenGLExtensionHandler::extGlUniform1iv(GLint loc, GLsizei count, const GLint *v)
-{
-#ifdef _IRR_OPENGL_USE_EXTPOINTER_
-	if (pGlUniform1ivARB)
-		pGlUniform1ivARB(loc, count, v);
-#elif defined(GL_ARB_shader_objects)
-	glUniform1ivARB(loc, count, v);
-#else
-	os::Printer::log("glUniform1iv not supported", ELL_ERROR);
-#endif
-}
-
 inline void COpenGLExtensionHandler::extGlUniform1fv(GLint loc, GLsizei count, const GLfloat *v)
 {
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
@@ -1748,6 +1743,66 @@ inline void COpenGLExtensionHandler::extGlUniform3fv(GLint loc, GLsizei count, c
 	glUniform3fvARB(loc, count, v);
 #else
 	os::Printer::log("glUniform3fv not supported", ELL_ERROR);
+#endif
+}
+
+inline void COpenGLExtensionHandler::extGlUniform4fv(GLint loc, GLsizei count, const GLfloat *v)
+{
+#ifdef _IRR_OPENGL_USE_EXTPOINTER_
+	if (pGlUniform4fvARB)
+		pGlUniform4fvARB(loc, count, v);
+#elif defined(GL_ARB_shader_objects)
+	glUniform4fvARB(loc, count, v);
+#else
+	os::Printer::log("glUniform4fv not supported", ELL_ERROR);
+#endif
+}
+
+inline void COpenGLExtensionHandler::extGlUniform1iv(GLint loc, GLsizei count, const GLint *v)
+{
+#ifdef _IRR_OPENGL_USE_EXTPOINTER_
+	if (pGlUniform1ivARB)
+		pGlUniform1ivARB(loc, count, v);
+#elif defined(GL_ARB_shader_objects)
+	glUniform1ivARB(loc, count, v);
+#else
+	os::Printer::log("glUniform1iv not supported", ELL_ERROR);
+#endif
+}
+
+inline void COpenGLExtensionHandler::extGlUniform2iv(GLint loc, GLsizei count, const GLint *v)
+{
+#ifdef _IRR_OPENGL_USE_EXTPOINTER_
+	if (pGlUniform2ivARB)
+		pGlUniform2ivARB(loc, count, v);
+#elif defined(GL_ARB_shader_objects)
+	glUniform2ivARB(loc, count, v);
+#else
+	os::Printer::log("glUniform2iv not supported", ELL_ERROR);
+#endif
+}
+
+inline void COpenGLExtensionHandler::extGlUniform3iv(GLint loc, GLsizei count, const GLint *v)
+{
+#ifdef _IRR_OPENGL_USE_EXTPOINTER_
+	if (pGlUniform3ivARB)
+		pGlUniform3ivARB(loc, count, v);
+#elif defined(GL_ARB_shader_objects)
+	glUniform3ivARB(loc, count, v);
+#else
+	os::Printer::log("glUniform3iv not supported", ELL_ERROR);
+#endif
+}
+
+inline void COpenGLExtensionHandler::extGlUniform4iv(GLint loc, GLsizei count, const GLint *v)
+{
+#ifdef _IRR_OPENGL_USE_EXTPOINTER_
+	if (pGlUniform4ivARB)
+		pGlUniform4ivARB(loc, count, v);
+#elif defined(GL_ARB_shader_objects)
+	glUniform4ivARB(loc, count, v);
+#else
+	os::Printer::log("glUniform4iv not supported", ELL_ERROR);
 #endif
 }
 
@@ -1791,6 +1846,8 @@ inline void COpenGLExtensionHandler::extGlGetActiveUniformARB(GLhandleARB progra
 		GLuint index, GLsizei maxlength, GLsizei *length,
 		GLint *size, GLenum *type, GLcharARB *name)
 {
+	if (length)
+		*length=0;
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGetActiveUniformARB)
 		pGlGetActiveUniformARB(program, index, maxlength, length, size, type, name);
@@ -1805,6 +1862,8 @@ inline void COpenGLExtensionHandler::extGlGetActiveUniform(GLuint program,
 		GLuint index, GLsizei maxlength, GLsizei *length,
 		GLint *size, GLenum *type, GLchar *name)
 {
+	if (length)
+		*length=0;
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGetActiveUniform)
 		pGlGetActiveUniform(program, index, maxlength, length, size, type, name);
@@ -1943,7 +2002,7 @@ inline void COpenGLExtensionHandler::extGlBindFramebuffer(GLenum target, GLuint 
 	else if (pGlBindFramebufferEXT)
 		pGlBindFramebufferEXT(target, framebuffer);
 #elif defined(GL_ARB_framebuffer_object)
-	glBindFramebufferARB(target, framebuffer);
+	glBindFramebuffer(target, framebuffer);
 #elif defined(GL_EXT_framebuffer_object)
 	glBindFramebufferEXT(target, framebuffer);
 #else
@@ -1959,7 +2018,7 @@ inline void COpenGLExtensionHandler::extGlDeleteFramebuffers(GLsizei n, const GL
 	else if (pGlDeleteFramebuffersEXT)
 		pGlDeleteFramebuffersEXT(n, framebuffers);
 #elif defined(GL_ARB_framebuffer_object)
-	glDeleteFramebuffersARB(n, framebuffers);
+	glDeleteFramebuffers(n, framebuffers);
 #elif defined(GL_EXT_framebuffer_object)
 	glDeleteFramebuffersEXT(n, framebuffers);
 #else
@@ -1969,13 +2028,15 @@ inline void COpenGLExtensionHandler::extGlDeleteFramebuffers(GLsizei n, const GL
 
 inline void COpenGLExtensionHandler::extGlGenFramebuffers(GLsizei n, GLuint *framebuffers)
 {
+	if (framebuffers)
+		memset(framebuffers,0,n*sizeof(GLuint));
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGenFramebuffers)
 		pGlGenFramebuffers(n, framebuffers);
 	else if (pGlGenFramebuffersEXT)
 		pGlGenFramebuffersEXT(n, framebuffers);
 #elif defined(GL_ARB_framebuffer_object)
-	glGenFramebuffersARB(n, framebuffers);
+	glGenFramebuffers(n, framebuffers);
 #elif defined(GL_EXT_framebuffer_object)
 	glGenFramebuffersEXT(n, framebuffers);
 #else
@@ -1993,7 +2054,7 @@ inline GLenum COpenGLExtensionHandler::extGlCheckFramebufferStatus(GLenum target
 	else
 		return 0;
 #elif defined(GL_ARB_framebuffer_object)
-	return glCheckFramebufferStatusARB(target);
+	return glCheckFramebufferStatus(target);
 #elif defined(GL_EXT_framebuffer_object)
 	return glCheckFramebufferStatusEXT(target);
 #else
@@ -2010,7 +2071,7 @@ inline void COpenGLExtensionHandler::extGlFramebufferTexture2D(GLenum target, GL
 	else if (pGlFramebufferTexture2DEXT)
 		pGlFramebufferTexture2DEXT(target, attachment, textarget, texture, level);
 #elif defined(GL_ARB_framebuffer_object)
-	glFramebufferTexture2DARB(target, attachment, textarget, texture, level);
+	glFramebufferTexture2D(target, attachment, textarget, texture, level);
 #elif defined(GL_EXT_framebuffer_object)
 	glFramebufferTexture2DEXT(target, attachment, textarget, texture, level);
 #else
@@ -2026,7 +2087,7 @@ inline void COpenGLExtensionHandler::extGlBindRenderbuffer(GLenum target, GLuint
 	else if (pGlBindRenderbufferEXT)
 		pGlBindRenderbufferEXT(target, renderbuffer);
 #elif defined(GL_ARB_framebuffer_object)
-	glBindRenderbufferARB(target, renderbuffer);
+	glBindRenderbuffer(target, renderbuffer);
 #elif defined(GL_EXT_framebuffer_object)
 	glBindRenderbufferEXT(target, renderbuffer);
 #else
@@ -2042,7 +2103,7 @@ inline void COpenGLExtensionHandler::extGlDeleteRenderbuffers(GLsizei n, const G
 	else if (pGlDeleteRenderbuffersEXT)
 		pGlDeleteRenderbuffersEXT(n, renderbuffers);
 #elif defined(GL_ARB_framebuffer_object)
-	glDeleteRenderbuffersARB(n, renderbuffers);
+	glDeleteRenderbuffers(n, renderbuffers);
 #elif defined(GL_EXT_framebuffer_object)
 	glDeleteRenderbuffersEXT(n, renderbuffers);
 #else
@@ -2052,13 +2113,15 @@ inline void COpenGLExtensionHandler::extGlDeleteRenderbuffers(GLsizei n, const G
 
 inline void COpenGLExtensionHandler::extGlGenRenderbuffers(GLsizei n, GLuint *renderbuffers)
 {
+	if (renderbuffers)
+		memset(renderbuffers,0,n*sizeof(GLuint));
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGenRenderbuffers)
 		pGlGenRenderbuffers(n, renderbuffers);
 	else if (pGlGenRenderbuffersEXT)
 		pGlGenRenderbuffersEXT(n, renderbuffers);
 #elif defined(GL_ARB_framebuffer_object)
-	glGenRenderbuffersARB(n, renderbuffers);
+	glGenRenderbuffers(n, renderbuffers);
 #elif defined(GL_EXT_framebuffer_object)
 	glGenRenderbuffersEXT(n, renderbuffers);
 #else
@@ -2074,7 +2137,7 @@ inline void COpenGLExtensionHandler::extGlRenderbufferStorage(GLenum target, GLe
 	else if (pGlRenderbufferStorageEXT)
 		pGlRenderbufferStorageEXT(target, internalformat, width, height);
 #elif defined(GL_ARB_framebuffer_object)
-	glRenderbufferStorageARB(target, internalformat, width, height);
+	glRenderbufferStorage(target, internalformat, width, height);
 #elif defined(GL_EXT_framebuffer_object)
 	glRenderbufferStorageEXT(target, internalformat, width, height);
 #else
@@ -2090,7 +2153,7 @@ inline void COpenGLExtensionHandler::extGlFramebufferRenderbuffer(GLenum target,
 	else if (pGlFramebufferRenderbufferEXT)
 		pGlFramebufferRenderbufferEXT(target, attachment, renderbuffertarget, renderbuffer);
 #elif defined(GL_ARB_framebuffer_object)
-	glFramebufferRenderbufferARB(target, attachment, renderbuffertarget, renderbuffer);
+	glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
 #elif defined(GL_EXT_framebuffer_object)
 	glFramebufferRenderbufferEXT(target, attachment, renderbuffertarget, renderbuffer);
 #else
@@ -2106,7 +2169,7 @@ inline void COpenGLExtensionHandler::extGlGenerateMipmap(GLenum target)
 	else if (pGlGenerateMipmapEXT)
 		pGlGenerateMipmapEXT(target);
 #elif defined(GL_ARB_framebuffer_object)
-	glGenerateMipmapARB(target);
+	glGenerateMipmap(target);
 #elif defined(GL_EXT_framebuffer_object)
 	glGenerateMipmapEXT(target);
 #else
@@ -2145,6 +2208,8 @@ inline void COpenGLExtensionHandler::extGlDrawBuffers(GLsizei n, const GLenum *b
 
 inline void COpenGLExtensionHandler::extGlGenBuffers(GLsizei n, GLuint *buffers)
 {
+	if (buffers)
+		memset(buffers,0,n*sizeof(GLuint));
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGenBuffersARB)
 		pGlGenBuffersARB(n, buffers);
@@ -2229,7 +2294,7 @@ inline void *COpenGLExtensionHandler::extGlMapBuffer(GLenum target, GLenum acces
 #endif
 }
 
-inline GLboolean COpenGLExtensionHandler::extGlUnmapBuffer (GLenum target)
+inline GLboolean COpenGLExtensionHandler::extGlUnmapBuffer(GLenum target)
 {
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlUnmapBufferARB)
@@ -2243,7 +2308,7 @@ inline GLboolean COpenGLExtensionHandler::extGlUnmapBuffer (GLenum target)
 #endif
 }
 
-inline GLboolean COpenGLExtensionHandler::extGlIsBuffer (GLuint buffer)
+inline GLboolean COpenGLExtensionHandler::extGlIsBuffer(GLuint buffer)
 {
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlIsBufferARB)
@@ -2257,7 +2322,7 @@ inline GLboolean COpenGLExtensionHandler::extGlIsBuffer (GLuint buffer)
 #endif
 }
 
-inline void COpenGLExtensionHandler::extGlGetBufferParameteriv (GLenum target, GLenum pname, GLint *params)
+inline void COpenGLExtensionHandler::extGlGetBufferParameteriv(GLenum target, GLenum pname, GLint *params)
 {
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGetBufferParameterivARB)
@@ -2269,7 +2334,7 @@ inline void COpenGLExtensionHandler::extGlGetBufferParameteriv (GLenum target, G
 #endif
 }
 
-inline void COpenGLExtensionHandler::extGlGetBufferPointerv (GLenum target, GLenum pname, GLvoid **params)
+inline void COpenGLExtensionHandler::extGlGetBufferPointerv(GLenum target, GLenum pname, GLvoid **params)
 {
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (pGlGetBufferPointervARB)
@@ -2341,7 +2406,7 @@ inline void COpenGLExtensionHandler::extGlBlendFuncIndexed(GLuint buf, GLenum sr
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (FeatureAvailable[IRR_ARB_draw_buffers_blend] && pGlBlendFunciARB)
 		pGlBlendFunciARB(buf, src, dst);
-	if (FeatureAvailable[IRR_AMD_draw_buffers_blend] && pGlBlendFuncIndexedAMD)
+	else if (FeatureAvailable[IRR_AMD_draw_buffers_blend] && pGlBlendFuncIndexedAMD)
 		pGlBlendFuncIndexedAMD(buf, src, dst);
 #elif defined(GL_ARB_draw_buffers_blend)
 	glBlendFunciARB(buf, src, dst);
@@ -2357,12 +2422,12 @@ inline void COpenGLExtensionHandler::extGlBlendEquationIndexed(GLuint buf, GLenu
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
 	if (FeatureAvailable[IRR_ARB_draw_buffers_blend] && pGlBlendEquationiARB)
 		pGlBlendEquationiARB(buf, mode);
-	if (FeatureAvailable[IRR_AMD_draw_buffers_blend] && pGlBlendEquationIndexedAMD)
+	else if (FeatureAvailable[IRR_AMD_draw_buffers_blend] && pGlBlendEquationIndexedAMD)
 		pGlBlendEquationIndexedAMD(buf, mode);
 #elif defined(GL_ARB_draw_buffers_blend)
-	glBlendEquationiARB(buf, src, dst);
+	glBlendEquationiARB(buf, mode);
 #elif defined(GL_AMD_draw_buffers_blend)
-	glBlendEquationIndexedAMD(buf, src, dst);
+	glBlendEquationIndexedAMD(buf, mode);
 #else
 	os::Printer::log("glBlendEquationIndexed not supported", ELL_ERROR);
 #endif
@@ -2381,7 +2446,7 @@ inline void COpenGLExtensionHandler::extGlProgramParameteri(GLhandleARB program,
 #elif defined(GL_ARB_geometry_shader4)
 	glProgramParameteriARB(program, pname, value);
 #elif defined(GL_EXT_geometry_shader4)
-	glProgramParameteriEXT(program, pname, value);
+	glProgramParameteriEXT((long unsigned int)program, pname, value);
 #elif defined(GL_NV_geometry_program4) || defined(GL_NV_geometry_shader4)
 	glProgramParameteriNV(program, pname, value);
 #else
@@ -2428,10 +2493,11 @@ inline GLboolean COpenGLExtensionHandler::extGlIsQuery(GLuint id)
 		return pGlIsQueryARB(id);
 	else if (pGlIsOcclusionQueryNV)
 		return pGlIsOcclusionQueryNV(id);
+	return false;
 #elif defined(GL_ARB_occlusion_query)
 	return glIsQueryARB(id);
 #elif defined(GL_NV_occlusion_query)
-	glIsOcclusionQueryNV(id);
+	return glIsOcclusionQueryNV(id);
 #else
 	return false;
 #endif
@@ -2577,3 +2643,4 @@ inline void COpenGLExtensionHandler::extGlBlendEquation(GLenum mode)
 #endif
 
 #endif
+
