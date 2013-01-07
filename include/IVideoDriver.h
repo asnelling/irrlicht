@@ -20,6 +20,9 @@
 #include "EDriverFeatures.h"
 #include "SExposedVideoData.h"
 
+#include "IHardwareBuffer.h"
+#include "SVertexElement.h"
+
 namespace irr
 {
 namespace io
@@ -78,6 +81,104 @@ namespace video
 #if _IRR_MATERIAL_MAX_TEXTURES_>7
 		//! Texture transformation
 		ETS_TEXTURE_7,
+#if _IRR_MATERIAL_MAX_TEXTURES_>8
+		//! Texture transformation
+		ETS_TEXTURE_8,
+#if _IRR_MATERIAL_MAX_TEXTURES_>9
+		//! Texture transformation
+		ETS_TEXTURE_9,
+#if _IRR_MATERIAL_MAX_TEXTURES_>10
+		//! Texture transformation
+		ETS_TEXTURE_10,
+#if _IRR_MATERIAL_MAX_TEXTURES_>11
+		//! Texture transformation
+		ETS_TEXTURE_11,
+#if _IRR_MATERIAL_MAX_TEXTURES_>12
+		//! Texture transformation
+		ETS_TEXTURE_12,
+#if _IRR_MATERIAL_MAX_TEXTURES_>13
+		//! Texture transformation
+		ETS_TEXTURE_13,
+#if _IRR_MATERIAL_MAX_TEXTURES_>14
+		//! Texture transformation
+		ETS_TEXTURE_14,
+#if _IRR_MATERIAL_MAX_TEXTURES_>15
+		//! Texture transformation
+		ETS_TEXTURE_15,
+#if _IRR_MATERIAL_MAX_TEXTURES_>16
+		//! Texture transformation
+		ETS_TEXTURE_16,
+#if _IRR_MATERIAL_MAX_TEXTURES_>17
+		//! Texture transformation
+		ETS_TEXTURE_17,
+#if _IRR_MATERIAL_MAX_TEXTURES_>18
+		//! Texture transformation
+		ETS_TEXTURE_18,
+#if _IRR_MATERIAL_MAX_TEXTURES_>19
+		//! Texture transformation
+		ETS_TEXTURE_19,
+#if _IRR_MATERIAL_MAX_TEXTURES_>20
+		//! Texture transformation
+		ETS_TEXTURE_20,
+#if _IRR_MATERIAL_MAX_TEXTURES_>21
+		//! Texture transformation
+		ETS_TEXTURE_21,
+#if _IRR_MATERIAL_MAX_TEXTURES_>22
+		//! Texture transformation
+		ETS_TEXTURE_22,
+#if _IRR_MATERIAL_MAX_TEXTURES_>23
+		//! Texture transformation
+		ETS_TEXTURE_23,
+#if _IRR_MATERIAL_MAX_TEXTURES_>24
+		//! Texture transformation
+		ETS_TEXTURE_24,
+#if _IRR_MATERIAL_MAX_TEXTURES_>25
+		//! Texture transformation
+		ETS_TEXTURE_25,
+#if _IRR_MATERIAL_MAX_TEXTURES_>26
+		//! Texture transformation
+		ETS_TEXTURE_26,
+#if _IRR_MATERIAL_MAX_TEXTURES_>27
+		//! Texture transformation
+		ETS_TEXTURE_27,
+#if _IRR_MATERIAL_MAX_TEXTURES_>28
+		//! Texture transformation
+		ETS_TEXTURE_28,
+#if _IRR_MATERIAL_MAX_TEXTURES_>29
+		//! Texture transformation
+		ETS_TEXTURE_29,
+#if _IRR_MATERIAL_MAX_TEXTURES_>30
+		//! Texture transformation
+		ETS_TEXTURE_30,
+#if _IRR_MATERIAL_MAX_TEXTURES_>31
+		//! Texture transformation
+		ETS_TEXTURE_31,
+
+
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
+#endif
 #endif
 #endif
 #endif

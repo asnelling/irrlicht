@@ -29,6 +29,7 @@ namespace
 		L"DIRECT3D8",
 		L"DIRECT3D9",
 		L"OPENGL",
+		L"DIRECT3D11",
 		0,
 	};
 

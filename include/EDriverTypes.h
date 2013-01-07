@@ -52,6 +52,11 @@ namespace video
 		primitives. */
 		EDT_OPENGL,
 
+		//!Direct3D 11 device, only available on Win32 platforms from vista and higher
+		/** Performs hardware accelerated rendering of 3D and 2D
+		primitives. */
+		EDT_DIRECT3D11,
+
 		//! No driver, just for counting the elements
 		EDT_COUNT
 	};

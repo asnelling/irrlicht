@@ -117,6 +117,31 @@ namespace video
 
 		//! Support for texture coord transformation via texture matrix
 		EVDF_TEXTURE_MATRIX,
+		
+		//! Supports Shader model 4
+		EVDF_VERTEX_SHADER_4_0,
+		EVDF_PIXEL_SHADER_4_0,
+		EVDF_GEOMETRY_SHADER_4_0,
+		EVDF_STREAM_OUTPUT_4_0,
+		EVDF_COMPUTING_SHADER_4_0,
+
+		//! Supports Shader model 4.1
+		EVDF_VERTEX_SHADER_4_1,
+		EVDF_PIXEL_SHADER_4_1,
+		EVDF_GEOMETRY_SHADER_4_1,
+		EVDF_STREAM_OUTPUT_4_1,
+		EVDF_COMPUTING_SHADER_4_1,
+
+		//! Supports Shader model 5.0
+		EVDF_VERTEX_SHADER_5_0,
+		EVDF_PIXEL_SHADER_5_0,
+		EVDF_GEOMETRY_SHADER_5_0,
+		EVDF_STREAM_OUTPUT_5_0,
+		EVDF_TESSELATION_SHADER_5_0,
+		EVDF_COMPUTING_SHADER_5_0,
+		
+		//! Supports texture multisampling
+		EVDF_TEXTURE_MULTISAMPLING,
 
 		//! Only used for counting the elements of this enum
 		EVDF_COUNT

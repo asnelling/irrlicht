@@ -160,7 +160,7 @@ int main()
 		return 1;
 
 	// ask the user if we should use high level shaders for this example
-	if (driverType == video::EDT_DIRECT3D9 ||
+	if (driverType == video::EDT_DIRECT3D9 || driverType == video::EDT_DIRECT3D11 ||
 		 driverType == video::EDT_OPENGL)
 	{
 		char i;
@@ -208,6 +208,18 @@ int main()
 	case video::EDT_DIRECT3D8:
 		psFileName = "../../media/d3d8.psh";
 		vsFileName = "../../media/d3d8.vsh";
+		break;
+	case video::EDT_DIRECT3D11:
+		if (UseHighLevelShaders)
+		{
+			psFileName = "../../media/d3d11.hlsl";
+			vsFileName = psFileName; // both shaders are in the same file
+		}
+		else
+		{
+			psFileName = "../../media/d3d9.psh";
+			vsFileName = "../../media/d3d9.vsh";
+		}
 		break;
 	case video::EDT_DIRECT3D9:
 		if (UseHighLevelShaders)
