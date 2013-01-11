@@ -56,12 +56,20 @@ CD3D11HardwareBuffer::~CD3D11HardwareBuffer()
 	if(TempStagingBuffer)
 		TempStagingBuffer->drop();
 	
-	SAFE_RELEASE(SRView);
-	SAFE_RELEASE(UAView);
-	SAFE_RELEASE(Buffer);
+	if(SRView)
+		SRView->Release();
 
-	SAFE_RELEASE(ImmediateContext);
-	SAFE_RELEASE(Device);
+	if(UAView)
+		UAView->Release();
+
+	if(Buffer)
+		Buffer->Release();
+
+	if(ImmediateContext)
+		ImmediateContext->Release();
+
+	if(Device)
+		Device->Release();
 }
 
 //! Lock function.

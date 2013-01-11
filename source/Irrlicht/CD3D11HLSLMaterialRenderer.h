@@ -17,6 +17,11 @@
 
 namespace irr
 {
+namespace io
+{
+class IFileSystem;
+}
+
 namespace video
 {
 
@@ -27,36 +32,32 @@ class IMaterialRenderer;
 class CD3D11VertexDeclaration;
 
 //! Class for using vertex and pixel shaders via HLSL with D3D11
-class CD3D11CustomMaterialRenderer : public CD3D11MaterialRenderer
+class CD3D11HLSLMaterialRenderer : public CD3D11ShaderMaterialRenderer
 {
 public:
 
 	//! Public constructor
-	CD3D11CustomMaterialRenderer(ID3D11Device* d3ddev, video::IVideoDriver* driver, s32& outMaterialTypeNr,
+	CD3D11HLSLMaterialRenderer(ID3D11Device* d3ddev, video::IVideoDriver* driver, s32& outMaterialTypeNr,
 		const c8* vertexShaderProgram, const c8* vertexShaderEntryPointName, E_VERTEX_SHADER_TYPE vsCompileTarget,
 		const c8* pixelShaderProgram, const c8* pixelShaderEntryPointName, E_PIXEL_SHADER_TYPE psCompileTarget,
 		const c8* geometryShaderProgram, const c8* geometryShaderEntryPointName, E_GEOMETRY_SHADER_TYPE gsCompileTarget,
 		scene::E_PRIMITIVE_TYPE inType, scene::E_PRIMITIVE_TYPE outType, u32 verticesOut, E_VERTEX_TYPE vertexTypeOut,				// Only for DirectX 11
-		IShaderConstantSetCallBack* callback, IMaterialRenderer* baseMaterial, s32 userData);
+		IShaderConstantSetCallBack* callback, IMaterialRenderer* baseMaterial, s32 userData, io::IFileSystem* fileSystem);
 
 	//! Destructor
-	virtual ~CD3D11CustomMaterialRenderer();
+	virtual ~CD3D11HLSLMaterialRenderer();
 
 	//! sets a variable in the shader.
 	//! \param name: Name of the variable
 	//! \param floats: Pointer to array of floats
 	//! \param count: Amount of floats in array.
-	virtual bool setVariable(const c8* name, const f32* floats, int count);
-	virtual bool setVariable(const c8* name, const s32* ints, int count);
+	virtual bool setVariable(s32 index, const f32* floats, int count);
 
-	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
-					bool resetAllRenderstates, IMaterialRendererServices* services);
+	virtual bool setVariable(s32 index, const s32* ints, int count);
+
+	virtual s32 getVariableID( bool vertex, const c8* name );
 
 	virtual bool OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype);
-
-	/** Called during the IVideoDriver::setMaterial() call before the new
-	material will get the OnSetMaterial() call. */
-	virtual void OnUnsetMaterial();
 
 	//! get shader signature
 	virtual void* getShaderByteCode() const;
@@ -64,15 +65,13 @@ public:
 	//! get shader signature size
 	virtual u32 getShaderByteCodeSize() const;
 
-	virtual bool isTransparent() const;
-
 protected:
 	ID3DX11Effect* Effect;
 	ID3DX11EffectTechnique* Technique;
 	D3DX11_PASS_DESC PassDescription;
 
-	IShaderConstantSetCallBack* CallBack;
-	s32 UserData;
+	ID3DInclude* Includer;
+
 	bool isStreamOutput;
 
 	bool init(const core::stringc vertexShaderProgram,
@@ -90,6 +89,7 @@ protected:
 			E_VERTEX_TYPE vertexTypeOut);
 
 	core::stringc parseStreamOutputDeclaration(CD3D11VertexDeclaration* declaration);
+	void printHLSLVariables();
 };
 
 } // end namespace video

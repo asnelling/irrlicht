@@ -19,14 +19,9 @@ namespace video
 {
 
 CD3D11VertexDeclaration::CD3D11VertexDeclaration(CD3D11Driver* driver, core::array<SVertexElement>& elements, E_VERTEX_TYPE type)
-: Driver(driver)
-, IAElements(0)
-, SOElements(0)
-, Size(elements.size())
-, VertexPitch(0)
-, VertexType(type)
-, Device(0)
-, ImmediateContext(0)
+	: Driver(driver), IAElements(0), SOElements(0), 
+	Size(elements.size()), VertexPitch(0), VertexType(type), 
+	Device(0), ImmediateContext(0)
 {
 	Device = Driver->getExposedVideoData().D3D11.D3DDev11;
 	if (Device)
@@ -34,7 +29,6 @@ CD3D11VertexDeclaration::CD3D11VertexDeclaration(CD3D11Driver* driver, core::arr
 		Device->AddRef();
 	}
 
-	//IAElements = new D3D11_INPUT_ELEMENT_DESC[Size];
 	D3D11_INPUT_ELEMENT_DESC desc;
 	for(u32 i = 0; i < Size; i++)
 	{
@@ -63,7 +57,8 @@ CD3D11VertexDeclaration::~CD3D11VertexDeclaration()
 	}
 	layoutMap.clear();
 
-	SAFE_RELEASE( Device );
+	if(Device)
+		Device->Release();
 }
 
 //D3D11_INPUT_ELEMENT_DESC* CD3D11VertexDeclaration::getInputAssemblyDeclaration() const
@@ -99,7 +94,7 @@ const core::array<D3D11_SO_DECLARATION_ENTRY>& CD3D11VertexDeclaration::getStrea
 
 ID3D11InputLayout* CD3D11VertexDeclaration::getInputLayout(IMaterialRenderer* rend)
 {
-	CD3D11MaterialRenderer* renderer = static_cast<CD3D11MaterialRenderer*>(rend);
+	CD3D11ShaderMaterialRenderer* renderer = static_cast<CD3D11ShaderMaterialRenderer*>(rend);
 	u32 signature = reinterpret_cast<u32>(renderer->getShaderByteCode());
 
 	ID3D11InputLayout* layout = 0;
@@ -146,9 +141,9 @@ LPCSTR CD3D11VertexDeclaration::getSemanticName(E_VERTEX_ELEMENT_SEMANTIC semant
 		return "BLENDWEIGHT";
 	case EVES_BLEND_INDICES:
 		return "BLENDINDICES";
+	default:
+		return "POSITION";
 	}
-
-	return "POSITION";
 }
 
 DXGI_FORMAT CD3D11VertexDeclaration::getFormat(E_VERTEX_ELEMENT_TYPE type) const
@@ -182,9 +177,9 @@ DXGI_FORMAT CD3D11VertexDeclaration::getFormat(E_VERTEX_ELEMENT_TYPE type) const
 		return DXGI_FORMAT_R8G8B8A8_UNORM;
 	case EVET_UBYTE4:
 		return DXGI_FORMAT_R8G8B8A8_UINT;
+	default:
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
 	}
-
-	return DXGI_FORMAT_R32G32B32A32_FLOAT;
 }
 
 u32 CD3D11VertexDeclaration::getVertexPitch() const

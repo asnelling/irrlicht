@@ -12,29 +12,12 @@
 #include "CD3D11Texture.h"
 #include "CD3D11HardwareBuffer.h"
 #include "CImage.h"
-#include "CD3D11MaterialRenderer.h"
-#include "CD3D11FixedFunctionMaterialRenderer.h"
-#include "CD3D11CustomMaterialRenderer.h"
+
+#include "CD3D11ShaderMaterialRenderer.h"
+#include "CD3D11HLSLMaterialRenderer.h"
 #include "CD3D11NormalMapRenderer.h"
 #include "CD3D11VertexDeclaration.h"
-//#include "CD3D11ParallaxMapRenderer.h"
-
-#define SAFE_RELEASE(x) \
-	if(x)				\
-		x->Release(); 	\
-	x = 0;
-
-#define RELEASE_ALL(x)			\
-	ULONG rest = x->Release();	\
-	while( rest > 0 )			\
-		rest = x->Release();	\
-	x = 0;
-
-
-inline irr::u32 getIndexSize(irr::video::E_INDEX_TYPE iType)
-{
-	return (iType == irr::video::EIT_16BIT) ? sizeof(unsigned short) : sizeof(unsigned int);
-};
+#include "CD3D11ParallaxMapRenderer.h"
 
 inline void unpack_texureBlendFunc ( irr::video::E_BLEND_FACTOR &srcFact, irr::video::E_BLEND_FACTOR &dstFact,
 			irr::video::E_MODULATE_FUNC &modulo, irr::u32& alphaSource, const irr::f32 param )
@@ -60,7 +43,7 @@ CD3D11Driver::CD3D11Driver(const irr::SIrrlichtCreationParameters& params,
 	Params(params),
 	ResetRenderStates(true), Transformation3DChanged(false),
 	DriverType(D3D_DRIVER_TYPE_HARDWARE),
-	D3DLibrary(0), Device(0), ImmediateContext(0), SwapChain(0), Adapter(0), DXGIFactory(0), 
+	D3DLibrary(0), Device(0), Context(0), SwapChain(0), Adapter(0), DXGIFactory(0), 
 	Output(0), CurrentInputLayout(0), DefaultBackBuffer(0), DefaultDepthBuffer(0),
 	DynVertexBuffer(0), DynIndexBuffer(0), DynVertexBufferSize(0), DynIndexBufferSize(0),
 	SceneSourceRect(0), VendorID(0), ColorFormat(ECF_A8R8G8B8),
@@ -103,41 +86,44 @@ CD3D11Driver::CD3D11Driver(const irr::SIrrlichtCreationParameters& params,
 
 CD3D11Driver::~CD3D11Driver()
 {
-	// Unbound all shader resources
-	ID3D11ShaderResourceView* views[1] = { NULL };
-	ImmediateContext->VSSetShaderResources(0, 1, views);
-	ImmediateContext->HSSetShaderResources(0, 1, views);
-	ImmediateContext->DSSetShaderResources(0, 1, views);
-	ImmediateContext->GSSetShaderResources(0, 1, views);
-	ImmediateContext->PSSetShaderResources(0, 1, views);
-	ImmediateContext->CSSetShaderResources(0, 1, views);
-
-	// Set windowed mode before release swap chain
-	SwapChain->SetFullscreenState( FALSE, NULL );
-
-	NullTexture->drop();
 	// Delete renderers and textures
 	deleteMaterialRenders();
 	deleteAllTextures();
 	removeAllOcclusionQueries();
 	removeAllHardwareBuffers();
 
+	// Set windowed mode before release swap chain
+	if(SwapChain)
+		SwapChain->SetFullscreenState( FALSE, NULL );
+
+	if(NullTexture)
+		NullTexture->drop();
+
 	ClipPlanes.clear();
 
 	// clear state
-	if (ImmediateContext)
+	if (Context)
 	{
-		ImmediateContext->ClearState();
-		ImmediateContext->Flush();
-	}
+		// Unbound all shader resources
+		ID3D11ShaderResourceView* views[1] = { NULL };
 
-	// release Direct3D objects
+		Context->VSSetShaderResources(0, 1, views);
+		Context->HSSetShaderResources(0, 1, views);
+		Context->DSSetShaderResources(0, 1, views);
+		Context->GSSetShaderResources(0, 1, views);
+		Context->PSSetShaderResources(0, 1, views);
+		Context->CSSetShaderResources(0, 1, views);
+
+		Context->ClearState();
+		Context->Flush();
+	}
 
 	// clear vertex declarations
 	DeclarationIterator it = declarationMap.getIterator();
 	while(!it.atEnd())
 	{
-		it->getValue()->drop();
+		if(it->getValue())
+			it->getValue()->drop();
 		it++;
 	}
 	declarationMap.clear();
@@ -146,7 +132,8 @@ CD3D11Driver::~CD3D11Driver()
 	BlendStateMap::Iterator bldIt = BlendMap.getIterator();
 	while (!bldIt.atEnd())
 	{
-		if (bldIt->getValue()) bldIt->getValue()->Release();
+		if (bldIt->getValue()) 
+			bldIt->getValue()->Release();
 		bldIt++;
 	}
 	BlendMap.clear();
@@ -155,7 +142,8 @@ CD3D11Driver::~CD3D11Driver()
 	RasterizerStateMap::Iterator rasIt = RasterizerMap.getIterator();
 	while (!rasIt.atEnd())
 	{
-		if (rasIt->getValue()) rasIt->getValue()->Release();
+		if (rasIt->getValue()) 
+			rasIt->getValue()->Release();
 		rasIt++;
 	}
 	RasterizerMap.clear();
@@ -164,7 +152,8 @@ CD3D11Driver::~CD3D11Driver()
 	DepthStencilStateMap::Iterator dsIt = DepthStencilMap.getIterator();
 	while (!dsIt.atEnd())
 	{
-		if (dsIt->getValue()) dsIt->getValue()->Release();
+		if (dsIt->getValue()) 
+			dsIt->getValue()->Release();
 		dsIt++;
 	}
 	DepthStencilMap.clear();
@@ -173,21 +162,41 @@ CD3D11Driver::~CD3D11Driver()
 	SamplerStateMap::Iterator samIt = SamplerMap.getIterator();
 	while (!samIt.atEnd())
 	{
-		if (samIt->getValue()) samIt->getValue()->Release();
+		if (samIt->getValue()) 
+			samIt->getValue()->Release();
 		samIt++;
 	}
 	SamplerMap.clear();
 
-	SAFE_RELEASE(DynIndexBuffer);
-	SAFE_RELEASE(DynVertexBuffer);
-	SAFE_RELEASE(SwapChain);
-	SAFE_RELEASE(DefaultDepthBuffer);
-	SAFE_RELEASE(DefaultBackBuffer);
-	SAFE_RELEASE(Output);
-	SAFE_RELEASE(Adapter);
-	SAFE_RELEASE(ImmediateContext);
-	SAFE_RELEASE(DXGIFactory);
-	RELEASE_ALL(Device);
+	if(DynIndexBuffer)
+		DynIndexBuffer->Release();
+
+	if(DynVertexBuffer)
+		DynVertexBuffer->Release();
+
+	if(SwapChain)
+		SwapChain->Release();
+
+	if(DefaultDepthBuffer)
+		DefaultDepthBuffer->Release();
+
+	if(DefaultBackBuffer)
+		DefaultBackBuffer->Release();
+
+	if(Output)
+		Output->Release();
+
+	if(Adapter)
+		Adapter->Release();
+
+	if(Context)
+		Context->Release();
+
+	if(DXGIFactory)
+		DXGIFactory->Release();
+
+	if(Device)
+		Device->Release();
 
 	FreeLibrary(D3DLibrary);
 }
@@ -235,7 +244,7 @@ void CD3D11Driver::createMaterialRenderers()
 	renderer->drop();
 	
 	// The following shall be changed to parallax in future
-/*	renderer = new CD3D11ParallaxMapRenderer(Device, this, tmp,
+	renderer = new CD3D11ParallaxMapRenderer(Device, this, tmp,
 		MaterialRenderers[EMT_SOLID].Renderer);
 	renderer->drop();
 
@@ -245,7 +254,7 @@ void CD3D11Driver::createMaterialRenderers()
 
 	renderer = new CD3D11ParallaxMapRenderer(Device, this, tmp,
 		MaterialRenderers[EMT_TRANSPARENT_VERTEX_ALPHA].Renderer);
-	renderer->drop();*/
+	renderer->drop();
 
 	// The following shall be changed to one blend in future
 	addAndDropMaterialRenderer(new CD3D11MaterialRenderer_ONETEXTURE_BLEND(Device, this));
@@ -323,12 +332,13 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 		D3D_FEATURE_LEVEL RequestedLevels[] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0 };
 		u32 RequestedLevelsSize = sizeof( RequestedLevels ) / sizeof( RequestedLevels[0] );
 
-		hr = CreateDeviceFunc(Adapter, DriverType, NULL, deviceFlags, RequestedLevels, RequestedLevelsSize, D3D11_SDK_VERSION, &Device, &FeatureLevel, &ImmediateContext );
+		hr = CreateDeviceFunc(Adapter, DriverType, NULL, deviceFlags, RequestedLevels, RequestedLevelsSize, D3D11_SDK_VERSION, &Device, &FeatureLevel, &Context );
 		if (FAILED(hr))
 		{
 			// Try creating warp device and feature level 10.1
 			DriverType = D3D_DRIVER_TYPE_WARP;
-			hr = CreateDeviceFunc(Adapter, DriverType, NULL, deviceFlags, RequestedLevels, RequestedLevelsSize, D3D11_SDK_VERSION, &Device, &FeatureLevel, &ImmediateContext );
+			hr = CreateDeviceFunc(Adapter, DriverType, NULL, deviceFlags, RequestedLevels, RequestedLevelsSize, D3D11_SDK_VERSION, &Device, &FeatureLevel, &Context );
+			
 			if(FAILED(hr))
 			{
 				os::Printer::log("Error, could not create device.", ELL_ERROR);
@@ -347,8 +357,8 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 	}
 
 	// Get adapter used by this device and query informations
-	IDXGIDevice* DXGIDevice = NULL;
-	Device->QueryInterface( __uuidof( IDXGIDevice ), reinterpret_cast<void**>( &DXGIDevice ) );
+	IDXGIDevice1* DXGIDevice = NULL;
+	Device->QueryInterface( __uuidof( IDXGIDevice1 ), reinterpret_cast<void**>( &DXGIDevice ) );
 	if( SUCCEEDED( DXGIDevice->GetAdapter( &Adapter ) ) )
 	{
 		DXGI_ADAPTER_DESC adapDesc;
@@ -380,7 +390,7 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 	}
 
 	// get DXGI factory
-	hr = Adapter->GetParent( __uuidof( IDXGIFactory ), reinterpret_cast<void**>( &DXGIFactory ) );
+	hr = Adapter->GetParent( __uuidof( IDXGIFactory1 ), reinterpret_cast<void**>( &DXGIFactory ) );
 	if( FAILED( hr ) )
 	{
 		os::Printer::log("Error, could not get DXGI factory.", ELL_ERROR);
@@ -395,7 +405,7 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 	}
 
 	// Preparing for swap chain creation
-	::ZeroMemory( &present, sizeof( DXGI_SWAP_CHAIN_DESC ) );
+	::ZeroMemory( &present, sizeof( DXGI_SWAP_CHAIN_DESC) );
 	present.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	present.BufferCount = 1;
 	present.BufferDesc.Format = D3DColorFormat;
@@ -538,10 +548,6 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 	reallocateDynamicBuffers( 32768 * sizeof(S3DVertexTangents), 32768 * sizeof(int) );
 
 	// With all DX 11 objects created, init driver states
-
-	// Only enable multisampling if needed
-	disableFeature(EVDF_TEXTURE_MULTISAMPLING, true);
-
 	// Create a texture that will be used when material textures are NULL
 	// 1x1 texture, opaque White.
 	u32 data = 0xffffffff;
@@ -639,12 +645,12 @@ void CD3D11Driver::runOcclusionQuery(scene::ISceneNode* node, bool visible)
 	if (index != -1)
 	{
 		if (OcclusionQueries[index].PID)
-			ImmediateContext->Begin(reinterpret_cast<ID3D11Query*>(OcclusionQueries[index].PID));
+			Context->Begin(reinterpret_cast<ID3D11Query*>(OcclusionQueries[index].PID));
 		
 		CNullDriver::runOcclusionQuery(node, visible);
 		
 		if (OcclusionQueries[index].PID)
-			ImmediateContext->End(reinterpret_cast<ID3D11Query*>(OcclusionQueries[index].PID));
+			Context->End(reinterpret_cast<ID3D11Query*>(OcclusionQueries[index].PID));
 	}
 }
 
@@ -735,6 +741,7 @@ ID3D11DepthStencilState* CD3D11Driver::getDepthStencilState()
 	// Depth stencil state
 	ID3D11DepthStencilState* state = NULL;
 	DepthStencilStateMap::Node* dsIt = DepthStencilMap.find( DepthStencilDesc );
+	
 	if (dsIt)
 	{
 		state = dsIt->getValue();
@@ -788,19 +795,28 @@ bool CD3D11Driver::beginScene(bool backBuffer, bool zBuffer, SColor color,
 	{
 		SColorf fCol( color );
 		FLOAT c[4] = { fCol.r, fCol.g, fCol.b, fCol.a };		// don't swizzle clear color for default back buffer
-		ImmediateContext->ClearRenderTargetView( DefaultBackBuffer, c );
+		Context->ClearRenderTargetView( DefaultBackBuffer, c );
 	}
-	if( zBuffer && DefaultDepthBuffer )
+
+	UINT flags = 0;
+
+	if (zBuffer)
+		flags |=  D3D11_CLEAR_DEPTH;
+
+	if (Params.Stencilbuffer)
+		flags |= D3D11_CLEAR_STENCIL;
+
+	if(flags)
 	{
-		ImmediateContext->ClearDepthStencilView( DefaultDepthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0 );
+		Context->ClearDepthStencilView( DefaultDepthBuffer, flags, 1.0f, 0 );
 	}
 
 	// For safety, unset all shader resource views
 	// If some is bound to shader stages, can cause error when bound to Output Merger too
 	ID3D11ShaderResourceView* views[1] = { NULL };
-	ImmediateContext->VSSetShaderResources( 0, 1, views );
-	ImmediateContext->GSSetShaderResources( 0, 1, views );
-	ImmediateContext->PSSetShaderResources( 0, 1, views );
+	Context->VSSetShaderResources( 0, 1, views );
+	Context->GSSetShaderResources( 0, 1, views );
+	Context->PSSetShaderResources( 0, 1, views );
 
 	return true;
 }
@@ -812,8 +828,8 @@ bool CD3D11Driver::endScene()
 
 	HRESULT hr = S_OK;
 	
-	hr = SwapChain->Present( Params.Vsync ? 1 : 0, 0 );
-	
+	hr = SwapChain->Present(Params.Vsync ? 1 : 0, 0);
+
 	if( FAILED( hr ) )
 	{
 		os::Printer::log("Error, could not present frame to screen", ELL_ERROR);
@@ -843,7 +859,7 @@ bool CD3D11Driver::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 	case EVDF_MULTITEXTURE:
 	case EVDF_BILINEAR_FILTER:
 	case EVDF_TEXTURE_NPOT:
-	case EVDF_STENCIL_BUFFER:
+	
 	case EVDF_HLSL:
 	case EVDF_MIP_MAP:
 	case EVDF_MIP_MAP_AUTO_UPDATE:
@@ -859,6 +875,8 @@ bool CD3D11Driver::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 	case EVDF_PIXEL_SHADER_3_0:
 		return true;
 
+	case EVDF_STENCIL_BUFFER:
+		return Params.Stencilbuffer;
 	case EVDF_VERTEX_SHADER_4_0:
 	case EVDF_PIXEL_SHADER_4_0:
 	case EVDF_GEOMETRY_SHADER_4_0:
@@ -895,9 +913,13 @@ bool CD3D11Driver::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 
 	case EVDF_COMPUTING_SHADER_5_0:
 		return FeatureLevel == D3D_FEATURE_LEVEL_11_0;
-	}
 
-	return false;
+	case EVDF_OCCLUSION_QUERY:
+		return true;
+
+	default:
+		return false;
+	}
 }
 
 //! sets transformation
@@ -959,14 +981,14 @@ bool CD3D11Driver::setRenderTarget(video::ITexture* texture,
 	{
 		CurrentBackBuffer = DefaultBackBuffer;
 		CurrentDepthBuffer = DefaultDepthBuffer;
-		ImmediateContext->OMSetRenderTargets( 1, &CurrentBackBuffer, CurrentDepthBuffer );
+		Context->OMSetRenderTargets( 1, &CurrentBackBuffer, CurrentDepthBuffer );
 		CurrentRendertargetSize = core::dimension2d<u32>(0,0);
 	}
 	else
 	{
 		CurrentBackBuffer = tex->getRenderTargetView();
 		CurrentDepthBuffer = tex->DepthSurface->Surface;
-		ImmediateContext->OMSetRenderTargets( 1, &CurrentBackBuffer, CurrentDepthBuffer);
+		Context->OMSetRenderTargets( 1, &CurrentBackBuffer, CurrentDepthBuffer);
 		CurrentRendertargetSize = tex->getSize();
 	}
 
@@ -980,7 +1002,7 @@ bool CD3D11Driver::setRenderTarget(video::ITexture* texture,
 					   fCol.g, 
 					   tex == 0 ? fCol.b :fCol.r,
 					   fCol.a };
-		ImmediateContext->ClearRenderTargetView( CurrentBackBuffer, c );		
+		Context->ClearRenderTargetView( CurrentBackBuffer, c );		
 	}
 
 	// clear depth
@@ -1118,7 +1140,7 @@ bool CD3D11Driver::setRenderTarget(const core::array<video::IRenderTarget>& targ
 		
 		// clear render target view
 		if( clearBackBuffer )
-			ImmediateContext->ClearRenderTargetView( RTViews[i], c );
+			Context->ClearRenderTargetView( RTViews[i], c );
 	}
 
 	// set depth buffer
@@ -1127,7 +1149,7 @@ bool CD3D11Driver::setRenderTarget(const core::array<video::IRenderTarget>& targ
 		this->clearZBuffer();
 
 	// set targets
-	ImmediateContext->OMSetRenderTargets( maxMultipleRTTs, RTViews, CurrentDepthBuffer );
+	Context->OMSetRenderTargets( maxMultipleRTTs, RTViews, CurrentDepthBuffer );
 
 	// don't forget to set viewport
 	CurrentRendertargetSize = tex->getSize();
@@ -1150,7 +1172,7 @@ void CD3D11Driver::setViewPort(const core::rect<s32>& area)
 	viewPort.MinDepth = 0.0f;
 	viewPort.MaxDepth = 1.0f;
 
-	ImmediateContext->RSSetViewports( 1, &viewPort );
+	Context->RSSetViewports( 1, &viewPort );
 
 	this->ViewPort = vp;
 }
@@ -1168,7 +1190,7 @@ bool CD3D11Driver::updateVertexHardwareBuffer(SHWBufferLink_d3d11 *hwBuffer)
 	const scene::IMeshBuffer* mb = hwBuffer->MeshBuffer;
 
 	const void* vertices = mb->getVertexBuffer()->getVertices();
-	u32 vertexCount = mb->getVertexBuffer()->getVertexCount();
+	const u32 vertexCount = mb->getVertexBuffer()->getVertexCount();
 
 	E_VERTEX_TYPE vType = EVT_STANDARD;
 
@@ -1194,9 +1216,9 @@ bool CD3D11Driver::updateVertexHardwareBuffer(SHWBufferLink_d3d11 *hwBuffer)
 	if (!hwBuffer->vertexBuffer || vertexSize * vertexCount > hwBuffer->vertexBufferSize)
 	{
 		// Release buffer if need to expand
-		if(vertexSize * vertexCount > hwBuffer->vertexBufferSize)
+		if(vertexSize * vertexCount > hwBuffer->vertexBufferSize && hwBuffer->vertexBuffer)
 		{
-			SAFE_RELEASE( hwBuffer->vertexBuffer );
+			hwBuffer->vertexBuffer->Release();
 		}
 
 		// Create new buffer
@@ -1234,7 +1256,7 @@ bool CD3D11Driver::updateVertexHardwareBuffer(SHWBufferLink_d3d11 *hwBuffer)
 		box.right = hwBuffer->vertexBufferSize;
 		box.bottom = 1;
 		box.back = 1;
-		ImmediateContext->UpdateSubresource( hwBuffer->vertexBuffer, 0, &box, vertices, 0, 0 );
+		Context->UpdateSubresource( hwBuffer->vertexBuffer, 0, &box, vertices, 0, 0 );
 	}
 
 	return true;
@@ -1247,16 +1269,17 @@ bool CD3D11Driver::updateIndexHardwareBuffer(SHWBufferLink_d3d11* hwBuffer)
 
 	const scene::IMeshBuffer* mb = hwBuffer->MeshBuffer;
 
-	void* indices = mb->getIndexBuffer()->getIndices();
-	u32 indexCount = mb->getIndexBuffer()->getIndexCount();
+	const void* indices = mb->getIndexBuffer()->getIndices();
+	const u32 indexCount = mb->getIndexBuffer()->getIndexCount();
+
 	const u32 indexSize = mb->getIndexBuffer()->getType() == EIT_16BIT ? 2 : 4;
 
 	if (!hwBuffer->indexBuffer || indexSize * indexCount > hwBuffer->indexBufferSize)
 	{
 		// Release buffer if need to expand
-		if(indexSize * indexCount > hwBuffer->indexBufferSize)
+		if(indexSize * indexCount > hwBuffer->indexBufferSize && hwBuffer->indexBuffer)
 		{
-			SAFE_RELEASE( hwBuffer->indexBuffer );
+			hwBuffer->indexBuffer->Release();
 		}
 
 		D3D11_BUFFER_DESC desc;
@@ -1293,7 +1316,7 @@ bool CD3D11Driver::updateIndexHardwareBuffer(SHWBufferLink_d3d11* hwBuffer)
 		box.right = hwBuffer->indexBufferSize;
 		box.bottom = 1;
 		box.back = 1;
-		ImmediateContext->UpdateSubresource( hwBuffer->indexBuffer, 0, &box, indices, 0, 0 );
+		Context->UpdateSubresource( hwBuffer->indexBuffer, 0, &box, indices, 0, 0 );
 	}
 
 	return true;
@@ -1358,9 +1381,11 @@ void CD3D11Driver::deleteHardwareBuffer(SHWBufferLink *_HWBuffer)
 
 	SHWBufferLink_d3d11* HWBuffer = static_cast<SHWBufferLink_d3d11*>(_HWBuffer);
 	
-	SAFE_RELEASE(HWBuffer->indexBuffer);
-	SAFE_RELEASE(HWBuffer->vertexBuffer);
-	SAFE_RELEASE(HWBuffer->vertexBuffer2);
+	if(HWBuffer->indexBuffer)
+		HWBuffer->indexBuffer->Release();
+
+	if(HWBuffer->vertexBuffer)
+		HWBuffer->vertexBuffer->Release();
 	
 	CNullDriver::deleteHardwareBuffer(_HWBuffer);
 }
@@ -1374,7 +1399,7 @@ void CD3D11Driver::drawHardwareBuffer(SHWBufferLink* _HWBuffer)
 
 	updateHardwareBuffer(HWBuffer);		//check if update is needed
 
-	HWBuffer->LastUsed=0;				//reset count
+	HWBuffer->LastUsed = 0;				//reset count
 
 	const scene::IMeshBuffer* mb = HWBuffer->MeshBuffer;
 
@@ -1401,26 +1426,24 @@ void CD3D11Driver::drawHardwareBuffer(SHWBufferLink* _HWBuffer)
 	// set vertex buffer
 	ID3D11Buffer* buffers[1] = { HWBuffer->vertexBuffer };
 
-	ImmediateContext->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
+	Context->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
 
 	// set index buffer
-	ImmediateContext->IASetIndexBuffer( HWBuffer->indexBuffer, mb->getIndexBuffer()->getType() == video::EIT_16BIT ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, 0 );
+	Context->IASetIndexBuffer( HWBuffer->indexBuffer,mb->getIndexBuffer()->getType() == video::EIT_16BIT ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, 0 );
 
 	// draw
-	drawVertexPrimitiveList(0, mb->getVertexBuffer()->getVertexCount(), 0, mb->getIndexBuffer()->getIndexCount()/3, vType, scene::EPT_TRIANGLES, mb->getIndexBuffer()->getType());
+	drawVertexPrimitiveList(0, mb->getVertexBuffer()->getVertexCount(), 0, mb->getIndexBuffer()->getIndexCount() / 3, vType, scene::EPT_TRIANGLES, mb->getIndexBuffer()->getType());
 
 	// unset buffers
 	buffers[0] = NULL;
-	ImmediateContext->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
-	ImmediateContext->IASetIndexBuffer( NULL, DXGI_FORMAT_R32_UINT, 0 );
+	Context->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
+	Context->IASetIndexBuffer( NULL, DXGI_FORMAT_R32_UINT, 0 );
 }
 
 void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 				IHardwareBuffer* indices, E_VERTEX_TYPE vType, 
 				scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType, u32 numInstances)
 {
-	//CNullDriver::drawHardwareBuffer(vertices, indices, vType, pType, iType);
-
 	// Get vertex declaration
 	DeclarationNode declNode = declarationMap.find(vType);
 	if (!declNode)
@@ -1442,11 +1465,12 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 
 	// set vertex buffer
 	ID3D11Buffer* buffers[1] = { vertexBuffer->getBufferResource() };
-	ImmediateContext->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
+	Context->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
 
 	// Bind textures and samplers
 	ID3D11SamplerState* samplers[MATERIAL_MAX_TEXTURES];
 	ID3D11ShaderResourceView* views[MATERIAL_MAX_TEXTURES];
+
 	for(int i = 0; i < MATERIAL_MAX_TEXTURES; i++)
 	{
 		if( CurrentTexture[i] )
@@ -1460,28 +1484,28 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 			samplers[i] = 0;
 		}
 	}
-	ImmediateContext->PSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );
-	ImmediateContext->PSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
-	ImmediateContext->GSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );		// Test for recirculate
-	ImmediateContext->GSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
-	ImmediateContext->VSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );	// Test for recirculate
-	ImmediateContext->VSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->PSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );
+	Context->PSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->GSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );		// Test for recirculate
+	Context->GSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->VSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );	// Test for recirculate
+	Context->VSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
 
 	// Bind depth-stencil view
-	ImmediateContext->OMSetDepthStencilState( getDepthStencilState(), 1 );
+	Context->OMSetDepthStencilState( getDepthStencilState(), 1 );
 
 	// Bind blend state
-	ImmediateContext->OMSetBlendState( getBlendState(), 0, 0xffffffff );
+	Context->OMSetBlendState( getBlendState(), 0, 0xffffffff );
 
 	// Bind rasterizer state
-	ImmediateContext->RSSetState( getRasterizerState() );
+	Context->RSSetState( getRasterizerState() );
 
 	// Bind input layout
 	IMaterialRenderer* renderer = MaterialRenderers[Material.MaterialType].Renderer;
-	ImmediateContext->IASetInputLayout( declNode->getValue()->getInputLayout(renderer) );
+	Context->IASetInputLayout( declNode->getValue()->getInputLayout(renderer) );
 
 	// Set topology
-	ImmediateContext->IASetPrimitiveTopology( getTopology(pType) );
+	Context->IASetPrimitiveTopology( getTopology(pType) );
 	
 	// finally, draw
 	if (indices)
@@ -1492,26 +1516,26 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 		const u32 idxSize = getIndexSize(iType);
 		const u32 indexCount = indexBuffer->size() / idxSize;
 		
-		ImmediateContext->IASetIndexBuffer( indexBuffer->getBufferResource(), idxType, 0 );
+		Context->IASetIndexBuffer( indexBuffer->getBufferResource(), idxType, 0 );
 
 		if (numInstances > 0)
-			ImmediateContext->DrawIndexedInstanced( indexCount, numInstances, 0, 0, 0 );
+			Context->DrawIndexedInstanced( indexCount, numInstances, 0, 0, 0 );
 		else
-			ImmediateContext->DrawIndexed( indexCount, 0, 0 );
+			Context->DrawIndexed( indexCount, 0, 0 );
 	}
 	else
 	{
 		if (numInstances > 0)
-			ImmediateContext->DrawInstanced( vertexCount, numInstances, 0, 0 );
+			Context->DrawInstanced( vertexCount, numInstances, 0, 0 );
 		else
-			ImmediateContext->Draw( vertexCount, 0 );
+			Context->Draw( vertexCount, 0 );
 	}
 
 	// unset buffers
 	buffers[0] = 0;
-	ImmediateContext->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
-	ImmediateContext->IASetIndexBuffer( 0, DXGI_FORMAT_R32_UINT, 0 );
-	ImmediateContext->SOSetTargets( 1, buffers, &offset );
+	Context->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
+	Context->IASetIndexBuffer( 0, DXGI_FORMAT_R32_UINT, 0 );
+	Context->SOSetTargets( 1, buffers, &offset );
 }
 
 void CD3D11Driver::drawAuto(IHardwareBuffer* vertices, E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType)
@@ -1538,7 +1562,7 @@ void CD3D11Driver::drawAuto(IHardwareBuffer* vertices, E_VERTEX_TYPE vType, scen
 
 	// set vertex buffer
 	ID3D11Buffer* buffers[1] = { vertexBuffer->getBufferResource() };
-	ImmediateContext->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
+	Context->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
 
 	// Bind textures and samplers
 	ID3D11SamplerState* samplers[MATERIAL_MAX_TEXTURES];
@@ -1556,41 +1580,41 @@ void CD3D11Driver::drawAuto(IHardwareBuffer* vertices, E_VERTEX_TYPE vType, scen
 			samplers[i] = 0;
 		}
 	}
-	ImmediateContext->PSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );
-	ImmediateContext->PSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );	
-	ImmediateContext->GSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );		// Test for recirculate
-	ImmediateContext->GSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
-	ImmediateContext->VSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );	// Test for recirculate
-	ImmediateContext->VSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->PSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );
+	Context->PSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );	
+	Context->GSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );		// Test for recirculate
+	Context->GSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->VSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );	// Test for recirculate
+	Context->VSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
 
 	// Bind input layout
 	IMaterialRenderer* renderer = MaterialRenderers[Material.MaterialType].Renderer;
-	ImmediateContext->IASetInputLayout( declNode->getValue()->getInputLayout(renderer) );
+	Context->IASetInputLayout( declNode->getValue()->getInputLayout(renderer) );
 
 	// Bind depth-stencil view
-	ImmediateContext->OMSetDepthStencilState( getDepthStencilState(), 1 );
+	Context->OMSetDepthStencilState( getDepthStencilState(), 1 );
 
 	// Bind blend state
-	ImmediateContext->OMSetBlendState( getBlendState(), 0, 0xffffffff );
+	Context->OMSetBlendState( getBlendState(), 0, 0xffffffff );
 
 	// Bind rasterizer state
-	ImmediateContext->RSSetState( getRasterizerState() );
+	Context->RSSetState( getRasterizerState() );
 
 	// Bind topology
-	ImmediateContext->IASetPrimitiveTopology( getTopology(pType) );
+	Context->IASetPrimitiveTopology( getTopology(pType) );
 
 	// Finally, draw
-	ImmediateContext->DrawAuto();
+	Context->DrawAuto();
 
 	// Unset buffers, including stream output
 	buffers[0] = 0;
-	ImmediateContext->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
-	ImmediateContext->IASetIndexBuffer( 0, DXGI_FORMAT_R32_UINT, 0 );
-	ImmediateContext->SOSetTargets( 1, buffers, &offset );
+	Context->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
+	Context->IASetIndexBuffer( 0, DXGI_FORMAT_R32_UINT, 0 );
+	Context->SOSetTargets( 1, buffers, &offset );
 }
 
 void CD3D11Driver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
-	bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
+										   bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
 
 {
 	E_VERTEX_TYPE vType = EVT_STANDARD;
@@ -1616,23 +1640,17 @@ void CD3D11Driver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBu
 
 void CD3D11Driver::drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
 										   const void* indexList, u32 primitiveCount,
-										   E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
-										   E_INDEX_TYPE iType)
+										   E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
 {
-	if (!checkPrimitiveCount(primitiveCount))
-		return;
-
-	// Emulate CNullDriver::drawVertexPrimitiveList call.
-	if((iType == EIT_16BIT) && (vertexCount > 65536))
-		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
-
-	PrimitivesDrawn += primitiveCount;
-
 	if (!vertexCount || !primitiveCount)
 		return;
 
-	draw2D3DVertexPrimitiveList(vertices, vertexCount, indexList, primitiveCount,
-		vType, pType, iType, true);
+	if(!checkPrimitiveCount(primitiveCount))
+		return;
+
+	CNullDriver::draw2DVertexPrimitiveList(vertices, vertexCount, indexList, primitiveCount, vType, pType, iType);
+
+	draw2D3DVertexPrimitiveList(vertices, vertexCount, indexList, primitiveCount, vType, pType, iType, true);
  }
 
 void CD3D11Driver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -1667,49 +1685,48 @@ void CD3D11Driver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCou
 		}
 	}
 
-	ImmediateContext->PSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );
-	ImmediateContext->PSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
-	ImmediateContext->GSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );		// Test for recirculate
-	ImmediateContext->GSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
-	ImmediateContext->VSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );	// Test for recirculate
-	ImmediateContext->VSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->PSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );
+	Context->PSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->GSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );		// Test for recirculate
+	Context->GSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->VSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );	// Test for recirculate
+	Context->VSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
 
 	// Bind depth-stencil view
-	ImmediateContext->OMSetDepthStencilState( getDepthStencilState(), 1 );
+	Context->OMSetDepthStencilState( getDepthStencilState(), 1 );
 
 	// Bind blend state
-	ImmediateContext->OMSetBlendState( getBlendState(), 0, 0xffffffff );
+	Context->OMSetBlendState( getBlendState(), 0, 0xffffffff );
 
 	// Bind rasterizer state
-	ImmediateContext->RSSetState( getRasterizerState() );
+	Context->RSSetState( getRasterizerState() );
 
 	// Bind input layout
 	DeclarationNode declNode = declarationMap.find(vType);
 	if (declNode)
 	{
 		IMaterialRenderer* renderer = MaterialRenderers[Material.MaterialType].Renderer;
-		ImmediateContext->IASetInputLayout( declNode->getValue()->getInputLayout(renderer) );
+		Context->IASetInputLayout( declNode->getValue()->getInputLayout(renderer) );
 	}
 
 	// copy vertices to dynamic buffers, if needed
 	if(vertices || indexList)	
-		uploadVertexData(vertices, vertexCount, indexList, getIndexAmount(pType, primitiveCount), vType, iType);
+		uploadVertexData(vertices, vertexCount, indexList, getIndexCount(pType, primitiveCount), vType, iType);
 
 	// finally, draw
-	ImmediateContext->IASetPrimitiveTopology(getTopology(pType));
+	Context->IASetPrimitiveTopology(getTopology(pType));
 
 	if (pType == scene::EPT_POINTS || pType == scene::EPT_POINT_SPRITES)
-		ImmediateContext->Draw( vertexCount, 0 );
+		Context->Draw( vertexCount, 0 );
 	else if (vertexCount == 0)
-		ImmediateContext->DrawAuto();
+		Context->DrawAuto();
 	else
-		ImmediateContext->DrawIndexed(getIndexAmount(pType, primitiveCount), 0, 0 );
+		Context->DrawIndexed(getIndexCount(pType, primitiveCount), 0, 0 );
 }
 
-void CD3D11Driver::draw2D3DVertexPrimitiveList(const void* vertices,
-		u32 vertexCount, const void* indexList, u32 primitiveCount,
-		E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
-		E_INDEX_TYPE iType, bool is3D)
+void CD3D11Driver::draw2D3DVertexPrimitiveList(const void* vertices, u32 vertexCount, 
+											   const void* indexList, u32 primitiveCount,
+											   E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType, bool is3D)
 {
 	LastVertexType = vType;
 
@@ -1751,42 +1768,43 @@ void CD3D11Driver::draw2D3DVertexPrimitiveList(const void* vertices,
 		}
 	}
 
-	ImmediateContext->PSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );
-	ImmediateContext->PSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
-	ImmediateContext->GSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );		// Test for recirculate
-	ImmediateContext->GSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
-	ImmediateContext->VSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );	// Test for recirculate
-	ImmediateContext->VSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->PSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );
+	Context->PSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->GSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );		// Test for recirculate
+	Context->GSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
+	Context->VSSetShaderResources( 0, MATERIAL_MAX_TEXTURES, views );	// Test for recirculate
+	Context->VSSetSamplers( 0, MATERIAL_MAX_TEXTURES, samplers );
 
 	// Bind depth-stencil view
-	ImmediateContext->OMSetDepthStencilState( getDepthStencilState(), 1 );
+	Context->OMSetDepthStencilState( getDepthStencilState(), 1 );
 
 	// Bind blend state
-	ImmediateContext->OMSetBlendState( getBlendState(), 0, 0xffffffff );
+	Context->OMSetBlendState( getBlendState(), 0, 0xffffffff );
 
 	// Bind rasterizer state
-	ImmediateContext->RSSetState( getRasterizerState() );
+	Context->RSSetState( getRasterizerState() );
 
 	// Bind input layout
 	DeclarationNode declNode = declarationMap.find(vType);
 	if (declNode)
 	{
 		IMaterialRenderer* renderer = MaterialRenderers[Material.MaterialType].Renderer;
-		ImmediateContext->IASetInputLayout( declNode->getValue()->getInputLayout(renderer) );
+		Context->IASetInputLayout( declNode->getValue()->getInputLayout(renderer) );
 	}
 
 	// copy vertices to dynamic buffers, if needed
 	if(vertices || indexList)	
-		uploadVertexData(vertices, vertexCount, indexList, getIndexAmount(pType, primitiveCount), vType, iType);
+		uploadVertexData(vertices, vertexCount, indexList, getIndexCount(pType, primitiveCount), vType, iType);
 
 	// finally, draw
-	ImmediateContext->IASetPrimitiveTopology( getTopology(pType) );
+	Context->IASetPrimitiveTopology( getTopology(pType) );
+
 	if (pType == scene::EPT_POINTS || pType == scene::EPT_POINT_SPRITES)
-		ImmediateContext->Draw( vertexCount, 0 );
+		Context->Draw( vertexCount, 0);
 	else if (vertexCount == 0)
-		ImmediateContext->DrawAuto();
+		Context->DrawAuto();
 	else
-		ImmediateContext->DrawIndexed( getIndexAmount(pType, primitiveCount), 0, 0 );
+		Context->DrawIndexed( getIndexCount(pType, primitiveCount), 0, 0 );
 }
 
 void CD3D11Driver::draw2DImage(const video::ITexture* texture, 
@@ -2285,32 +2303,31 @@ void CD3D11Driver::drawStencilShadowVolume(const core::array<core::vector3df>& t
 	{
 		// ZPASS Method
 
-		MaterialRenderers[Material.MaterialType].Renderer->OnRender(this, EVT_STANDARD);
 		// Draw front-side of shadow volume in stencil only
+		// Stencil operations if pixel is front-facing.
 		RasterizerDesc.CullMode = D3D11_CULL_BACK;
 		DepthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
 
-		draw2DVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
+		drawVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
 
 		// Now reverse cull order so front sides of shadow volume are written.
 		RasterizerDesc.CullMode = D3D11_CULL_FRONT;
 		DepthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_DECR;
 		
-		draw2DVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
+		drawVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
 	}
 	else
 	{
 		// ZFAIL Method
-		MaterialRenderers[Material.MaterialType].Renderer->OnRender(this, EVT_STANDARD);
 		// Draw front-side of shadow volume in stencil only
 		RasterizerDesc.CullMode = D3D11_CULL_FRONT;
-		DepthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
+		DepthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
 
 		draw2DVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
 
 		// Now reverse cull order so front sides of shadow volume are written.
 		RasterizerDesc.CullMode = D3D11_CULL_BACK;
-		DepthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_DECR;
+		DepthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
 
 		draw2DVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
 	}
@@ -2339,14 +2356,14 @@ void CD3D11Driver::drawStencilShadow(bool clearStencilBuffer,
 
 	setActiveTexture(0,0);
 
-	//MaterialRenderers[Material.MaterialType].Renderer->OnRender(this, EVT_STANDARD);
-
 	LastVertexType = EVT_STANDARD;
 
 	draw2DVertexPrimitiveList(vtx, 4, indices, 2, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
 
 	if (clearStencilBuffer)
-		ImmediateContext->ClearDepthStencilView(DefaultDepthBuffer, D3D11_CLEAR_STENCIL, 1.0f, 0);
+	{
+		Context->ClearDepthStencilView(DefaultDepthBuffer, D3D11_CLEAR_STENCIL, 1.0f, 0);
+	}
 }
 
 //! sets the needed renderstates
@@ -2370,22 +2387,20 @@ void CD3D11Driver::setRenderStatesStencilShadowMode(bool zfail, u32 debugDataVis
 			setActiveTexture(i, 0);
 
 		LastVertexType = (video::E_VERTEX_TYPE)(-1);
-		
-		DepthStencilDesc.StencilEnable = true;
-		Material.GouraudShading = false;
-		Material.FogEnable = false;
-		Material.ZWriteEnable = false;
 
-		DepthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
-		DepthStencilDesc.StencilReadMask = 255;
-		DepthStencilDesc.StencilWriteMask = 255;
+		// Set up the description of the stencil state.
+		DepthStencilDesc.DepthEnable = true;
+		DepthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		DepthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+		DepthStencilDesc.StencilEnable = true;
+		DepthStencilDesc.StencilReadMask = 0xFF;
+		DepthStencilDesc.StencilWriteMask = 0xFF;
+		DepthStencilDesc.BackFace.StencilFunc = DepthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
 		BlendDesc.RenderTarget[0].BlendEnable = true;
 		BlendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ZERO;
 		BlendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
-
-		DepthStencilDesc.DepthEnable = true;
-		DepthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
 		if ((debugDataVisible & scene::EDS_MESH_WIRE_OVERLAY))
 			RasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
@@ -2395,16 +2410,13 @@ void CD3D11Driver::setRenderStatesStencilShadowMode(bool zfail, u32 debugDataVis
 	{
 		// USE THE ZPASS METHOD
 		DepthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-		DepthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-
-		//pID3DDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_INCR);	// does not matter, will be set later
+		DepthStencilDesc.BackFace.StencilDepthFailOp =  D3D11_STENCIL_OP_KEEP;
 	}
 	else if (CurrentRenderMode != ERM_SHADOW_VOLUME_ZFAIL && zfail)
 	{
 		// USE THE ZFAIL METHOD
 		DepthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-		//pID3DDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_INCR);	// does not matter, will be set later
-		DepthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP; 
+		DepthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	}
 
 	CurrentRenderMode = zfail ? ERM_SHADOW_VOLUME_ZFAIL : ERM_SHADOW_VOLUME_ZPASS;
@@ -2415,23 +2427,31 @@ void CD3D11Driver::setRenderStatesStencilFillMode(bool alpha)
 {
 	if (CurrentRenderMode != ERM_STENCIL_FILL || Transformation3DChanged)
 	{
-		setTransform(ETS_VIEW, core::IdentityMatrix);
-		setTransform(ETS_WORLD, core::IdentityMatrix);
-		setTransform(ETS_PROJECTION, core::IdentityMatrix);
+		Material = SMaterial();
 
-		DepthStencilDesc.DepthEnable = false;
+		//DepthStencilDesc.DepthEnable = false;
 		Material.Lighting = false;
 		Material.FogEnable = false;
+		Material.ZBuffer = false;
 
-		DepthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_LESS_EQUAL;
+		//MaterialRenderers[Material.MaterialType]
+
+	/*	DepthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_LESS_EQUAL;
+		DepthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_LESS_EQUAL;
+
 		DepthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 		DepthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
 		DepthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+
+		DepthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		DepthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+		DepthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+
 		DepthStencilDesc.StencilWriteMask = 255;
 		DepthStencilDesc.StencilReadMask = 255;
 
 		RasterizerDesc.CullMode = D3D11_CULL_BACK;
-
+		*/
 		Transformation3DChanged = false;
 
 		if (alpha)
@@ -2625,7 +2645,7 @@ void CD3D11Driver::setBasicRenderStates(const SMaterial& material, const SMateri
 	// handled in MaterialRenderers (shader)
 
 	// zbuffer
-	DepthStencilDesc.DepthEnable = (material.ZBuffer == ECFN_NEVER) ? false : true;
+	DepthStencilDesc.DepthEnable = (material.ZBuffer == ECFN_DISABLED) ? false : true;
 	DepthStencilDesc.DepthFunc = getDepthFunction((E_COMPARISON_FUNC)material.ZBuffer);
 
 	// zwrite
@@ -2802,7 +2822,7 @@ u32 CD3D11Driver::queryMultisampleLevels(ECOLOR_FORMAT format, u32 numSamples) c
 void CD3D11Driver::clearZBuffer()
 {
 	if( CurrentDepthBuffer )
-		ImmediateContext->ClearDepthStencilView( CurrentDepthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0 );
+		Context->ClearDepthStencilView( CurrentDepthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0 );
 }
 
 IImage* CD3D11Driver::createScreenShot(video::ECOLOR_FORMAT format, video::E_RENDER_TARGET target)
@@ -2827,11 +2847,11 @@ IImage* CD3D11Driver::createScreenShot(video::ECOLOR_FORMAT format, video::E_REN
 	// Copy back buffer to our texture buffer
 	ID3D11Resource* backBuffer = 0;
 	DefaultBackBuffer->GetResource( &backBuffer );
-	ImmediateContext->CopyResource( bufftex, backBuffer );
+	Context->CopyResource( bufftex, backBuffer );
 	backBuffer->Release();
 
 	// Get buffer data
-	if( FAILED( ImmediateContext->Map( bufftex, 0, D3D11_MAP_READ_WRITE, 0, &mappedData ) ) )
+	if( FAILED( Context->Map( bufftex, 0, D3D11_MAP_READ_WRITE, 0, &mappedData ) ) )
 		return NULL;
 
 	IImage* newImage = new CImage( format, size );
@@ -2866,7 +2886,7 @@ IImage* CD3D11Driver::createScreenShot(video::ECOLOR_FORMAT format, video::E_REN
 
 	// Unlock image and texture
 	newImage->unlock();
-	ImmediateContext->Unmap( bufftex, 0 );
+	Context->Unmap( bufftex, 0 );
 
 	// Release texture buffer
 	bufftex->Release();
@@ -3242,14 +3262,21 @@ u32 CD3D11Driver::getNumberOfComponents(DXGI_FORMAT format) const
 	}
 }
 
-u32 CD3D11Driver::getIndexAmount(scene::E_PRIMITIVE_TYPE primType, u32 primitiveCount) const
+u32 CD3D11Driver::getIndexSize(E_INDEX_TYPE iType) const
+{
+	return (iType == EIT_16BIT) ? sizeof(u16) : sizeof(u32);
+}
+
+u32 CD3D11Driver::getIndexCount(scene::E_PRIMITIVE_TYPE primType, u32 primitiveCount) const
 {
 	switch( primType )
 	{
 		case scene::EPT_LINE_STRIP:
-			return primitiveCount * 2;
+			return primitiveCount + 1;
 
 		case scene::EPT_LINE_LOOP:
+			return primitiveCount;
+
 		case scene::EPT_LINES:
 			return primitiveCount * 2;
 
@@ -3262,7 +3289,19 @@ u32 CD3D11Driver::getIndexAmount(scene::E_PRIMITIVE_TYPE primType, u32 primitive
 		case scene::EPT_TRIANGLE_FAN:
 			return primitiveCount * 3;
 
+		case scene::EPT_QUADS:
+			return primitiveCount * 4;
+
+		case scene::EPT_QUAD_STRIP:
+			return primitiveCount * 2 + 2;
+
+		case scene::EPT_POINTS:
+		case scene::EPT_POINT_SPRITES:
+		case scene::EPT_POLYGON:
+			return primitiveCount;
+
 		default:
+			os::Printer::log("Primitve type not supported. Type: "+ primType, ELL_WARNING);
 			return 0;
 	}
 }
@@ -3307,6 +3346,7 @@ D3D11_COMPARISON_FUNC CD3D11Driver::getDepthFunction(E_COMPARISON_FUNC func) con
 		return D3D11_COMPARISON_GREATER;
 	case ECFN_ALWAYS:
 		return D3D11_COMPARISON_ALWAYS;
+	case ECFN_DISABLED:
 	case ECFN_NEVER:
 	default:
 		return D3D11_COMPARISON_NEVER;
@@ -3417,8 +3457,8 @@ bool CD3D11Driver::uploadVertexData(const void* vertices, u32 vertexCount,
 {
 	// Parse information about buffers
 	const u32 vertexStride = getVertexPitchFromType(vType);
-	const u32 indexStride = iType == video::EIT_16BIT ? 2 : 4;
-	const DXGI_FORMAT indexFormat = iType == video::EIT_16BIT ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+	const u32 indexStride = getIndexSize(iType);
+	const DXGI_FORMAT indexFormat = getIndexType(iType);
 	const UINT offset = 0;
 
 	// reallocated if needed
@@ -3430,12 +3470,12 @@ bool CD3D11Driver::uploadVertexData(const void* vertices, u32 vertexCount,
 	ZeroMemory(&mappedData, sizeof(D3D11_MAPPED_SUBRESOURCE));
 
 	if(vertices)
-	{		
-		hr = ImmediateContext->Map( DynVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData );
+	{
+		hr = Context->Map( DynVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData );
 		if(SUCCEEDED(hr))
 		{
 			memcpy(mappedData.pData, vertices, vertexCount * vertexStride);
-			ImmediateContext->Unmap( DynVertexBuffer, 0 );
+			Context->Unmap( DynVertexBuffer, 0 );
 		}
 		else
 		{
@@ -3444,16 +3484,16 @@ bool CD3D11Driver::uploadVertexData(const void* vertices, u32 vertexCount,
 		}
 
 		// set vertex buffer
-		ImmediateContext->IASetVertexBuffers( 0, 1, &DynVertexBuffer, &vertexStride, &offset );
+		Context->IASetVertexBuffers( 0, 1, &DynVertexBuffer, &vertexStride, &offset );
 	}
 
 	if(indexList)
 	{
-		hr = ImmediateContext->Map( DynIndexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData );
+		hr = Context->Map( DynIndexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData );
 		if(SUCCEEDED(hr))
 		{
 			memcpy(mappedData.pData, indexList, indexCount * indexStride);
-			ImmediateContext->Unmap( DynIndexBuffer, 0 );
+			Context->Unmap( DynIndexBuffer, 0 );
 		}
 		else
 		{
@@ -3462,7 +3502,7 @@ bool CD3D11Driver::uploadVertexData(const void* vertices, u32 vertexCount,
 		}
 
 		// set index buffer
-		ImmediateContext->IASetIndexBuffer( DynIndexBuffer, indexFormat, 0 );
+		Context->IASetIndexBuffer( DynIndexBuffer, indexFormat, 0 );
 	}
 
 	return true;
@@ -3477,8 +3517,8 @@ bool CD3D11Driver::reallocateDynamicBuffers( u32 vertexBufferSize, u32 indexBuff
 	if( !DynVertexBuffer || DynVertexBufferSize < vertexBufferSize )
 	{
 		// Release old buffer if small
-		if( DynVertexBufferSize < vertexBufferSize )
-			SAFE_RELEASE(DynVertexBuffer);
+		if(DynVertexBufferSize < vertexBufferSize && DynVertexBuffer)
+			DynVertexBuffer->Release();
 
 		desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 		desc.Usage = D3D11_USAGE_DYNAMIC;
@@ -3498,8 +3538,8 @@ bool CD3D11Driver::reallocateDynamicBuffers( u32 vertexBufferSize, u32 indexBuff
 	if( !DynIndexBuffer || DynIndexBufferSize < indexBufferSize )
 	{
 		// Release old buffer if small
-		if( DynIndexBufferSize < indexBufferSize ) 
-			SAFE_RELEASE(DynIndexBuffer);
+		if( DynIndexBufferSize < indexBufferSize && DynIndexBuffer) 
+			DynIndexBuffer->Release();
 
 		desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 		desc.Usage = D3D11_USAGE_DYNAMIC;
@@ -3540,6 +3580,7 @@ ID3D11DepthStencilView* CD3D11Driver::createDepthStencilView(core::dimension2d<u
 				}
 			}		
 		}
+
 		if (!Params.Stencilbuffer)	// do not use else here to cope with flag change in previous block
 		{
 			DepthStencilFormat = DXGI_FORMAT_D32_FLOAT;
@@ -3561,6 +3602,7 @@ ID3D11DepthStencilView* CD3D11Driver::createDepthStencilView(core::dimension2d<u
 	ID3D11DepthStencilView* dsView = NULL;
 	ID3D11Texture2D* depthTexture = NULL;
 	D3D11_TEXTURE2D_DESC dsTexDesc;
+
 	::ZeroMemory( &dsTexDesc, sizeof( dsTexDesc ) );
 	dsTexDesc.ArraySize = 1;
 	dsTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
@@ -3573,6 +3615,7 @@ ID3D11DepthStencilView* CD3D11Driver::createDepthStencilView(core::dimension2d<u
 	dsTexDesc.SampleDesc.Quality = 0;
 	dsTexDesc.Width = (UINT)size.Width;
 	dsTexDesc.Height = (UINT)size.Height;
+
 	HRESULT hr = Device->CreateTexture2D( &dsTexDesc, NULL, &depthTexture );
 	if(FAILED(hr))
 	{
@@ -3586,6 +3629,7 @@ ID3D11DepthStencilView* CD3D11Driver::createDepthStencilView(core::dimension2d<u
 	dsDesc.Flags = 0;
 	dsDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	dsDesc.Texture2D.MipSlice = 0;
+	
 	hr = Device->CreateDepthStencilView( depthTexture, &dsDesc, &dsView );
 	depthTexture->Release();
 	if(FAILED(hr))
@@ -3630,10 +3674,13 @@ void CD3D11Driver::reset()
 
 	// unbind render targets
 	ID3D11RenderTargetView* views[] = { NULL };
-	ImmediateContext->OMSetRenderTargets(1, views, NULL);
+	Context->OMSetRenderTargets(1, views, NULL);
 
-	SAFE_RELEASE(DefaultBackBuffer);
-	SAFE_RELEASE(DefaultDepthBuffer);
+	if(DefaultDepthBuffer)
+		DefaultDepthBuffer->Release();
+
+	if(DefaultBackBuffer)
+		DefaultBackBuffer->Release();
 
 	// If fullscreen, do it
 	if(Params.Fullscreen)
@@ -3671,7 +3718,7 @@ void CD3D11Driver::reset()
 	DefaultDepthBuffer = createDepthStencilView(ScreenSize);
 
 	// Set render targets
-	ImmediateContext->OMSetRenderTargets( 1, &DefaultBackBuffer, DefaultDepthBuffer );
+	Context->OMSetRenderTargets( 1, &DefaultBackBuffer, DefaultDepthBuffer );
 
 	LastVertexType = EVT_STANDARD;
 
@@ -3708,13 +3755,13 @@ s32 CD3D11Driver::addHighLevelShaderMaterial(
 {
 	E_VERTEX_TYPE vertexTypeOut = EVT_STANDARD;
 	s32 id = 0;
-	CD3D11CustomMaterialRenderer* rend = 
-			new CD3D11CustomMaterialRenderer(Device, this, id,
+	CD3D11HLSLMaterialRenderer* rend = 
+			new CD3D11HLSLMaterialRenderer(Device, this, id,
 											 vertexShaderProgram, vertexShaderEntryPointName, vsCompileTarget,
 											 pixelShaderProgram, pixelShaderEntryPointName, psCompileTarget,
 											 geometryShaderProgram, geometryShaderEntryPointName, gsCompileTarget,
 											 inType, outType, verticesOut, vertexTypeOut,
-											 callback, getMaterialRenderer(baseMaterial), userData);
+											 callback, getMaterialRenderer(baseMaterial), userData, FileSystem);
 	rend->drop();
 
 	return id;
@@ -3752,7 +3799,6 @@ s32 CD3D11Driver::getVertexShaderConstantID(const c8* name)
 
 	return -1;
 }
-
 //! Get a pixel shader constant index.
 s32 CD3D11Driver::getPixelShaderConstantID(const c8* name)
 {
@@ -3765,67 +3811,55 @@ s32 CD3D11Driver::getPixelShaderConstantID(const c8* name)
 	return -1;
 }
 
-
-//! Sets a vertex shader constant.
 void CD3D11Driver::setVertexShaderConstant(const f32* data, s32 startRegister, s32 constantAmount)
 {
 	os::Printer::log("\"setVertexShaderConstant\" with offset is not supported", ELL_ERROR);
 }
 
-
-//! Sets a pixel shader constant.
 void CD3D11Driver::setPixelShaderConstant(const f32* data, s32 startRegister, s32 constantAmount)
 {
 	os::Printer::log("\"setPixelShaderConstant\" with offset is not supported", ELL_ERROR);
 }
 
-
-//! Sets a constant for the vertex shader based on an index.
 bool CD3D11Driver::setVertexShaderConstant(s32 index, const f32* floats, int count)
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
-		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(true, index, floats, count);
+		CD3D11ShaderMaterialRenderer* r = (CD3D11ShaderMaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(index, floats, count);
 	}
 
 	return false;
 }
 
-
-//! Int interface for the above.
-bool CD3D11Driver::setVertexShaderConstant(s32 index, const s32* ints, int count)
-{
-	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
-	{
-		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(true, index, ints, count);
-	}
-
-	return false;
-}
-
-
-//! Sets a constant for the pixel shader based on an index.
 bool CD3D11Driver::setPixelShaderConstant(s32 index, const f32* floats, int count)
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
-		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(false, index, floats, count);
+		CD3D11ShaderMaterialRenderer* r = (CD3D11ShaderMaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(index, floats, count);
 	}
 
 	return false;
 }
 
+bool CD3D11Driver::setVertexShaderConstant(s32 index, const s32* ints, int count)
+{
+	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
+	{
+		CD3D11ShaderMaterialRenderer* r = (CD3D11ShaderMaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(index, ints, count);
+	}
 
-//! Int interface for the above.
+	return false;
+}
+		//! Int interface for the above.
 bool CD3D11Driver::setPixelShaderConstant(s32 index, const s32* ints, int count)
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
-		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(false, index, ints, count);
+		CD3D11ShaderMaterialRenderer* r = (CD3D11ShaderMaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(index, ints, count);
 	}
 
 	return false;
@@ -3839,7 +3873,7 @@ bool CD3D11Driver::setStreamOutputBuffer(IHardwareBuffer* buffer)
 	// If buffer is null, remove from pipeline
 	if (!buffer)
 	{
-		ImmediateContext->SOSetTargets(1, &buffers, &offset);
+		Context->SOSetTargets(1, &buffers, &offset);
 		return true;
 	}
 
@@ -3857,7 +3891,7 @@ bool CD3D11Driver::setStreamOutputBuffer(IHardwareBuffer* buffer)
 
 	// Set stream output buffer
 	buffers = static_cast<CD3D11HardwareBuffer*>(buffer)->getBufferResource();
-	ImmediateContext->SOSetTargets(1, &buffers, &offset);
+	Context->SOSetTargets(1, &buffers, &offset);
 
 	return true;
 }
@@ -3865,6 +3899,11 @@ bool CD3D11Driver::setStreamOutputBuffer(IHardwareBuffer* buffer)
 IVideoDriver* CD3D11Driver::getVideoDriver()
 {
 	return this;
+}
+
+SColorf CD3D11Driver::getAmbientLight() const
+{
+	return AmbientLight;
 }
 
 ////////////// IMaterialRenderer methods end ////////////////////////////////////////////

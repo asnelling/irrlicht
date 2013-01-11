@@ -1303,13 +1303,7 @@
     <ClInclude Include="..\..\include\IVertexDescriptor.h">
       <Filter>include\video</Filter>
     </ClInclude>
-    <ClInclude Include="CD3D11CustomMaterialRenderer.h">
-      <Filter>Irrlicht\video\Direct3D11</Filter>
-    </ClInclude>
     <ClInclude Include="CD3D11Driver.h">
-      <Filter>Irrlicht\video\Direct3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="CD3D11FixedFunctionMaterialRenderer.h">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClInclude>
     <ClInclude Include="CD3D11HardwareBuffer.h">
@@ -1326,6 +1320,21 @@
     </ClInclude>
     <ClInclude Include="CD3D11VertexDeclaration.h">
       <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="CD3D11ParallaxMapRenderer.h">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="CD3D11ShaderMaterialRenderer.h">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="CD3D11HLSLMaterialRenderer.h">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SVertexElement.h">
+      <Filter>include\video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\IHardwareBuffer.h">
+      <Filter>include\video</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2267,9 +2276,6 @@
     <ClCompile Include="CVertexDescriptor.cpp">
       <Filter>Irrlicht\video</Filter>
     </ClCompile>
-    <ClCompile Include="CD3D11CustomMaterialRenderer.cpp">
-      <Filter>Irrlicht\video\Direct3D11</Filter>
-    </ClCompile>
     <ClCompile Include="CD3D11Driver.cpp">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClCompile>
@@ -2283,6 +2289,15 @@
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClCompile>
     <ClCompile Include="CD3D11VertexDeclaration.cpp">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="CD3D11ShaderMaterialRenderer.cpp">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="CD3D11HLSLMaterialRenderer.cpp">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="CD3D11ParallaxMapRenderer.cpp">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClCompile>
   </ItemGroup>

@@ -21,11 +21,6 @@
 #include <D3D11.h>
 #include <D3DX10math.h>
 
-#define SAFE_RELEASE(x) \
-	if(x)				\
-		x->Release(); 	\
-	x = 0;
-
 namespace irr
 {
 namespace video
@@ -125,11 +120,10 @@ namespace video
 		{
 			SHWBufferLink_d3d11(const scene::IMeshBuffer *_MeshBuffer):
 				SHWBufferLink(_MeshBuffer),
-					vertexBuffer(0), vertexBuffer2(0), indexBuffer(0),
+					vertexBuffer(0), indexBuffer(0),
 					vertexBufferSize(0), vertexBufferSize2(0), indexBufferSize(0) {}
 
 			ID3D11Buffer* vertexBuffer;
-			ID3D11Buffer* vertexBuffer2;
 			ID3D11Buffer* indexBuffer;
 
 			u32 vertexBufferSize;
@@ -167,15 +161,13 @@ namespace video
 		virtual void drawAuto(IHardwareBuffer* vertices, E_VERTEX_TYPE vType = EVT_STANDARD, 
 				scene::E_PRIMITIVE_TYPE pType = scene::EPT_TRIANGLES);
 
-		//! draws a vertex primitive list
 		void drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
-			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
+				bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
 
 		//! draws a vertex primitive list
 		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
 				const void* indexList, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
-				E_INDEX_TYPE iType);
+				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType);
 		
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -246,6 +238,8 @@ namespace video
 		//! \param color: New color of the ambient light.
 		virtual void setAmbientLight(const SColorf& color);
 
+		SColorf getAmbientLight() const;
+
 		//! Draws a shadow volume into the stencil buffer.
 		virtual void drawStencilShadowVolume(const core::array<core::vector3df>& triangles, bool zfail, u32 debugDataVisible);
 
@@ -290,14 +284,14 @@ namespace video
 		//! Sets a pixel shader constant.
 		virtual void setPixelShaderConstant(const f32* data, s32 startRegister, s32 constantAmount=1);
 
-		//! Sets a constant for the vertex shader based on an index.
+		//! Sets a constant for the vertex shader based on a name.
 		virtual bool setVertexShaderConstant(s32 index, const f32* floats, int count);
+
+		//! Sets a constant for the pixel shader based on a name.
+		virtual bool setPixelShaderConstant(s32 index, const f32* floats, int count);
 
 		//! Int interface for the above.
 		virtual bool setVertexShaderConstant(s32 index, const s32* ints, int count);
-
-		//! Sets a constant for the pixel shader based on an index.
-		virtual bool setPixelShaderConstant(s32 index, const f32* floats, int count);
 
 		//! Int interface for the above.
 		virtual bool setPixelShaderConstant(s32 index, const s32* ints, int count);
@@ -372,7 +366,9 @@ namespace video
 		u32 getNumberOfComponents(DXGI_FORMAT format) const;
 
 		//! Get number of indices
-		u32 getIndexAmount(scene::E_PRIMITIVE_TYPE primType, u32 primitiveCount) const;
+		u32 getIndexCount(scene::E_PRIMITIVE_TYPE primType, u32 primitiveCount) const;
+
+		u32 getIndexSize(video::E_INDEX_TYPE iType) const;
 
 		//! Get depth function
 		D3D11_COMPARISON_FUNC getDepthFunction(E_COMPARISON_FUNC func) const;
@@ -438,7 +434,7 @@ namespace video
 		D3D_DRIVER_TYPE DriverType;
 		D3D_FEATURE_LEVEL FeatureLevel;
 		ID3D11Device* Device;
-		ID3D11DeviceContext* ImmediateContext;
+		ID3D11DeviceContext* Context;
 
 		// Back and depth buffers
 		ID3D11RenderTargetView* DefaultBackBuffer;
@@ -724,10 +720,9 @@ namespace video
 
 		void createMaterialRenderers();
 
-		void draw2D3DVertexPrimitiveList(const void* vertices,
-			u32 vertexCount, const void* indexList, u32 primitiveCount,
-			E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
-			E_INDEX_TYPE iType, bool is3D);
+		void draw2D3DVertexPrimitiveList(const void* vertices, u32 vertexCount, 
+			const void* indexList, u32 primitiveCount,
+			E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType, bool is3D);
 
 		D3D11_TEXTURE_ADDRESS_MODE getTextureWrapMode(const u8 clamp);
 

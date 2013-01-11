@@ -5,51 +5,72 @@
 #include "IrrCompileConfig.h"
 #ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
 
-#include "CD3D11CustomMaterialRenderer.h"
+#define _IRR_DONT_DO_MEMORY_DEBUGGING_HERE
+
+#include "CD3D11HLSLMaterialRenderer.h"
 #include "CD3D11VertexDeclaration.h"
 #include "IShaderConstantSetCallBack.h"
 #include "IVideoDriver.h"
 #include "os.h"
 #include "irrString.h"
+#include "IFileSystem.h"
+#include "irrMap.h"
+#include "CD3D11Driver.h"
+
+#include <d3dCompiler.h>
+
 
 class IncludeFX :public ID3DInclude 
 { 
-	irr::io::IReadFile* Include;
-	irr::c8* retInclude;
-	irr::io::IFileSystem* FileSystem;
-	UINT mBytes;
 public:
 	IncludeFX(irr::io::IFileSystem* fileSystem)
 	{
 		FileSystem = fileSystem;
+	} 
+
+	virtual HRESULT __stdcall Close( THIS_ LPCVOID pData ) 
+	{
+		irr::core::map<LPCVOID, irr::io::IReadFile*>::Node* node = Include.find(pData);
+
+		if(node)
+		{
+			node->getValue()->drop();
+				
+			Include.remove(node);
+		}
+
+		if(pData)
+			delete[] pData;
+
+		return S_OK;
 	}
 
-public:
-	virtual HRESULT __stdcall Close(THIS_ LPCVOID pData)    
-	{        
-		Include->drop(); 
-		delete retInclude;
-		return S_OK;
-	}    
-public:
-	virtual HRESULT __stdcall Open(THIS_ D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes)
-    {        
-		Include = FileSystem->createAndOpenFile(pFileName);
-		if (!Include)
+	virtual HRESULT __stdcall Open( THIS_ D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes ) 
+	{
+		irr::io::IReadFile* file = FileSystem->createAndOpenFile(pFileName);
+		if (!file)
 		{
 			irr::os::Printer::log("Could not open Include shader program file",
 				pFileName, irr::ELL_WARNING);
 			return S_FALSE;
-			
+
 		}
-		mBytes = Include->getSize();
+		irr::u32 mBytes = file->getSize();
 		pBytes = &mBytes;
-		retInclude = new irr::c8[mBytes+1];
-			Include->read(retInclude, mBytes);
-			retInclude[mBytes] = 0;
-		ppData = (LPCVOID *)retInclude;
+		
+		irr::c8* retInclude = new irr::c8[mBytes+1];
+		file->read(retInclude, mBytes);
+		retInclude[mBytes] = 0;
+		ppData = (LPCVOID*)retInclude;
+
+		Include.insert(ppData, file);
+	
 		return S_OK;
 	}
+
+private:
+	irr::core::map<LPCVOID, irr::io::IReadFile*> Include;
+	irr::io::IFileSystem* FileSystem;
 };
 
 
@@ -64,18 +85,18 @@ namespace video
 {
 
 //! Public constructor
-CD3D11CustomMaterialRenderer::CD3D11CustomMaterialRenderer(ID3D11Device* device, 
+CD3D11HLSLMaterialRenderer::CD3D11HLSLMaterialRenderer(ID3D11Device* device, 
 		video::IVideoDriver* driver, s32& outMaterialTypeNr,
 		const c8* vertexShaderProgram, const c8* vertexShaderEntryPointName, E_VERTEX_SHADER_TYPE vsCompileTarget,
 		const c8* pixelShaderProgram, const c8* pixelShaderEntryPointName, E_PIXEL_SHADER_TYPE psCompileTarget,
 		const c8* geometryShaderProgram, const c8* geometryShaderEntryPointName, E_GEOMETRY_SHADER_TYPE gsCompileTarget,
 		scene::E_PRIMITIVE_TYPE inType, scene::E_PRIMITIVE_TYPE outType, u32 verticesOut, E_VERTEX_TYPE vertexTypeOut,
-		IShaderConstantSetCallBack* callback, IMaterialRenderer* baseMaterial, s32 userData)
-	: CD3D11MaterialRenderer(device, driver, baseMaterial), 
-	Effect(0), CallBack(callback), UserData(userData), isStreamOutput(false)
+		IShaderConstantSetCallBack* callback, IMaterialRenderer* baseMaterial, s32 userData, io::IFileSystem* fileSystem)
+	: CD3D11ShaderMaterialRenderer(device, driver, callback, baseMaterial, userData), 
+	Effect(0), isStreamOutput(false)
 {
 	#ifdef _DEBUG
-	setDebugName("CD3D11CustomMaterialRenderer");
+	setDebugName("CD3D11HLSLMaterialRenderer");
 	#endif
 
 	if (CallBack)
@@ -84,23 +105,37 @@ CD3D11CustomMaterialRenderer::CD3D11CustomMaterialRenderer(ID3D11Device* device,
 	outMaterialTypeNr = -1;
 	ZeroMemory(&PassDescription, sizeof(D3DX11_PASS_DESC));
 
+	Includer = new IncludeFX(fileSystem);
+
 	// Create effect
 	if (!init(vertexShaderProgram, vertexShaderEntryPointName, vsCompileTarget,
 		 pixelShaderProgram, pixelShaderEntryPointName, psCompileTarget,
 		 geometryShaderProgram, geometryShaderEntryPointName, gsCompileTarget,
 		 inType, outType, verticesOut, vertexTypeOut))
 	{
-		if (BaseRenderer)
-			BaseRenderer->drop();
-		BaseRenderer = NULL;
+		if (BaseMaterial)
+			BaseMaterial->drop();
+		BaseMaterial = NULL;
 
 		if (CallBack)
 			CallBack->drop();
 		CallBack = NULL;
 
-		SAFE_RELEASE(Effect);
-		SAFE_RELEASE(ImmediateContext);
-		SAFE_RELEASE(Device);
+		if(Effect)
+			Effect->Release();
+		Effect = NULL;
+
+		if(Context)
+			Context->Release();
+		Context = NULL;
+
+		if(Device)
+			Device->Release();
+		Device = NULL;
+
+		if(Includer)
+			delete Includer;
+		Includer = NULL;
 		return;
 	}
 
@@ -108,45 +143,46 @@ CD3D11CustomMaterialRenderer::CD3D11CustomMaterialRenderer(ID3D11Device* device,
 	outMaterialTypeNr = Driver->addMaterialRenderer(this);
 }
 
-CD3D11CustomMaterialRenderer::~CD3D11CustomMaterialRenderer()
+CD3D11HLSLMaterialRenderer::~CD3D11HLSLMaterialRenderer()
 {
-	if (CallBack)
-		CallBack->drop();
+	if(Effect)
+		Effect->Release();
+	Effect = NULL;
 
-	SAFE_RELEASE(Effect);
+	if(Includer)
+		delete Includer;
+	Includer = NULL;
 }
 
-bool CD3D11CustomMaterialRenderer::setVariable(const c8* name, const f32* floats, int count)
+bool CD3D11HLSLMaterialRenderer::setVariable(s32 index, const f32* floats, int count)
 {
-	if (!Effect)
+	if (!Effect || index < 0)
 		return false;
 
-	ID3DX11EffectVariable* var = Effect->GetVariableByName(name);
+	ID3DX11EffectVariable* var = Effect->GetVariableByIndex(index);
 	if( var->IsValid() )
 	{
 		switch( count )
 		{
-
 		case 16:
-			var->AsMatrix()->SetMatrix((f32*)floats);
-			
+			var->AsMatrix()->SetMatrix((f32*)floats);	
 			break;
-
+		case 3:
 		case 4:
 			var->AsVector()->SetFloatVector((f32*)floats);
 			break;
-
 		case 1:
 			var->AsScalar()->SetFloat((f32)*floats);
 			break;
-
 		default:
-			if (count %16 ==0)
+			if (count % 16 == 0)
 				var->AsMatrix()->SetMatrixArray((f32*)floats,0,count);
-			else if (count%4 ==0)
+			else if (count % 4 == 0 || count % 3 == 0)
 				var->AsVector()->SetFloatVectorArray((f32*)floats,0,count);
 			else
 				var->AsScalar()->SetFloatArray((f32*)floats,0,count);
+
+			break;
 		};
 
 		return true;
@@ -155,12 +191,12 @@ bool CD3D11CustomMaterialRenderer::setVariable(const c8* name, const f32* floats
 	return false;
 }
 
-bool CD3D11CustomMaterialRenderer::setVariable(const c8* name, const s32* ints, int count)
+bool CD3D11HLSLMaterialRenderer::setVariable(s32 index, const s32* ints, int count)
 {
-	if (!Effect)
+	if (!Effect || index < 0)
 		return false;
 
-	ID3DX11EffectVariable* var = Effect->GetVariableByName(name);
+	ID3DX11EffectVariable* var = Effect->GetVariableByIndex(index);
 	if( var->IsValid() )
 	{
 		switch( count )
@@ -168,13 +204,12 @@ bool CD3D11CustomMaterialRenderer::setVariable(const c8* name, const s32* ints, 
 		case 4:
 			var->AsVector()->SetIntVectorArray((s32*)ints,0,4);
 			break;
-
 		case 1:
 			var->AsScalar()->SetInt((s32)*ints);
 			break;
-
 		default:
 			var->AsScalar()->SetIntArray((s32*)ints, 0, count);
+			break;
 		};
 
 		return true;
@@ -183,55 +218,60 @@ bool CD3D11CustomMaterialRenderer::setVariable(const c8* name, const s32* ints, 
 	return false;
 }
 
-
-void CD3D11CustomMaterialRenderer::OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
-				bool resetAllRenderstates, IMaterialRendererServices* services)
+irr::s32 CD3D11HLSLMaterialRenderer::getVariableID( bool vertex, const c8* name )
 {
-	BaseRenderer->OnSetMaterial(material, lastMaterial, resetAllRenderstates, services);
-	
-	if (CallBack)
-		CallBack->OnSetMaterial(material);
+	if (!Effect)
+		return -1;
+
+	D3DX11_EFFECT_DESC desc;
+
+	Effect->GetDesc(&desc);
+
+	for(u32 i = 0; i < desc.GlobalVariables; i++)
+	{
+		D3DX11_EFFECT_VARIABLE_DESC desc2;
+
+		Effect->GetVariableByIndex(i)->GetDesc(&desc2);
+
+		if(strcmp(desc2.Name, name) == 0)
+			return i;
+	}
+
+	core::stringc s = "HLSL Variable to get ID not found: '";
+	s += name;
+	s += "'. Available variables are:";
+	os::Printer::log(s.c_str(), ELL_WARNING);
+	printHLSLVariables();
+
+	return -1;
 }
 
-bool CD3D11CustomMaterialRenderer::OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype)
+bool CD3D11HLSLMaterialRenderer::OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype)
 {
 	if (!Effect)
 		return false;
 
-	if (CallBack)
-		CallBack->OnSetConstants(service, UserData);
+	CD3D11ShaderMaterialRenderer::OnRender(service, vtxtype);
 
 	// Apply pass
-	Technique->GetPassByIndex(0)->Apply( 0, ImmediateContext );
+	Technique->GetPassByIndex(0)->Apply( 0, Context );
 
 	return true;
 }
 
-/** Called during the IVideoDriver::setMaterial() call before the new
-material will get the OnSetMaterial() call. */
-void CD3D11CustomMaterialRenderer::OnUnsetMaterial()
-{
-	BaseRenderer->OnUnsetMaterial();
-}
-
 //! get shader signature
-void* CD3D11CustomMaterialRenderer::getShaderByteCode() const
+void* CD3D11HLSLMaterialRenderer::getShaderByteCode() const
 {
 	return PassDescription.pIAInputSignature;
 }
 
 //! get shader signature size
-u32 CD3D11CustomMaterialRenderer::getShaderByteCodeSize() const
+u32 CD3D11HLSLMaterialRenderer::getShaderByteCodeSize() const
 {
 	return PassDescription.IAInputSignatureSize;
 }
 
-bool CD3D11CustomMaterialRenderer::isTransparent() const
-{
-	return BaseRenderer->isTransparent();
-}
-
-bool CD3D11CustomMaterialRenderer::init(const core::stringc vertexShaderProgram,
+bool CD3D11HLSLMaterialRenderer::init(const core::stringc vertexShaderProgram,
 										const c8* vertexShaderEntryPointName,
 										E_VERTEX_SHADER_TYPE vsCompileTarget,
 										const core::stringc pixelShaderProgram,
@@ -258,7 +298,7 @@ bool CD3D11CustomMaterialRenderer::init(const core::stringc vertexShaderProgram,
 	else
 	{
 		flags |= D3D10_SHADER_ENABLE_BACKWARDS_COMPATIBILITY;
-		vsCompileTarget= EVST_VS_4_0;
+		vsCompileTarget = EVST_VS_4_0;
 		psCompileTarget = EPST_PS_4_0;
 	}
 
@@ -371,7 +411,7 @@ bool CD3D11CustomMaterialRenderer::init(const core::stringc vertexShaderProgram,
 
 	hr = D3DCompile( effectString.c_str(), effectString.size(), "",
 					 NULL, // macros
-					 NULL, // includes
+					 Includer, // includes
 					 NULL, // entrypoint
 					 "fx_5_0",
 					 flags,
@@ -453,7 +493,7 @@ bool CD3D11CustomMaterialRenderer::init(const core::stringc vertexShaderProgram,
 	return true;
 }
 
-core::stringc CD3D11CustomMaterialRenderer::parseStreamOutputDeclaration(CD3D11VertexDeclaration* declaration)
+core::stringc CD3D11HLSLMaterialRenderer::parseStreamOutputDeclaration(CD3D11VertexDeclaration* declaration)
 {
 	// Parse declaration
 	const core::array<D3D11_SO_DECLARATION_ENTRY>& entries = declaration->getStreamOutputDeclaration();
@@ -507,6 +547,32 @@ core::stringc CD3D11CustomMaterialRenderer::parseStreamOutputDeclaration(CD3D11V
 	decl += "\"";
 
 	return decl;
+}
+
+void CD3D11HLSLMaterialRenderer::printHLSLVariables()
+{
+	// currently we only support top level parameters.
+	// Should be enough for the beginning. (TODO)
+	D3DX11_EFFECT_DESC desc;
+
+	Effect->GetDesc(&desc);
+
+	core::stringc s = "";
+
+	for(u32 i = 0; i < desc.GlobalVariables; i++)
+	{
+		D3DX11_EFFECT_VARIABLE_DESC desc2;
+
+		Effect->GetVariableByIndex(i)->GetDesc(&desc2);
+		
+		s += "Name: ";
+		s += desc2.Name;
+		s += "  Index: ";
+		s += i;
+		s += "\n";
+	}
+
+	os::Printer::log(s.c_str());
 }
 
 } // end namespace video
