@@ -13,10 +13,10 @@
 #include "irrMath.h"    // needed by borland for sqrtf define
 #endif
 
-#include <d3dx11effect.h>
-
 #include "CD3D11MaterialRenderer.h"
 #include "IShaderConstantSetCallBack.h"
+
+#include <d3dx9math.h>
 
 namespace irr
 {
@@ -24,13 +24,13 @@ namespace video
 {
 
 //! Renderer for normal maps using parallax mapping
-class CD3D11ParallaxMapRenderer : public CD3D11ShaderMaterialRenderer, IShaderConstantSetCallBack
+class CD3D11ParallaxMapRenderer : public CD3D11MaterialRenderer, IShaderConstantSetCallBack
 {
 public:
 
 	CD3D11ParallaxMapRenderer(ID3D11Device* device, video::IVideoDriver* driver, 
 		s32& outMaterialTypeNr, IMaterialRenderer* baseMaterial);
-	~CD3D11ParallaxMapRenderer();
+	virtual ~CD3D11ParallaxMapRenderer();
 	
 	virtual void OnSetMaterial(const SMaterial& material);
 
@@ -41,33 +41,24 @@ public:
 
 	virtual void OnSetConstants( IMaterialRendererServices* services, s32 userData );
 
-	//! get shader signature
-	virtual void* getShaderByteCode() const;
-
-	//! get shader signature size
-	virtual u32 getShaderByteCodeSize() const;
-
-protected:
-	bool init( const char* shader );
-
 private:
-	// Effects and techniques
-	ID3DX11Effect* Effect;
-	ID3DX11EffectTechnique* Technique;
-	D3DX11_PASS_DESC PassDescription;
+	s32 cbPerFrameId;
+	f32 currentScale;
 
-	// Transformation matrix variables
-	ID3DX11EffectMatrixVariable* WorldMatrix;
-	ID3DX11EffectMatrixVariable* WorldViewProjMatrix;
-	ID3DX11EffectVectorVariable* LightPos1;
-	ID3DX11EffectVectorVariable* LightColor1;
-	ID3DX11EffectVectorVariable* LightPos2;
-	ID3DX11EffectVectorVariable* LightColor2;
-
-	ID3DX11EffectVectorVariable* EyePosition;
-	ID3DX11EffectVectorVariable* ScaleFactor;
-
-	f32 CurrentScale;
+	struct SCbPerFrame
+	{
+		core::matrix4 g_mWorld;
+		core::matrix4 g_mWorldViewProj;
+		SColorf	g_lightColor1;
+		SColorf	g_lightColor2;
+		core::vector3df	g_scaleFactor;
+		s32 unusedVar1;
+		core::vector3df	g_eyePosition;	
+		s32 unusedVar4;
+		core::vector3df	g_lightPos1;
+		s32 unusedVar2;
+		core::vector3df	g_lightPos2;
+	} cbPerFrame;
 };
 
 } // end namespace video

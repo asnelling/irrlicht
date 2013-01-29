@@ -20,9 +20,13 @@ namespace video
 
 CD3D11VertexDeclaration::CD3D11VertexDeclaration(CD3D11Driver* driver, core::array<SVertexElement>& elements, E_VERTEX_TYPE type)
 	: Driver(driver), IAElements(0), SOElements(0), 
-	Size(elements.size()), VertexPitch(0), VertexType(type), 
-	Device(0), ImmediateContext(0)
+	VertexPitch(0), VertexType(type), 
+	Device(0), Context(0)
 {
+#ifdef _DEBUG
+	setDebugName("CD3D11VertexDeclaration");
+#endif
+
 	Device = Driver->getExposedVideoData().D3D11.D3DDev11;
 	if (Device)
 	{
@@ -30,7 +34,10 @@ CD3D11VertexDeclaration::CD3D11VertexDeclaration(CD3D11Driver* driver, core::arr
 	}
 
 	D3D11_INPUT_ELEMENT_DESC desc;
-	for(u32 i = 0; i < Size; i++)
+
+	const u32 size = elements.size();
+
+	for(u32 i = 0; i < size; i++)
 	{
 		desc.SemanticName = getSemanticName(elements[i].SemanticType);
 		desc.SemanticIndex = elements[i].SemanticIndex;
@@ -73,7 +80,10 @@ const core::array<D3D11_SO_DECLARATION_ENTRY>& CD3D11VertexDeclaration::getStrea
 	if (SOElements.size() == 0)
 	{
 		D3D11_SO_DECLARATION_ENTRY entry;
-		for(u32 i = 0; i < Size; i++)
+
+		const u32 size = IAElements.size();
+
+		for(u32 i = 0; i < size; i++)
 		{
 			entry.Stream = IAElements[i].InputSlot;
 			entry.SemanticName = IAElements[i].SemanticName;
@@ -94,31 +104,31 @@ const core::array<D3D11_SO_DECLARATION_ENTRY>& CD3D11VertexDeclaration::getStrea
 
 ID3D11InputLayout* CD3D11VertexDeclaration::getInputLayout(IMaterialRenderer* rend)
 {
-	CD3D11ShaderMaterialRenderer* renderer = static_cast<CD3D11ShaderMaterialRenderer*>(rend);
+	CD3D11MaterialRenderer* renderer = static_cast<CD3D11MaterialRenderer*>(rend);
 	u32 signature = reinterpret_cast<u32>(renderer->getShaderByteCode());
 
 	ID3D11InputLayout* layout = 0;
 	LayoutMapNode* node = layoutMap.find(signature);
 	if (node)
 	{
-		layout = node->getValue();
+		return node->getValue();
 	}
 	else
 	{
 		// if don't exists, create layout
-		if(FAILED(Device->CreateInputLayout( IAElements.pointer(), Size, 
+		if(FAILED(Device->CreateInputLayout( IAElements.pointer(), IAElements.size(), 
 											 renderer->getShaderByteCode(),
 											 renderer->getShaderByteCodeSize(), 
 											 &layout )))
 		{
 			os::Printer::log("Error, failed to create input layout", ELL_ERROR);
-			return 0;
+			return NULL;
 		}
 
 		layoutMap.insert(signature, layout);
-	}
 
-	return layout;
+		return layout;
+	}
 }
 
 LPCSTR CD3D11VertexDeclaration::getSemanticName(E_VERTEX_ELEMENT_SEMANTIC semantic) const

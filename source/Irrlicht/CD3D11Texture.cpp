@@ -16,11 +16,6 @@
 
 #include <D3DX11.h>
 
-#define SAFE_RELEASE(x) \
-	if(x)				\
-		x->Release(); 	\
-	x = 0;
-
 namespace irr
 {
 namespace video
@@ -31,7 +26,7 @@ CD3D11Texture::CD3D11Texture(CD3D11Driver* driver, const core::dimension2d<u32>&
 						   const io::path& name, const ECOLOR_FORMAT format, u32 arraySlices,
 						   u32 sampleCount, u32 sampleQuality)
 						   : ITexture(name), Texture(0), TextureBuffer(0), 
-						   Device(0), ImmediateContext(0), Driver(driver),
+						   Device(0), Context(0), Driver(driver),
 						   RTView(0), SRView(0),
 						   TextureDimension(D3D11_RESOURCE_DIMENSION_TEXTURE2D), TextureSize(size), ImageSize(size), Pitch(0), 
 						   MipLevelLocked(0), NumberOfMipLevels(0), ArraySliceLocked(0), NumberOfArraySlices(arraySlices),
@@ -40,9 +35,9 @@ CD3D11Texture::CD3D11Texture(CD3D11Driver* driver, const core::dimension2d<u32>&
 						   HasMipMaps(false), HardwareMipMaps(false), IsRenderTarget(true)
 
 {
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	setDebugName("CD3D11Texture");
-	#endif
+#endif
 
 	HasMipMaps = Driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
 
@@ -50,9 +45,8 @@ CD3D11Texture::CD3D11Texture(CD3D11Driver* driver, const core::dimension2d<u32>&
 	if (Device)
 	{
 		Device->AddRef();
+		Device->GetImmediateContext( &Context );
 	}
-
-	Device->GetImmediateContext( &ImmediateContext );
 
 	createRenderTarget(format);
 }
@@ -62,16 +56,16 @@ CD3D11Texture::CD3D11Texture(CD3D11Driver* driver, const core::dimension2d<u32>&
 CD3D11Texture::CD3D11Texture(IImage* image, CD3D11Driver* driver,
 			   u32 flags, const io::path& name, u32 arraySlices, void* mipmapData)
 			   : ITexture(name), Texture(0), TextureBuffer(0),
-			   Device(0), ImmediateContext(0), Driver(driver),   
+			   Device(0), Context(0), Driver(driver),   
 			   RTView(0), SRView(0), 
 			   TextureDimension(D3D11_RESOURCE_DIMENSION_TEXTURE2D), TextureSize(0,0), ImageSize(0,0), Pitch(0),
 			   LastMapDirection((D3D11_MAP)0), DepthSurface(0), MipLevelLocked(0), NumberOfMipLevels(0), 
 			   ArraySliceLocked(0), NumberOfArraySlices(arraySlices), SampleCount(1), SampleQuality(0), ColorFormat(ECF_UNKNOWN),
 			   HasMipMaps(false), HardwareMipMaps(false), IsRenderTarget(false)
 {
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	setDebugName("CD3D11Texture");
-	#endif
+#endif
 
 	HasMipMaps = Driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
 
@@ -79,9 +73,8 @@ CD3D11Texture::CD3D11Texture(IImage* image, CD3D11Driver* driver,
 	if (Device)
 	{
 		Device->AddRef();
+		Device->GetImmediateContext( &Context );
 	}
-
-	Device->GetImmediateContext( &ImmediateContext );
 
 	// Load a dds file
 	if (core::hasFileExtension(name, "dds"))
@@ -111,13 +104,23 @@ CD3D11Texture::~CD3D11Texture()
 			Driver->removeDepthSurface(DepthSurface);
 	}
 
-	SAFE_RELEASE(RTView);
-	SAFE_RELEASE(SRView);
-	SAFE_RELEASE(Texture);
-	SAFE_RELEASE(TextureBuffer);
+	if(RTView)
+		RTView->Release();
 
-	SAFE_RELEASE(ImmediateContext);
-	SAFE_RELEASE(Device);
+	if(SRView)
+		SRView->Release();
+
+	if(Texture)
+		Texture->Release();
+
+	if(TextureBuffer)
+		TextureBuffer->Release();
+
+	if(Context)
+		Context->Release();
+
+	if(Device)
+		Device->Release();
 }
 
 //! return texture resource
@@ -137,7 +140,7 @@ ID3D11ShaderResourceView* CD3D11Texture::getShaderResourceView() const
 {
 	// Emulate "auto" mipmap generation
 	if( IsRenderTarget && SRView )
-		ImmediateContext->GenerateMips( SRView );
+		Context->GenerateMips( SRView );
 
 	return SRView;
 }
@@ -175,12 +178,12 @@ void* CD3D11Texture::lock(bool readOnly, u32 mipmapLevel, u32 arraySlice)
 	// shall sync data from main texture to texture buffer
 	if ( (IsRenderTarget == true) && (LastMapDirection & D3D11_MAP_READ) )
 	{
-		ImmediateContext->CopyResource( TextureBuffer, Texture );
+		Context->CopyResource( TextureBuffer, Texture );
 	}
 
 	// Map texture buffer
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	hr = ImmediateContext->Map( TextureBuffer,
+	hr = Context->Map( TextureBuffer,
 								D3D11CalcSubresource(MipLevelLocked,		// mip level to lock
 													 ArraySliceLocked,		// array slice (only 1 slice for now)
 													 NumberOfMipLevels), 	// number of mip levels
@@ -203,12 +206,12 @@ void CD3D11Texture::unlock()
 		return;
 
 	// unlock texture buffer
-	ImmediateContext->Unmap( TextureBuffer, D3D11CalcSubresource(MipLevelLocked, ArraySliceLocked, NumberOfMipLevels) );
+	Context->Unmap( TextureBuffer, D3D11CalcSubresource(MipLevelLocked, ArraySliceLocked, NumberOfMipLevels) );
 
 	// copy texture buffer to main texture ONLY if buffer was write
 	if (LastMapDirection && D3D11_MAP_WRITE)
 	{
-		ImmediateContext->CopyResource( Texture, TextureBuffer );
+		Context->CopyResource( Texture, TextureBuffer );
 	}
 }
 
@@ -257,7 +260,7 @@ u32 CD3D11Texture::getNumberOfArraySlices() const
 void CD3D11Texture::regenerateMipMapLevels(void* mipmapData)
 {
 	if( SRView && HardwareMipMaps )
-		ImmediateContext->GenerateMips( SRView );
+		Context->GenerateMips( SRView );
 }
 
 //! returns if it is a render target
@@ -546,7 +549,7 @@ bool CD3D11Texture::createTextureBuffer()
 	}
 
 	// sync main texture contents with texture buffer
-	ImmediateContext->CopyResource( TextureBuffer, Texture );
+	Context->CopyResource( TextureBuffer, Texture );
 
 	return true;
 }
@@ -562,7 +565,8 @@ bool CD3D11Texture::createViews()
 	// create render target view only if needed
 	if(IsRenderTarget)
 	{
-		SAFE_RELEASE( RTView );
+		if(RTView)
+			RTView->Release();
 
 		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
 		::ZeroMemory( &rtvDesc, sizeof( rtvDesc ) );
@@ -601,7 +605,9 @@ bool CD3D11Texture::createViews()
 	}
 
 	// create shader resource view
-	SAFE_RELEASE( SRView );
+	if(SRView)
+		SRView->Release();
+
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
 	::ZeroMemory( &srvDesc, sizeof( srvDesc ) );
 	srvDesc.Format = format;

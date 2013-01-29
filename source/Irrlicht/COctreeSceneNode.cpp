@@ -42,7 +42,9 @@ COctreeSceneNode::~COctreeSceneNode()
 	deleteTree();
 
 	for(u32 i = 0; i < StdMeshes.size(); ++i)
-		delete StdMeshes[i];
+		StdMeshes[i]->drop();
+
+	StdMeshes.clear();
 }
 
 

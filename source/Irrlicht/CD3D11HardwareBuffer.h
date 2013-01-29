@@ -64,7 +64,7 @@ private:
 	friend class CD3D11Driver;
 
 	ID3D11Device* Device;
-	ID3D11DeviceContext* ImmediateContext;
+	ID3D11DeviceContext* Context;
 	ID3D11Buffer* Buffer;
 	ID3D11UnorderedAccessView* UAView;
 	ID3D11ShaderResourceView* SRView;

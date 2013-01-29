@@ -82,7 +82,7 @@ private:
 	friend class CD3D11Driver;
 
 	ID3D11Device* Device;
-	ID3D11DeviceContext* ImmediateContext;
+	ID3D11DeviceContext* Context;
 	ID3D11Texture2D* Texture;
 	ID3D11RenderTargetView* RTView;
 	ID3D11ShaderResourceView* SRView;

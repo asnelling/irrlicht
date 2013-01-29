@@ -13,8 +13,8 @@
 #include "CD3D11HardwareBuffer.h"
 #include "CImage.h"
 
-#include "CD3D11ShaderMaterialRenderer.h"
-#include "CD3D11HLSLMaterialRenderer.h"
+#include "CD3D11FixedPipelineRenderer.h"
+#include "CD3D11MaterialRenderer.h"
 #include "CD3D11NormalMapRenderer.h"
 #include "CD3D11VertexDeclaration.h"
 #include "CD3D11ParallaxMapRenderer.h"
@@ -53,9 +53,9 @@ CD3D11Driver::CD3D11Driver(const irr::SIrrlichtCreationParameters& params,
 	NullTexture(0), MaxTextureUnits(MATERIAL_MAX_TEXTURES) // DirectX 11 can handle much more than this value, but keep compatibility
 
 {
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	setDebugName("CD3D11Driver");
-	#endif
+#endif
 
 	printVersion();
 
@@ -100,23 +100,6 @@ CD3D11Driver::~CD3D11Driver()
 		NullTexture->drop();
 
 	ClipPlanes.clear();
-
-	// clear state
-	if (Context)
-	{
-		// Unbound all shader resources
-		ID3D11ShaderResourceView* views[1] = { NULL };
-
-		Context->VSSetShaderResources(0, 1, views);
-		Context->HSSetShaderResources(0, 1, views);
-		Context->DSSetShaderResources(0, 1, views);
-		Context->GSSetShaderResources(0, 1, views);
-		Context->PSSetShaderResources(0, 1, views);
-		Context->CSSetShaderResources(0, 1, views);
-
-		Context->ClearState();
-		Context->Flush();
-	}
 
 	// clear vertex declarations
 	DeclarationIterator it = declarationMap.getIterator();
@@ -190,7 +173,22 @@ CD3D11Driver::~CD3D11Driver()
 		Adapter->Release();
 
 	if(Context)
+	{
+		// Unbound all shader resources
+		ID3D11ShaderResourceView* views[1] = { NULL };
+
+		Context->VSSetShaderResources(0, 1, views);
+		Context->HSSetShaderResources(0, 1, views);
+		Context->DSSetShaderResources(0, 1, views);
+		Context->GSSetShaderResources(0, 1, views);
+		Context->PSSetShaderResources(0, 1, views);
+		Context->CSSetShaderResources(0, 1, views);
+
+		Context->ClearState();
+		Context->Flush();
+		
 		Context->Release();
+	}
 
 	if(DXGIFactory)
 		DXGIFactory->Release();
@@ -3287,7 +3285,7 @@ u32 CD3D11Driver::getIndexCount(scene::E_PRIMITIVE_TYPE primType, u32 primitiveC
 			return primitiveCount * 3;
 
 		case scene::EPT_TRIANGLE_FAN:
-			return primitiveCount * 3;
+			return primitiveCount + 2;
 
 		case scene::EPT_QUADS:
 			return primitiveCount * 4;
@@ -3632,7 +3630,8 @@ ID3D11DepthStencilView* CD3D11Driver::createDepthStencilView(core::dimension2d<u
 	
 	hr = Device->CreateDepthStencilView( depthTexture, &dsDesc, &dsView );
 	depthTexture->Release();
-	if(FAILED(hr))
+	
+if(FAILED(hr))
 	{
 		os::Printer::log("Error, could not create depth stencil view.", ELL_WARNING);
 		return NULL;
@@ -3751,17 +3750,17 @@ s32 CD3D11Driver::addHighLevelShaderMaterial(
 			const c8* geometryShaderProgram, const c8* geometryShaderEntryPointName, E_GEOMETRY_SHADER_TYPE gsCompileTarget,
 			scene::E_PRIMITIVE_TYPE inType, scene::E_PRIMITIVE_TYPE outType, u32 verticesOut,
 			IShaderConstantSetCallBack* callback,
-			E_MATERIAL_TYPE baseMaterial, s32 userData, E_GPU_SHADING_LANGUAGE shadingLang)
+			E_MATERIAL_TYPE baseRenderer, s32 userData, E_GPU_SHADING_LANGUAGE shadingLang)
 {
 	E_VERTEX_TYPE vertexTypeOut = EVT_STANDARD;
-	s32 id = 0;
-	CD3D11HLSLMaterialRenderer* rend = 
-			new CD3D11HLSLMaterialRenderer(Device, this, id,
+	s32 id = -1;
+	CD3D11MaterialRenderer* rend = 
+			new CD3D11MaterialRenderer(Device, this, id,
 											 vertexShaderProgram, vertexShaderEntryPointName, vsCompileTarget,
 											 pixelShaderProgram, pixelShaderEntryPointName, psCompileTarget,
 											 geometryShaderProgram, geometryShaderEntryPointName, gsCompileTarget,
 											 inType, outType, verticesOut, vertexTypeOut,
-											 callback, getMaterialRenderer(baseMaterial), userData, FileSystem);
+											 callback, getMaterialRenderer(baseRenderer), userData, FileSystem);
 	rend->drop();
 
 	return id;
@@ -3775,13 +3774,8 @@ s32 CD3D11Driver::addShaderMaterial(const c8* vertexShaderProgram,
 								   E_MATERIAL_TYPE baseMaterial,
 								   s32 userData)
 {
-	s32 nr = -1;
-	/*CD3D11ShaderMaterialRenderer* r = new CD3D11ShaderMaterialRenderer(
-		Device, this, nr, vertexShaderProgram, pixelShaderProgram,
-		callback, getMaterialRenderer(baseMaterial), userData);
-
-	r->drop();*/
-	return nr;
+	os::Printer::log("\"addShaderMaterial\" is not supported", ELL_ERROR);
+	return -1;
 }
 
 ////////////// IGPUProgrammingServices methods end ////////////////////////////////////////////
@@ -3793,8 +3787,8 @@ s32 CD3D11Driver::getVertexShaderConstantID(const c8* name)
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
-		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->getVariableID(true, name);
+		CD3D11FixedPipelineRenderer* r = (CD3D11FixedPipelineRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->getVariableID(name, EST_VERTEX_SHADER);
 	}
 
 	return -1;
@@ -3804,8 +3798,8 @@ s32 CD3D11Driver::getPixelShaderConstantID(const c8* name)
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
-		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->getVariableID(false, name);
+		CD3D11FixedPipelineRenderer* r = (CD3D11FixedPipelineRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->getVariableID(name, EST_PIXEL_SHADER);
 	}
 
 	return -1;
@@ -3825,8 +3819,8 @@ bool CD3D11Driver::setVertexShaderConstant(s32 index, const f32* floats, int cou
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
-		CD3D11ShaderMaterialRenderer* r = (CD3D11ShaderMaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(index, floats, count);
+		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(index, floats, count, EST_VERTEX_SHADER);
 	}
 
 	return false;
@@ -3836,8 +3830,8 @@ bool CD3D11Driver::setPixelShaderConstant(s32 index, const f32* floats, int coun
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
-		CD3D11ShaderMaterialRenderer* r = (CD3D11ShaderMaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(index, floats, count);
+		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(index, floats, count, EST_PIXEL_SHADER);
 	}
 
 	return false;
@@ -3847,8 +3841,8 @@ bool CD3D11Driver::setVertexShaderConstant(s32 index, const s32* ints, int count
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
-		CD3D11ShaderMaterialRenderer* r = (CD3D11ShaderMaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(index, ints, count);
+		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(index, ints, count, EST_VERTEX_SHADER);
 	}
 
 	return false;
@@ -3858,8 +3852,8 @@ bool CD3D11Driver::setPixelShaderConstant(s32 index, const s32* ints, int count)
 {
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 	{
-		CD3D11ShaderMaterialRenderer* r = (CD3D11ShaderMaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
-		return r->setVariable(index, ints, count);
+		CD3D11MaterialRenderer* r = (CD3D11MaterialRenderer*)MaterialRenderers[Material.MaterialType].Renderer;
+		return r->setVariable(index, ints, count, EST_PIXEL_SHADER);
 	}
 
 	return false;

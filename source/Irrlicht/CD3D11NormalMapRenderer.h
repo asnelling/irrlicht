@@ -13,10 +13,10 @@
 #include "irrMath.h"    // needed by borland for sqrtf define
 #endif 
 
-#include <d3dx11effect.h>
-
 #include "CD3D11MaterialRenderer.h"
 #include "IShaderConstantSetCallBack.h"
+
+#include <d3dx9math.h>
 
 namespace irr
 {
@@ -24,12 +24,12 @@ namespace video
 {
 
 //! Renderer for normal maps
-class CD3D11NormalMapRenderer : public CD3D11ShaderMaterialRenderer, IShaderConstantSetCallBack
+class CD3D11NormalMapRenderer : public CD3D11MaterialRenderer, IShaderConstantSetCallBack
 {
 public:
 
 	CD3D11NormalMapRenderer(ID3D11Device* device, video::IVideoDriver* driver, s32& outMaterialTypeNr, IMaterialRenderer* baseMaterial);
-	~CD3D11NormalMapRenderer();
+	virtual ~CD3D11NormalMapRenderer();
 
 	virtual bool OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype);
 
@@ -38,31 +38,21 @@ public:
 	//! Returns the render capability of the material.
 	virtual s32 getRenderCapability() const;
 
-	//! get shader signature
-	virtual void* getShaderByteCode() const;
-
-	//! get shader signature size
-	virtual u32 getShaderByteCodeSize() const;
-
 	virtual void OnSetMaterial( const SMaterial& material );	
 
-protected:
-	bool init( const char* shader);
-
 private:
+	s32 cbPerFrameId;
 
-	// Effects and techniques
-	ID3DX11Effect* Effect;
-	ID3DX11EffectTechnique* Technique;
-	D3DX11_PASS_DESC PassDescription;
-
-	// Transformation matrix variables
-	ID3DX11EffectMatrixVariable* WorldMatrix;
-	ID3DX11EffectMatrixVariable* WorldViewProjMatrix;
-	ID3DX11EffectVectorVariable* LightPos1;
-	ID3DX11EffectVectorVariable* LightColor1;
-	ID3DX11EffectVectorVariable* LightPos2;
-	ID3DX11EffectVectorVariable* LightColor2;
+	struct SCbPerFrame
+	{
+		core::matrix4 g_mWorld;
+		core::matrix4 g_mWorldViewProj;
+		SColorf	g_lightColor1;
+		SColorf	g_lightColor2;
+		core::vector3df	g_lightPos1;
+		s32 unusedVar;
+		core::vector3df	g_lightPos2;
+	} cbPerFrame;
 };
 
 } // end namespace video

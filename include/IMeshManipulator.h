@@ -272,7 +272,10 @@ namespace scene
 			CVertexBuffer<T>* VertexBuffer = new CVertexBuffer<T>(vertexDescriptor);
 			copyVertices(meshBuffer->getVertexBuffer(), VertexBuffer, true);
 
+			// setVert(/Ind)exBuffer increase the refcount of the buffer so we have to drop them after that
 			meshBuffer->setVertexBuffer(VertexBuffer);
+			
+			VertexBuffer->drop();
 
 			return true;
 		}
@@ -352,6 +355,9 @@ namespace scene
 			}
 
 			meshBuffer->setVertexBuffer(VertexBuffer);
+
+			// setVert(/Ind)exBuffer increase the refcount of the buffer so we have to drop them after that
+			VertexBuffer->drop();
 
 			meshBuffer->recalculateBoundingBox();
 
@@ -553,6 +559,10 @@ namespace scene
 
 			meshBuffer->setVertexBuffer(VertexBuffer);
 			meshBuffer->setIndexBuffer(IndexBuffer);
+
+			// setVert(/Ind)exBuffer increase the refcount of the buffer so we have to drop them after that
+			VertexBuffer->drop();
+			IndexBuffer->drop():
 
 			meshBuffer->recalculateBoundingBox();
 

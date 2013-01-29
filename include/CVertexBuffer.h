@@ -86,14 +86,14 @@ namespace scene
 			return vertexDescriptor;
 		}
 
-		virtual bool setVertexDescriptor(video::IVertexDescriptor* vertexDescriptor)
+		virtual bool setVertexDescriptor(video::IVertexDescriptor* vtxDescriptor)
 		{
-			if(vertexDescriptor && vertexDescriptor != vertexDescriptor)
+			if(vtxDescriptor && vtxDescriptor != vertexDescriptor)
 			{
 				if(vertexDescriptor)
 					vertexDescriptor->drop();
 
-				vertexDescriptor = vertexDescriptor;
+				vertexDescriptor = vtxDescriptor;
 				vertexDescriptor->grab();
 
 				return true;

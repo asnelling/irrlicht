@@ -693,27 +693,66 @@ void CNullDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCoun
 void CNullDriver::draw3DLine(const core::vector3df& start,
 				const core::vector3df& end, SColor color)
 {
+	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_STANDARD));
+	scene::CIndexBuffer* indices = new scene::CIndexBuffer();
+	indices->reallocate(2);
+	vertices->reallocate(2);
+
+	indices->addIndex(0);
+	indices->addIndex(1);
+
+	video::S3DVertex vert;
+	vert.Color = color;
+	
+	vert.Pos = start;
+	vertices->addVertex(vert);
+
+	vert.Pos = end;
+	vertices->addVertex(vert);
+
+	drawVertexPrimitiveList(false, vertices, false, indices, 1, scene::EPT_LINES);
+
+	vertices->clear();
+	vertices->drop();
+	indices->clear();
+	indices->drop();
 }
 
 
 //! Draws a 3d triangle.
 void CNullDriver::draw3DTriangle(const core::triangle3df& triangle, SColor color)
 {
-	S3DVertex vertices[3];
-	vertices[0].Pos=triangle.pointA;
-	vertices[0].Color=color;
-	vertices[0].Normal=triangle.getNormal().normalize();
-	vertices[0].TCoords.set(0.f,0.f);
-	vertices[1].Pos=triangle.pointB;
-	vertices[1].Color=color;
-	vertices[1].Normal=vertices[0].Normal;
-	vertices[1].TCoords.set(0.5f,1.f);
-	vertices[2].Pos=triangle.pointC;
-	vertices[2].Color=color;
-	vertices[2].Normal=vertices[0].Normal;
-	vertices[2].TCoords.set(1.f,0.f);
-	const u16 indexList[] = {0,1,2};
-	//drawVertexPrimitiveList(vertices, 3, indexList, 1, scene::EPT_TRIANGLES, EIT_16BIT);
+	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_STANDARD));
+	scene::CIndexBuffer* indices = new scene::CIndexBuffer();
+	indices->reallocate(3);
+	vertices->reallocate(3);
+
+	indices->addIndex(0);
+	indices->addIndex(1);
+	indices->addIndex(2);
+
+	video::S3DVertex vert;
+	vert.Color = color;
+	vert.Normal=triangle.getNormal().normalize();
+
+	vert.Pos=triangle.pointA;
+	vert.TCoords.set(0.f,0.f);
+	vertices->addVertex(vert);
+
+	vert.Pos=triangle.pointB;
+	vert.TCoords.set(0.5f,1.f);
+	vertices->addVertex(vert);
+
+	vert.Pos=triangle.pointC;
+	vert.TCoords.set(1.f,0.f);
+	vertices->addVertex(vert);
+
+	drawVertexPrimitiveList(false, vertices, false, indices, 1, scene::EPT_TRIANGLES);
+
+	vertices->clear();
+	vertices->drop();
+	indices->clear();
+	indices->drop();
 }
 
 
@@ -723,20 +762,72 @@ void CNullDriver::draw3DBox(const core::aabbox3d<f32>& box, SColor color)
 	core::vector3df edges[8];
 	box.getEdges(edges);
 
-	// TODO: optimize into one big drawIndexPrimitive call.
+	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_STANDARD));
+	scene::CIndexBuffer* indices = new scene::CIndexBuffer();
+	indices->reallocate(24);
+	vertices->reallocate(24);
+	
+	for(u32 i = 0; i < 24; i++)
+		indices->addIndex(i);
 
-	draw3DLine(edges[5], edges[1], color);
-	draw3DLine(edges[1], edges[3], color);
-	draw3DLine(edges[3], edges[7], color);
-	draw3DLine(edges[7], edges[5], color);
-	draw3DLine(edges[0], edges[2], color);
-	draw3DLine(edges[2], edges[6], color);
-	draw3DLine(edges[6], edges[4], color);
-	draw3DLine(edges[4], edges[0], color);
-	draw3DLine(edges[1], edges[0], color);
-	draw3DLine(edges[3], edges[2], color);
-	draw3DLine(edges[7], edges[6], color);
-	draw3DLine(edges[5], edges[4], color);
+	video::S3DVertex vert;
+	vert.Color = color;
+
+	vert.Pos = edges[5];
+	vertices->addVertex(vert);
+	vert.Pos = edges[1];
+	vertices->addVertex(vert);
+	vert.Pos = edges[1];
+	vertices->addVertex(vert);
+	vert.Pos = edges[3];
+	vertices->addVertex(vert);
+	vert.Pos = edges[3];
+	vertices->addVertex(vert);
+	vert.Pos = edges[7];
+	vertices->addVertex(vert);
+	vert.Pos = edges[7];
+	vertices->addVertex(vert);
+	vert.Pos = edges[5];
+	vertices->addVertex(vert);
+	vert.Pos = edges[0];
+	vertices->addVertex(vert);
+	vert.Pos = edges[2];
+	vertices->addVertex(vert);
+	vert.Pos = edges[2];
+	vertices->addVertex(vert);
+	vert.Pos = edges[6];
+	vertices->addVertex(vert);
+	vert.Pos = edges[6];
+	vertices->addVertex(vert);
+	vert.Pos = edges[4];
+	vertices->addVertex(vert);
+	vert.Pos = edges[4];
+	vertices->addVertex(vert);
+	vert.Pos = edges[0];
+	vertices->addVertex(vert);
+	vert.Pos = edges[1];
+	vertices->addVertex(vert);
+	vert.Pos = edges[0];
+	vertices->addVertex(vert);
+	vert.Pos = edges[3];
+	vertices->addVertex(vert);
+	vert.Pos = edges[2];
+	vertices->addVertex(vert);
+	vert.Pos = edges[7];
+	vertices->addVertex(vert);
+	vert.Pos = edges[6];
+	vertices->addVertex(vert);
+	vert.Pos = edges[5];
+	vertices->addVertex(vert);
+	vert.Pos = edges[4];
+	vertices->addVertex(vert);
+
+	drawVertexPrimitiveList(false, vertices, false, indices, 12, scene::EPT_LINES);
+
+	vertices->clear();
+	vertices->drop();
+	indices->clear();
+	indices->drop();
 }
 
 
@@ -820,10 +911,26 @@ void CNullDriver::draw2DImage(const video::ITexture* texture, const core::positi
 //! Draws the outline of a 2d rectangle
 void CNullDriver::draw2DRectangleOutline(const core::recti& pos, SColor color)
 {
-	draw2DLine(pos.UpperLeftCorner, core::position2di(pos.LowerRightCorner.X, pos.UpperLeftCorner.Y), color);
-	draw2DLine(core::position2di(pos.LowerRightCorner.X, pos.UpperLeftCorner.Y), pos.LowerRightCorner, color);
-	draw2DLine(pos.LowerRightCorner, core::position2di(pos.UpperLeftCorner.X, pos.LowerRightCorner.Y), color);
-	draw2DLine(core::position2di(pos.UpperLeftCorner.X, pos.LowerRightCorner.Y), pos.UpperLeftCorner, color);
+	video::S3DVertex v[8];
+
+	for(u32 i = 0; i < 8; i++)
+		v[i].Color = color;
+
+	v[0].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.UpperLeftCorner.Y, 0.f);
+	v[1].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.UpperLeftCorner.Y, 0.f);
+
+	v[2].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.UpperLeftCorner.Y, 0.f);
+	v[3].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.LowerRightCorner.Y, 0.f);
+
+	v[4].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.LowerRightCorner.Y, 0.f);
+	v[5].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.LowerRightCorner.Y, 0.f);
+
+	v[6].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.LowerRightCorner.Y, 0.f);
+	v[7].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.UpperLeftCorner.Y, 0.f);
+
+	const u16 indexList[] = {0,1,2,3,4,5,6,7};
+
+	draw2DVertexPrimitiveList(v, 8, indexList, 4, EVT_STANDARD, scene::EPT_LINES, EIT_16BIT);
 }
 
 
@@ -863,6 +970,15 @@ void CNullDriver::draw2DPolygon(core::position2d<s32> center,
 	if (count < 2)
 		return;
 
+	core::array<video::S3DVertex> vertices;
+	core::array<u16> indices;
+
+	vertices.reallocate(count * 2 + 2);
+	indices.reallocate(count * 2 + 2);
+
+	video::S3DVertex v;
+	v.Color = color;
+
 	core::position2d<s32> first;
 	core::position2d<s32> a,b;
 
@@ -876,10 +992,28 @@ void CNullDriver::draw2DPolygon(core::position2d<s32> center,
 		if (j==0)
 			first = a;
 		else
-			draw2DLine(a, b, color);
-	}
+		{
+			v.Pos = core::vector3df((f32)a.X, (f32)a.Y, 0.f);
+			vertices.push_back(v);
+			v.Pos = core::vector3df((f32)b.X, (f32)b.Y, 0.f);
+			vertices.push_back(v);
 
-	draw2DLine(a, first, color);
+			indices.push_back(indices.size());
+			indices.push_back(indices.size());
+		}
+	}
+	v.Pos = core::vector3df((f32)a.X, (f32)a.Y, 0.f);
+	vertices.push_back(v);
+	v.Pos = core::vector3df((f32)first.X, (f32)first.Y, 0.f);
+	vertices.push_back(v);
+
+	indices.push_back(indices.size());
+	indices.push_back(indices.size());
+
+	draw2DVertexPrimitiveList(vertices.const_pointer(), vertices.size(), indices.const_pointer(), indices.size() / 2, EVT_STANDARD, scene::EPT_LINES, EIT_16BIT);
+
+	vertices.clear();
+	indices.clear();
 }
 
 
@@ -1553,18 +1687,65 @@ void CNullDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 //! Draws the normals of a mesh buffer
 void CNullDriver::drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length, SColor color)
 {
-	/*const u32 count = mb->getVertexCount();
+	const u32 count = mb->getVertexBuffer()->getVertexCount();
 	const bool normalize = mb->getMaterial().NormalizeNormals;
+
+	video::S3DVertex* data = NULL;
+	scene::SVertexBuffer* vertices = NULL;
+
+	switch(mb->getVertexBuffer()->getVertexSize())
+	{
+	case sizeof(S3DVertex):
+		vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_STANDARD));
+		data = (video::S3DVertex*)mb->getVertexBuffer()->getVertices();
+		break;
+	case sizeof(S3DVertex2TCoords):
+		vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_2TCOORDS));
+		data = (video::S3DVertex2TCoords*)mb->getVertexBuffer()->getVertices();
+		break;
+	case sizeof(S3DVertexTangents):
+		vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_TANGENTS));
+		data = (video::S3DVertexTangents*)mb->getVertexBuffer()->getVertices();
+		break;
+	default:
+		return;
+	}
+
+	scene::CIndexBuffer* indices = new scene::CIndexBuffer(mb->getIndexBuffer()->getType());
+	indices->set_used(count * 2);
+	vertices->reallocate(count * 2);
+
+	u32 current = 0;
+	
+	video::S3DVertex vert;
+	vert.Color = color;
 
 	for (u32 i=0; i < count; ++i)
 	{
-		core::vector3df normalizedNormal = mb->getNormal(i);
+		core::vector3df normalizedNormal = data->Normal;
 		if (normalize)
 			normalizedNormal.normalize();
 
-		const core::vector3df& pos = mb->getPosition(i);
-		draw3DLine(pos, pos + (normalizedNormal * length), color);
-	}*/
+		const core::vector3df& pos = data->Pos;
+
+		indices->setIndex(current, current);
+		vert.Pos = pos;
+		vertices->addVertex(vert);
+		++current;
+		indices->setIndex(current, current);
+		vert.Pos = pos + (normalizedNormal * length);
+		vertices->addVertex(vert);
+		++current;
+
+		++data;
+	}
+
+	drawVertexPrimitiveList(false, vertices, false, indices, indices->getIndexCount() / 2, scene::EPT_LINES);
+
+	vertices->clear();
+	vertices->drop();
+	indices->clear();
+	indices->drop();
 }
 
 

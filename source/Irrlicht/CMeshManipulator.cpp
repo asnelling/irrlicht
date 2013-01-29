@@ -914,10 +914,7 @@ The function is thread-safe (read: you can optimize several meshes in different 
 \param mesh Source mesh for the operation.  */
 IMesh* CMeshManipulator::createForsythOptimizedMesh(const IMesh* mesh) const
 {
-	// TODO : re-implementation of this method.
-
-	return 0;
-	/*if (!mesh)
+	if (!mesh)
 		return 0;
 
 	SMesh *newmesh = new SMesh();
@@ -936,10 +933,10 @@ IMesh* CMeshManipulator::createForsythOptimizedMesh(const IMesh* mesh) const
 			return 0;
 		}
 
-		const u32 icount = mb->getIndexCount();
+		const u32 icount = mb->getIndexBuffer()->getIndexCount();
 		const u32 tcount = icount / 3;
-		const u32 vcount = mb->getVertexCount();
-		const u16 *ind = mb->getIndices();
+		const u32 vcount = mb->getVertexBuffer()->getVertexCount();
+		const u16 *ind = (u16*)mb->getIndexBuffer()->getIndices();
 
 		vcache *vc = new vcache[vcount];
 		tcache *tc = new tcache[tcount];
@@ -990,17 +987,17 @@ IMesh* CMeshManipulator::createForsythOptimizedMesh(const IMesh* mesh) const
 					vc[tc[i].ind[2]].score;
 		}
 
-		switch(mb->getVertexType())
+		switch(mb->getVertexBuffer()->getVertexSize())
 		{
-			case video::EVT_STANDARD:
+		case sizeof(video::S3DVertex):
 			{
-				video::S3DVertex *v = (video::S3DVertex *) mb->getVertices();
+				video::S3DVertex *v = (video::S3DVertex *) mb->getVertexBuffer()->getVertices();
 
-				SMeshBuffer *buf = new SMeshBuffer();
+				CMeshBuffer<video::S3DVertex> *buf = new CMeshBuffer<video::S3DVertex>(mb->getVertexBuffer()->getVertexDescriptor(), video::EIT_16BIT);
 				buf->Material = mb->getMaterial();
 
-				buf->Vertices.reallocate(vcount);
-				buf->Indices.reallocate(icount);
+				buf->VertexBuffer->reallocate(vcount);
+				buf->IndexBuffer->reallocate(icount);
 
 				core::map<const video::S3DVertex, const u16> sind; // search index for fast operation
 				typedef core::map<const video::S3DVertex, const u16>::Node snode;
@@ -1031,47 +1028,47 @@ IMesh* CMeshManipulator::createForsythOptimizedMesh(const IMesh* mesh) const
 					}
 
 					// Output the best triangle
-					u16 newind = buf->Vertices.size();
+					u16 newind = buf->VertexBuffer->getVertexCount();
 
 					snode *s = sind.find(v[tc[highest].ind[0]]);
 
 					if (!s)
 					{
-						buf->Vertices.push_back(v[tc[highest].ind[0]]);
-						buf->Indices.push_back(newind);
+						buf->VertexBuffer->addVertex(&v[tc[highest].ind[0]]);
+						buf->IndexBuffer->addIndex(newind);
 						sind.insert(v[tc[highest].ind[0]], newind);
 						newind++;
 					}
 					else
 					{
-						buf->Indices.push_back(s->getValue());
+						buf->IndexBuffer->addIndex(s->getValue());
 					}
 
 					s = sind.find(v[tc[highest].ind[1]]);
 
 					if (!s)
 					{
-						buf->Vertices.push_back(v[tc[highest].ind[1]]);
-						buf->Indices.push_back(newind);
+						buf->VertexBuffer->addVertex(&v[tc[highest].ind[1]]);
+						buf->IndexBuffer->addIndex(newind);
 						sind.insert(v[tc[highest].ind[1]], newind);
 						newind++;
 					}
 					else
 					{
-						buf->Indices.push_back(s->getValue());
+						buf->IndexBuffer->addIndex(s->getValue());
 					}
 
 					s = sind.find(v[tc[highest].ind[2]]);
 
 					if (!s)
 					{
-						buf->Vertices.push_back(v[tc[highest].ind[2]]);
-						buf->Indices.push_back(newind);
+						buf->VertexBuffer->addVertex(&v[tc[highest].ind[2]]);
+						buf->IndexBuffer->addIndex(newind);
 						sind.insert(v[tc[highest].ind[2]], newind);
 					}
 					else
 					{
-						buf->Indices.push_back(s->getValue());
+						buf->IndexBuffer->addIndex(s->getValue());
 					}
 
 					vc[tc[highest].ind[0]].NumActiveTris--;
@@ -1104,15 +1101,15 @@ IMesh* CMeshManipulator::createForsythOptimizedMesh(const IMesh* mesh) const
 				buf->drop();
 			}
 			break;
-			case video::EVT_2TCOORDS:
+		case sizeof(video::S3DVertex2TCoords):
 			{
-				video::S3DVertex2TCoords *v = (video::S3DVertex2TCoords *) mb->getVertices();
+				video::S3DVertex2TCoords *v = (video::S3DVertex2TCoords *) mb->getVertexBuffer()->getVertices();
 
-				SMeshBufferLightMap *buf = new SMeshBufferLightMap();
+				CMeshBuffer<video::S3DVertex2TCoords> *buf = new CMeshBuffer<video::S3DVertex2TCoords>(mb->getVertexBuffer()->getVertexDescriptor(), video::EIT_16BIT);
 				buf->Material = mb->getMaterial();
 
-				buf->Vertices.reallocate(vcount);
-				buf->Indices.reallocate(icount);
+				buf->VertexBuffer->reallocate(vcount);
+				buf->IndexBuffer->reallocate(icount);
 
 				core::map<const video::S3DVertex2TCoords, const u16> sind; // search index for fast operation
 				typedef core::map<const video::S3DVertex2TCoords, const u16>::Node snode;
@@ -1143,47 +1140,47 @@ IMesh* CMeshManipulator::createForsythOptimizedMesh(const IMesh* mesh) const
 					}
 
 					// Output the best triangle
-					u16 newind = buf->Vertices.size();
+					u16 newind = buf->VertexBuffer->getVertexCount();
 
 					snode *s = sind.find(v[tc[highest].ind[0]]);
 
 					if (!s)
 					{
-						buf->Vertices.push_back(v[tc[highest].ind[0]]);
-						buf->Indices.push_back(newind);
+						buf->VertexBuffer->addVertex(&v[tc[highest].ind[0]]);
+						buf->IndexBuffer->addIndex(newind);
 						sind.insert(v[tc[highest].ind[0]], newind);
 						newind++;
 					}
 					else
 					{
-						buf->Indices.push_back(s->getValue());
+						buf->IndexBuffer->addIndex(s->getValue());
 					}
 
 					s = sind.find(v[tc[highest].ind[1]]);
 
 					if (!s)
 					{
-						buf->Vertices.push_back(v[tc[highest].ind[1]]);
-						buf->Indices.push_back(newind);
+						buf->VertexBuffer->addVertex(&v[tc[highest].ind[1]]);
+						buf->IndexBuffer->addIndex(newind);
 						sind.insert(v[tc[highest].ind[1]], newind);
 						newind++;
 					}
 					else
 					{
-						buf->Indices.push_back(s->getValue());
+						buf->IndexBuffer->addIndex(s->getValue());
 					}
 
 					s = sind.find(v[tc[highest].ind[2]]);
 
 					if (!s)
 					{
-						buf->Vertices.push_back(v[tc[highest].ind[2]]);
-						buf->Indices.push_back(newind);
+						buf->VertexBuffer->addVertex(&v[tc[highest].ind[2]]);
+						buf->IndexBuffer->addIndex(newind);
 						sind.insert(v[tc[highest].ind[2]], newind);
 					}
 					else
 					{
-						buf->Indices.push_back(s->getValue());
+						buf->IndexBuffer->addIndex(s->getValue());
 					}
 
 					vc[tc[highest].ind[0]].NumActiveTris--;
@@ -1217,15 +1214,15 @@ IMesh* CMeshManipulator::createForsythOptimizedMesh(const IMesh* mesh) const
 
 			}
 			break;
-			case video::EVT_TANGENTS:
+		case sizeof(video::S3DVertexTangents):
 			{
-				video::S3DVertexTangents *v = (video::S3DVertexTangents *) mb->getVertices();
+				video::S3DVertexTangents *v = (video::S3DVertexTangents *) mb->getVertexBuffer()->getVertices();
 
-				SMeshBufferTangents *buf = new SMeshBufferTangents();
+				CMeshBuffer<video::S3DVertexTangents> *buf = new CMeshBuffer<video::S3DVertexTangents>(mb->getVertexBuffer()->getVertexDescriptor(), video::EIT_16BIT);
 				buf->Material = mb->getMaterial();
 
-				buf->Vertices.reallocate(vcount);
-				buf->Indices.reallocate(icount);
+				buf->VertexBuffer->reallocate(vcount);
+				buf->IndexBuffer->reallocate(icount);
 
 				core::map<const video::S3DVertexTangents, const u16> sind; // search index for fast operation
 				typedef core::map<const video::S3DVertexTangents, const u16>::Node snode;
@@ -1256,47 +1253,47 @@ IMesh* CMeshManipulator::createForsythOptimizedMesh(const IMesh* mesh) const
 					}
 
 					// Output the best triangle
-					u16 newind = buf->Vertices.size();
+					u16 newind = buf->VertexBuffer->getVertexCount();
 
 					snode *s = sind.find(v[tc[highest].ind[0]]);
 
 					if (!s)
 					{
-						buf->Vertices.push_back(v[tc[highest].ind[0]]);
-						buf->Indices.push_back(newind);
+						buf->VertexBuffer->addVertex(&v[tc[highest].ind[0]]);
+						buf->IndexBuffer->addIndex(newind);
 						sind.insert(v[tc[highest].ind[0]], newind);
 						newind++;
 					}
 					else
 					{
-						buf->Indices.push_back(s->getValue());
+						buf->IndexBuffer->addIndex(s->getValue());
 					}
 
 					s = sind.find(v[tc[highest].ind[1]]);
 
 					if (!s)
 					{
-						buf->Vertices.push_back(v[tc[highest].ind[1]]);
-						buf->Indices.push_back(newind);
+						buf->VertexBuffer->addVertex(&v[tc[highest].ind[1]]);
+						buf->IndexBuffer->addIndex(newind);
 						sind.insert(v[tc[highest].ind[1]], newind);
 						newind++;
 					}
 					else
 					{
-						buf->Indices.push_back(s->getValue());
+						buf->IndexBuffer->addIndex(s->getValue());
 					}
 
 					s = sind.find(v[tc[highest].ind[2]]);
 
 					if (!s)
 					{
-						buf->Vertices.push_back(v[tc[highest].ind[2]]);
-						buf->Indices.push_back(newind);
+						buf->VertexBuffer->addVertex(&v[tc[highest].ind[2]]);
+						buf->IndexBuffer->addIndex(newind);
 						sind.insert(v[tc[highest].ind[2]], newind);
 					}
 					else
 					{
-						buf->Indices.push_back(s->getValue());
+						buf->IndexBuffer->addIndex(s->getValue());
 					}
 
 					vc[tc[highest].ind[0]].NumActiveTris--;
@@ -1336,7 +1333,7 @@ IMesh* CMeshManipulator::createForsythOptimizedMesh(const IMesh* mesh) const
 
 	} // for each meshbuffer
 
-	return newmesh;*/
+	return newmesh;
 }
 
 } // end namespace scene

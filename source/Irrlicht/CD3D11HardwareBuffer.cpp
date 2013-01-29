@@ -19,7 +19,7 @@ namespace video
 CD3D11HardwareBuffer::CD3D11HardwareBuffer(CD3D11Driver* driver, E_HARDWARE_BUFFER_TYPE type, 
 							E_HARDWARE_BUFFER_ACCESS accessType, u32 size, u32 flags, const void* initialData)
 : Device(0)
-, ImmediateContext(0)
+, Context(0)
 , Buffer(0)
 , UAView(0)
 , SRView(0)
@@ -32,17 +32,16 @@ CD3D11HardwareBuffer::CD3D11HardwareBuffer(CD3D11Driver* driver, E_HARDWARE_BUFF
 , Flags(flags)
 , AccessType(accessType)
 {
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	setDebugName("CD3D11HardwareBuffer");
-	#endif
+#endif
 
 	Device=driver->getExposedVideoData().D3D11.D3DDev11;
 	if (Device)
 	{
 		Device->AddRef();
+		Device->GetImmediateContext( &Context );
 	}
-
-	Device->GetImmediateContext( &ImmediateContext );
 
 	createInternalBuffer(initialData);
 
@@ -65,8 +64,8 @@ CD3D11HardwareBuffer::~CD3D11HardwareBuffer()
 	if(Buffer)
 		Buffer->Release();
 
-	if(ImmediateContext)
-		ImmediateContext->Release();
+	if(Context)
+		Context->Release();
 
 	if(Device)
 		Device->Release();
@@ -120,7 +119,7 @@ void* CD3D11HardwareBuffer::lock(bool readOnly)
 
 	// Otherwise, map this buffer
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	HRESULT hr = ImmediateContext->Map(Buffer, 0, LastMapDirection, 0, &mappedData);
+	HRESULT hr = Context->Map(Buffer, 0, LastMapDirection, 0, &mappedData);
 	if (FAILED(hr))
 		return 0;
 
@@ -146,7 +145,7 @@ void CD3D11HardwareBuffer::unlock()
 	}
 
 	// Otherwise, unmap this
-	ImmediateContext->Unmap(Buffer, 0);
+	Context->Unmap(Buffer, 0);
 }
 
 //! Copy data from system memory
@@ -164,7 +163,7 @@ void CD3D11HardwareBuffer::copyFromMemory(const void* sysData, u32 offset, u32 l
 		box.right = length;
 		box.bottom = 1;
 		box.back = 1;
-		ImmediateContext->UpdateSubresource(Buffer, 0, &box, sysData, 0, 0);
+		Context->UpdateSubresource(Buffer, 0, &box, sysData, 0, 0);
 	}
 }
 
@@ -189,7 +188,7 @@ void CD3D11HardwareBuffer::copyFromBuffer(IHardwareBuffer* buffer, u32 srcOffset
 	if (srcOffset == 0 && destOffset == 0 && length == Size 
 		&& Size == buffer->size() )
 	{
-		ImmediateContext->CopyResource( Buffer, srcBuffer->getBufferResource() );
+		Context->CopyResource( Buffer, srcBuffer->getBufferResource() );
 	}
 	else	// else, copy subregion
 	{
@@ -201,7 +200,7 @@ void CD3D11HardwareBuffer::copyFromBuffer(IHardwareBuffer* buffer, u32 srcOffset
 		srcBox.front = 0;
 		srcBox.back = 1;
 
-		ImmediateContext->CopySubresourceRegion(Buffer, 0, (UINT)destOffset, 0, 0, 
+		Context->CopySubresourceRegion(Buffer, 0, (UINT)destOffset, 0, 0, 
 												srcBuffer->getBufferResource(), 0, &srcBox);
 	}
 }

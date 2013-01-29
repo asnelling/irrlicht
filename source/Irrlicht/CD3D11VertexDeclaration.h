@@ -39,10 +39,6 @@ public:
 	const core::array<D3D11_INPUT_ELEMENT_DESC>& getInputAssemblyDeclaration() const;
 	const core::array<D3D11_SO_DECLARATION_ENTRY>& getStreamOutputDeclaration() const;
 	
-	//! Get size of declaration
-	u32 size() const { return Size; }
-
-	//! 
 	E_VERTEX_TYPE getType() const { return VertexType; }
 
 	//! Get input layout
@@ -55,10 +51,9 @@ private:
 	core::array<D3D11_INPUT_ELEMENT_DESC> IAElements;
 	mutable core::array<D3D11_SO_DECLARATION_ENTRY> SOElements;
 
-	u32 Size;
 	u32 VertexPitch;
 	ID3D11Device* Device;
-	ID3D11DeviceContext* ImmediateContext;
+	ID3D11DeviceContext* Context;
 	
 	typedef core::map<u32, ID3D11InputLayout*> LayoutMap;
 	typedef core::map<u32, ID3D11InputLayout*>::Iterator LayoutIterator;

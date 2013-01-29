@@ -11,26 +11,24 @@ cbuffer cbParams : register(c0)
 	float4x4 mWorldViewProj;
 	float4x4 mInvWorld;       // Inverted world matrix
 	float4x4 mTransWorld;     // Transposed world matrix
-	float3 mLightPos;         // Light position
 	float4 mLightColor;       // Light color
+	float3 mLightPos;         // Light position
 };
 
 struct VS_INPUT
 {
 	float4 vPosition : POSITION;
 	float3 vNormal   : NORMAL;
-	float4 color	  : COLOR;
 	float2 texCoord  : TEXCOORD0;
 };
 
 // Vertex shader output structure
 struct VS_OUTPUT
 {
-	float4 Position   : SV_Position;   // vertex position 
-	float4 Diffuse    : COLOR0;     // vertex diffuse color
-	float2 TexCoord   : TEXTURE0;  // tex coords
+	float4 Position   : SV_Position;	// vertex position 
+	float4 Diffuse    : COLOR0;			// vertex diffuse color
+	float2 TexCoord   : TEXTURE0;		// tex coords
 };
-
 
 VS_OUTPUT vertexMain( VS_INPUT input )
 {
@@ -38,27 +36,27 @@ VS_OUTPUT vertexMain( VS_INPUT input )
 
 	// transform position to clip space 
 	Output.Position = mul(input.vPosition, mWorldViewProj);
+
 	// transform normal 
-	float3 normal = mul(float4(input.vNormal,0.0), mInvWorld);
+	float4 normal = mul(float4(input.vNormal,0.0), mInvWorld);
 	
 	// renormalize normal 
 	normal = normalize(normal);
 	
 	// position in world coodinates
-	float3 worldpos = mul(mTransWorld, input.vPosition);
+	float4 worldpos = mul(mTransWorld, input.vPosition);
 	
 	// calculate light vector, vtxpos - lightpos
-	float3 lightVector = worldpos - mLightPos;
-	//float3 lightVector = mLightPos - worldpos.xyz;
+	float3 lightVector = worldpos.xyz - mLightPos;
 	
 	// normalize light vector 
 	lightVector = normalize(lightVector);
 	
 	// calculate light color 
-	float3 tmp = dot(-lightVector, normal);
-	tmp = lit(tmp.x, tmp.y, 1.0);
+	float3 tmp = dot(-lightVector, normal.xyz);
+	tmp = lit(tmp.x, tmp.y, 1.0).xyz;
 	
-	tmp = mLightColor * tmp.y;
+	tmp = mLightColor.xyz * tmp.y;
 	
 	Output.Diffuse = float4(tmp.x, tmp.y, tmp.z, 0);
 	Output.TexCoord = input.texCoord;
@@ -66,14 +64,14 @@ VS_OUTPUT vertexMain( VS_INPUT input )
 	return Output;
 }
 
-Texture2D tex0 : register(t0);
+Texture2D myTexture : register(t0);
 SamplerState st : register(s0);
 	
 float4 pixelMain( VS_OUTPUT input ) : SV_Target
 { 
 	float4 Output;
 
-	float4 col = tex0.Sample( st, input.TexCoord );  // sample color map
+	float4 col = myTexture.Sample( st, input.TexCoord );  // sample color map
 	
 	// multiply with diffuse and do other senseless operations
 	Output = input.Diffuse * col;
