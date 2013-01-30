@@ -996,12 +996,11 @@
     <ClInclude Include="..\..\include\IGUIWindow.h" />
     <ClInclude Include="CCgMaterialRenderer.h" />
     <ClInclude Include="CD3D11Driver.h" />
+    <ClInclude Include="CD3D11FixedPipelineRenderer.h" />
     <ClInclude Include="CD3D11HardwareBuffer.h" />
-    <ClInclude Include="CD3D11HLSLMaterialRenderer.h" />
     <ClInclude Include="CD3D11MaterialRenderer.h" />
     <ClInclude Include="CD3D11NormalMapRenderer.h" />
     <ClInclude Include="CD3D11ParallaxMapRenderer.h" />
-    <ClInclude Include="CD3D11ShaderMaterialRenderer.h" />
     <ClInclude Include="CD3D11Texture.h" />
     <ClInclude Include="CD3D11VertexDeclaration.h" />
     <ClInclude Include="CD3D9CgMaterialRenderer.h" />
@@ -1256,11 +1255,11 @@
   <ItemGroup>
     <ClCompile Include="CCgMaterialRenderer.cpp" />
     <ClCompile Include="CD3D11Driver.cpp" />
+    <ClCompile Include="CD3D11FixedPipelineRenderer.cpp" />
     <ClCompile Include="CD3D11HardwareBuffer.cpp" />
-    <ClCompile Include="CD3D11HLSLMaterialRenderer.cpp" />
+    <ClCompile Include="CD3D11MaterialRenderer.cpp" />
     <ClCompile Include="CD3D11NormalMapRenderer.cpp" />
     <ClCompile Include="CD3D11ParallaxMapRenderer.cpp" />
-    <ClCompile Include="CD3D11ShaderMaterialRenderer.cpp" />
     <ClCompile Include="CD3D11Texture.cpp" />
     <ClCompile Include="CD3D11VertexDeclaration.cpp" />
     <ClCompile Include="CD3D9CgMaterialRenderer.cpp" />

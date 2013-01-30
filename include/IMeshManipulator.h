@@ -562,7 +562,7 @@ namespace scene
 
 			// setVert(/Ind)exBuffer increase the refcount of the buffer so we have to drop them after that
 			VertexBuffer->drop();
-			IndexBuffer->drop():
+			IndexBuffer->drop();
 
 			meshBuffer->recalculateBoundingBox();
 

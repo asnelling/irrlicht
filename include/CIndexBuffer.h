@@ -175,6 +175,7 @@ namespace scene
 		class IIndexList
 		{
 		public:
+			virtual ~IIndexList() {};
 			virtual void clear() = 0;
 			virtual void* pointer() = 0;
 			virtual u32 size() const = 0;
