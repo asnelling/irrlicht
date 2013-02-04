@@ -60,10 +60,6 @@ namespace video
 		"\n"\
 		"#define EMT_ONETEXTURE_BLEND						23\n"\
 		"\n"\
-		"#define EVT_STANDARD								0\n"\
-		"#define EVT_2TCOORDS								1\n"\
-		"#define EVT_TANGENTS								2\n"\
-		"\n"\
 		"// adding needed structs\n"\
 		"struct ColorsOutput\n"\
 		"{\n"\
@@ -210,8 +206,6 @@ namespace video
 		"   float fogEnd;\n"\
 		"   float fogDensity;\n"\
 		"\n"\
-		"	int vtxType = 0;\n"\
-		"\n"\
 		"	bool enableAlpha = false;\n"\
 		"\n"\
 		"   bool enableLighting = false;\n"\
@@ -243,7 +237,7 @@ namespace video
 		"\n"\
 		"	const int nLights = min(MAX_LIGHTS, lightCount); // Clamp to MAX_LIGHTS\n"\
 		"\n"\
-		"	for(int i=0; i<nLights; i++)\n"\
+		"	for(int i=0; i<nLights; ++i)\n"\
 		"	{\n"\
 		"		float3 toLight = lights[i].position.xyz - worldPos;\n"\
 		"		float lightDist = length( toLight );\n"\
@@ -453,26 +447,6 @@ namespace video
 		"	return output;\n"\
 		"}\n"\
 		"\n"\
-		"VS_OUTPUT mainVS( VS_INPUT input )\n"\
-		"{\n"\
-		"	VS_OUTPUT output = (VS_OUTPUT)0;\n"\
-		"\n"\
-		"	switch( vtxType )\n"\
-		"	{\n"\
-		"	case EVT_STANDARD:\n"\
-		"		output = standardVS(input);\n"\
-		"		break;\n"\
-// 		"	case EVT_2TCOORDS:\n"\
-// 		"		output = coords2TVS(input);\n"\
-// 		"		break;\n"\
-// 		"	case EVT_TANGENTS:\n"\
-// 		"		output = tangentsVS(input);\n"\
-// 		"		break;\n"
-		"	};\n"\
-		"\n"\
-		"	return output;\n"\
-		"}\n"\
-		"\n"\
 		"// adding textures and samplers\n"\
 		"Texture2D tex1 : register(t0);\n"\
 		"Texture2D tex2 : register(t1);\n"\
@@ -646,30 +620,14 @@ namespace video
 		"\n"\
 		"	// return color in pixel shader\n"\
 		"	return normalColor;\n"\
-		"}\n"\
-		"\n"\
-		"float4 mainPS( PS_INPUT input ) : SV_Target\n"\
-		"{\n"\
-		"	float4 output = float4(0,0,0,0);\n"\
-		"\n"\
-		"	switch( vtxType )\n"\
-		"	{\n"\
-		"	case EVT_STANDARD:\n"\
-		"		output = standardPS(input);\n"\
-		"		break;\n"\
-// 		"	case EVT_2TCOORDS:\n"\
-// 		"		//output = coords2TPS(input);\n"\
-// 		"		break;\n"\
-// 		"	case EVT_TANGENTS:\n"\
-// 		"		//output = tangentsPS(input);\n"\
-// 		"		break;\n"
- 		"	};\n"\
-		"\n"\
-		"	return output;\n"\
 		"}\n";
 
 CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, IVideoDriver* driver ) 
-	: CD3D11MaterialRenderer(device, driver, NULL, NULL), cbPerFrameId(-1), cbPerTechniqueId(-1), cbLightsId(-1)
+	: CD3D11MaterialRenderer(device, driver, NULL, NULL),
+	cbPerFrameId(-1), cbPerTechniqueId(-1), cbLightsId(-1),
+	vsStandardShader(NULL), vsCoords2TShader(NULL), vsTangentsShader(NULL),
+	psStandardShader(NULL), psCoords2TShader(NULL), psTangentsShader(NULL),
+	standardBuffer(NULL), tangentsBuffer(NULL), coords2TBuffer(NULL)
 {
 #ifdef _DEBUG
 	setDebugName("CD3D11FixedPipelineRenderer");
@@ -682,20 +640,50 @@ CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, 
 	{
 		CD3D11FixedPipelineRenderer* r = static_cast<CD3D11FixedPipelineRenderer*>(solidRend);
 
-		VsShader = r->VsShader;
+		vsStandardShader = r->vsStandardShader;
 
-		if(VsShader)
-			VsShader->AddRef();
+		if(vsStandardShader)
+			vsStandardShader->AddRef();
 
-		PsShader = r->PsShader;
+		psStandardShader = r->psStandardShader;
 
-		if(PsShader)
-			PsShader->AddRef();
+		if(psStandardShader)
+			psStandardShader->AddRef();
 
-		Buffer = r->Buffer;
+		vsTangentsShader = r->vsTangentsShader;
 
-		if(Buffer)
-			Buffer->AddRef();
+		if(vsTangentsShader)
+			vsTangentsShader->AddRef();
+
+		psTangentsShader = r->psTangentsShader;
+
+		if(psTangentsShader)
+			psTangentsShader->AddRef();
+
+		vsCoords2TShader = r->vsCoords2TShader;
+
+		if(vsCoords2TShader)
+			vsCoords2TShader->AddRef();
+
+		psCoords2TShader = r->psCoords2TShader;
+
+		if(psCoords2TShader)
+			psCoords2TShader->AddRef();
+
+		standardBuffer = r->standardBuffer;
+
+		if(standardBuffer)
+			standardBuffer->AddRef();
+
+		tangentsBuffer = r->tangentsBuffer;
+
+		if(tangentsBuffer)
+			tangentsBuffer->AddRef();
+
+		coords2TBuffer = r->coords2TBuffer;
+
+		if(coords2TBuffer)
+			coords2TBuffer->AddRef();
 
 		sameFile = r->sameFile;
 
@@ -707,17 +695,55 @@ CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, 
 	{
 		if(driver->queryFeature(EVDF_VERTEX_SHADER_5_0))
 		{	
-			if(!init(FIXED_FUNCTION_SHADER, "mainVS", EVST_VS_5_0,
-				FIXED_FUNCTION_SHADER, "mainPS", EPST_PS_5_0, 
-				0, 0, EGST_GS_4_0))
+			if(!init(FIXED_FUNCTION_SHADER, "standardVS", EVST_VS_5_0,
+				FIXED_FUNCTION_SHADER, "standardPS", EPST_PS_5_0))
 				return;
+
+			vsStandardShader = vsShader;
+			psStandardShader = psShader;
+			standardBuffer = buffer;
+
+			if(!init(FIXED_FUNCTION_SHADER, "coords2TVS", EVST_VS_5_0,
+				FIXED_FUNCTION_SHADER, "coords2TPS", EPST_PS_5_0))
+				return;
+
+			vsCoords2TShader = vsShader;
+			psCoords2TShader = psShader;
+			coords2TBuffer = buffer;
+
+			if(!init(FIXED_FUNCTION_SHADER, "tangentsVS", EVST_VS_5_0,
+				FIXED_FUNCTION_SHADER, "tangentsPS", EPST_PS_5_0))
+				return;
+
+			vsTangentsShader = vsShader;
+			psTangentsShader = psShader;
+			tangentsBuffer = buffer;
 		}
 		else
 		{
-			if(!init(FIXED_FUNCTION_SHADER, "mainVS", EVST_VS_4_1,
-				FIXED_FUNCTION_SHADER, "mainPS", EPST_PS_4_1, 
-				0, 0, EGST_GS_4_0))
+			if(!init(FIXED_FUNCTION_SHADER, "standardVS", EVST_VS_4_1,
+				FIXED_FUNCTION_SHADER, "standardPS", EPST_PS_4_1))
 				return;
+
+			vsStandardShader = vsShader;
+			psStandardShader = psShader;
+			standardBuffer = buffer;
+
+			if(!init(FIXED_FUNCTION_SHADER, "coords2TVS", EVST_VS_4_1,
+				FIXED_FUNCTION_SHADER, "coords2TPS", EPST_PS_4_1))
+				return;
+
+			vsCoords2TShader = vsShader;
+			psCoords2TShader = psShader;
+			coords2TBuffer = buffer;
+		
+			if(!init(FIXED_FUNCTION_SHADER, "tangentsVS", EVST_VS_4_1,
+				FIXED_FUNCTION_SHADER, "tangentsPS", EPST_PS_4_1))
+				return;
+
+			vsTangentsShader = vsShader;
+			psTangentsShader = psShader;
+			tangentsBuffer = buffer;
 		}
 
 		cbPerFrameId = getConstantBufferID("cbPerFrame", EST_VERTEX_SHADER);
@@ -730,6 +756,66 @@ CD3D11FixedPipelineRenderer::~CD3D11FixedPipelineRenderer()
 {
 	if(CallBack == this)
 		CallBack = NULL;
+
+	vsShader = NULL;
+	psShader = NULL;
+	buffer = NULL;
+
+	if(vsStandardShader)
+		vsStandardShader->Release();
+
+	if(psStandardShader)
+		psStandardShader->Release();
+
+	if(vsTangentsShader)
+		vsTangentsShader->Release();
+
+	if(psTangentsShader)
+		psTangentsShader->Release();
+
+	if(vsCoords2TShader)
+		vsCoords2TShader->Release();
+
+	if(psCoords2TShader)
+		psCoords2TShader->Release();
+
+	if(standardBuffer)
+		standardBuffer->Release();
+
+	if(tangentsBuffer)
+		tangentsBuffer->Release();
+
+	if(coords2TBuffer)
+		coords2TBuffer->Release();
+}
+
+bool CD3D11FixedPipelineRenderer::OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype)
+{
+	switch (vtxtype)
+	{
+	case EVT_STANDARD:
+		vsShader = vsStandardShader;
+		psShader = psStandardShader;
+		buffer = standardBuffer;
+		break;
+	case EVT_2TCOORDS:
+		vsShader = vsCoords2TShader;
+		psShader = psCoords2TShader;
+		buffer = coords2TBuffer;
+		break;
+	case EVT_TANGENTS:
+		vsShader = vsTangentsShader;
+		psShader = psTangentsShader;
+		buffer = tangentsBuffer;
+		break;
+	default:
+		vsShader = NULL;
+		psShader = NULL;
+		os::Printer::log("Error: vertextype is not supported by FixedPipelineRenderer", ELL_ERROR);
+		break;
+	}
+
+	return CD3D11MaterialRenderer::OnRender(service, vtxtype);
 }
 
 void CD3D11FixedPipelineRenderer::OnSetConstants( IMaterialRendererServices* service, s32 userData )
@@ -758,12 +844,12 @@ void CD3D11FixedPipelineRenderer::OnSetConstants( IMaterialRendererServices* ser
 	// set material
 	SShaderMaterial mtl;
 	ZeroMemory(&mtl, sizeof(SShaderMaterial));
-	mtl.Ambient = CurrentMaterial.AmbientColor;
-	mtl.Diffuse = CurrentMaterial.DiffuseColor;
-	mtl.Specular = CurrentMaterial.SpecularColor;
-	mtl.Emissive = CurrentMaterial.EmissiveColor;
-	mtl.Type = CurrentMaterial.MaterialType;
-	mtl.Shininess = CurrentMaterial.Shininess;
+	mtl.ambient = CurrentMaterial.AmbientColor;
+	mtl.diffuse = CurrentMaterial.DiffuseColor;
+	mtl.specular = CurrentMaterial.SpecularColor;
+	mtl.emissive = CurrentMaterial.EmissiveColor;
+	mtl.type = CurrentMaterial.MaterialType;
+	mtl.shininess = CurrentMaterial.Shininess;
 
 	cbLights.material = mtl;
 
@@ -772,22 +858,22 @@ void CD3D11FixedPipelineRenderer::OnSetConstants( IMaterialRendererServices* ser
 
 	if(CurrentMaterial.Lighting)
 	{
-		u32 count = Driver->getDynamicLightCount();
+		const u32 count = Driver->getDynamicLightCount();
 
 		cbLights.lightCount = count;
 
 		if(count)
 		{
-			for(u32 i = 0; i < count && i < 8; i++)
+			for(u32 i = 0; i < count && i < 8; ++i)
 			{
 				SShaderLight l;
 				SLight dl = Driver->getDynamicLight(i);
 
-				dl.Position.getAs4Values(&l.Position.r);
-				l.Ambient = dl.AmbientColor;
-				l.Diffuse = dl.DiffuseColor;
-				l.Specular = dl.SpecularColor;
-				dl.Attenuation.getAs4Values(&l.Atten.r);
+				dl.Position.getAs4Values(&l.position.r);
+				l.ambient = dl.AmbientColor;
+				l.diffuse = dl.DiffuseColor;
+				l.specular = dl.SpecularColor;
+				dl.Attenuation.getAs4Values(&l.atten.r);
 
 				cbLights.lights[i] = l;
 			}
@@ -812,13 +898,6 @@ void CD3D11FixedPipelineRenderer::OnSetConstants( IMaterialRendererServices* ser
 void CD3D11FixedPipelineRenderer::OnSetMaterial( const SMaterial& material )
 {
 	CurrentMaterial = material;
-}
-
-bool CD3D11FixedPipelineRenderer::OnRender( IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype )
-{
-	cbPerTechnique.vtxType = (s32)vtxtype; 
-
-	return CD3D11MaterialRenderer::OnRender(service, vtxtype);
 }
 
 }

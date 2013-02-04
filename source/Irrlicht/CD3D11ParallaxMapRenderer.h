@@ -51,13 +51,12 @@ private:
 		core::matrix4 g_mWorldViewProj;
 		SColorf	g_lightColor1;
 		SColorf	g_lightColor2;
-		core::vector3df	g_scaleFactor;
-		s32 unusedVar1;
 		core::vector3df	g_eyePosition;	
-		s32 unusedVar4;
+		f32	g_scaleFactor;
 		core::vector3df	g_lightPos1;
-		s32 unusedVar2;
+		s32 unusedVar1;
 		core::vector3df	g_lightPos2;
+		
 	} cbPerFrame;
 };
 

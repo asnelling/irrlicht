@@ -33,8 +33,8 @@ namespace video
 		"   float4x4 g_mWorldViewProj;\n"\
 		"	float4	 g_lightColor1;\n"\
 		"	float4	 g_lightColor2;\n"\
-		"	float3	 g_scaleFactor;\n"\
 		"	float3	 g_eyePosition;\n"\
+		"	float	 g_scaleFactor;\n"\
 		"	float3	 g_lightPos1;\n"\
 		"	float3	 g_lightPos2;\n"\
 		"};\n"\
@@ -130,7 +130,7 @@ namespace video
 		"float4 PS(PS_INPUT input) : SV_Target\n"\
 		"{\n"\
 		"	float4 normalMap = g_tex2.Sample( g_sampler2, input.normalMapCoord ).bgra *  2.0 - 1.0;\n"\
-		"	normalMap *= float4(g_scaleFactor, 0.f);\n"\
+		"	normalMap *= g_scaleFactor;\n"\
 		"\n"\
 		"	// calculate new texture coord: height * eye + oldTexCoord\n"\
 		"	float2 offset = input.eyePos.xy * normalMap.w + input.normalMapCoord;\n"\
@@ -154,8 +154,8 @@ namespace video
 
 CD3D11ParallaxMapRenderer::CD3D11ParallaxMapRenderer(
 	ID3D11Device* device, video::IVideoDriver* driver, 
-	s32& outMaterialTypeNr, IMaterialRenderer* baseMaterial)
-	: CD3D11MaterialRenderer(device, driver, NULL, baseMaterial),
+	s32& outMaterialTypeNr, IMaterialRenderer* baseRenderer)
+	: CD3D11MaterialRenderer(device, driver, NULL, baseRenderer),
 	currentScale(0.0f), cbPerFrameId(-1)
 {
 #ifdef _DEBUG
@@ -170,21 +170,21 @@ CD3D11ParallaxMapRenderer::CD3D11ParallaxMapRenderer(
 	{
 		CD3D11ParallaxMapRenderer* r = static_cast<CD3D11ParallaxMapRenderer*>(renderer);
 
-		VsShader = r->VsShader;
+		vsShader = r->vsShader;
 
-		if(VsShader)
-			VsShader->AddRef();
+		if(vsShader)
+			vsShader->AddRef();
 
-		PsShader = r->PsShader;
+		psShader = r->psShader;
 
-		if(PsShader)
-			PsShader->AddRef();
+		if(psShader)
+			psShader->AddRef();
 
-		Buffer = r->Buffer;
+		buffer = r->buffer;
 		UserData = r->UserData;
 
-		if(Buffer)
-			Buffer->AddRef();
+		if(buffer)
+			buffer->AddRef();
 
 		sameFile = r->sameFile;
 
@@ -294,7 +294,7 @@ void CD3D11ParallaxMapRenderer::OnSetConstants( IMaterialRendererServices* servi
 	if (currentScale != 0)
 		factor = currentScale;
 
-	cbPerFrame.g_scaleFactor = core::vector3df(factor);
+	cbPerFrame.g_scaleFactor = factor;
 
 	setConstantBuffer(cbPerFrameId, &cbPerFrame, EST_VERTEX_SHADER);
 }

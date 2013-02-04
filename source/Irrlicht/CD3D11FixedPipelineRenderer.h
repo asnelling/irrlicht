@@ -22,21 +22,21 @@ namespace
 
 struct SShaderMaterial
 {
-	SColorf Ambient;
-	SColorf Diffuse;
-	SColorf Specular;
-	SColorf Emissive;
-	f32		Shininess;
-	s32			Type;	// video::E_MATERIAL_TYPE
+	SColorf ambient;
+	SColorf diffuse;
+	SColorf specular;
+	SColorf emissive;
+	f32 shininess;
+	s32	type;	// video::E_MATERIAL_TYPE
 };
 
 struct SShaderLight
 {
-	SColorf Position;
-	SColorf Diffuse;
-	SColorf Specular;
-	SColorf Ambient;
-	SColorf Atten;
+	SColorf position;
+	SColorf diffuse;
+	SColorf specular;
+	SColorf ambient;
+	SColorf atten;
 };
 
 D3DXMATRIX UnitMatrixD3D11;
@@ -62,6 +62,17 @@ protected:
 	s32	cbPerTechniqueId;
 	s32	cbLightsId;
 
+	SShader* vsStandardShader;
+	SShader* psStandardShader;
+	SShader* vsTangentsShader;
+	SShader* psTangentsShader;
+	SShader* vsCoords2TShader;
+	SShader* psCoords2TShader;
+
+	ID3DBlob* standardBuffer;
+	ID3DBlob* coords2TBuffer;
+	ID3DBlob* tangentsBuffer;
+
 	struct SCbPerFrame
 	{	
 		core::matrix4 mWorld;
@@ -77,7 +88,6 @@ protected:
 		f32 fogStart;
 		f32 fogEnd;
 		f32 fogDensity;
-		s32 vtxType;
 		s32 enableAlpha;
 		s32 enableLighting;
 		s32 enableClipping;
@@ -414,29 +424,26 @@ public:
 		return true;
 	}
 
-	private:
-		D3D11_BLEND getD3DBlend ( E_BLEND_FACTOR factor ) const
+private:
+	D3D11_BLEND getD3DBlend ( E_BLEND_FACTOR factor ) const
+	{
+		D3D11_BLEND r;
+		switch ( factor )
 		{
-			D3D11_BLEND r;
-			switch ( factor )
-			{
-				case EBF_ZERO:					r = D3D11_BLEND_ZERO; break;
-				case EBF_ONE:					r = D3D11_BLEND_ONE; break;
-				case EBF_DST_COLOR:				r = D3D11_BLEND_DEST_COLOR; break;
-				case EBF_ONE_MINUS_DST_COLOR:	r = D3D11_BLEND_INV_DEST_COLOR; break;
-				case EBF_SRC_COLOR:				r = D3D11_BLEND_SRC_COLOR; break;
-				case EBF_ONE_MINUS_SRC_COLOR:	r = D3D11_BLEND_INV_SRC_COLOR; break;
-				case EBF_SRC_ALPHA:				r = D3D11_BLEND_SRC_ALPHA; break;
-				case EBF_ONE_MINUS_SRC_ALPHA:	r = D3D11_BLEND_INV_SRC_ALPHA; break;
-				case EBF_DST_ALPHA:				r = D3D11_BLEND_DEST_ALPHA; break;
-				case EBF_ONE_MINUS_DST_ALPHA:	r = D3D11_BLEND_INV_DEST_ALPHA; break;
-				case EBF_SRC_ALPHA_SATURATE:	r = D3D11_BLEND_SRC_ALPHA_SAT; break;
-			}
-			return r;
+		case EBF_ZERO:					r = D3D11_BLEND_ZERO; break;
+		case EBF_ONE:					r = D3D11_BLEND_ONE; break;
+		case EBF_DST_COLOR:				r = D3D11_BLEND_DEST_COLOR; break;
+		case EBF_ONE_MINUS_DST_COLOR:	r = D3D11_BLEND_INV_DEST_COLOR; break;
+		case EBF_SRC_COLOR:				r = D3D11_BLEND_SRC_COLOR; break;
+		case EBF_ONE_MINUS_SRC_COLOR:	r = D3D11_BLEND_INV_SRC_COLOR; break;
+		case EBF_SRC_ALPHA:				r = D3D11_BLEND_SRC_ALPHA; break;
+		case EBF_ONE_MINUS_SRC_ALPHA:	r = D3D11_BLEND_INV_SRC_ALPHA; break;
+		case EBF_DST_ALPHA:				r = D3D11_BLEND_DEST_ALPHA; break;
+		case EBF_ONE_MINUS_DST_ALPHA:	r = D3D11_BLEND_INV_DEST_ALPHA; break;
+		case EBF_SRC_ALPHA_SATURATE:	r = D3D11_BLEND_SRC_ALPHA_SAT; break;
 		}
-
-		bool transparent;
-
+		return r;
+	}
 };
 }
 }

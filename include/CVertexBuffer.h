@@ -18,6 +18,9 @@ namespace scene
 	public:
 		CVertexBuffer(video::IVertexDescriptor* vertexDescriptor) : Vertices(0), vertexDescriptor(vertexDescriptor), HardwareMappingHint(EHM_NEVER), ChangedID(1)
 		{
+#ifdef _DEBUG
+			setDebugName("CVertexBuffer");
+#endif
 			if(vertexDescriptor)
 				vertexDescriptor->grab();
 		}

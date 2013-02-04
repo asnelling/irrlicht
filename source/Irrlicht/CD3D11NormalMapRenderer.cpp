@@ -126,8 +126,8 @@ namespace video
 		"	return color;\n"
 		"}\n";
 
-CD3D11NormalMapRenderer::CD3D11NormalMapRenderer(ID3D11Device* device, video::IVideoDriver* driver, s32& outMaterialTypeNr, IMaterialRenderer* baseMaterial)
-	: CD3D11MaterialRenderer(device, driver, NULL, baseMaterial), cbPerFrameId(-1)
+CD3D11NormalMapRenderer::CD3D11NormalMapRenderer(ID3D11Device* device, video::IVideoDriver* driver, s32& outMaterialTypeNr, IMaterialRenderer* baseRenderer)
+	: CD3D11MaterialRenderer(device, driver, NULL, baseRenderer), cbPerFrameId(-1)
 {
 #ifdef _DEBUG
 	setDebugName("CD3D11NormalMapRenderer");
@@ -141,20 +141,20 @@ CD3D11NormalMapRenderer::CD3D11NormalMapRenderer(ID3D11Device* device, video::IV
 	{
 		CD3D11NormalMapRenderer* r = static_cast<CD3D11NormalMapRenderer*>(renderer);
 
-		VsShader = r->VsShader;
+		vsShader = r->vsShader;
 
-		if(VsShader)
-			VsShader->AddRef();
+		if(vsShader)
+			vsShader->AddRef();
 
-		PsShader = r->PsShader;
+		psShader = r->psShader;
 
-		if(PsShader)
-			PsShader->AddRef();
+		if(psShader)
+			psShader->AddRef();
 
-		Buffer = r->Buffer;
+		buffer = r->buffer;
 
-		if(Buffer)
-			Buffer->AddRef();
+		if(buffer)
+			buffer->AddRef();
 
 		sameFile = r->sameFile;
 

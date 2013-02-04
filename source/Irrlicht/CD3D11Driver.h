@@ -690,8 +690,6 @@ namespace video
 		core::stringc VendorName;
 		u16 VendorID;
 
-		E_VERTEX_TYPE LastVertexType;
-
 		core::array<SDepthSurface11*> DepthBuffers;
 
 		u32 MaxTextureUnits;
@@ -727,7 +725,7 @@ namespace video
 		D3D11_TEXTURE_ADDRESS_MODE getTextureWrapMode(const u8 clamp);
 
 		//! sets the needed renderstates
-		bool setRenderStates3DMode();
+		bool setRenderStates3DMode(E_VERTEX_TYPE vType);
 
 		//! sets the needed renderstates
 		void setRenderStates2DMode(bool alpha, bool texture, bool alphaChannel);
@@ -775,6 +773,8 @@ namespace video
 
 		//! handle screen resize
 		void reset();
+
+		bool disableTextures( u32 fromStage = 0);
 	};
 
 }

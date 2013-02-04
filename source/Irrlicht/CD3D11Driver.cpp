@@ -49,7 +49,6 @@ CD3D11Driver::CD3D11Driver(const irr::SIrrlichtCreationParameters& params,
 	SceneSourceRect(0), VendorID(0), ColorFormat(ECF_A8R8G8B8),
 	CurrentRenderMode(ERM_NONE), MaxActiveLights(8), AlphaToCoverageSupport(true),
 	DepthStencilFormat(DXGI_FORMAT_UNKNOWN), D3DColorFormat(DXGI_FORMAT_R8G8B8A8_UNORM),
-	LastVertexType((video::E_VERTEX_TYPE)-1),
 	NullTexture(0), MaxTextureUnits(MATERIAL_MAX_TEXTURES) // DirectX 11 can handle much more than this value, but keep compatibility
 
 {
@@ -539,7 +538,7 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 	BlendDesc.reset();
 	RasterizerDesc.reset();
 	DepthStencilDesc.reset();
-	for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; i++)
+	for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
 		SamplerDesc[i].reset();
 
 	// Init dynamic buffers
@@ -556,8 +555,6 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 
 	// Set render targets
 	setRenderTarget(0, true, true);
-
-	LastVertexType = EVT_STANDARD;
 
 	// set fog mode
 	setFog(FogColor, EFT_FOG_EXP, FogStart, FogEnd, FogDensity, PixelFog, RangeFog);
@@ -581,8 +578,7 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 	DriverAttributes->setAttribute("AntiAlias", Params.AntiAlias);
 
 	// clear textures
-	for(u32 i = 0; i < MATERIAL_MAX_TEXTURES; i++)
-		setActiveTexture(i, 0);
+	disableTextures();
 
 	return true;
 }
@@ -948,7 +944,7 @@ void CD3D11Driver::setMaterial(const SMaterial& material)
 	OverrideMaterial.apply(Material);
 
 	// set textures
-	for(u16 i = 0; i < MATERIAL_MAX_TEXTURES; i++)
+	for(u16 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
 	{	
 		setActiveTexture(i, Material.getTexture(i));
 		setTransform((E_TRANSFORMATION_STATE) ( ETS_TEXTURE_0 + i ), Material.getTextureMatrix(i));
@@ -1089,7 +1085,7 @@ bool CD3D11Driver::setRenderTarget(const core::array<video::IRenderTarget>& targ
 
 	// set blend based on render target configuration
 	// set source blend
-	for(i = 0; i < maxMultipleRTTs; i++)
+	for(i = 0; i < maxMultipleRTTs; ++i)
 	{
 		E_BLEND_FACTOR blendFac = targets[i].BlendFuncSrc;
 		
@@ -1450,10 +1446,8 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 		return;
 	}
 
-	LastVertexType = vType;
-
 	// Set render states
-	if (!setRenderStates3DMode())
+	if (!setRenderStates3DMode(vType))
 		return;
 
 	CD3D11HardwareBuffer* vertexBuffer = static_cast<CD3D11HardwareBuffer*>(vertices);
@@ -1469,7 +1463,7 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 	ID3D11SamplerState* samplers[MATERIAL_MAX_TEXTURES];
 	ID3D11ShaderResourceView* views[MATERIAL_MAX_TEXTURES];
 
-	for(int i = 0; i < MATERIAL_MAX_TEXTURES; i++)
+	for(int i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
 	{
 		if( CurrentTexture[i] )
 		{
@@ -1548,10 +1542,8 @@ void CD3D11Driver::drawAuto(IHardwareBuffer* vertices, E_VERTEX_TYPE vType, scen
 		return;
 	}
 
-	LastVertexType = vType;
-
 	// Set render states
-	if (!setRenderStates3DMode())
+	if (!setRenderStates3DMode(vType))
 		return;
 
 	CD3D11HardwareBuffer* vertexBuffer = static_cast<CD3D11HardwareBuffer*>(vertices);
@@ -1565,7 +1557,7 @@ void CD3D11Driver::drawAuto(IHardwareBuffer* vertices, E_VERTEX_TYPE vType, scen
 	// Bind textures and samplers
 	ID3D11SamplerState* samplers[MATERIAL_MAX_TEXTURES];
 	ID3D11ShaderResourceView* views[MATERIAL_MAX_TEXTURES];
-	for(int i = 0; i < MATERIAL_MAX_TEXTURES; i++)
+	for(int i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
 	{
 		if( CurrentTexture[i] )
 		{
@@ -1669,7 +1661,7 @@ void CD3D11Driver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCou
 	ID3D11SamplerState* samplers[MATERIAL_MAX_TEXTURES];
 	ID3D11ShaderResourceView* views[MATERIAL_MAX_TEXTURES];
 
-	for(int i = 0; i < MATERIAL_MAX_TEXTURES; i++)
+	for(int i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
 	{
 		if( CurrentTexture[i] )
 		{
@@ -1726,11 +1718,9 @@ void CD3D11Driver::draw2D3DVertexPrimitiveList(const void* vertices, u32 vertexC
 											   const void* indexList, u32 primitiveCount,
 											   E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType, bool is3D)
 {
-	LastVertexType = vType;
-
 	if (is3D)
 	{
-		if(!setRenderStates3DMode())
+		if(!setRenderStates3DMode(vType))
 			return;
 	}
 	else
@@ -1752,7 +1742,7 @@ void CD3D11Driver::draw2D3DVertexPrimitiveList(const void* vertices, u32 vertexC
 	ID3D11SamplerState* samplers[MATERIAL_MAX_TEXTURES];
 	ID3D11ShaderResourceView* views[MATERIAL_MAX_TEXTURES];
 
-	for(int i = 0; i < MATERIAL_MAX_TEXTURES; i++)
+	for(int i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
 	{
 		if( CurrentTexture[i] )
 		{
@@ -1815,10 +1805,10 @@ void CD3D11Driver::draw2DImage(const video::ITexture* texture,
 	if(!texture || texture->getDriverType() != EDT_DIRECT3D11)
 		return;
 
+	disableTextures(1);
+
 	if(!setActiveTexture(0, const_cast<video::ITexture*>(texture)))
 		return;
-
-	setActiveTexture(1, 0);
 
 	const video::SColor temp[4] =
 	{
@@ -1859,8 +1849,6 @@ void CD3D11Driver::draw2DImage(const video::ITexture* texture,
 	s16 indices[6] = {0,1,2,0,2,3};
 	s32 indicesSize = sizeof(indices)/sizeof(indices[0]);
 	
-	LastVertexType = EVT_STANDARD;
-
 	setRenderStates2DMode(useColor[0].getAlpha()<255 || 
 						  useColor[1].getAlpha()<255 ||
 						  useColor[2].getAlpha()<255 || 
@@ -1884,10 +1872,10 @@ void CD3D11Driver::draw2DImage(const video::ITexture* texture,
 	if (!sourceRect.isValid())
 		return;
 
+	disableTextures(1);
+
 	if (!setActiveTexture(0, const_cast<video::ITexture*>(texture)))
 		return;
-
-	setActiveTexture(1, 0);
 
 	core::position2d<s32> targetPos = pos;
 	core::position2d<s32> sourcePos = sourceRect.UpperLeftCorner;
@@ -1999,8 +1987,6 @@ void CD3D11Driver::draw2DImage(const video::ITexture* texture,
 	s16 indices[6] = {0,1,2,0,2,3};
 	s32 indicesSize = sizeof(indices)/sizeof(indices[0]);
 
-	LastVertexType = EVT_STANDARD;
-
 	setRenderStates2DMode(color.getAlpha()<255, true, useAlphaChannelOfTexture);
 
 	draw2DVertexPrimitiveList(vtx, verticesSize, indices, indicesSize / 3, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
@@ -2015,6 +2001,8 @@ void CD3D11Driver::draw2DImageBatch(const video::ITexture* texture,
 	if (!texture)
 		return;
 
+	disableTextures(1);
+
 	if (!setActiveTexture(0, const_cast<video::ITexture*>(texture)))
 		return;
 
@@ -2024,7 +2012,7 @@ void CD3D11Driver::draw2DImageBatch(const video::ITexture* texture,
 	core::array<S3DVertex> vtx(drawCount * 4);
 	core::array<u16> indices(drawCount * 6);
 
-	for(u32 i = 0;i < drawCount;i++)
+	for(u32 i = 0; i < drawCount; ++i)
 	{
 		core::position2d<s32> targetPos = positions[i];
 		core::position2d<s32> sourcePos = sourceRects[i].UpperLeftCorner;
@@ -2140,8 +2128,6 @@ void CD3D11Driver::draw2DImageBatch(const video::ITexture* texture,
 
 	if (vtx.size())
 	{	
-		LastVertexType = EVT_STANDARD;
-
 		setRenderStates2DMode(color.getAlpha()<255, true, useAlphaChannelOfTexture);
 
 		// Draw
@@ -2173,15 +2159,13 @@ void CD3D11Driver::draw2DRectangle(const core::rect<s32>& position,
 
 	s16 indices[6] = {0,1,2,0,2,3};
 
-	LastVertexType = EVT_STANDARD;
+	disableTextures();
 
 	setRenderStates2DMode(
 		colorLeftUp.getAlpha() < 255 ||
 		colorRightUp.getAlpha() < 255 || 
 		colorLeftDown.getAlpha() < 255 ||
 		colorRightDown.getAlpha() < 255, false, false);
-
-	setActiveTexture(0,0);
 
 	// Draw
 	draw2DVertexPrimitiveList(vtx, sizeof(vtx)/sizeof(vtx[0]), indices, sizeof(indices)/sizeof(indices[0]), video::EVT_STANDARD, scene::EPT_TRIANGLES, video::EIT_16BIT);
@@ -2194,7 +2178,7 @@ void CD3D11Driver::draw2DLine(const core::position2d<s32>& start,
 		drawPixel(start.X, start.Y, color);
 	else
 	{
-		setActiveTexture(0,0);
+		disableTextures();
 
 		// thanks to Vash TheStampede who sent in his implementation
 		S3DVertex vtx[2];
@@ -2205,8 +2189,6 @@ void CD3D11Driver::draw2DLine(const core::position2d<s32>& start,
 		vtx[1] = S3DVertex((f32)end.X+0.375f, (f32)end.Y+0.375f, 0.0f,
 			0.0f, 0.0f, 0.0f,
 			color, 0.0f, 0.0f);
-
-		LastVertexType = EVT_STANDARD;
 
 		setRenderStates2DMode(color.getAlpha() < 255, false, false);
 
@@ -2221,11 +2203,9 @@ void CD3D11Driver::drawPixel(u32 x, u32 y, const SColor & color)
 	if(x > (u32)renderTargetSize.Width || y > (u32)renderTargetSize.Height)
 		return;
 
-	setActiveTexture(0,0);
+	disableTextures();
 
 	S3DVertex vertex((f32)x+0.375f, (f32)y+0.375f, 0.f, 0.f, 0.f, 0.f, color, 0.f, 0.f);
-
-	LastVertexType = EVT_STANDARD;
 
 	setRenderStates2DMode(color.getAlpha() < 255, false, false);
 
@@ -2235,6 +2215,8 @@ void CD3D11Driver::drawPixel(u32 x, u32 y, const SColor & color)
 void CD3D11Driver::draw3DLine(const core::vector3df& start,
 							  const core::vector3df& end, SColor color)
 {
+	disableTextures();
+
 	video::S3DVertex v[2];
 	v[0].Color = color;
 	v[1].Color = color;
@@ -2346,15 +2328,13 @@ void CD3D11Driver::drawStencilShadow(bool clearStencilBuffer,
 
 	s16 indices[6] = {0,1,2,1,3,2};
 
+	disableTextures();
+
 	setRenderStatesStencilFillMode(
 		leftUpEdge.getAlpha() < 255 ||
 		rightUpEdge.getAlpha() < 255 ||
 		leftDownEdge.getAlpha() < 255 ||
 		rightDownEdge.getAlpha() < 255);
-
-	setActiveTexture(0,0);
-
-	LastVertexType = EVT_STANDARD;
 
 	draw2DVertexPrimitiveList(vtx, 4, indices, 2, EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
 
@@ -2381,10 +2361,7 @@ void CD3D11Driver::setRenderStatesStencilShadowMode(bool zfail, u32 debugDataVis
 
 		Transformation3DChanged = false;
 
-		for(u32 i = 0; i < MATERIAL_MAX_TEXTURES; i++)
-			setActiveTexture(i, 0);
-
-		LastVertexType = (video::E_VERTEX_TYPE)(-1);
+		disableTextures();
 
 		// Set up the description of the stencil state.
 		DepthStencilDesc.DepthEnable = true;
@@ -2418,6 +2395,8 @@ void CD3D11Driver::setRenderStatesStencilShadowMode(bool zfail, u32 debugDataVis
 	}
 
 	CurrentRenderMode = zfail ? ERM_SHADOW_VOLUME_ZFAIL : ERM_SHADOW_VOLUME_ZPASS;
+
+	MaterialRenderers[Material.MaterialType].Renderer->OnRender(this, EVT_STANDARD);
 }
 
 //! sets the needed renderstates
@@ -2496,7 +2475,7 @@ void CD3D11Driver::OnResize(const core::dimension2d<u32>& size)
 }
 
 //! sets the needed renderstates
-bool CD3D11Driver::setRenderStates3DMode()
+bool CD3D11Driver::setRenderStates3DMode(E_VERTEX_TYPE vType)
 {
 	if (!Device)
 		return false;
@@ -2526,7 +2505,7 @@ bool CD3D11Driver::setRenderStates3DMode()
 
 	bool shaderOK = true;
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
-		shaderOK = MaterialRenderers[Material.MaterialType].Renderer->OnRender(this, LastVertexType);
+		shaderOK = MaterialRenderers[Material.MaterialType].Renderer->OnRender(this, vType);
 
 	ResetRenderStates = false;
 
@@ -2619,7 +2598,7 @@ void CD3D11Driver::setBasicRenderStates(const SMaterial& material, const SMateri
 		BlendDesc.reset();
 		RasterizerDesc.reset();
 		DepthStencilDesc.reset();
-		for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; i++)
+		for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
 			SamplerDesc[i].reset();
 	}
 
@@ -3719,8 +3698,6 @@ void CD3D11Driver::reset()
 	// Set render targets
 	Context->OMSetRenderTargets( 1, &DefaultBackBuffer, DefaultDepthBuffer );
 
-	LastVertexType = EVT_STANDARD;
-
 	ResetRenderStates = true;
 
 	for (u32 i=0; i<MATERIAL_MAX_TEXTURES; ++i)
@@ -3898,6 +3875,16 @@ IVideoDriver* CD3D11Driver::getVideoDriver()
 SColorf CD3D11Driver::getAmbientLight() const
 {
 	return AmbientLight;
+}
+
+bool CD3D11Driver::disableTextures( u32 fromStage )
+{
+	bool result=true;
+	for (u32 i = fromStage; i < MATERIAL_MAX_TEXTURES; ++i)
+	{
+		result &= setActiveTexture(i, 0);
+	}
+	return result;
 }
 
 ////////////// IMaterialRenderer methods end ////////////////////////////////////////////

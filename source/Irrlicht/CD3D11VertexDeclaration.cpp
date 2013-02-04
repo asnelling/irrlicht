@@ -37,7 +37,7 @@ CD3D11VertexDeclaration::CD3D11VertexDeclaration(CD3D11Driver* driver, core::arr
 
 	const u32 size = elements.size();
 
-	for(u32 i = 0; i < size; i++)
+	for(u32 i = 0; i < size; ++i)
 	{
 		desc.SemanticName = getSemanticName(elements[i].SemanticType);
 		desc.SemanticIndex = elements[i].SemanticIndex;
@@ -83,7 +83,7 @@ const core::array<D3D11_SO_DECLARATION_ENTRY>& CD3D11VertexDeclaration::getStrea
 
 		const u32 size = IAElements.size();
 
-		for(u32 i = 0; i < size; i++)
+		for(u32 i = 0; i < size; ++i)
 		{
 			entry.Stream = IAElements[i].InputSlot;
 			entry.SemanticName = IAElements[i].SemanticName;

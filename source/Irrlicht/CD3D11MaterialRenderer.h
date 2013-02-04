@@ -38,8 +38,14 @@ class CD3D11VertexDeclaration;
 struct SShaderBuffer 
 {
 	SShaderBuffer()
-		: data(NULL), name(""), size(-1)
+		: data(NULL), name(""), size(-1), cData(NULL)
 	{
+	}
+
+	~SShaderBuffer()
+	{
+		if(cData)
+			free(cData);
 	}
 
 	void AddRef()
@@ -50,29 +56,38 @@ struct SShaderBuffer
 
 	void Release()
 	{
-		u32 o;
-
 		if(data)
-			if(!(o = data->Release()))
+			if(!data->Release())
+			{
 				delete this;
+			}
 	};
 
-	ID3D11Buffer* data;
 	core::stringc name;
 	s32 size;
+	// data on the gpu
+	ID3D11Buffer* data;
+	// whole data that will be pushed to the gpu
+	void* cData;
 };
 
 struct SShaderVariable 
 {
 	SShaderVariable()
-		: offset(-1), name(""), buffer(NULL), size(-1)
+		: offset(-1), name(""), buffer(NULL), size(-1), baseType(-1), classType(-1)
 	{
 	}
 
 	SShaderBuffer* buffer;
 	core::stringc name;
+	// offset in the buffer
 	s32 offset;
+	// eg sizeof(float)
 	s32 size;
+	// eg float, int etc
+	s32 baseType;
+	// eg matrix, vector etc
+	s32 classType;
 };
 
 struct SShader
@@ -82,11 +97,24 @@ struct SShader
 	{
 	}
 
+	~SShader()
+	{
+		const u32 size = vars.size();
+
+		for(u32 i = 0; i < size; ++i)
+		{
+			delete vars[i];
+		}
+
+		vars.clear();
+		buffers.clear();
+	}
+
 	void AddRef()
 	{
 		const u32 size = buffers.size();
 
-		for(u32 i = 0; i < size; i++)
+		for(u32 i = 0; i < size; ++i)
 			buffers[i]->AddRef();
 
 		if(shader)
@@ -95,26 +123,16 @@ struct SShader
 
 	void Release()
 	{
-		u32 size = buffers.size();
+		const u32 size = buffers.size();
 
-		for(u32 i = 0; i < size; i++)
+		for(u32 i = 0; i < size; ++i)
 		{
 			buffers[i]->Release();
 		}
 
-		size = vars.size();
-
-		for(u32 i = 0; i < size; i++)
-		{
-			delete vars[i];
-		}
-
-		vars.clear();
-		u32 o;
 		if(shader)
-			if(!(o = shader->Release()))
+			if(!shader->Release())
 			{
-				buffers.clear();
 				delete this;
 			}
 	}
@@ -207,16 +225,16 @@ protected:
 
 	s32 UserData;
 
-	ID3D10Blob* Buffer;
+	ID3D10Blob* buffer;
 
-	ID3DInclude* Includer;
+	ID3DInclude* includer;
 
-	SShader* VsShader;
-	SShader* PsShader;
-	SShader* GsShader;
-	SShader* HsShader;
-	SShader* DsShader;
-	SShader* CsShader;
+	SShader* vsShader;
+	SShader* psShader;
+	SShader* gsShader;
+	SShader* hsShader;
+	SShader* dsShader;
+	SShader* csShader;
 };
 
 } // end namespace video

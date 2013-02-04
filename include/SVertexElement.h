@@ -92,8 +92,6 @@ struct SVertexElement
 	bool PerInstance;
 };
 
-
-
 }
 }
 
