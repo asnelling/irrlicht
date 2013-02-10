@@ -14,8 +14,6 @@
 #include "CImage.h"
 #include "CColorConverter.h"
 
-#include <D3DX11.h>
-
 namespace irr
 {
 namespace video

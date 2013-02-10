@@ -2,9 +2,8 @@
 #define __C_D3D11_FIXED_FUNCTION_MATERIAL_RENDERER_H_INCLUDED__
 
 #include "IrrCompileConfig.h"
+
 #ifdef _IRR_WINDOWS_
-#define WIN32_LEAN_AND_MEAN
-#endif
 
 #ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
 
@@ -39,8 +38,8 @@ struct SShaderLight
 	SColorf atten;
 };
 
-D3DXMATRIX UnitMatrixD3D11;
-D3DXMATRIX SphereMapMatrixD3D11;
+core::matrix4 SphereMapMatrix;
+core::matrix4 UnitMapMatrix;
 }
 
 class CD3D11FixedPipelineRenderer : public CD3D11MaterialRenderer, IShaderConstantSetCallBack
@@ -199,12 +198,12 @@ public:
 		blendDesc.RenderTarget[0].BlendEnable = FALSE;
 	
 		// set texture matrix
-		cbPerFrame.mTexture.setM(SphereMapMatrixD3D11);
+		cbPerFrame.mTexture = SphereMapMatrix;
 	}
 
 	virtual void OnUnsetMaterial()
 	{
-		cbPerFrame.mTexture.setM(UnitMatrixD3D11);
+		cbPerFrame.mTexture = UnitMapMatrix;
 
 		CD3D11FixedPipelineRenderer::OnUnsetMaterial();
 	}	
@@ -226,12 +225,12 @@ public:
 		blendDesc.RenderTarget[0].BlendEnable = false;
 
 		// set texture matrix
-		cbPerFrame.mTexture.setM(SphereMapMatrixD3D11);
+		cbPerFrame.mTexture = SphereMapMatrix;
 	}
 
 	virtual void OnUnsetMaterial()
 	{
-		cbPerFrame.mTexture.setM(UnitMatrixD3D11);
+		cbPerFrame.mTexture = UnitMapMatrix;
 
 		CD3D11FixedPipelineRenderer::OnUnsetMaterial();
 	}
@@ -448,5 +447,6 @@ private:
 }
 }
 
+#endif
 #endif
 #endif

@@ -4,12 +4,9 @@
 
 #include "IrrCompileConfig.h"
 
-#ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
-
 #ifdef _IRR_WINDOWS_
-#define WIN32_LEAN_AND_MEAN
-#include <D3D11.h>
-#endif
+
+#ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
 
 #include "IReferenceCounted.h"
 
@@ -71,5 +68,6 @@ private:
 }
 }
 
+#endif
 #endif
 #endif

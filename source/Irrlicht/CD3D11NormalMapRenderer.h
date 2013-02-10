@@ -9,14 +9,9 @@
 #ifdef _IRR_WINDOWS_
 
 #ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
-#if defined(__BORLANDC__) || defined (__BCPLUSPLUS__)
-#include "irrMath.h"    // needed by borland for sqrtf define
-#endif 
 
 #include "CD3D11MaterialRenderer.h"
 #include "IShaderConstantSetCallBack.h"
-
-#include <d3dx9math.h>
 
 namespace irr
 {

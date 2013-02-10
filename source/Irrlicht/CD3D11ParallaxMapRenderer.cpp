@@ -4,6 +4,7 @@
 
 #include "IrrCompileConfig.h"
 #ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
+
 #define _IRR_DONT_DO_MEMORY_DEBUGGING_HERE
 
 #include "CD3D11ParallaxMapRenderer.h"
@@ -11,15 +12,6 @@
 #include "IVideoDriver.h"
 #include "os.h"
 #include "SLight.h"
-
-//#define SHADER_EXTERNAL_DEBUG
-
-#ifdef SHADER_EXTERNAL_DEBUG
-#include "CReadFile.h"
-#endif
-
-#include <d3dCompiler.h>
-
 
 namespace irr
 {

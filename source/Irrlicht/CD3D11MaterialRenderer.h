@@ -16,9 +16,6 @@
 #include "IMaterialRenderer.h"
 
 #include <d3d11.h>
-#include <d3dcommon.h>
-#include <d3dCompiler.h>
-#include <d3dx11core.h>
 
 namespace irr
 {
@@ -160,9 +157,10 @@ public:
 	virtual ~CD3D11MaterialRenderer();
 
 	//! sets a variable in the shader.
-	//! \param name: Name of the variable
+	//! \param id: Id of the variable
 	//! \param floats: Pointer to array of floats
 	//! \param count: Amount of floats in array.
+	//! \param type: Shader type.
 	virtual bool setVariable(s32 id, const f32* floats, int count, E_SHADER_TYPE type);
 
 	virtual bool setVariable(s32 id, const s32* ints, int count, E_SHADER_TYPE type);
@@ -171,6 +169,11 @@ public:
 
 	virtual s32 getConstantBufferID(const c8* name,E_SHADER_TYPE type);
 
+	//! sets a constant buffer in the shader (only use this if you are know what you are doing).
+	//! Hint: http://stackoverflow.com/questions/7521222/how-to-create-a-constant-buffer-with-valid-dimension
+	//! \param id: Id of the constant buffer
+	//! \param data: Pointer to a structure that represents the buffer
+	//! \param type: Shader type.
 	virtual bool setConstantBuffer(s32 id, const void* data, E_SHADER_TYPE type);
 
 	virtual bool OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype);

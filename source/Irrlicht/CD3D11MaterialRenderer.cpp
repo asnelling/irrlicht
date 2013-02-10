@@ -17,12 +17,7 @@
 #include "irrMap.h"
 #include "CD3D11Driver.h"
 
-#include <d3dCompiler.h>
-#include <d3dx11async.h>
-
-#ifndef _IRR_D3D_NO_SHADER_DEBUGGING
-#include <stdio.h>
-#endif
+#include <d3dcompiler.h>
 
 class IncludeFX : public ID3DInclude 
 { 
@@ -686,38 +681,30 @@ bool CD3D11MaterialRenderer::init(const c8* vertexShaderProgram, const c8* verte
 bool CD3D11MaterialRenderer::stubD3DXCompileShader(LPCVOID pSrcData, SIZE_T SrcDataSize, LPCSTR pSourceName, const D3D_SHADER_MACRO* pDefines, ID3DInclude* pInclude,
 												   LPCSTR pEntrypoint, LPCSTR pTarget, UINT Flags1, UINT Flags2, ID3DBlob** ppCode)
 {	
-	// D3DXCompile
-	typedef HRESULT (WINAPI *D3DX11CompileShaderFunc)(LPCVOID pSrcData, SIZE_T SrcDataSize, LPCSTR pSourceName, const D3D_SHADER_MACRO *pDefines, LPD3DINCLUDE pInclude,
-		LPCSTR pEntrypoint, LPCSTR pTarget, UINT Flags1, UINT Flags2, LPD3DBLOB* ppCode, LPD3DBLOB* ppErrorMsgs);
-
 	static bool LoadFailed = false;
-	static D3DX11CompileShaderFunc pFn = 0;
+	static pD3DCompile pFn = 0;
 
 	if(LoadFailed)
 		return false;
 
 	if (!pFn && !LoadFailed)
 	{
-		io::path strDllName = "D3DCompiler_";
-		strDllName += (int)D3DX11_SDK_VERSION;
-		strDllName += ".dll";
-
-		HINSTANCE D3DLibrary = LoadLibrary(strDllName.c_str());
+		HINSTANCE D3DLibrary = LoadLibrary(D3DCOMPILER_DLL);
 
 		if (!D3DLibrary)
 		{
 			LoadFailed = true;
-			os::Printer::log("Could not load library", strDllName, ELL_ERROR);
+			os::Printer::log("Could not load library", D3DCOMPILER_DLL, ELL_ERROR);
 			return false;
 		}
 
-		pFn = (D3DX11CompileShaderFunc)GetProcAddress(D3DLibrary, "D3DCompile");
+		pFn = (pD3DCompile)GetProcAddress(D3DLibrary, "D3DCompile");
 
 		if (!pFn)
 		{
 			LoadFailed = true;
 			os::Printer::log("Could not load shader function D3DCompile from dll, shaders disabled",
-				strDllName, ELL_ERROR);
+				D3DCOMPILER_DLL, ELL_ERROR);
 
 			return false;
 		}
@@ -773,17 +760,13 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 
 	if (!pFn && !LoadFailed)
 	{
-		io::path strDllName = "D3DCompiler_";
-		strDllName += (int)D3DX11_SDK_VERSION;
-		strDllName += ".dll";
-
-		HINSTANCE D3DLibrary = LoadLibrary(strDllName.c_str());
+		HINSTANCE D3DLibrary = LoadLibrary(D3DCOMPILER_DLL);
 
 		if (!D3DLibrary)
 		{
 			LoadFailed = true;
 
-			os::Printer::log("Could not load library", strDllName, ELL_ERROR);
+			os::Printer::log("Could not load library", D3DCOMPILER_DLL, ELL_ERROR);
 			return false;
 		}
 
@@ -794,7 +777,7 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 			LoadFailed = true;
 
 			os::Printer::log("Could not load shader function D3DReflect from dll",
-				strDllName, ELL_ERROR);
+				D3DCOMPILER_DLL, ELL_ERROR);
 
 			return false;
 		}
@@ -807,7 +790,7 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 
 	if(FAILED(result))
 	{
-		os::Printer::log("Could not reflect variables in shader.", ELL_ERROR);
+		os::Printer::log("Could not reflect constant buffer in shader.", ELL_ERROR);
 
 		return false;
 	}

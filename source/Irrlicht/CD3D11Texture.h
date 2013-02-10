@@ -3,12 +3,13 @@
 #define __C_DIRECTX11_TEXTURE_H_INCLUDED__
 
 #include "IrrCompileConfig.h"
+
+#ifdef _IRR_WINDOWS_
+
 #ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
 
 #include "ITexture.h"
 #include "IImage.h"
-#include <d3d11.h>
-
 
 namespace irr
 {
@@ -130,5 +131,6 @@ private:
 }
 }
 
+#endif
 #endif
 #endif

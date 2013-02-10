@@ -4,6 +4,7 @@
 
 #include "IrrCompileConfig.h"
 #ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
+
 #define _IRR_DONT_DO_MEMORY_DEBUGGING_HERE
 
 #include "CD3D11NormalMapRenderer.h"
@@ -11,8 +12,6 @@
 #include "IMaterialRendererServices.h"
 #include "os.h"
 #include "SLight.h"
-
-#include <d3dCompiler.h>
 
 namespace irr
 {

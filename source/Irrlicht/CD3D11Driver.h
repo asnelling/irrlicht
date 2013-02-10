@@ -19,7 +19,6 @@
 #include "IMaterialRendererServices.h"
 
 #include <D3D11.h>
-#include <D3DX10math.h>
 
 namespace irr
 {

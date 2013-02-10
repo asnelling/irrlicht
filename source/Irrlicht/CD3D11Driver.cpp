@@ -69,18 +69,13 @@ CD3D11Driver::CD3D11Driver(const irr::SIrrlichtCreationParameters& params,
 	ClipPlanes.push_back( core::plane3df() );
 	ClipPlaneEnabled[0] = ClipPlaneEnabled[1] = ClipPlaneEnabled[2] = false;
 
-	// create sphere map matrix
-	SphereMapMatrixD3D11._11 = 0.5f; SphereMapMatrixD3D11._12 = 0.0f;
-	SphereMapMatrixD3D11._13 = 0.0f; SphereMapMatrixD3D11._14 = 0.0f;
-	SphereMapMatrixD3D11._21 = 0.0f; SphereMapMatrixD3D11._22 =-0.5f;
-	SphereMapMatrixD3D11._23 = 0.0f; SphereMapMatrixD3D11._24 = 0.0f;
-	SphereMapMatrixD3D11._31 = 0.0f; SphereMapMatrixD3D11._32 = 0.0f;
-	SphereMapMatrixD3D11._33 = 1.0f; SphereMapMatrixD3D11._34 = 0.0f;
-	SphereMapMatrixD3D11._41 = 0.5f; SphereMapMatrixD3D11._42 = 0.5f;
-	SphereMapMatrixD3D11._43 = 0.0f; SphereMapMatrixD3D11._44 = 1.0f;
+	UnitMapMatrix = core::matrix4();
+	float s[] = {	0.5f, 0.0f, 0.0f, 0.0f,
+					0.0f, -0.5f, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					0.5f, 0.5f, 0.0f, 1.0f };
 
-	core::matrix4 mat;
-	UnitMatrixD3D11 = *(D3DMATRIX*)((void*)mat.pointer());
+	SphereMapMatrix.setM(s);
 }
 
 CD3D11Driver::~CD3D11Driver()
