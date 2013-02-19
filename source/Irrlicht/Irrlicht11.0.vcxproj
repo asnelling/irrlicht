@@ -1006,6 +1006,7 @@
     <ClInclude Include="..\..\include\IGUITreeView.h" />
     <ClInclude Include="..\..\include\IGUIWindow.h" />
     <ClInclude Include="CCgMaterialRenderer.h" />
+    <ClInclude Include="CD3D11CallBridge.h" />
     <ClInclude Include="CD3D11Driver.h" />
     <ClInclude Include="CD3D11FixedPipelineRenderer.h" />
     <ClInclude Include="CD3D11HardwareBuffer.h" />
@@ -1265,6 +1266,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CCgMaterialRenderer.cpp" />
+    <ClCompile Include="CD3D11CallBridge.cpp" />
     <ClCompile Include="CD3D11Driver.cpp" />
     <ClCompile Include="CD3D11FixedPipelineRenderer.cpp" />
     <ClCompile Include="CD3D11HardwareBuffer.cpp" />

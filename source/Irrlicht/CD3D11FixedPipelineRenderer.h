@@ -46,7 +46,7 @@ class CD3D11FixedPipelineRenderer : public CD3D11MaterialRenderer, IShaderConsta
 {
 public:
 	//! Constructor for fixed function effect
-	CD3D11FixedPipelineRenderer(ID3D11Device* device, IVideoDriver* driver);
+	CD3D11FixedPipelineRenderer(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls);
 
 	virtual ~CD3D11FixedPipelineRenderer();
 
@@ -110,8 +110,8 @@ protected:
 class CD3D11MaterialRenderer_SOLID : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_SOLID(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_SOLID(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -127,8 +127,8 @@ public:
 class CD3D11MaterialRenderer_SOLID_2_LAYER : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_SOLID_2_LAYER(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_SOLID_2_LAYER(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -144,8 +144,8 @@ public:
 class CD3D11MaterialRenderer_LIGHTMAP : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_LIGHTMAP(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_LIGHTMAP(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -161,8 +161,8 @@ public:
 class CD3D11MaterialRenderer_DETAIL_MAP : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_DETAIL_MAP(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_DETAIL_MAP(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -185,8 +185,8 @@ public:
 class CD3D11MaterialRenderer_SPHERE_MAP : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_SPHERE_MAP(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_SPHERE_MAP(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -212,8 +212,8 @@ public:
 class CD3D11MaterialRenderer_REFLECTION_2_LAYER : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_REFLECTION_2_LAYER(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_REFLECTION_2_LAYER(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -239,16 +239,16 @@ public:
 class CD3D11MaterialRenderer_TRANSPARENT_ADD_COLOR : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_TRANSPARENT_ADD_COLOR(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_TRANSPARENT_ADD_COLOR(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
 	{
 		CD3D11MaterialRenderer::OnSetMaterial(material, lastMaterial, resetAllRenderstates, services);
 	
-		D3D11_BLEND_DESC& blendDesc = static_cast<CD3D11Driver*>(Driver)->getBlendDesc();	
-			
+		D3D11_BLEND_DESC& blendDesc = static_cast<CD3D11Driver*>(Driver)->getBlendDesc();
+
 		blendDesc.RenderTarget[0].BlendEnable = TRUE;
 		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
 		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_COLOR;
@@ -256,6 +256,7 @@ public:
  		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
 		D3D11_DEPTH_STENCIL_DESC& depth = static_cast<CD3D11Driver*>(Driver)->getDepthStencilDesc();
+		
 		depth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	}
 
@@ -270,8 +271,8 @@ public:
 class CD3D11MaterialRenderer_TRANSPARENT_ALPHA_CHANNEL : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_TRANSPARENT_ALPHA_CHANNEL(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_TRANSPARENT_ALPHA_CHANNEL(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -298,8 +299,8 @@ public:
 class CD3D11MaterialRenderer_TRANSPARENT_ALPHA_CHANNEL_REF : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_TRANSPARENT_ALPHA_CHANNEL_REF(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_TRANSPARENT_ALPHA_CHANNEL_REF(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -322,8 +323,8 @@ public:
 class CD3D11MaterialRenderer_TRANSPARENT_VERTEX_ALPHA : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_TRANSPARENT_VERTEX_ALPHA(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_TRANSPARENT_VERTEX_ALPHA(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -350,8 +351,8 @@ public:
 class CD3D11MaterialRenderer_TRANSPARENT_REFLECTION_2_LAYER : public CD3D11FixedPipelineRenderer
 {
 public:
-	CD3D11MaterialRenderer_TRANSPARENT_REFLECTION_2_LAYER(ID3D11Device* device, IVideoDriver* driver)
-	: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_TRANSPARENT_REFLECTION_2_LAYER(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+	: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 					bool resetAllRenderstates, IMaterialRendererServices* services)
@@ -379,8 +380,8 @@ class CD3D11MaterialRenderer_ONETEXTURE_BLEND : public CD3D11FixedPipelineRender
 {
 public:
 
-	CD3D11MaterialRenderer_ONETEXTURE_BLEND(ID3D11Device* device, IVideoDriver* driver)
-		: CD3D11FixedPipelineRenderer(device, driver) {}
+	CD3D11MaterialRenderer_ONETEXTURE_BLEND(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
+		: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 
 	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 		bool resetAllRenderstates, IMaterialRendererServices* services)

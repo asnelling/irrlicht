@@ -17,8 +17,9 @@
 #include "CNullDriver.h"
 #include "SIrrCreationParameters.h"
 #include "IMaterialRendererServices.h"
+#include "CD3D11CallBridge.h"
 
-#include <D3D11.h>
+#include <d3d11.h>
 
 namespace irr
 {
@@ -30,9 +31,9 @@ namespace video
 	{
 		SDepthSurface11() : Surface(0)
 		{
-			#ifdef _DEBUG
+#ifdef _DEBUG
 			setDebugName("SDepthSurface");
-			#endif
+#endif
 		}
 		virtual ~SDepthSurface11()
 		{
@@ -165,12 +166,12 @@ namespace video
 
 		//! draws a vertex primitive list
 		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primitiveCount,
+				const void* indices, u32 primitiveCount,
 				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType);
 		
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indexList, u32 primitiveCount,
+				const void* indices, u32 primitiveCount,
 				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
 				E_INDEX_TYPE iType);
 
@@ -389,9 +390,6 @@ namespace video
 		virtual IHardwareBuffer* createHardwareBuffer(E_HARDWARE_BUFFER_TYPE type, E_HARDWARE_BUFFER_ACCESS accessType, 
 							u32 size, u32 flags = 0, const void* initialData = 0);
 
-		//! Register a new vertex type
-		virtual E_VERTEX_TYPE registerVertexType(core::array<SVertexElement>& elements);
-
 		//! Check multisample quality levels
 		virtual u32 queryMultisampleLevels(ECOLOR_FORMAT format, u32 numSamples) const;
 
@@ -413,7 +411,7 @@ namespace video
 		bool ResetRenderStates; // bool to make all renderstates be reseted if set.
 		bool Transformation3DChanged;
 
-		const ITexture* CurrentTexture[MATERIAL_MAX_TEXTURES];
+		ITexture* CurrentTexture[MATERIAL_MAX_TEXTURES];
 		ITexture* NullTexture;						// 1x1 texture replacement for NULL textures in materials
 		core::matrix4 Matrices[ETS_COUNT];			// matrizes of the 3d mode we need to restore when we switch back from the 2d mode.
 
@@ -446,222 +444,14 @@ namespace video
 		ID3D11Buffer* DynIndexBuffer;
 		u32 DynVertexBufferSize;
 		u32 DynIndexBufferSize;
-
-		// Storing vertex declarations
-		typedef core::map<E_VERTEX_TYPE, CD3D11VertexDeclaration*> DeclarationMap;
-		typedef core::map<E_VERTEX_TYPE, CD3D11VertexDeclaration*>::Iterator DeclarationIterator;
-		typedef core::map<E_VERTEX_TYPE, CD3D11VertexDeclaration*>::Node* DeclarationNode;
-		DeclarationMap declarationMap;
-		
-		// Input layout
-		ID3D11InputLayout* CurrentInputLayout;		// store current to prevent set multiple times the same layout
-		/*
-		D3D11_INPUT_ELEMENT_DESC StandardInputElements[4];
-		D3D11_INPUT_ELEMENT_DESC TwoCoordsInputElements[5];
-		D3D11_INPUT_ELEMENT_DESC TangentsInputElements[6];
-		struct LayoutKey
-		{
-			D3D11_INPUT_ELEMENT_DESC* elementDesc;
-			void* pInputSignature;
-
-			// shall define these operators for this structure
-			inline bool operator==(const LayoutKey& other) const
-			{
-				return ( ( elementDesc == other.elementDesc ) && 
-						 ( pInputSignature == other.pInputSignature ) );
-			}
-
-			inline bool operator!=(const LayoutKey& other) const
-			{
-				return ( ( elementDesc != other.elementDesc ) || 
-						 ( pInputSignature != other.pInputSignature ) );
-			}
-
-			inline bool operator<(const LayoutKey& other) const
-			{
-				return ( ( elementDesc < other.elementDesc ) || 
-						 ( ( elementDesc == other.elementDesc ) && ( pInputSignature < other.pInputSignature ) ) );
-			}
-		};
-		typedef core::map<LayoutKey, ID3D11InputLayout*> InputLayoutStateMap;
-		InputLayoutStateMap InputLayoutMap;
-		*/
-
-		// States map: due to need of comparison operators, will use wrappers for comparison
-
-		// Blend
-		struct SD3D11_BLEND_DESC : public D3D11_BLEND_DESC
-		{
-			SD3D11_BLEND_DESC()
-			{
-				reset();
-			}
-
-			inline bool operator==(const SD3D11_BLEND_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_BLEND_DESC) ) == 0;
-			}
-
-			inline bool operator!=(const SD3D11_BLEND_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_BLEND_DESC) ) != 0;
-			}
-
-			inline bool operator<(const SD3D11_BLEND_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_BLEND_DESC) ) < 0;
-			}
-
-			inline void reset()
-			{
-				AlphaToCoverageEnable = false;
-				IndependentBlendEnable = false;
-				RenderTarget[0].BlendEnable = false;
-				RenderTarget[0].SrcBlend	= D3D11_BLEND_ONE;
-				RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
-				RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-				RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
-				RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-				RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-				RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-				memcpy( &RenderTarget[1], &RenderTarget[0], sizeof( D3D11_RENDER_TARGET_BLEND_DESC ) );
-				memcpy( &RenderTarget[2], &RenderTarget[0], sizeof( D3D11_RENDER_TARGET_BLEND_DESC ) );
-				memcpy( &RenderTarget[3], &RenderTarget[0], sizeof( D3D11_RENDER_TARGET_BLEND_DESC ) );
-				memcpy( &RenderTarget[4], &RenderTarget[0], sizeof( D3D11_RENDER_TARGET_BLEND_DESC ) );
-				memcpy( &RenderTarget[5], &RenderTarget[0], sizeof( D3D11_RENDER_TARGET_BLEND_DESC ) );
-				memcpy( &RenderTarget[6], &RenderTarget[0], sizeof( D3D11_RENDER_TARGET_BLEND_DESC ) );
-				memcpy( &RenderTarget[7], &RenderTarget[0], sizeof( D3D11_RENDER_TARGET_BLEND_DESC ) );
-			}
-		};
-		SD3D11_BLEND_DESC BlendDesc;
-		typedef core::map<SD3D11_BLEND_DESC, ID3D11BlendState*> BlendStateMap;
-		BlendStateMap BlendMap;
-		
-		// Rasterizer
-		struct SD3D11_RASTERIZER_DESC : public D3D11_RASTERIZER_DESC
-		{
-			SD3D11_RASTERIZER_DESC()
-			{
-				reset();
-			}
-
-			inline bool operator==(const SD3D11_RASTERIZER_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_RASTERIZER_DESC) ) == 0;
-			}
-
-			inline bool operator!=(const SD3D11_RASTERIZER_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_RASTERIZER_DESC) ) != 0;
-			}
-
-			inline bool operator<(const SD3D11_RASTERIZER_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_RASTERIZER_DESC) ) < 0;
-			}
-
-			inline void reset()
-			{
-				FillMode = D3D11_FILL_SOLID;
-				CullMode = D3D11_CULL_BACK;
-				FrontCounterClockwise = false;
-				DepthBias = 0;
-				DepthBiasClamp = 0;
-				SlopeScaledDepthBias = 0;
-				DepthClipEnable = true;
-				ScissorEnable = false;
-				MultisampleEnable = false;
-				AntialiasedLineEnable = false;
-			}
-		};
-		SD3D11_RASTERIZER_DESC RasterizerDesc;
-		typedef core::map<SD3D11_RASTERIZER_DESC, ID3D11RasterizerState*> RasterizerStateMap;
-		RasterizerStateMap RasterizerMap;
-
-		// Depth stencil
-		struct SD3D11_DEPTH_STENCIL_DESC : public D3D11_DEPTH_STENCIL_DESC
-		{
-			SD3D11_DEPTH_STENCIL_DESC()
-			{
-				reset();
-			}
-
-			inline bool operator==(const SD3D11_DEPTH_STENCIL_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_DEPTH_STENCIL_DESC) ) == 0;
-			}
-
-			inline bool operator!=(const SD3D11_DEPTH_STENCIL_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_DEPTH_STENCIL_DESC) ) != 0;
-			}
-
-			inline bool operator<(const SD3D11_DEPTH_STENCIL_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_DEPTH_STENCIL_DESC) ) < 0;
-			}
-
-			inline void reset()
-			{
-				DepthEnable = true;
-				DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-				DepthFunc = D3D11_COMPARISON_LESS;
-				StencilEnable = false;
-				StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
-				StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-				FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-				FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-				FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-				FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-				BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-				BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-				BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-				BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-			}
-		};
+	
 		SD3D11_DEPTH_STENCIL_DESC DepthStencilDesc;
-		typedef core::map<SD3D11_DEPTH_STENCIL_DESC, ID3D11DepthStencilState*> DepthStencilStateMap;
-		DepthStencilStateMap DepthStencilMap;
 
-		// Samplers
-		struct SD3D11_SAMPLER_DESC : public D3D11_SAMPLER_DESC
-		{
-			SD3D11_SAMPLER_DESC()
-			{
-				reset();
-			}
+		SD3D11_BLEND_DESC BlendDesc;
 
-			inline bool operator==(const SD3D11_SAMPLER_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_SAMPLER_DESC) ) == 0;
-			}
-
-			inline bool operator!=(const SD3D11_SAMPLER_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_SAMPLER_DESC) ) != 0;
-			}
-
-			inline bool operator<(const SD3D11_SAMPLER_DESC& other) const
-			{
-				return memcmp(this, &other, sizeof(SD3D11_SAMPLER_DESC) ) < 0;
-			}
-
-			inline void reset()
-			{
-				Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-				AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-				AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-				AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-				MipLODBias = 0;
-				MaxAnisotropy = 16;
-				ComparisonFunc = D3D11_COMPARISON_NEVER;
-				MinLOD = 0.0f;
-				MaxLOD = D3D11_FLOAT32_MAX;
-			}
-		};
 		SD3D11_SAMPLER_DESC SamplerDesc[MATERIAL_MAX_TEXTURES];
-		typedef core::map<SD3D11_SAMPLER_DESC, ID3D11SamplerState*> SamplerStateMap;
-		SamplerStateMap SamplerMap;
+
+		SD3D11_RASTERIZER_DESC RasterizerDesc;
 
 		core::dimension2d<u32> CurrentRendertargetSize;
 
@@ -688,6 +478,8 @@ namespace video
 
 		core::stringc VendorName;
 		u16 VendorID;
+
+		CD3D11CallBridge* BridgeCalls;
 
 		core::array<SDepthSurface11*> DepthBuffers;
 
@@ -718,7 +510,7 @@ namespace video
 		void createMaterialRenderers();
 
 		void draw2D3DVertexPrimitiveList(const void* vertices, u32 vertexCount, 
-			const void* indexList, u32 primitiveCount,
+			const void* indices, u32 primitiveCount,
 			E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType, bool is3D);
 
 		D3D11_TEXTURE_ADDRESS_MODE getTextureWrapMode(const u8 clamp);
@@ -729,7 +521,7 @@ namespace video
 		//! sets the needed renderstates
 		void setRenderStates2DMode(bool alpha, bool texture, bool alphaChannel);
 
-		bool setActiveTexture(u32 stage, const video::ITexture* texture);
+		bool setActiveTexture(u32 stage, video::ITexture* texture);
 
 		//! returns a device dependent texture from a software surface (IImage)
 		//! THIS METHOD HAS TO BE OVERRIDDEN BY DERIVED DRIVERS WITH OWN TEXTURES
@@ -753,21 +545,12 @@ namespace video
 		//! sets the needed renderstates
 		void setRenderStatesStencilShadowMode(bool zfail, u32 debugDataVisible);
 
-		//! set input vertex layout
-		//virtual bool setInputLayout( video::E_VERTEX_TYPE vertexType, IMaterialRenderer* renderer );
-
-		//! bind states to pipeline (description was adjusted in other methods)
-		ID3D11BlendState* getBlendState();
-		ID3D11RasterizerState* getRasterizerState();
-		ID3D11DepthStencilState* getDepthStencilState();
-		ID3D11SamplerState* getSamplerState(u32 idx);
-
 		//! reallocate dynamic buffers
 		virtual bool reallocateDynamicBuffers( u32 vertexBufferSize, u32 indexBufferSize );
 
 		//! upload dynamic vertex and index data to GPU
 		virtual bool uploadVertexData(const void* vertices, u32 vertexCount,
-									  const void* indexList, u32 indexCount,
+									  const void* indices, u32 indexCount,
 									  E_VERTEX_TYPE vType, E_INDEX_TYPE iType);
 
 		//! handle screen resize

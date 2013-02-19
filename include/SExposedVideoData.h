@@ -83,7 +83,7 @@ struct SExposedVideoData
 			unsigned long X11Window;
 		} OpenGLLinux;
 
-				struct
+		struct
 		{
 			//! Pointer to the ID3D11Device interface
 			ID3D11Device* D3DDev11;

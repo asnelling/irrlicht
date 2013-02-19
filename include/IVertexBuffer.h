@@ -41,6 +41,8 @@ namespace scene
 
 		virtual u32 getVertexCount() const = 0;
 
+		virtual video::E_VERTEX_TYPE getVertexType() const = 0;
+
 		virtual u32 getVertexSize() const = 0;
 
 		virtual void setDirty() = 0;

@@ -26,9 +26,9 @@ namespace video
 		"	float4	 g_lightColor1;\n"\
 		"	float4	 g_lightColor2;\n"\
 		"	float3	 g_eyePosition;\n"\
-		"	float	 g_scaleFactor;\n"\
 		"	float3	 g_lightPos1;\n"\
 		"	float3	 g_lightPos2;\n"\
+		"	float	 g_scaleFactor;\n"\
 		"};\n"\
 		"\n"\
 		"// adding textures and samplers\n"\
@@ -145,9 +145,9 @@ namespace video
 		"}\n";
 
 CD3D11ParallaxMapRenderer::CD3D11ParallaxMapRenderer(
-	ID3D11Device* device, video::IVideoDriver* driver, 
+	ID3D11Device* device, video::IVideoDriver* driver, CD3D11CallBridge* bridgeCalls,
 	s32& outMaterialTypeNr, IMaterialRenderer* baseRenderer)
-	: CD3D11MaterialRenderer(device, driver, NULL, baseRenderer),
+	: CD3D11MaterialRenderer(device, driver, bridgeCalls, NULL, baseRenderer),
 	currentScale(0.0f), cbPerFrameId(-1)
 {
 #ifdef _DEBUG

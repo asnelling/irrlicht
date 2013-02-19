@@ -217,7 +217,7 @@ namespace video
 		"   float pointScaleA;\n"\
 		"   float pointScaleB;\n"\
 		"   float pointScaleC;\n"\
-		"   float pointSize;   \n"\
+		"   float pointSize;\n"\
 		"};\n"\
 		"\n"\
 		"// adding constant buffer for lightning information\n"\
@@ -621,8 +621,8 @@ namespace video
 		"	return normalColor;\n"\
 		"}\n";
 
-CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, IVideoDriver* driver ) 
-	: CD3D11MaterialRenderer(device, driver, NULL, NULL),
+CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls) 
+	: CD3D11MaterialRenderer(device, driver, bridgeCalls, NULL, NULL),
 	cbPerFrameId(-1), cbPerTechniqueId(-1), cbLightsId(-1),
 	vsStandardShader(NULL), vsCoords2TShader(NULL), vsTangentsShader(NULL),
 	psStandardShader(NULL), psCoords2TShader(NULL), psTangentsShader(NULL),

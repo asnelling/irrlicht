@@ -17,6 +17,8 @@
 
 #include <d3d11.h>
 
+#define ALIGN16 __declspec(align(16))
+
 namespace irr
 {
 namespace io
@@ -31,6 +33,7 @@ class IVideoDriver;
 class IShaderConstantSetCallBack;
 class IMaterialRenderer;
 class CD3D11VertexDeclaration;
+class CD3D11CallBridge;
 
 struct SShaderBuffer 
 {
@@ -146,7 +149,7 @@ class CD3D11MaterialRenderer : public IMaterialRenderer
 public:
 
 	//! Public constructor
-	CD3D11MaterialRenderer(ID3D11Device* device, video::IVideoDriver* driver, s32& outMaterialTypeNr,
+	CD3D11MaterialRenderer(ID3D11Device* device, video::IVideoDriver* driver, CD3D11CallBridge* bridgeCalls, s32& outMaterialTypeNr,
 		const c8* vertexShaderProgram, const c8* vertexShaderEntryPointName, E_VERTEX_SHADER_TYPE vsCompileTarget,
 		const c8* pixelShaderProgram, const c8* pixelShaderEntryPointName, E_PIXEL_SHADER_TYPE psCompileTarget,
 		const c8* geometryShaderProgram, const c8* geometryShaderEntryPointName, E_GEOMETRY_SHADER_TYPE gsCompileTarget,
@@ -170,7 +173,7 @@ public:
 	virtual s32 getConstantBufferID(const c8* name,E_SHADER_TYPE type);
 
 	//! sets a constant buffer in the shader (only use this if you are know what you are doing).
-	//! Hint: http://stackoverflow.com/questions/7521222/how-to-create-a-constant-buffer-with-valid-dimension
+	//! Hint: http://blog.signalsondisplay.com/?p=244
 	//! \param id: Id of the constant buffer
 	//! \param data: Pointer to a structure that represents the buffer
 	//! \param type: Shader type.
@@ -189,7 +192,7 @@ public:
 	virtual u32 getShaderByteCodeSize() const;
 
 protected:
-	CD3D11MaterialRenderer(ID3D11Device* device, video::IVideoDriver* driver, IShaderConstantSetCallBack* callback, IMaterialRenderer* baseRenderer, io::IFileSystem* fileSystem = 0, s32 userData = 0);
+	CD3D11MaterialRenderer(ID3D11Device* device, video::IVideoDriver* driver, CD3D11CallBridge* bridgeCalls, IShaderConstantSetCallBack* callback, IMaterialRenderer* baseRenderer, io::IFileSystem* fileSystem = 0, s32 userData = 0);
 
 	bool init(const c8* vertexShaderProgram, const c8* vertexShaderEntryPointName, E_VERTEX_SHADER_TYPE vsCompileTarget,
 			  const c8* pixelShaderProgram, const c8* pixelShaderEntryPointName, E_PIXEL_SHADER_TYPE psCompileTarget,
@@ -238,6 +241,8 @@ protected:
 	SShader* hsShader;
 	SShader* dsShader;
 	SShader* csShader;
+
+	CD3D11CallBridge* BridgeCalls;
 };
 
 } // end namespace video

@@ -85,6 +85,7 @@ enum E_GEOMETRY_SHADER_TYPE
 {
 	EGST_GS_4_0 = 0,
 	EGST_GS_4_1,
+	EGST_GS_5_0,
 
 	//! This is not a type, but a value indicating how much types there are.
 	EGST_COUNT
@@ -94,6 +95,7 @@ enum E_GEOMETRY_SHADER_TYPE
 const c8* const GEOMETRY_SHADER_TYPE_NAMES[] = {
 	"gs_4_0",
 	"gs_4_1",
+	"gs_5_0",
 	0 };
 
 //! Enum for supported domain shader types

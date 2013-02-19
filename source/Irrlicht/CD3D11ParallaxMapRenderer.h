@@ -23,7 +23,7 @@ class CD3D11ParallaxMapRenderer : public CD3D11MaterialRenderer, IShaderConstant
 {
 public:
 
-	CD3D11ParallaxMapRenderer(ID3D11Device* device, video::IVideoDriver* driver, 
+	CD3D11ParallaxMapRenderer(ID3D11Device* device, video::IVideoDriver* driver, CD3D11CallBridge* bridgeCalls, 
 		s32& outMaterialTypeNr, IMaterialRenderer* baseMaterial);
 	virtual ~CD3D11ParallaxMapRenderer();
 	
@@ -46,12 +46,10 @@ private:
 		core::matrix4 g_mWorldViewProj;
 		SColorf	g_lightColor1;
 		SColorf	g_lightColor2;
-		core::vector3df	g_eyePosition;	
-		f32	g_scaleFactor;
-		core::vector3df	g_lightPos1;
-		s32 unusedVar1;
-		core::vector3df	g_lightPos2;
-		
+		ALIGN16 core::vector3df g_eyePosition;		
+		ALIGN16 core::vector3df g_lightPos1;
+		ALIGN16 core::vector3df g_lightPos2;
+		f32 g_scaleFactor;
 	} cbPerFrame;
 };
 

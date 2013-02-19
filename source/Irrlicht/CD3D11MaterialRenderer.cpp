@@ -16,6 +16,7 @@
 #include "IFileSystem.h"
 #include "irrMap.h"
 #include "CD3D11Driver.h"
+#include "CD3D11CallBridge.h"
 
 #include <d3dcompiler.h>
 
@@ -40,7 +41,7 @@ public:
 		irr::io::IReadFile* file = FileSystem->createAndOpenFile(pFileName);
 		if (!file)
 		{
-			irr::os::Printer::log("Could not open Include shader program file",
+			irr::os::Printer::log("Could not open included shader program file.",
 				pFileName, irr::ELL_WARNING);
 			return S_FALSE;
 
@@ -69,14 +70,14 @@ namespace video
 {
 
 //! Public constructor
-CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device, 
-		video::IVideoDriver* driver, s32& outMaterialTypeNr,
+CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device, video::IVideoDriver* driver, CD3D11CallBridge* bridgeCalls, s32& outMaterialTypeNr,
 		const c8* vertexShaderProgram, const c8* vertexShaderEntryPointName, E_VERTEX_SHADER_TYPE vsCompileTarget,
 		const c8* pixelShaderProgram, const c8* pixelShaderEntryPointName, E_PIXEL_SHADER_TYPE psCompileTarget,
 		const c8* geometryShaderProgram, const c8* geometryShaderEntryPointName, E_GEOMETRY_SHADER_TYPE gsCompileTarget,
 		scene::E_PRIMITIVE_TYPE inType, scene::E_PRIMITIVE_TYPE outType, u32 verticesOut, E_VERTEX_TYPE vertexTypeOut,
 		IShaderConstantSetCallBack* callback, IMaterialRenderer* baseRenderer, s32 userData, io::IFileSystem* fileSystem)
-	: Driver(driver), Device(device), Context(NULL), BaseRenderer(baseRenderer), CallBack(callback), UserData(userData),
+	: Driver(driver), Device(device), Context(NULL), BridgeCalls(bridgeCalls),
+	BaseRenderer(baseRenderer), CallBack(callback), UserData(userData),
 	vsShader(NULL), psShader(NULL), gsShader(NULL), hsShader(NULL), dsShader(NULL), csShader(NULL),
 	includer(NULL), buffer(NULL), sameFile(false)
 {
@@ -112,8 +113,8 @@ CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device,
 	outMaterialTypeNr = driver->addMaterialRenderer(this);
 }
 
-CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device, video::IVideoDriver* driver, IShaderConstantSetCallBack* callback, IMaterialRenderer* baseRenderer, io::IFileSystem* fileSystem, s32 userData)
-											   : Driver(driver), Device(device), Context(NULL), BaseRenderer(baseRenderer), CallBack(callback), UserData(userData),
+CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device, video::IVideoDriver* driver, CD3D11CallBridge* bridgeCalls, IShaderConstantSetCallBack* callback, IMaterialRenderer* baseRenderer, io::IFileSystem* fileSystem, s32 userData)
+											   : Driver(driver), Device(device), Context(NULL), BridgeCalls(bridgeCalls), BaseRenderer(baseRenderer), CallBack(callback), UserData(userData),
 											   vsShader(NULL), psShader(NULL), gsShader(NULL), hsShader(NULL), dsShader(NULL), csShader(NULL),
 											   includer(NULL), buffer(NULL), sameFile(false)
 {
@@ -177,8 +178,8 @@ CD3D11MaterialRenderer::~CD3D11MaterialRenderer()
 }
 
 bool CD3D11MaterialRenderer::createShader(const char* code,
-											   const char* entryPointName,
-											   const char* targetName, UINT flags, E_SHADER_TYPE type)
+										  const char* entryPointName,
+										  const char* targetName, UINT flags, E_SHADER_TYPE type)
 {
 	if(!code)
 		return true;
@@ -236,7 +237,30 @@ bool CD3D11MaterialRenderer::createShader(const char* code,
 
 		if ( NULL != errorText )
 		{
-			core::stringc errorMsg = "Error, could not create pixelshader: ";
+			core::stringc errorMsg = "Could not create ";
+
+			switch(type)
+			{
+			case EST_VERTEX_SHADER:
+				errorMsg += "vertexshader: ";
+				break;
+			case EST_PIXEL_SHADER:
+				errorMsg += "pixelshader: ";
+				break;
+			case EST_GEOMETRY_SHADER:
+				errorMsg += "geometryshader: ";
+				break;
+			case EST_DOMAIN_SHADER:
+				errorMsg += "domainshader: ";
+				break;
+			case EST_HULL_SHADER:
+				errorMsg += "hullshader: ";
+				break;
+			case EST_COMPUTE_SHADER:
+				errorMsg += "computeshader: ";
+				break;
+			}
+
 			errorMsg += errorText;
 			os::Printer::log(errorMsg.c_str(), ELL_ERROR);
 
@@ -244,8 +268,6 @@ bool CD3D11MaterialRenderer::createShader(const char* code,
 			LocalFree(errorText);
 			errorText = NULL;
 		}
-		else
-			os::Printer::log("Error, could not create pixelshader.", ELL_ERROR);
 
 		return false;
 	}
@@ -466,59 +488,13 @@ bool CD3D11MaterialRenderer::OnRender(IMaterialRendererServices* service, E_VERT
 	if (CallBack && (vsShader || psShader || gsShader))
 		CallBack->OnSetConstants(service, UserData);
 
-	if (vsShader)
-	{
-		Context->VSSetShader((ID3D11VertexShader*)vsShader->shader, NULL, 0);
+	BridgeCalls->setVertexShader(vsShader);
+	BridgeCalls->setPixelShader(psShader);
+	BridgeCalls->setGeometryShader(gsShader);
 
-		const u32 size = vsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->VSSetConstantBuffers(i, 1, &vsShader->buffers[i]->data);
-	}
-
-	if (psShader)
-	{
-		Context->PSSetShader((ID3D11PixelShader*)psShader->shader, NULL, 0);
-
-		const u32 size = psShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->PSSetConstantBuffers(i, 1, &psShader->buffers[i]->data);
-	}
-
-	if(gsShader)
-	{
-		Context->GSSetShader((ID3D11GeometryShader*)gsShader->shader, NULL, 0);
-
-		const u32 size = gsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->GSSetConstantBuffers(i, 1, &gsShader->buffers[i]->data);
-	}
-
-	if(hsShader)
-	{
-		Context->HSSetShader((ID3D11HullShader*)hsShader->shader, NULL, 0);
-
-		const u32 size = hsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->HSSetConstantBuffers(i, 1, &hsShader->buffers[i]->data);
-	}
-
-	if(dsShader)
-	{
-		Context->DSSetShader((ID3D11DomainShader*)dsShader->shader, NULL, 0);
-
-		const u32 size = dsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->DSSetConstantBuffers(i, 1, &dsShader->buffers[i]->data);
-	}
-
-	if(csShader)
-	{
-		Context->CSSetShader((ID3D11ComputeShader*)csShader->shader, NULL, 0);
-		
-		const u32 size = csShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->CSSetConstantBuffers(i, 1, &csShader->buffers[i]->data);
-	}
+	BridgeCalls->setHullShader(hsShader);
+	BridgeCalls->setDomainShader(dsShader);
+	BridgeCalls->setComputeShader(csShader);
 
 	return true;
 }
@@ -543,24 +519,6 @@ void CD3D11MaterialRenderer::OnUnsetMaterial()
 {
 	if (BaseRenderer)
 		BaseRenderer->OnUnsetMaterial();
-
-	if (vsShader)
-		Context->VSSetShader(NULL, NULL, 0);
-
-	if (psShader)
-		Context->PSSetShader(NULL, NULL, 0);
-
-	if (gsShader)
-		Context->GSSetShader(NULL, NULL, 0);
-
-	if(hsShader)
-		Context->HSSetShader(NULL, NULL, 0);
-
-	if(dsShader)
-		Context->DSSetShader(NULL, NULL, 0);
-
-	if(csShader)
-		Context->CSSetShader(NULL, NULL, 0);
 }
 
 //! get shader signature
@@ -631,12 +589,12 @@ bool CD3D11MaterialRenderer::init(const c8* vertexShaderProgram, const c8* verte
 {
 	if (vsCompileTarget < 0 || vsCompileTarget > EVST_COUNT)
 	{
-		os::Printer::log("Invalid HLSL vertex shader compilation target", ELL_ERROR);
+		os::Printer::log("Invalid HLSL vertex shader compilation target.", ELL_ERROR);
 		return false;
 	}
 
 	UINT flags = 0;
-	if (vsCompileTarget > EVST_VS_4_0 && psCompileTarget > EPST_PS_4_0)
+	if (vsCompileTarget >= EVST_VS_4_0 && psCompileTarget >= EPST_PS_4_0)
 		flags |= D3D10_SHADER_ENABLE_STRICTNESS;
 	else
 	{
@@ -870,7 +828,7 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 
 			if(FAILED(result))
 			{
-				os::Printer::log("Error, could not create constant buffer", sBuffer->name, ELL_ERROR);
+				os::Printer::log("Could not create constant buffer", sBuffer->name, ELL_ERROR);
 
 				delete sBuffer;
 

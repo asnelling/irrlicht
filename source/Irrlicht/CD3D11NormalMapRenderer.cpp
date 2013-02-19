@@ -125,8 +125,8 @@ namespace video
 		"	return color;\n"
 		"}\n";
 
-CD3D11NormalMapRenderer::CD3D11NormalMapRenderer(ID3D11Device* device, video::IVideoDriver* driver, s32& outMaterialTypeNr, IMaterialRenderer* baseRenderer)
-	: CD3D11MaterialRenderer(device, driver, NULL, baseRenderer), cbPerFrameId(-1)
+CD3D11NormalMapRenderer::CD3D11NormalMapRenderer(ID3D11Device* device, video::IVideoDriver* driver, CD3D11CallBridge* bridgeCalls, s32& outMaterialTypeNr, IMaterialRenderer* baseRenderer)
+	: CD3D11MaterialRenderer(device, driver, bridgeCalls, NULL, baseRenderer), cbPerFrameId(-1)
 {
 #ifdef _DEBUG
 	setDebugName("CD3D11NormalMapRenderer");

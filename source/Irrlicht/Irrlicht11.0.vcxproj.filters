@@ -1333,6 +1333,9 @@
     <ClInclude Include="CD3D11FixedPipelineRenderer.h">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClInclude>
+    <ClInclude Include="CD3D11CallBridge.h">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\changes.txt">
@@ -2295,6 +2298,9 @@
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClCompile>
     <ClCompile Include="CD3D11MaterialRenderer.cpp">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="CD3D11CallBridge.cpp">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClCompile>
   </ItemGroup>

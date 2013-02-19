@@ -112,7 +112,7 @@ void CD3D9CgMaterialRenderer::OnUnsetMaterial()
 	if (BaseMaterial)
 		BaseMaterial->OnUnsetMaterial();
 
-	Material = IdentityMaterial;;
+	Material = IdentityMaterial;
 }
 
 void CD3D9CgMaterialRenderer::setBasicRenderStates(const SMaterial& material, const SMaterial& lastMaterial, bool resetAllRenderstates)

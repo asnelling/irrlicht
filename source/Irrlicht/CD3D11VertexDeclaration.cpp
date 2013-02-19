@@ -121,7 +121,7 @@ ID3D11InputLayout* CD3D11VertexDeclaration::getInputLayout(IMaterialRenderer* re
 											 renderer->getShaderByteCodeSize(), 
 											 &layout )))
 		{
-			os::Printer::log("Error, failed to create input layout", ELL_ERROR);
+			os::Printer::log("Failed to create input layout.", ELL_ERROR);
 			return NULL;
 		}
 
