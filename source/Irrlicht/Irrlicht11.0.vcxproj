@@ -284,7 +284,7 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">obj\$(Configuration)64\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)include;$(IncludePath);$(CG_INC_PATH)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IncludePath);$(DXSDK_DIR)include;$(CG_INC_PATH)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|Win32'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|x64'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
@@ -298,7 +298,7 @@
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|x64'">$(DXSDK_DIR)include;$(IncludePath)</IncludePath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(LibraryPath);$(CG_LIB_PATH);$(DXSDK_DIR)Lib\x86</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath);$(CG_LIB_PATH)</LibraryPath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(LibraryPath);$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='SDL-Debug|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Static lib - Debug|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Static lib - Release - Fast FPU|Win32'">$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
@@ -354,6 +354,13 @@
       <ImportLibrary>..\..\lib\Win32-visualstudio\Irrlicht.lib</ImportLibrary>
       <Version>1.8</Version>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
@@ -392,6 +399,13 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\Win64-visualstudio\Irrlicht.lib</ImportLibrary>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -433,6 +447,13 @@
       <ImportLibrary>..\..\lib\Win32-visualstudio\Irrlicht.lib</ImportLibrary>
       <Version>1.8</Version>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -471,6 +492,13 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\Win64-visualstudio\Irrlicht.lib</ImportLibrary>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|Win32'">
     <Midl>
@@ -519,6 +547,13 @@
       <SubSystem>Windows</SubSystem>
       <Version>1.8</Version>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release - Fast FPU|x64'">
     <Midl>
@@ -563,6 +598,13 @@
       <ImportLibrary>..\..\lib\Win64-visualstudio\Irrlicht.lib</ImportLibrary>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Debug|Win32'">
     <Midl>
@@ -593,6 +635,13 @@
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\lib\Win32-visualstudio\Irrlicht.lib</OutputFile>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Debug|x64'">
     <Midl>
@@ -622,6 +671,13 @@
       <OutputFile>..\..\lib\Win64-visualstudio\Irrlicht.lib</OutputFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|Win32'">
     <Midl>
@@ -657,6 +713,13 @@
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\lib\Win32-visualstudio\Irrlicht.lib</OutputFile>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Release|x64'">
     <Midl>
@@ -691,6 +754,13 @@
       <OutputFile>..\..\lib\Win64-visualstudio\Irrlicht.lib</OutputFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Release - Fast FPU|Win32'">
     <Midl>
@@ -731,6 +801,13 @@
       <OutputFile>..\..\lib\Win32-visualstudio\Irrlicht.lib</OutputFile>
       <TargetMachine>MachineX86</TargetMachine>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static lib - Release - Fast FPU|x64'">
     <Midl>
@@ -769,6 +846,13 @@
       <OutputFile>..\..\lib\Win64-visualstudio\Irrlicht.lib</OutputFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SDL-Debug|Win32'">
     <Midl>
@@ -810,6 +894,13 @@
       <ImportLibrary>..\..\lib\Win32-visualstudio\Irrlicht.lib</ImportLibrary>
       <Version>1.8</Version>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x86\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SDL-Debug|x64'">
     <Midl>
@@ -847,6 +938,13 @@
       </DataExecutionPrevention>
       <ImportLibrary>..\..\lib\Win64-visualstudio\Irrlicht.lib</ImportLibrary>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy “$(WindowsSdkDir)redist\d3d\x64\D3DCompile*.DLL” “$(TargetDir)”</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\EDriverFeatures.h" />
@@ -902,7 +1000,6 @@
     <ClInclude Include="..\..\include\position2d.h" />
     <ClInclude Include="..\..\include\quaternion.h" />
     <ClInclude Include="..\..\include\rect.h" />
-    <ClInclude Include="..\..\include\SVertexElement.h" />
     <ClInclude Include="..\..\include\triangle3d.h" />
     <ClInclude Include="..\..\include\vector2d.h" />
     <ClInclude Include="..\..\include\vector3d.h" />
@@ -1014,7 +1111,7 @@
     <ClInclude Include="CD3D11NormalMapRenderer.h" />
     <ClInclude Include="CD3D11ParallaxMapRenderer.h" />
     <ClInclude Include="CD3D11Texture.h" />
-    <ClInclude Include="CD3D11VertexDeclaration.h" />
+    <ClInclude Include="CD3D11VertexDescriptor.h" />
     <ClInclude Include="CD3D9CgMaterialRenderer.h" />
     <ClInclude Include="CDefaultSceneNodeAnimatorFactory.h" />
     <ClInclude Include="CDefaultSceneNodeFactory.h" />
@@ -1274,7 +1371,7 @@
     <ClCompile Include="CD3D11NormalMapRenderer.cpp" />
     <ClCompile Include="CD3D11ParallaxMapRenderer.cpp" />
     <ClCompile Include="CD3D11Texture.cpp" />
-    <ClCompile Include="CD3D11VertexDeclaration.cpp" />
+    <ClCompile Include="CD3D11VertexDescriptor.cpp" />
     <ClCompile Include="CD3D9CgMaterialRenderer.cpp" />
     <ClCompile Include="CDefaultSceneNodeAnimatorFactory.cpp" />
     <ClCompile Include="CDefaultSceneNodeFactory.cpp" />

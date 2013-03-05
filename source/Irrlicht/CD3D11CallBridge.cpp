@@ -3,9 +3,9 @@
 #ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
 
 #include "os.h"
-#include "CD3D11VertexDeclaration.h"
 #include "CD3D11Driver.h"
 #include "CD3D11Texture.h"
+#include "CD3D11VertexDescriptor.h"
 
 #include <d3d11.h>
 
@@ -17,7 +17,7 @@ namespace video
 CD3D11CallBridge::CD3D11CallBridge(ID3D11Device* device, CD3D11Driver* driver)
 	: Context(NULL), Device(device), Driver(driver), InputLayout(NULL),
 	VsShader(NULL), PsShader(NULL), GsShader(NULL), HsShader(NULL), DsShader(NULL), CsShader(NULL),
-	Topology(D3D_PRIMITIVE_TOPOLOGY_UNDEFINED), VType(EVT_STANDARD), Renderer(NULL)
+	Topology(D3D_PRIMITIVE_TOPOLOGY_UNDEFINED), VtxDescriptor(NULL), ShaderByteCode(NULL), ShaderByteCodeSize(0)
 {
 	if (Device)
 	{
@@ -71,15 +71,15 @@ CD3D11CallBridge::~CD3D11CallBridge()
 	}
 	SamplerMap.clear();
 
-	// clear vertex declarations
-	core::map<E_VERTEX_TYPE, CD3D11VertexDeclaration*>::Iterator it = DeclarationMap.getIterator();
-	while(!it.atEnd())
+	// release input states
+	core::map<u32, ID3D11InputLayout*>::Iterator layIt = LayoutMap.getIterator();
+	while (!layIt.atEnd())
 	{
-		if(it->getValue())
-			it->getValue()->drop();
-		it++;
+		if (layIt->getValue()) 
+			layIt->getValue()->Release();
+		layIt++;
 	}
-	DeclarationMap.clear();
+	LayoutMap.clear();
 
 	if(Context)
 		Context->Release();
@@ -181,19 +181,21 @@ void CD3D11CallBridge::setDepthStencilState(const SD3D11_DEPTH_STENCIL_DESC& dep
 		ID3D11DepthStencilState* state = NULL;
 		core::map<SD3D11_DEPTH_STENCIL_DESC, ID3D11DepthStencilState*>::Node* dsIt = DepthStencilMap.find(DepthStencilDesc);
 
-		if (dsIt)
+		if(dsIt)
 		{
 			state = dsIt->getValue();
 		}
 		else	// if not found, create and insert into map
 		{
-			if (SUCCEEDED(Device->CreateDepthStencilState(&DepthStencilDesc, &state)))
+			HRESULT hr;
+			if(SUCCEEDED(hr = Device->CreateDepthStencilState(&DepthStencilDesc, &state)))
 			{
 				DepthStencilMap.insert(DepthStencilDesc, state);
 			}
 			else
 			{
-				os::Printer::log("Failed to create depth stencil state", ELL_ERROR);
+				logFormatError(hr, "Could not create depth stencil state");
+
 				return;
 			}
 		}
@@ -211,19 +213,21 @@ void CD3D11CallBridge::setRasterizerState(const SD3D11_RASTERIZER_DESC& rasteriz
 		// Rasterizer state
 		ID3D11RasterizerState* state = 0;
 		core::map<SD3D11_RASTERIZER_DESC, ID3D11RasterizerState*>::Node* rasIt = RasterizerMap.find(RasterizerDesc);
-		if (rasIt)
+		if(rasIt)
 		{
 			state = rasIt->getValue();
 		}
 		else	// if not found, create and insert into map
 		{
-			if (SUCCEEDED(Device->CreateRasterizerState(&RasterizerDesc, &state)))
+			HRESULT hr;
+			if(SUCCEEDED(hr = Device->CreateRasterizerState(&RasterizerDesc, &state)))
 			{
 				RasterizerMap.insert(RasterizerDesc, state);
 			}
 			else
 			{
-				os::Printer::log("Failed to create rasterizer state", ELL_ERROR);
+				logFormatError(hr, "Could not create rasterizer state");
+
 				return;
 			}
 		}
@@ -247,13 +251,15 @@ void CD3D11CallBridge::setBlendState(const SD3D11_BLEND_DESC& blendDesc)
 		}
 		else	// if not found, create and insert into map
 		{
-			if (SUCCEEDED(Device->CreateBlendState(&BlendDesc, &state)))
+			HRESULT hr;
+			if(SUCCEEDED(hr = Device->CreateBlendState(&BlendDesc, &state)))
 			{
 				BlendMap.insert( BlendDesc, state );
 			}
 			else
 			{
-				os::Printer::log("Failed to create blend state", ELL_ERROR);
+				logFormatError(hr, "Could not create blend state");
+
 				return;
 			}
 		}
@@ -308,38 +314,51 @@ void CD3D11CallBridge::setPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY topology)
 	}
 }
 
-void CD3D11CallBridge::setInputLayout(E_VERTEX_TYPE vType, IMaterialRenderer* renderer)
+void CD3D11CallBridge::setInputLayout(IVertexDescriptor* vtxDescriptor, IMaterialRenderer* r)
 {
-	if(VType != vType || Renderer != renderer)
+	CD3D11MaterialRenderer* renderer = (CD3D11MaterialRenderer*)r;
+
+	if(VtxDescriptor != vtxDescriptor || renderer->getShaderByteCode() != ShaderByteCode || renderer->getShaderByteCodeSize() != ShaderByteCodeSize)
 	{
-		VType = vType;
-		Renderer = renderer;
+		VtxDescriptor = vtxDescriptor;
+		ShaderByteCode = renderer->getShaderByteCode();
+		ShaderByteCodeSize = renderer->getShaderByteCodeSize();
 
-		core::map<E_VERTEX_TYPE, CD3D11VertexDeclaration*>::Node* declNode = DeclarationMap.find(VType);
-		if (declNode)
+		ID3D11InputLayout* state = NULL;
+		
+		u32 signature = reinterpret_cast<u32>(renderer->getShaderByteCode());
+
+		core::map<u32, ID3D11InputLayout*>::Node* layIt = LayoutMap.find(signature);
+		if(layIt)
 		{
-			Context->IASetInputLayout(declNode->getValue()->getInputLayout(Renderer));
+			state = layIt->getValue();
 		}
+		else	// if not found, create and insert into layout
+		{
+			core::array<D3D11_INPUT_ELEMENT_DESC>& inputLayoutDesc = ((CD3D11VertexDescriptor*)VtxDescriptor)->getInputLayoutDescription();
+
+			HRESULT hr;
+			if (SUCCEEDED(hr = Device->CreateInputLayout(inputLayoutDesc.pointer(), inputLayoutDesc.size(),
+				renderer->getShaderByteCode(), renderer->getShaderByteCodeSize(), &state)))
+			{
+				LayoutMap.insert(signature, state);
+			}
+			else
+			{
+				logFormatError(hr, "Could not create input layout");
+
+				return;
+			}
+		}
+
+		Context->IASetInputLayout(state);
 	}
-}
-
-E_VERTEX_TYPE CD3D11CallBridge::registerVertexType(core::array<SVertexElement>& elements)
-{
-	CD3D11VertexDeclaration* decl = new CD3D11VertexDeclaration(Driver, elements, (E_VERTEX_TYPE)DeclarationMap.size());
-	DeclarationMap.insert(decl->getType(), decl);
-
-	return decl->getType();
-}
-
-core::map<E_VERTEX_TYPE, CD3D11VertexDeclaration*>::Node* CD3D11CallBridge::getDeclarationNode(E_VERTEX_TYPE vType)
-{
-	return DeclarationMap.find(vType);
 }
 
 ID3D11SamplerState* CD3D11CallBridge::getSamplerState(u32 idx)
 {
 	// Depth stencil state
-	ID3D11SamplerState* state = 0;
+	ID3D11SamplerState* state = NULL;
 	core::map<SD3D11_SAMPLER_DESC, ID3D11SamplerState*>::Node* samIt = SamplerMap.find( SamplerDesc[idx] );
 	if (samIt)
 	{
@@ -347,17 +366,36 @@ ID3D11SamplerState* CD3D11CallBridge::getSamplerState(u32 idx)
 	}
 	else	// if not found, create and insert into map
 	{
-		if (SUCCEEDED(Device->CreateSamplerState( &SamplerDesc[idx], &state )))
+		HRESULT hr;
+		if (SUCCEEDED(hr = Device->CreateSamplerState( &SamplerDesc[idx], &state )))
 		{
 			SamplerMap.insert( SamplerDesc[idx], state );
 		}
 		else
 		{
-			os::Printer::log("Failed to create sampler state", ELL_ERROR);
+			logFormatError(hr, "Could not create sampler state");
+
+			return NULL;
 		}
 	}
 
 	return state;
+}
+
+void CD3D11CallBridge::setViewPort( const core::rect<s32>& vp )
+{
+	if(ViewPort != vp)
+	{
+		D3D11_VIEWPORT viewPort;
+		viewPort.TopLeftX = (FLOAT)vp.UpperLeftCorner.X;
+		viewPort.TopLeftY = (FLOAT)vp.UpperLeftCorner.Y;
+		viewPort.Width = (FLOAT)vp.getWidth();
+		viewPort.Height = (FLOAT)vp.getHeight();
+		viewPort.MinDepth = 0.0f;
+		viewPort.MaxDepth = 1.0f;
+
+		Context->RSSetViewports( 1, &viewPort );
+	}
 }
 
 }

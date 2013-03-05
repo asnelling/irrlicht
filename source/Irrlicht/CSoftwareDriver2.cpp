@@ -365,6 +365,8 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	DriverAttributes->setAttribute("MaxTextureLODBias", 16.f);
 	DriverAttributes->setAttribute("Version", 47);
 
+	createVertexDescriptors();
+
 	// create triangle renderers
 
 	irr::memset32 ( BurningShader, 0, sizeof ( BurningShader ) );

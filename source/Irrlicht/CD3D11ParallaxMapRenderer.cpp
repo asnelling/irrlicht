@@ -43,8 +43,8 @@ namespace video
 		"	float3 norm		: NORMAL;\n"\
 		"	float4 color	: COLOR;\n"\
 		"	float2 tex0		: TEXCOORD0;\n"\
-		"	float3 tangent	: TEXCOORD1;\n"\
-		"	float3 binormal : TEXCOORD2;\n"\
+		"	float3 tangent	: TANGENT;\n"\
+		"	float3 binormal : BINORMAL;\n"\
 		"};\n"\
 		"\n"\
 		"struct PS_INPUT\n"\

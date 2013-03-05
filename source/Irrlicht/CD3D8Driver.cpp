@@ -369,6 +369,8 @@ bool CD3D8Driver::initDriver(HWND hwnd, bool pureSoftware)
 		Params.Stencilbuffer = false;
 	}
 
+	createVertexDescriptors();
+
 	// set default vertex shader
 	setVertexShader(EVT_STANDARD);
 

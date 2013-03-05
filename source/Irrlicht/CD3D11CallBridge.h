@@ -180,7 +180,7 @@ struct SD3D11_SAMPLER_DESC : public D3D11_SAMPLER_DESC
 
 class CD3D11VertexDeclaration;
 class CD3D11Driver;
-struct SVertexElement;
+class IVertexDescriptor;
 
 //! This bridge between Irlicht pseudo DX calls and true DX calls.
 class CD3D11CallBridge
@@ -202,12 +202,11 @@ public:
 
 	void setShaderResources(SD3D11_SAMPLER_DESC SamplerDesc[MATERIAL_MAX_TEXTURES], ITexture* shaderViews[MATERIAL_MAX_TEXTURES]);
 	void setPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY top);
-	void setInputLayout(E_VERTEX_TYPE vType, IMaterialRenderer* renderer);
+	void setInputLayout(IVertexDescriptor* vtxDescriptor, IMaterialRenderer* r);
 
-	E_VERTEX_TYPE registerVertexType(core::array<SVertexElement>& elements);
-	core::map<E_VERTEX_TYPE, CD3D11VertexDeclaration*>::Node* getDeclarationNode(E_VERTEX_TYPE vType);
-	
 	ID3D11SamplerState* getSamplerState(u32 idx);
+
+	void setViewPort( const core::rect<s32>& vp );
 
 private:
 	ID3D11DeviceContext* Context;
@@ -239,10 +238,12 @@ private:
 
 	D3D11_PRIMITIVE_TOPOLOGY Topology;
 
-	E_VERTEX_TYPE VType;
-	IMaterialRenderer* Renderer;
+	IVertexDescriptor* VtxDescriptor;
+	core::map<u32, ID3D11InputLayout*> LayoutMap;
+	void* ShaderByteCode;
+	u32 ShaderByteCodeSize;
 
-	core::map<E_VERTEX_TYPE, CD3D11VertexDeclaration*> DeclarationMap;
+	core::rect<s32> ViewPort;
 };
 
 }

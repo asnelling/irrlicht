@@ -110,7 +110,7 @@ private:
 	bool IsRenderTarget;
 
 	//! creates hardware render target
-	void createRenderTarget(const ECOLOR_FORMAT format = ECF_UNKNOWN);
+	void createRenderTarget(const ECOLOR_FORMAT format);
 
 	//! creates the hardware texture
 	bool createTexture(u32 flags, IImage * image);

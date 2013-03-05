@@ -107,27 +107,6 @@ CNullDriver::CNullDriver(io::IFileSystem* io, const core::dimension2d<u32>& scre
 //	DriverAttributes->addInt("ShaderLanguageVersion", 0);
 //	DriverAttributes->addInt("AntiAlias", 0);
 
-	addVertexDescriptor("standard");
-	VertexDescriptor[0]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
-	VertexDescriptor[0]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
-	VertexDescriptor[0]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
-	VertexDescriptor[0]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
-
-	addVertexDescriptor("2tcoords");
-	VertexDescriptor[1]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
-	VertexDescriptor[1]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
-	VertexDescriptor[1]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
-	VertexDescriptor[1]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
-	VertexDescriptor[1]->addAttribute("inTexCoord1", 2, EVAS_TEXCOORD1, EVAT_FLOAT);
-
-	addVertexDescriptor("tangents");
-	VertexDescriptor[2]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
-	VertexDescriptor[2]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
-	VertexDescriptor[2]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
-	VertexDescriptor[2]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
-	VertexDescriptor[2]->addAttribute("inTangent", 3, EVAS_TANGENT, EVAT_FLOAT);
-	VertexDescriptor[2]->addAttribute("inBinormal", 3, EVAS_BINORMAL, EVAT_FLOAT);
-
 	setFog();
 
 	setTextureCreationFlag(ETCF_ALWAYS_32_BIT, true);
@@ -252,10 +231,46 @@ CNullDriver::~CNullDriver()
 	// delete hardware mesh buffers
 	removeAllHardwareBuffers();
 
-	for(i=0; i < VertexDescriptor.size(); ++i)
-		VertexDescriptor[i]->drop();
+	deleteVertexDescriptors();
 }
 
+void CNullDriver::deleteVertexDescriptors()
+{
+	const u32 size = VertexDescriptor.size();
+
+	for(u32 i = 0; i < size; ++i)
+		VertexDescriptor[i]->drop();
+
+	VertexDescriptor.clear();
+}
+
+bool CNullDriver::createVertexDescriptors()
+{
+	deleteVertexDescriptors();
+
+	addVertexDescriptor("standard");
+	VertexDescriptor[0]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
+	VertexDescriptor[0]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
+	VertexDescriptor[0]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
+	VertexDescriptor[0]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
+
+	addVertexDescriptor("2tcoords");
+	VertexDescriptor[1]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
+	VertexDescriptor[1]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
+	VertexDescriptor[1]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
+	VertexDescriptor[1]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
+	VertexDescriptor[1]->addAttribute("inTexCoord1", 2, EVAS_TEXCOORD1, EVAT_FLOAT);
+
+	addVertexDescriptor("tangents");
+	VertexDescriptor[2]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
+	VertexDescriptor[2]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inTangent", 3, EVAS_TANGENT, EVAT_FLOAT);
+	VertexDescriptor[2]->addAttribute("inBinormal", 3, EVAS_BINORMAL, EVAT_FLOAT);
+
+	return true;
+}
 
 //! Adds an external surface loader to the engine.
 void CNullDriver::addExternalImageLoader(IImageLoader* loader)
@@ -2689,7 +2704,6 @@ void CNullDriver::convertColor(const void* sP, ECOLOR_FORMAT sF, s32 sN,
 {
 	video::CColorConverter::convert_viaFormat(sP, sF, sN, dP, dF);
 }
-
 
 } // end namespace
 } // end namespace

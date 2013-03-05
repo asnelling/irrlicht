@@ -25,6 +25,8 @@ namespace irr
 {
 namespace video
 {
+	inline void logFormatError(HRESULT hr, irr::core::stringc msg);
+
 	class CD3D11VertexDeclaration;
 
 	struct SDepthSurface11 : public IReferenceCounted
@@ -116,9 +118,9 @@ namespace video
 		//! gets the area of the current viewport
 		virtual const core::rect<s32>& getViewPort() const;
 
-		struct SHWBufferLink_d3d11 : public SHWBufferLink
+		struct SD3D11HwBufferLink : public SHWBufferLink
 		{
-			SHWBufferLink_d3d11(const scene::IMeshBuffer *_MeshBuffer):
+			SD3D11HwBufferLink(const scene::IMeshBuffer *_MeshBuffer):
 				SHWBufferLink(_MeshBuffer),
 					vertexBuffer(0), indexBuffer(0),
 					vertexBufferSize(0), vertexBufferSize2(0), indexBufferSize(0) {}
@@ -131,9 +133,9 @@ namespace video
             u32 indexBufferSize;
  		};
 
-		bool updateVertexHardwareBuffer(SHWBufferLink_d3d11 *HWBuffer);
+		bool updateVertexHardwareBuffer(SD3D11HwBufferLink *HWBuffer);
 
-		bool updateIndexHardwareBuffer(SHWBufferLink_d3d11 *HWBuffer);
+		bool updateIndexHardwareBuffer(SD3D11HwBufferLink *HWBuffer);
 
 		//! updates hardware buffer if needed
 		virtual bool updateHardwareBuffer(SHWBufferLink *HWBuffer);
@@ -149,7 +151,7 @@ namespace video
 		virtual bool isHardwareBufferRecommend(const scene::IMeshBuffer* mb) { return true; }
 
 		//! Draw hardware buffer
-		virtual void drawHardwareBuffer(SHWBufferLink *HWBuffer);
+		virtual void drawHardwareBuffer(SHWBufferLink* buffer);
 
 		//! draw
 		virtual void drawHardwareBuffer(IHardwareBuffer* vertices,
@@ -157,18 +159,9 @@ namespace video
 				scene::E_PRIMITIVE_TYPE pType=scene::EPT_TRIANGLES,
 				E_INDEX_TYPE iType=EIT_16BIT, u32 numInstances = 0);
 
-		//! Draw automatically using stream output buffers
-		virtual void drawAuto(IHardwareBuffer* vertices, E_VERTEX_TYPE vType = EVT_STANDARD, 
-				scene::E_PRIMITIVE_TYPE pType = scene::EPT_TRIANGLES);
-
-		void drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
+		virtual void drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
 				bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
 
-		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indices, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType);
-		
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
 				const void* indices, u32 primitiveCount,
@@ -378,8 +371,6 @@ namespace video
 
 		bool isHardware() const { return DriverType == D3D_DRIVER_TYPE_HARDWARE; }
 
-		CD3D11VertexDeclaration* getVertexDeclaration(E_VERTEX_TYPE vType) const;
-
 		// Return references to state descriptions for material renderers
 		D3D11_BLEND_DESC& getBlendDesc() { return BlendDesc; }
 		D3D11_RASTERIZER_DESC& getRasterizerDesc() { return RasterizerDesc; }
@@ -509,9 +500,9 @@ namespace video
 
 		void createMaterialRenderers();
 
-		void draw2D3DVertexPrimitiveList(const void* vertices, u32 vertexCount, 
-			const void* indices, u32 primitiveCount,
-			E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType, bool is3D);
+		void draw2D3DVertexPrimitiveList(const void* vertices, u32 vertexCount, u32 pVertexSize, 
+			const void* indices, u32 primitiveCount, E_VERTEX_TYPE vType, 
+			scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType, bool is3D);
 
 		D3D11_TEXTURE_ADDRESS_MODE getTextureWrapMode(const u8 clamp);
 
@@ -557,6 +548,8 @@ namespace video
 		void reset();
 
 		bool disableTextures( u32 fromStage = 0);
+
+		virtual bool addVertexDescriptor(const core::stringc& pName);
 	};
 
 }

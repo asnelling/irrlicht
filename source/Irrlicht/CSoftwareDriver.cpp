@@ -44,6 +44,7 @@ CSoftwareDriver::CSoftwareDriver(const core::dimension2d<u32>& windowSize, bool 
 	DriverAttributes->setAttribute("MaxTextureSize", 1024);
 	DriverAttributes->setAttribute("Version", 1);
 
+	createVertexDescriptors();
 	// create triangle renderers
 
 	TriangleRenderers[ETR_FLAT] = createTriangleRendererFlat(ZBuffer);

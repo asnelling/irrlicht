@@ -108,8 +108,8 @@ namespace video
 		"	float3 norm		: NORMAL;\n"\
 		"	float4 color	: COLOR;\n"\
 		"	float2 tex0		: TEXCOORD0;\n"\
-		"	float3 tangent	: TEXCOORD1;\n"\
-		"	float3 binormal : TEXCOORD2;\n"\
+		"	float3 tangent	: TANGENT;\n"\
+		"	float3 binormal : BINORMAL;\n"\
 		"};\n"\
 		"\n"\
 		"struct VS_OUTPUT\n"\
@@ -263,22 +263,24 @@ namespace video
 		"\n"\
 		"	if(!enableFog)\n"\
 		"		return fogCoeff;\n"\
-		"\n"\
-		"	[branch]\n"\
-		"	switch( fogMode )\n"\
+		"	else\n"\
 		"	{\n"\
-		"	case FOGMODE_LINEAR:\n"\
-		"		fogCoeff = (fogEnd - d)/(fogEnd - fogStart);\n"\
-		"		break;\n"\
-		"	case FOGMODE_EXP:\n"\
-		"		fogCoeff = 1.0 / pow( E, d*fogDensity );\n"\
-		"		break;\n"\
-		"	case FOGMODE_EXP2:\n"\
-		"		fogCoeff = 1.0 / pow( E, d*d*fogDensity*fogDensity );\n"\
-		"		break;\n"\
-		"	};\n"\
+		"		[branch]\n"\
+		"		switch( fogMode )\n"\
+		"		{\n"\
+		"		case FOGMODE_LINEAR:\n"\
+		"			fogCoeff = (fogEnd - d)/(fogEnd - fogStart);\n"\
+		"			break;\n"\
+		"		case FOGMODE_EXP:\n"\
+		"			fogCoeff = 1.0 / pow( E, d*fogDensity );\n"\
+		"			break;\n"\
+		"		case FOGMODE_EXP2:\n"\
+		"			fogCoeff = 1.0 / pow( E, d*d*fogDensity*fogDensity );\n"\
+		"			break;\n"\
+		"		};\n"\
 		"\n"\
-		"    return clamp( fogCoeff, 0, 1 );\n"\
+		"		return clamp( fogCoeff, 0, 1 );\n"\
+		"	}\n"\
 		"}\n"\
 		"\n"\
 		"// adding vertex shader code\n"\

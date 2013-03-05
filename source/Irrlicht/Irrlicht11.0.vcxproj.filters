@@ -1318,14 +1318,8 @@
     <ClInclude Include="CD3D11Texture.h">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClInclude>
-    <ClInclude Include="CD3D11VertexDeclaration.h">
-      <Filter>Irrlicht\video\Direct3D11</Filter>
-    </ClInclude>
     <ClInclude Include="CD3D11ParallaxMapRenderer.h">
       <Filter>Irrlicht\video\Direct3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SVertexElement.h">
-      <Filter>include\video</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\IHardwareBuffer.h">
       <Filter>include\video</Filter>
@@ -1334,6 +1328,9 @@
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClInclude>
     <ClInclude Include="CD3D11CallBridge.h">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="CD3D11VertexDescriptor.h">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClInclude>
   </ItemGroup>
@@ -2288,9 +2285,6 @@
     <ClCompile Include="CD3D11Texture.cpp">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClCompile>
-    <ClCompile Include="CD3D11VertexDeclaration.cpp">
-      <Filter>Irrlicht\video\Direct3D11</Filter>
-    </ClCompile>
     <ClCompile Include="CD3D11ParallaxMapRenderer.cpp">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClCompile>
@@ -2301,6 +2295,9 @@
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClCompile>
     <ClCompile Include="CD3D11CallBridge.cpp">
+      <Filter>Irrlicht\video\Direct3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="CD3D11VertexDescriptor.cpp">
       <Filter>Irrlicht\video\Direct3D11</Filter>
     </ClCompile>
   </ItemGroup>

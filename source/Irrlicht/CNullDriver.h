@@ -55,6 +55,8 @@ namespace video
 
 		virtual bool endScene();
 
+		virtual bool createVertexDescriptors();
+
 		//! Disable a feature of the driver.
 		virtual void disableFeature(E_VIDEO_DRIVER_FEATURE feature, bool flag=true);
 
@@ -695,6 +697,9 @@ namespace video
 		//! deletes all material renderers
 		void deleteMaterialRenders();
 
+		//! deletes all vertex descriptors
+		void deleteVertexDescriptors();
+
 		// prints renderer version
 		void printVersion();
 
@@ -714,7 +719,7 @@ namespace video
 
 			return (f32) getAverage ( p[(y * pitch) + x] );
 		}
-
+	
 		struct SSurface
 		{
 			video::ITexture* Surface;

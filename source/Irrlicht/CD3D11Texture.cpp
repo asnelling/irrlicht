@@ -88,7 +88,7 @@ CD3D11Texture::CD3D11Texture(IImage* image, CD3D11Driver* driver,
 				regenerateMipMapLevels(mipmapData);
 		}
 		else
-			os::Printer::log("Could not create DIRECT3D11 Texture.", ELL_WARNING);
+			os::Printer::log("Could not create Direct3D11 Texture.", ELL_WARNING);
 	}
 }
 
@@ -190,7 +190,11 @@ void* CD3D11Texture::lock(bool readOnly, u32 mipmapLevel, u32 arraySlice)
 								&mappedData );								// mapped result
 	
 	if(FAILED(hr))
-		return 0;
+	{
+		logFormatError(hr, "Could not map texture buffer");
+
+		return NULL;
+	}
 
 	Pitch = mappedData.RowPitch;
 
@@ -346,12 +350,7 @@ void CD3D11Texture::createRenderTarget(const ECOLOR_FORMAT format)
 	hr = Device->CreateTexture2D( &desc, NULL, &Texture );
 	if (FAILED(hr))
 	{
-		if (E_INVALIDARG == hr)
-			os::Printer::log("Could not create render target texture", "Invalid Arguments");
-		else if (E_OUTOFMEMORY == hr)
-			os::Printer::log("Could not create render target texture", "Out of Video Memory");
-		else
-			os::Printer::log("Could not create render target texture");
+		logFormatError(hr, "Could not create render target texture");
 
 		return;
 	}
@@ -483,12 +482,7 @@ bool CD3D11Texture::createTexture(u32 flags, IImage* image)
 	hr = Device->CreateTexture2D( &desc, NULL, &Texture );
 	if (FAILED(hr))
 	{
-		if (E_INVALIDARG == hr)
-			os::Printer::log("Could not create texture", "Invalid Arguments");
-		else if (E_OUTOFMEMORY == hr)
-			os::Printer::log("Could not create texture", "Out of Video Memory");
-		else
-			os::Printer::log("Could not create texture");
+		logFormatError(hr, "Could not create texture");
 
 		return false;
 	}
@@ -542,7 +536,8 @@ bool CD3D11Texture::createTextureBuffer()
 	HRESULT hr = Device->CreateTexture2D( &desc, NULL, &TextureBuffer );
 	if (FAILED(hr))
 	{
-		os::Printer::log("Error creating texture buffer", ELL_ERROR);
+		logFormatError(hr, "Could not create texture buffer");
+
 		return false;
 	}
 
@@ -597,7 +592,8 @@ bool CD3D11Texture::createViews()
 		hr = Device->CreateRenderTargetView( Texture, &rtvDesc, &RTView );
 		if (FAILED(hr))
 		{
-			os::Printer::log("Could not create render target view", ELL_ERROR);
+			logFormatError(hr, "Could not create render target view");
+
 			return false;
 		}
 	}
@@ -638,7 +634,8 @@ bool CD3D11Texture::createViews()
 	hr = Device->CreateShaderResourceView( Texture, &srvDesc, &SRView );
 	if (FAILED(hr))
 	{
-		os::Printer::log("Could not create shader resource view", ELL_ERROR);
+		logFormatError(hr, "Could not create shader resource view");
+
 		return false;
 	}
 

@@ -788,33 +788,8 @@ COpenGLDriver::~COpenGLDriver()
 
 bool COpenGLDriver::genericDriverInit()
 {
-	// Create opengl vertex descriptors for built-in vertex structures.
-
-	for(u32 i=0; i < VertexDescriptor.size(); ++i)
-		VertexDescriptor[i]->drop();
-
-	VertexDescriptor.clear();
-
-	addVertexDescriptor("standard");
-	VertexDescriptor[0]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
-	VertexDescriptor[0]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
-	VertexDescriptor[0]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
-	VertexDescriptor[0]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
-
-	addVertexDescriptor("2tcoords");
-	VertexDescriptor[1]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
-	VertexDescriptor[1]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
-	VertexDescriptor[1]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
-	VertexDescriptor[1]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
-	VertexDescriptor[1]->addAttribute("inTexCoord1", 2, EVAS_TEXCOORD1, EVAT_FLOAT);
-
-	addVertexDescriptor("tangents");
-	VertexDescriptor[2]->addAttribute("inPosition", 3, EVAS_POSITION, EVAT_FLOAT);
-	VertexDescriptor[2]->addAttribute("inNormal", 3, EVAS_NORMAL, EVAT_FLOAT);
-	VertexDescriptor[2]->addAttribute("inColor", 4, EVAS_COLOR, EVAT_UBYTE);
-	VertexDescriptor[2]->addAttribute("inTexCoord0", 2, EVAS_TEXCOORD0, EVAT_FLOAT);
-	VertexDescriptor[2]->addAttribute("inTangent", 3, EVAS_TANGENT, EVAT_FLOAT);
-	VertexDescriptor[2]->addAttribute("inBinormal", 3, EVAS_BINORMAL, EVAT_FLOAT);
+	// init creates vertex descriptors based on the driver for built-in vertex structures.
+	createVertexDescriptors();
 
 	// Create driver.
 

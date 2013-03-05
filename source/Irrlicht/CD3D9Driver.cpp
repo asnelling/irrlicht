@@ -424,10 +424,12 @@ bool CD3D9Driver::initDriver(HWND hwnd, bool pureSoftware)
 	}
 
 	// Create built-in vertex elements.
-	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
-	{
+	createVertexDescriptors();
+
+	const u32 size = VertexDescriptor.size();
+
+	for(u32 i = 0; i < size; ++i)
 		addD3DVertexDescriptor(VertexDescriptor[i]);
-	}
 
 	D3DVERTEXELEMENT9 ShadowVertexElement[] =
 	{
@@ -3601,18 +3603,6 @@ void CD3D9Driver::removeDepthSurface(SDepthSurface* depth)
 core::dimension2du CD3D9Driver::getMaxTextureSize() const
 {
 	return core::dimension2du(Caps.MaxTextureWidth, Caps.MaxTextureHeight);
-}
-
-bool CD3D9Driver::addVertexDescriptor(const core::stringc& pName)
-{
-	if(CNullDriver::addVertexDescriptor(pName))
-	{
-		addD3DVertexDescriptor(VertexDescriptor[VertexDescriptor.size()]);
-
-		return true;
-	}
-
-	return false;
 }
 
 bool CD3D9Driver::addD3DVertexDescriptor(IVertexDescriptor* pDescriptor)

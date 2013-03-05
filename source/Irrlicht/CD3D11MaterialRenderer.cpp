@@ -8,7 +8,6 @@
 #define _IRR_DONT_DO_MEMORY_DEBUGGING_HERE
 
 #include "CD3D11MaterialRenderer.h"
-#include "CD3D11VertexDeclaration.h"
 #include "IShaderConstantSetCallBack.h"
 #include "IVideoDriver.h"
 #include "os.h"
@@ -184,7 +183,7 @@ bool CD3D11MaterialRenderer::createShader(const char* code,
 	if(!code)
 		return true;
 
-	HRESULT result = 0;
+	HRESULT hr = 0;
 	ID3D10Blob* shaderBuffer = 0;
 
 	if(!stubD3DXCompileShader(code, strlen(code), "", NULL, includer, entryPointName, targetName, flags, 0, &shaderBuffer))
@@ -200,74 +199,57 @@ bool CD3D11MaterialRenderer::createShader(const char* code,
 	{
 	case EST_VERTEX_SHADER:
 		vsShader = s;
-		result = Device->CreateVertexShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11VertexShader**)(&vsShader->shader));
+		hr = Device->CreateVertexShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11VertexShader**)(&vsShader->shader));
 		break;
 	case EST_PIXEL_SHADER:
 		psShader = s;
-		result = Device->CreatePixelShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11PixelShader**)(&psShader->shader));
+		hr = Device->CreatePixelShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11PixelShader**)(&psShader->shader));
 		break;
 	case EST_GEOMETRY_SHADER:
 		gsShader = s;
-		result = Device->CreateGeometryShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11GeometryShader**)(&gsShader->shader));
+		hr = Device->CreateGeometryShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11GeometryShader**)(&gsShader->shader));
 		break;
 	case EST_DOMAIN_SHADER:
 		dsShader = s;
-		result = Device->CreateDomainShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11DomainShader**)(&dsShader->shader));
+		hr = Device->CreateDomainShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11DomainShader**)(&dsShader->shader));
 		break;
 	case EST_HULL_SHADER:
 		hsShader = s;
-		result = Device->CreateHullShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11HullShader**)(&hsShader->shader));
+		hr = Device->CreateHullShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11HullShader**)(&hsShader->shader));
 		break;
 	case EST_COMPUTE_SHADER:
 		csShader = s;
-		result = Device->CreateComputeShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11ComputeShader**)(&csShader->shader));
+		hr = Device->CreateComputeShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11ComputeShader**)(&csShader->shader));
 		break;
 	}
 
-	if(FAILED(result))
+	if(FAILED(hr))
 	{
-		LPTSTR errorText = NULL;
-		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL,
-			result,
-			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			(LPTSTR)&errorText,
-			0,
-			NULL);
+		core::stringc errorMsg = "Could not create ";
 
-		if ( NULL != errorText )
+		switch(type)
 		{
-			core::stringc errorMsg = "Could not create ";
-
-			switch(type)
-			{
-			case EST_VERTEX_SHADER:
-				errorMsg += "vertexshader: ";
-				break;
-			case EST_PIXEL_SHADER:
-				errorMsg += "pixelshader: ";
-				break;
-			case EST_GEOMETRY_SHADER:
-				errorMsg += "geometryshader: ";
-				break;
-			case EST_DOMAIN_SHADER:
-				errorMsg += "domainshader: ";
-				break;
-			case EST_HULL_SHADER:
-				errorMsg += "hullshader: ";
-				break;
-			case EST_COMPUTE_SHADER:
-				errorMsg += "computeshader: ";
-				break;
-			}
-
-			errorMsg += errorText;
-			os::Printer::log(errorMsg.c_str(), ELL_ERROR);
-
-			// release memory allocated by FormatMessage()
-			LocalFree(errorText);
-			errorText = NULL;
+		case EST_VERTEX_SHADER:
+			errorMsg += "vertexshader";
+			break;
+		case EST_PIXEL_SHADER:
+			errorMsg += "pixelshader";
+			break;
+		case EST_GEOMETRY_SHADER:
+			errorMsg += "geometryshader";
+			break;
+		case EST_DOMAIN_SHADER:
+			errorMsg += "domainshader";
+			break;
+		case EST_HULL_SHADER:
+			errorMsg += "hullshader";
+			break;
+		case EST_COMPUTE_SHADER:
+			errorMsg += "computeshader";
+			break;
 		}
+
+		logFormatError(hr, errorMsg);
 
 		return false;
 	}
@@ -355,16 +337,23 @@ bool CD3D11MaterialRenderer::setVariable(s32 id, const f32* floats, int count, E
 
 	core::matrix4* m = NULL;
 	// if it is a matrix transpose it
-	if(var->classType == D3D10_SVC_MATRIX_COLUMNS)
+	switch(var->classType)
 	{
+	case D3D10_SVC_MATRIX_COLUMNS:
 		m = (core::matrix4*)floats;
 		*m = m->getTransposed();
+		break;
 	}
 
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 
-	if( FAILED( Context->Map(buff->data, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData ) ) )
+	HRESULT hr = Context->Map(buff->data, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+
+	if(FAILED(hr))
+	{
+		logFormatError(hr, "Could not map float variable in shader");
 		return false;
+	}
 
 	c8* byteData = (c8*)buff->cData;
 	
@@ -398,8 +387,13 @@ bool CD3D11MaterialRenderer::setVariable(s32 id, const s32* ints, int count, E_S
 
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 
-	if( FAILED( Context->Map(buff->data, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData ) ) )
+	HRESULT hr = Context->Map(buff->data, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+
+	if(FAILED(hr))
+	{
+		logFormatError(hr, "Could not map int variable in shader");
 		return false;
+	}
 
 	c8* byteData = (c8*)buff->cData;
 
@@ -422,8 +416,13 @@ bool CD3D11MaterialRenderer::setConstantBuffer( s32 id, const void* data, E_SHAD
 
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 
-	if( FAILED( Context->Map(buff->data, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData ) ) )
+	HRESULT hr = Context->Map(buff->data, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+
+	if(FAILED(hr))
+	{
+		logFormatError(hr, "Could not map constant buffer in shader");
 		return false;
+	}
 
 	memcpy(mappedData.pData, data, buff->size);
 
@@ -670,11 +669,12 @@ bool CD3D11MaterialRenderer::stubD3DXCompileShader(LPCVOID pSrcData, SIZE_T SrcD
 
 	ID3D10Blob* ppErrorMsgs = 0;
 
-	HRESULT result = (*pFn)(pSrcData, SrcDataSize, pSourceName, pDefines, pInclude, pEntrypoint, pTarget, Flags1, Flags2, ppCode, &ppErrorMsgs);
+	HRESULT hr = (*pFn)(pSrcData, SrcDataSize, pSourceName, pDefines, pInclude, pEntrypoint, pTarget, Flags1, Flags2, ppCode, &ppErrorMsgs);
 
-	if (FAILED(result))
+	if(FAILED(hr))
 	{
 		core::stringc errorMsg = "Could not compile shader";
+
 		if (ppErrorMsgs)
 		{
 			errorMsg += ": ";
@@ -682,7 +682,8 @@ bool CD3D11MaterialRenderer::stubD3DXCompileShader(LPCVOID pSrcData, SIZE_T SrcD
 
 			ppErrorMsgs->Release();
 		}
-		os::Printer::log(errorMsg.c_str(), ELL_ERROR);
+		
+		logFormatError(hr, errorMsg);
 
 		return false;
 	}
@@ -743,12 +744,12 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 
 	ID3D11ShaderReflection* pReflector = NULL; 
 
-	HRESULT result = (*pFn)(code->GetBufferPointer(), code->GetBufferSize(), 
+	HRESULT hr = (*pFn)(code->GetBufferPointer(), code->GetBufferSize(), 
 		IID_ID3D11ShaderReflection, (void**) &pReflector);
 
-	if(FAILED(result))
+	if(FAILED(hr))
 	{
-		os::Printer::log("Could not reflect constant buffer in shader.", ELL_ERROR);
+		logFormatError(hr, "Could not reflect constant buffer in shader");
 
 		return false;
 	}
@@ -824,11 +825,15 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 			cbDesc.StructureByteStride = 0;
 
 			// Create the buffer.
-			result = Device->CreateBuffer(&cbDesc, NULL, &sBuffer->data);
+			hr = Device->CreateBuffer(&cbDesc, NULL, &sBuffer->data);
 
-			if(FAILED(result))
+			if(FAILED(hr))
 			{
-				os::Printer::log("Could not create constant buffer", sBuffer->name, ELL_ERROR);
+				core::stringc error = "Could not create constant buffer \"";
+				error += sBuffer->name;
+				error += "\"";
+
+				logFormatError(hr, error);
 
 				delete sBuffer;
 

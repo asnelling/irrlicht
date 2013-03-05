@@ -85,7 +85,11 @@ namespace video
 
 	CVertexDescriptor::CVertexDescriptor(const core::stringc& name, u32 id) : ID(id), Name(name), VertexSize(0)
 	{
-		for(u32 i = 0; i < EVAS_CUSTOM+1; ++i)
+#ifdef _DEBUG
+		setDebugName("CVertexDescriptor");
+#endif
+
+		for(u32 i = 0; i < EVAS_COUNT; ++i)
 			AttributePointer[i] = -1;
 	}
 
@@ -197,7 +201,7 @@ namespace video
 
 		VertexSize = 0;
 
-		for(u32 i = 0; i < EVAS_CUSTOM+1; ++i)
+		for(u32 i = 0; i < EVAS_COUNT; ++i)
 			AttributePointer[i] = -1;
 	}
 }

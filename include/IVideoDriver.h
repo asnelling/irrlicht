@@ -21,7 +21,6 @@
 #include "SExposedVideoData.h"
 
 #include "IHardwareBuffer.h"
-#include "SVertexElement.h"
 
 namespace irr
 {
