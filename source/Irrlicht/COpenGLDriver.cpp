@@ -1659,6 +1659,39 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 		}
 	}*/
 
+	// Enable client states.
+
+	bool VertexState = false;
+	bool NormalState = false;
+	bool ColorState = false;
+	bool TexCoord0State = false;
+
+	for(u32 i = 0; i < vertexDescriptor->getAttributeCount() && i < 16; ++i)
+	{
+		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = vertexDescriptor->getAttribute(i)->getSemantic();
+
+		switch(semantic)
+		{
+		case EVAS_POSITION:
+			VertexState = true;
+			break;
+		case EVAS_NORMAL:
+			if ((pType!=scene::EPT_POINTS) && (pType!=scene::EPT_POINT_SPRITES))
+				NormalState = true;
+			break;
+		case EVAS_COLOR:
+			ColorState = true;
+			break;
+		case EVAS_TEXCOORD0:
+			TexCoord0State = true;
+			break;
+		default:
+			break;
+		}
+	}
+
+	BridgeCalls->setClientState(VertexState, NormalState, ColorState, TexCoord0State);
+
 	// Enable semantics and attributes.
 
 	GLuint glslProgram = getActiveGLSLProgram();
@@ -1700,8 +1733,6 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 		switch(semantic)
 		{
 		case EVAS_POSITION:
-			glEnableClientState(GL_VERTEX_ARRAY);
-
 			if(hardwareVertex)
 				glVertexPointer(vertexDescriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
 			else
@@ -1714,8 +1745,6 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 		case EVAS_NORMAL:
 			if((type != scene::EPT_POINTS) && (type != scene::EPT_POINT_SPRITES))
 			{
-				glEnableClientState(GL_NORMAL_ARRAY);
-
 				if(hardwareVertex)
 					glNormalPointer(type, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
 				else
@@ -1727,8 +1756,6 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 			}
 			break;
 		case EVAS_COLOR:
-			glEnableClientState(GL_COLOR_ARRAY);
-
 			if(hardwareVertex)
 				glColorPointer(colorSize, type, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
 			else
@@ -1750,12 +1777,15 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 			{
 				if(semantic == EVAS_TEXCOORD0)
 				{
-					for(u32 j = 0; j < 2/*MATERIAL_MAX_TEXTURES*/; ++j)
+					for(u32 j = 0; j < 2; ++j)
 					{
 						if(j == 0 || (MultiTextureExtension && CurrentTexture[j]))
 						{
-							extGlClientActiveTexture(GL_TEXTURE0_ARB + j);
-							glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+							if(j == 1)
+							{
+								BridgeCalls->setClientActiveTexture(GL_TEXTURE1_ARB);
+								glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+							}
 
 							if(hardwareVertex)
 								glTexCoordPointer(vertexDescriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
@@ -1770,7 +1800,7 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 				}
 				else if(MultiTextureExtension)
 				{
-					extGlClientActiveTexture(GL_TEXTURE0_ARB + (u32)semantic - (u32)EVAS_TEXCOORD0);
+					BridgeCalls->setClientActiveTexture(GL_TEXTURE0_ARB + (u32)semantic - (u32)EVAS_TEXCOORD0);
 					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
 					if(hardwareVertex)
@@ -1867,22 +1897,14 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 
 	// Disable semantics and attributes.
 
+	bool UsedMultiTexture = false;
+
 	for(u32 i = 0; i < vertexDescriptor->getAttributeCount() && i < 16; ++i)
 	{
 		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = vertexDescriptor->getAttribute(i)->getSemantic();
 
 		switch(semantic)
 		{
-		case EVAS_POSITION:
-			glDisableClientState(GL_VERTEX_ARRAY);
-			break;
-		case EVAS_NORMAL:
-			if((pType != scene::EPT_POINTS) && (pType != scene::EPT_POINT_SPRITES))
-				glDisableClientState(GL_NORMAL_ARRAY);
-			break;
-		case EVAS_COLOR:
-			glDisableClientState(GL_COLOR_ARRAY);
-			break;
 		case EVAS_TEXCOORD0:
 		case EVAS_TEXCOORD1:
 		case EVAS_TEXCOORD2:
@@ -1895,19 +1917,18 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 			{
 				if(semantic == EVAS_TEXCOORD0)
 				{
-					for(u32 j = 0; j < 2/*MATERIAL_MAX_TEXTURES*/; ++j)
+					if(MultiTextureExtension && CurrentTexture[1])
 					{
-						if(j == 0 || (MultiTextureExtension && CurrentTexture[j]))
-						{
-							extGlClientActiveTexture(GL_TEXTURE0_ARB + j);
-							glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-						}
+						BridgeCalls->setClientActiveTexture(GL_TEXTURE1_ARB);
+						glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+						UsedMultiTexture = true;
 					}
 				}
 				else if(MultiTextureExtension)
 				{
-					extGlClientActiveTexture(GL_TEXTURE0_ARB + (u32)semantic - (u32)EVAS_TEXCOORD0);
+					BridgeCalls->setClientActiveTexture(GL_TEXTURE0_ARB + (u32)semantic - (u32)EVAS_TEXCOORD0);
 					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+					UsedMultiTexture = true;
 				}
 			}
 			break;
@@ -1921,6 +1942,9 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 			extGlDisableVertexAttribArray(i);
 		}
 	}
+
+	if (UsedMultiTexture)
+		BridgeCalls->setClientActiveTexture(GL_TEXTURE0_ARB);
 
 	LastVertexDescriptor = vertexDescriptor;
 }
