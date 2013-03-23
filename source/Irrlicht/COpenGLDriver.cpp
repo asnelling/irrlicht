@@ -1661,10 +1661,10 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 
 	// Enable client states.
 
-	bool VertexState = false;
-	bool NormalState = false;
-	bool ColorState = false;
-	bool TexCoord0State = false;
+	bool VertexClientState = false;
+	bool NormalClientState = false;
+	bool ColorClientState = false;
+	bool TexCoord0ClientState = false;
 
 	for(u32 i = 0; i < vertexDescriptor->getAttributeCount() && i < 16; ++i)
 	{
@@ -1673,24 +1673,24 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 		switch(semantic)
 		{
 		case EVAS_POSITION:
-			VertexState = true;
+			VertexClientState = true;
 			break;
 		case EVAS_NORMAL:
 			if ((pType!=scene::EPT_POINTS) && (pType!=scene::EPT_POINT_SPRITES))
-				NormalState = true;
+				NormalClientState = true;
 			break;
 		case EVAS_COLOR:
-			ColorState = true;
+			ColorClientState = true;
 			break;
 		case EVAS_TEXCOORD0:
-			TexCoord0State = true;
+			TexCoord0ClientState = true;
 			break;
 		default:
 			break;
 		}
 	}
 
-	BridgeCalls->setClientState(VertexState, NormalState, ColorState, TexCoord0State);
+	BridgeCalls->setClientState(VertexClientState, NormalClientState, ColorClientState, TexCoord0ClientState);
 
 	// Enable semantics and attributes.
 
