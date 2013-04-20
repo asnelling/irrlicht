@@ -3735,10 +3735,13 @@ bool CD3D9Driver::addD3DVertexDescriptor(IVertexDescriptor* pDescriptor)
 	IDirect3DVertexDeclaration9* vertexDeclaration = 0;
 
 	if(FAILED(pID3DDevice->CreateVertexDeclaration(VertexElement, &vertexDeclaration)))
+	{
+		delete VertexElement;
 		return false;
+	}
 
 	VertexDeclaration.push_back(vertexDeclaration);
-
+	delete VertexElement;
 	return true;
 }
 
