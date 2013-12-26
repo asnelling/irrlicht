@@ -72,8 +72,8 @@ CD3D11Driver::CD3D11Driver(const irr::SIrrlichtCreationParameters& params,
 	SceneSourceRect(0), VendorID(0), ColorFormat(ECF_A8R8G8B8),
 	CurrentRenderMode(ERM_NONE), MaxActiveLights(8), AlphaToCoverageSupport(true),
 	DepthStencilFormat(DXGI_FORMAT_UNKNOWN), D3DColorFormat(DXGI_FORMAT_R8G8B8A8_UNORM),
-	NullTexture(NULL), MaxTextureUnits(MATERIAL_MAX_TEXTURES) // DirectX 11 can handle much more than this value, but keep compatibility
-
+	NullTexture(NULL), MaxTextureUnits(MATERIAL_MAX_TEXTURES), // DirectX 11 can handle much more than this value, but keep compatibility
+	Name("Direct3D ") // which version will be added later
 {
 #ifdef _DEBUG
 	setDebugName("CD3D11Driver");
@@ -299,11 +299,10 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 			DriverType = D3D_DRIVER_TYPE_SOFTWARE;
 
 		// Try creating hardware device
-#if WINVER>=0x0800	
+		//! If you got an error here that 'D3D_FEATURE_LEVEL_11_1' is undeclared you have to download an appropriate DXSDK
+		//! Download: http://msdn.microsoft.com/en-us/windows/desktop/hh852363.aspx
+
 		D3D_FEATURE_LEVEL RequestedLevels[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0 };
-#else
-		D3D_FEATURE_LEVEL RequestedLevels[] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0 };
-#endif
 
 		const u32 featureLevelSize = sizeof(RequestedLevels) / sizeof(RequestedLevels[0]);
 
@@ -322,15 +321,16 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 			}
 		}
 
-		//! If you got an error here that 'D3D_FEATURE_LEVEL_11_1' is undeclared you have to download an appropriate DXSDK
-		//! Download: http://msdn.microsoft.com/en-us/windows/desktop/hh852363.aspx
+		core::stringw tmp = (FeatureLevel == D3D_FEATURE_LEVEL_11_1) ? "11.1" :
+			(FeatureLevel == D3D_FEATURE_LEVEL_11_0) ? "11.0" :
+			(FeatureLevel == D3D_FEATURE_LEVEL_10_1) ? "10.1" : "10.0";
+
+		Name += tmp;
 		// Printing type of Direct3D 11 device and feature level
 		char msg[512];
 		sprintf(msg, "Using %s device, feature level %s",
-					 (DriverType == D3D_DRIVER_TYPE_HARDWARE) ? "hardware" : "warp",
-						(FeatureLevel == D3D_FEATURE_LEVEL_11_1) ? "11.1" :
-						(FeatureLevel == D3D_FEATURE_LEVEL_11_0) ? "11.0" :
-						(FeatureLevel == D3D_FEATURE_LEVEL_10_1) ? "10.1" : "10.0");
+					 (DriverType == D3D_DRIVER_TYPE_HARDWARE) ? "hardware" : "warp", tmp);
+
 		os::Printer::log(msg, ELL_INFORMATION);
 	}
 
@@ -1886,7 +1886,7 @@ void CD3D11Driver::draw3DLine(const core::vector3df& start,
 
 const wchar_t* CD3D11Driver::getName() const
 {
-	return L"Direct3D 11";
+	return Name.c_str();
 }
 
 void CD3D11Driver::deleteAllDynamicLights()
@@ -2566,6 +2566,7 @@ core::dimension2du CD3D11Driver::getMaxTextureSize() const
 	// Maximal value depends of driver type.
 	switch( FeatureLevel )
 	{
+	case D3D_FEATURE_LEVEL_11_1:
 	case D3D_FEATURE_LEVEL_11_0:
 		return core::dimension2du( 16384, 16384 );
 

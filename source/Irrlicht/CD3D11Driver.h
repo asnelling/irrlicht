@@ -423,6 +423,7 @@ namespace video
 		D3D_FEATURE_LEVEL FeatureLevel;
 		ID3D11Device* Device;
 		ID3D11DeviceContext* Context;
+		core::stringw Name;
 
 		// Back and depth buffers
 		ID3D11RenderTargetView* DefaultBackBuffer;
@@ -551,7 +552,6 @@ namespace video
 
 		virtual bool addVertexDescriptor(const core::stringc& pName);
 	};
-
 }
 }
 
