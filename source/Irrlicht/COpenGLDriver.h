@@ -36,11 +36,11 @@ namespace video
     class COpenGLCallBridge;
 	class COpenGLTexture;
 
-	class CVertexDescriptor_opengl : public CVertexDescriptor
+	class COpenGLVertexDescriptor : public CVertexDescriptor
 	{
 	public:
-		CVertexDescriptor_opengl(const core::stringc& name, u32 id, u32 layerCount);
-		virtual ~CVertexDescriptor_opengl();
+		COpenGLVertexDescriptor(const core::stringc& name, u32 id, u32 layerCount);
+		virtual ~COpenGLVertexDescriptor();
 
 		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type);
 
@@ -470,7 +470,7 @@ namespace video
         // Bridge calls.
         COpenGLCallBridge* BridgeCalls;
 
-		void setVertexAttributes(IVertexDescriptor* vertexDescriptor);
+		void setVertexDescriptor(IVertexDescriptor* vertexDescriptor);
 
 		//! clears the zbuffer and color buffer
 		void clearBuffers(bool backBuffer, bool zBuffer, bool stencilBuffer, SColor color);
