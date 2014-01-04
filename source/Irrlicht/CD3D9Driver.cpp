@@ -28,6 +28,206 @@ namespace
 	inline DWORD F2DW( FLOAT f ) { return *((DWORD*)&f); }
 }
 
+
+CD3D9VertexDescriptor::CD3D9VertexDescriptor(IDirect3DDevice9* device, const core::stringc& name, u32 id)
+	: CVertexDescriptor(name, id), VertexDeclaration(0), Device(device)
+{
+}
+
+CD3D9VertexDescriptor::~CD3D9VertexDescriptor()
+{
+	clear();
+}
+
+bool CD3D9VertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type,s16 ElementStreamSource,s8 ElementUsageIndex)
+{
+	bool Status = false;
+
+	if (CVertexDescriptor::addAttribute(name, elementCount, semantic, type))
+	{
+		clear();
+
+		Status = true;
+	}
+
+	return Status;	
+}
+
+bool CD3D9VertexDescriptor::removeAttribute(u32 id)
+{
+	bool Status = false;
+
+	if (CVertexDescriptor::removeAttribute(id))
+	{
+		clear();
+
+		Status = true;
+	}
+
+	return Status;	
+}
+
+void CD3D9VertexDescriptor::removeAllAttribute()
+{
+	CVertexDescriptor::removeAllAttribute();
+
+	clear();
+}
+
+IDirect3DVertexDeclaration9* CD3D9VertexDescriptor::getInputLayoutDescription()
+{
+	if (!VertexDeclaration)
+		rebuild();
+
+	return VertexDeclaration;
+}
+
+void CD3D9VertexDescriptor::rebuild()
+{
+	u32 count = getAttributeCount() + 1;
+
+	// D3D9 support max 16 attributes + 1 end attribute.
+	if (count > 17)
+		count = 17;
+
+	D3DVERTEXELEMENT9* VertexElement = new D3DVERTEXELEMENT9[count];
+
+	for(u32 j = 0; j < count-1; ++j)
+	{
+		VertexElement[j].Stream = 0;
+		VertexElement[j].Offset = getAttribute(j)->getOffset();
+		VertexElement[j].Type = D3DDECLTYPE_UNUSED;
+		VertexElement[j].Method = D3DDECLMETHOD_DEFAULT;
+		VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+		VertexElement[j].UsageIndex = 0;
+
+		u32 count = getAttribute(j)->getElementCount();
+
+		switch (getAttribute(j)->getType())
+		{
+		case EVAT_BYTE:
+		case EVAT_UBYTE:
+			VertexElement[j].Type = D3DDECLTYPE_UBYTE4;
+			break;
+		case EVAT_SHORT:
+			{
+				if(count == 2)
+					VertexElement[j].Type = D3DDECLTYPE_SHORT2N;
+				else
+					VertexElement[j].Type = D3DDECLTYPE_SHORT4N;
+			}
+			break;
+		case EVAT_USHORT:
+			{
+				if(count == 2)
+					VertexElement[j].Type = D3DDECLTYPE_USHORT2N;
+				else
+					VertexElement[j].Type = D3DDECLTYPE_USHORT4N;
+			}
+			break;
+		case EVAT_INT:
+		case EVAT_UINT:
+		case EVAT_FLOAT:
+		case EVAT_DOUBLE:
+			{
+				if(count == 1)
+					VertexElement[j].Type = D3DDECLTYPE_FLOAT1;
+				else if(count == 2)
+					VertexElement[j].Type = D3DDECLTYPE_FLOAT2;
+				else if(count == 3)
+					VertexElement[j].Type = D3DDECLTYPE_FLOAT3;
+				else
+					VertexElement[j].Type = D3DDECLTYPE_FLOAT4;
+			}				
+			break;
+		}
+
+		switch (getAttribute(j)->getSemantic())
+		{
+		case EVAS_POSITION:
+			VertexElement[j].Usage = D3DDECLUSAGE_POSITION;
+			break;
+		case EVAS_NORMAL:
+			VertexElement[j].Usage = D3DDECLUSAGE_NORMAL;
+			break;
+		case EVAS_COLOR:
+			VertexElement[j].Type = D3DDECLTYPE_D3DCOLOR;
+			VertexElement[j].Usage = D3DDECLUSAGE_COLOR;
+			break;
+		case EVAS_TEXCOORD0:
+			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+			VertexElement[j].UsageIndex = 0;
+			break;
+		case EVAS_TEXCOORD1:
+			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+			VertexElement[j].UsageIndex = 1;
+			break;
+		case EVAS_TEXCOORD2:
+			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+			VertexElement[j].UsageIndex = 2;
+			break;
+		case EVAS_TEXCOORD3:
+			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+			VertexElement[j].UsageIndex = 3;
+			break;
+		case EVAS_TEXCOORD4:
+			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+			VertexElement[j].UsageIndex = 4;
+			break;
+		case EVAS_TEXCOORD5:
+			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+			VertexElement[j].UsageIndex = 5;
+			break;
+		case EVAS_TEXCOORD6:
+			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+			VertexElement[j].UsageIndex = 6;
+			break;
+		case EVAS_TEXCOORD7:
+			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+			VertexElement[j].UsageIndex = 7;
+			break;
+		case EVAS_TANGENT:
+			VertexElement[j].Usage = D3DDECLUSAGE_TANGENT;
+			break;
+		case EVAS_BINORMAL:
+			VertexElement[j].Usage = D3DDECLUSAGE_BINORMAL;
+			break;
+		case EVAS_BLEND_WEIGHTS:
+			VertexElement[j].Usage = D3DDECLUSAGE_BLENDWEIGHT;
+			break;
+		case EVAS_BLEND_INDICES:
+			VertexElement[j].Usage = D3DDECLUSAGE_BLENDINDICES;
+			break;
+		case EVAS_CUSTOM:
+			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
+			break;
+		}
+	}
+
+	// D3DDECL_END()
+
+	VertexElement[count-1].Stream = 0xFF;
+	VertexElement[count-1].Offset = 0;
+	VertexElement[count-1].Type = D3DDECLTYPE_UNUSED;
+	VertexElement[count-1].Method = 0;
+	VertexElement[count-1].Usage = 0;
+	VertexElement[count-1].UsageIndex = 0;
+
+	if (FAILED(Device->CreateVertexDeclaration(VertexElement, &VertexDeclaration)))
+		VertexDeclaration = 0;
+
+	delete[] VertexElement;
+}
+		
+void CD3D9VertexDescriptor::clear()
+{
+	if (VertexDeclaration)
+		VertexDeclaration->Release();
+
+	VertexDeclaration = 0;
+}
+
+
 //! constructor
 CD3D9Driver::CD3D9Driver(const SIrrlichtCreationParameters& params, io::IFileSystem* io)
 	: CNullDriver(io, params.WindowSize), CurrentRenderMode(ERM_NONE),
@@ -87,7 +287,11 @@ CD3D9Driver::~CD3D9Driver()
 	{
 		DepthBuffers[i]->drop();
 	}
+
 	DepthBuffers.clear();
+
+	if (ShadowVertexDeclaration)
+		ShadowVertexDeclaration->Release();
 
 	// drop d3d9
 
@@ -96,8 +300,6 @@ CD3D9Driver::~CD3D9Driver()
 
 	if (pID3D)
 		pID3D->Release();
-
-	VertexDeclaration.clear();
 
 	#ifdef _IRR_COMPILE_WITH_CG_
 	cgD3D9SetDevice(0);
@@ -426,11 +628,7 @@ bool CD3D9Driver::initDriver(HWND hwnd, bool pureSoftware)
 	// Create built-in vertex elements.
 	createVertexDescriptors();
 
-	const u32 size = VertexDescriptor.size();
-
-	for(u32 i = 0; i < size; ++i)
-		addD3DVertexDescriptor(VertexDescriptor[i]);
-
+	// Create shadow vertex declaration.
 	D3DVERTEXELEMENT9 ShadowVertexElement[] =
 	{
 		{0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
@@ -440,7 +638,7 @@ bool CD3D9Driver::initDriver(HWND hwnd, bool pureSoftware)
 	pID3DDevice->CreateVertexDeclaration(ShadowVertexElement, &ShadowVertexDeclaration);
 
 	// set default vertex shader
-	setVertexDeclaration(VertexDescriptor[0]);
+	setVertexDescriptor(VertexDescriptor[0]);
 
 	// set fog mode
 	setFog(FogColor, FogType, FogStart, FogEnd, FogDensity, PixelFog, RangeFog);
@@ -1087,7 +1285,7 @@ bool CD3D9Driver::updateVertexHardwareBuffer(SHWBufferLink_d3d9* buffer)
 		if(buffer->Mapped_Vertex != scene::EHM_STATIC)
 			flags |= D3DUSAGE_DYNAMIC;
 
-		setVertexDeclaration(vertexDescriptor);
+		setVertexDescriptor(vertexDescriptor);
 
 		if(FAILED(pID3DDevice->CreateVertexBuffer(bufferSize, flags, 0, D3DPOOL_DEFAULT, &buffer->vertexBuffer, NULL)))
 			return false;
@@ -1407,7 +1605,7 @@ void CD3D9Driver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuf
 
 	CNullDriver::drawVertexPrimitiveList(hardwareVertex, vertexBuffer, hardwareIndex, indexBuffer, primitiveCount, pType);
 
-	setVertexDeclaration(vertexBuffer->getVertexDescriptor());
+	setVertexDescriptor(vertexBuffer->getVertexDescriptor());
 
 	D3DFORMAT IndexType = D3DFMT_INDEX16;
 	
@@ -1454,7 +1652,7 @@ void CD3D9Driver::draw2DVertexPrimitiveList(const void* vertices,
 			break;
 	}
 
-	setVertexDeclaration(vertexDescriptor);
+	setVertexDescriptor(vertexDescriptor);
 
 	D3DFORMAT IndexType = D3DFMT_INDEX16;
 	
@@ -1634,7 +1832,7 @@ void CD3D9Driver::draw2DImage(const video::ITexture* texture,
 			useColor[2].getAlpha()<255 || useColor[3].getAlpha()<255,
 			true, useAlphaChannelOfTexture);
 
-	setVertexDeclaration(VertexDescriptor[0]);
+	setVertexDescriptor(VertexDescriptor[0]);
 
 	if (clipRect)
 	{
@@ -1793,7 +1991,7 @@ void CD3D9Driver::draw2DImageBatch(const video::ITexture* texture,
 
 	if (vtx.size())
 	{
-		setVertexDeclaration(VertexDescriptor[0]);
+		setVertexDescriptor(VertexDescriptor[0]);
 
 		pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, vtx.size(), indices.size() / 3, indices.pointer(),
 			D3DFMT_INDEX16,vtx.pointer(), sizeof(S3DVertex));
@@ -1927,7 +2125,7 @@ void CD3D9Driver::draw2DImage(const video::ITexture* texture,
 
 	s16 indices[6] = {0,1,2,0,2,3};
 
-	setVertexDeclaration(VertexDescriptor[0]);
+	setVertexDescriptor(VertexDescriptor[0]);
 
 	pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, 4, 2, &indices[0],
 		D3DFMT_INDEX16,&vtx[0],	sizeof(S3DVertex));
@@ -1967,7 +2165,7 @@ void CD3D9Driver::draw2DRectangle(const core::rect<s32>& position,
 
 	setActiveTexture(0,0);
 
-	setVertexDeclaration(VertexDescriptor[0]);
+	setVertexDescriptor(VertexDescriptor[0]);
 
 	pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, 4, 2, &indices[0],
 		D3DFMT_INDEX16, &vtx[0], sizeof(S3DVertex));
@@ -1996,7 +2194,7 @@ void CD3D9Driver::draw2DLine(const core::position2d<s32>& start,
 		setRenderStates2DMode(color.getAlpha() < 255, false, false);
 		setActiveTexture(0,0);
 
-		setVertexDeclaration(VertexDescriptor[0]);
+		setVertexDescriptor(VertexDescriptor[0]);
 
 		pID3DDevice->DrawPrimitiveUP(D3DPT_LINELIST, 1,
 						&vtx[0], sizeof(S3DVertex) );
@@ -2014,7 +2212,7 @@ void CD3D9Driver::drawPixel(u32 x, u32 y, const SColor & color)
 	setRenderStates2DMode(color.getAlpha() < 255, false, false);
 	setActiveTexture(0,0);
 
-	setVertexDeclaration(VertexDescriptor[0]);
+	setVertexDescriptor(VertexDescriptor[0]);
 
 	S3DVertex vertex((f32)x+0.375f, (f32)y+0.375f, 0.f, 0.f, 0.f, 0.f, color, 0.f, 0.f);
 
@@ -2022,24 +2220,33 @@ void CD3D9Driver::drawPixel(u32 x, u32 y, const SColor & color)
 }
 
 
-//! sets right vertex shader
-void CD3D9Driver::setVertexDeclaration(IVertexDescriptor* vertexDescriptor)
+bool CD3D9Driver::addVertexDescriptor(const core::stringc& pName)
 {
-	if(LastVertexDescriptor != vertexDescriptor)
-	{
-		u32 ID = 0;
+	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
+		if(pName == VertexDescriptor[i]->getName())
+			return false;
 
-		for(u32 i = 0; i < VertexDescriptor.size(); ++i)
+	CVertexDescriptor* vertexDescriptor = new CD3D9VertexDescriptor(pID3DDevice, pName, VertexDescriptor.size());
+	VertexDescriptor.push_back(vertexDescriptor);
+
+	return true;
+}
+
+
+void CD3D9Driver::setVertexDescriptor(IVertexDescriptor* vertexDescriptor)
+{
+	if (LastVertexDescriptor != vertexDescriptor)
+	{
+		for (u32 i = 0; i < VertexDescriptor.size(); ++i)
 		{
-			if(vertexDescriptor == VertexDescriptor[i])
+			if (vertexDescriptor == VertexDescriptor[i])
 			{
-				ID = i;
-				LastVertexDescriptor = VertexDescriptor[ID];
+				LastVertexDescriptor = VertexDescriptor[i];
 				break;
 			}
 		}
 
-		HRESULT hr = pID3DDevice->SetVertexDeclaration(VertexDeclaration[ID]);
+		HRESULT hr = pID3DDevice->SetVertexDeclaration(((CD3D9VertexDescriptor*)LastVertexDescriptor)->getInputLayoutDescription());
 
 		if (FAILED(hr))
 		{
@@ -2870,7 +3077,7 @@ void CD3D9Driver::drawStencilShadow(bool clearStencilBuffer, video::SColor leftU
 
 	setActiveTexture(0,0);
 
-	setVertexDeclaration(VertexDescriptor[0]);
+	setVertexDescriptor(VertexDescriptor[0]);
 
 	pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, 4, 2, &indices[0],
 		D3DFMT_INDEX16, &vtx[0], sizeof(S3DVertex));
@@ -2921,7 +3128,7 @@ void CD3D9Driver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 void CD3D9Driver::draw3DLine(const core::vector3df& start,
 	const core::vector3df& end, SColor color)
 {
-	setVertexDeclaration(VertexDescriptor[0]);
+	setVertexDescriptor(VertexDescriptor[0]);
 	setRenderStates3DMode();
 	video::S3DVertex v[2];
 	v[0].Color = color;
@@ -3054,7 +3261,7 @@ bool CD3D9Driver::reset()
 	for (u32 i=0; i<MATERIAL_MAX_TEXTURES; ++i)
 		CurrentTexture[i] = 0;
 
-	setVertexDeclaration(VertexDescriptor[0]);
+	setVertexDescriptor(VertexDescriptor[0]);
 	setRenderStates3DMode();
 	setFog(FogColor, FogType, FogStart, FogEnd, FogDensity, PixelFog, RangeFog);
 	setAmbientLight(AmbientLight);
@@ -3605,145 +3812,6 @@ core::dimension2du CD3D9Driver::getMaxTextureSize() const
 	return core::dimension2du(Caps.MaxTextureWidth, Caps.MaxTextureHeight);
 }
 
-bool CD3D9Driver::addD3DVertexDescriptor(IVertexDescriptor* pDescriptor)
-{
-	u32 count = pDescriptor->getAttributeCount() < 16 ? pDescriptor->getAttributeCount() + 1 : 17;
-
-	D3DVERTEXELEMENT9* VertexElement = new D3DVERTEXELEMENT9[count];
-
-	for(u32 j = 0; j < count-1; ++j)
-	{
-		VertexElement[j].Stream = 0;
-		VertexElement[j].Offset = pDescriptor->getAttribute(j)->getOffset();
-		VertexElement[j].Type = D3DDECLTYPE_UNUSED;
-		VertexElement[j].Method = D3DDECLMETHOD_DEFAULT;
-		VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-		VertexElement[j].UsageIndex = 0;
-
-		u32 count = pDescriptor->getAttribute(j)->getElementCount();
-
-		switch(pDescriptor->getAttribute(j)->getType())
-		{
-		case EVAT_BYTE:
-		case EVAT_UBYTE:
-			VertexElement[j].Type = D3DDECLTYPE_UBYTE4;
-			break;
-		case EVAT_SHORT:
-			{
-				if(count == 2)
-					VertexElement[j].Type = D3DDECLTYPE_SHORT2N;
-				else
-					VertexElement[j].Type = D3DDECLTYPE_SHORT4N;
-			}
-			break;
-		case EVAT_USHORT:
-			{
-				if(count == 2)
-					VertexElement[j].Type = D3DDECLTYPE_USHORT2N;
-				else
-					VertexElement[j].Type = D3DDECLTYPE_USHORT4N;
-			}
-			break;
-		case EVAT_INT:
-		case EVAT_UINT:
-		case EVAT_FLOAT:
-		case EVAT_DOUBLE:
-			{
-				if(count == 1)
-					VertexElement[j].Type = D3DDECLTYPE_FLOAT1;
-				else if(count == 2)
-					VertexElement[j].Type = D3DDECLTYPE_FLOAT2;
-				else if(count == 3)
-					VertexElement[j].Type = D3DDECLTYPE_FLOAT3;
-				else
-					VertexElement[j].Type = D3DDECLTYPE_FLOAT4;
-			}				
-			break;
-		}
-
-		switch(pDescriptor->getAttribute(j)->getSemantic())
-		{
-		case EVAS_POSITION:
-			VertexElement[j].Usage = D3DDECLUSAGE_POSITION;
-			break;
-		case EVAS_NORMAL:
-			VertexElement[j].Usage = D3DDECLUSAGE_NORMAL;
-			break;
-		case EVAS_COLOR:
-			VertexElement[j].Type = D3DDECLTYPE_D3DCOLOR;
-			VertexElement[j].Usage = D3DDECLUSAGE_COLOR;
-			break;
-		case EVAS_TEXCOORD0:
-			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-			VertexElement[j].UsageIndex = 0;
-			break;
-		case EVAS_TEXCOORD1:
-			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-			VertexElement[j].UsageIndex = 1;
-			break;
-		case EVAS_TEXCOORD2:
-			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-			VertexElement[j].UsageIndex = 2;
-			break;
-		case EVAS_TEXCOORD3:
-			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-			VertexElement[j].UsageIndex = 3;
-			break;
-		case EVAS_TEXCOORD4:
-			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-			VertexElement[j].UsageIndex = 4;
-			break;
-		case EVAS_TEXCOORD5:
-			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-			VertexElement[j].UsageIndex = 5;
-			break;
-		case EVAS_TEXCOORD6:
-			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-			VertexElement[j].UsageIndex = 6;
-			break;
-		case EVAS_TEXCOORD7:
-			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-			VertexElement[j].UsageIndex = 7;
-			break;
-		case EVAS_TANGENT:
-			VertexElement[j].Usage = D3DDECLUSAGE_TANGENT;
-			break;
-		case EVAS_BINORMAL:
-			VertexElement[j].Usage = D3DDECLUSAGE_BINORMAL;
-			break;
-		case EVAS_BLEND_WEIGHTS:
-			VertexElement[j].Usage = D3DDECLUSAGE_BLENDWEIGHT;
-			break;
-		case EVAS_BLEND_INDICES:
-			VertexElement[j].Usage = D3DDECLUSAGE_BLENDINDICES;
-			break;
-		case EVAS_CUSTOM:
-			VertexElement[j].Usage = D3DDECLUSAGE_TEXCOORD;
-			break;
-		}
-	}
-
-	// D3DDECL_END()
-
-	VertexElement[count-1].Stream = 0xFF;
-	VertexElement[count-1].Offset = 0;
-	VertexElement[count-1].Type = D3DDECLTYPE_UNUSED;
-	VertexElement[count-1].Method = 0;
-	VertexElement[count-1].Usage = 0;
-	VertexElement[count-1].UsageIndex = 0;
-
-	IDirect3DVertexDeclaration9* vertexDeclaration = 0;
-
-	if(FAILED(pID3DDevice->CreateVertexDeclaration(VertexElement, &vertexDeclaration)))
-	{
-		delete[] VertexElement;
-		return false;
-	}
-
-	VertexDeclaration.push_back(vertexDeclaration);
-	delete[] VertexElement;
-	return true;
-}
 
 #ifdef _IRR_COMPILE_WITH_CG_
 const CGcontext& CD3D9Driver::getCgContext()

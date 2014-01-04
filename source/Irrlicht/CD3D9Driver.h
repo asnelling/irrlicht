@@ -49,6 +49,30 @@ namespace video
 		core::dimension2du Size;
 	};
 
+	class CD3D9VertexDescriptor : public CVertexDescriptor
+	{
+	public:
+		CD3D9VertexDescriptor(IDirect3DDevice9* device, const core::stringc& name, u32 id);
+		virtual ~CD3D9VertexDescriptor();
+
+		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type,s16 ElementStreamSource,s8 ElementUsageIndex);
+
+		virtual bool removeAttribute(u32 id);
+
+		virtual void removeAllAttribute();
+
+		IDirect3DVertexDeclaration9* getInputLayoutDescription();
+
+		void rebuild();
+
+		void clear();
+
+	protected:
+		IDirect3DVertexDeclaration9* VertexDeclaration;
+
+		IDirect3DDevice9* Device;
+	};
+
 	class CD3D9Driver : public CNullDriver, IMaterialRendererServices
 	{
 	public:
@@ -330,7 +354,7 @@ namespace video
 		//! Get Irrlicht color format from D3D color format.
 		ECOLOR_FORMAT getColorFormatFromD3DFormat(D3DFORMAT format) const;
 
-		virtual bool addD3DVertexDescriptor(IVertexDescriptor* pDescriptor);
+		virtual bool addVertexDescriptor(const core::stringc& pName);
 
 		//! Get Cg context
 		#ifdef _IRR_COMPILE_WITH_CG_
@@ -350,8 +374,8 @@ namespace video
 			ERM_SHADOW_VOLUME_ZPASS // stencil volume draw mode
 		};
 
-		//! sets right vertex shader
-		void setVertexDeclaration(IVertexDescriptor* vertexDescriptor);
+		//! sets right vertex descriptor
+		void setVertexDescriptor(IVertexDescriptor* vertexDescriptor);
 
 		//! sets the needed renderstates
 		bool setRenderStates3DMode();
@@ -478,7 +502,6 @@ namespace video
 		bool OcclusionQuerySupport;
 		bool AlphaToCoverageSupport;
 
-		irr::core::array<IDirect3DVertexDeclaration9*> VertexDeclaration;
 		IDirect3DVertexDeclaration9* ShadowVertexDeclaration;
 
 		#ifdef _IRR_COMPILE_WITH_CG_
