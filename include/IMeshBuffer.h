@@ -42,6 +42,22 @@ namespace scene
 	{
 	public:
 
+		virtual ~IMeshBuffer() {}
+
+		virtual bool addVertexBuffer(IVertexBuffer* vertexBuffer) = 0;
+
+		virtual IVertexBuffer* getVertexBuffer(u32 id = 0) const = 0;
+
+		virtual u32 getVertexBufferCount() const = 0;
+
+		virtual void removeVertexBuffer(u32 id) = 0;
+
+		virtual bool setVertexBuffer(IVertexBuffer* vertexBuffer, u32 id = 0) = 0;
+
+		virtual IIndexBuffer* getIndexBuffer() const = 0;
+
+		virtual bool setIndexBuffer(IIndexBuffer* indexBuffer) = 0;
+
 		//! Get the material of this meshbuffer
 		/** \return Material of this buffer. */
 		virtual video::SMaterial& getMaterial() = 0;
@@ -49,14 +65,6 @@ namespace scene
 		//! Get the material of this meshbuffer
 		/** \return Material of this buffer. */
 		virtual const video::SMaterial& getMaterial() const = 0;
-
-		virtual IVertexBuffer* getVertexBuffer() const = 0;
-
-		virtual bool setVertexBuffer(IVertexBuffer* vertexBuffer) = 0;
-
-		virtual IIndexBuffer* getIndexBuffer() const = 0;
-
-		virtual bool setIndexBuffer(IIndexBuffer* indexBuffer) = 0;
 
 		//! Get the axis aligned bounding box of this meshbuffer.
 		/** \return Axis aligned bounding box of this buffer. */

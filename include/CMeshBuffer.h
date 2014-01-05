@@ -24,10 +24,8 @@ namespace scene
 			setDebugName("CMeshBuffer");
 			#endif
 
-			if(vertexDescriptor)
-				VertexBuffer = new CVertexBuffer<T>(vertexDescriptor);
-			else
-				VertexBuffer = 0;
+			if (vertexDescriptor)
+				VertexBuffer.push_back(new CVertexBuffer<T>(vertexDescriptor));
 
 			IndexBuffer = new CIndexBuffer(type);
 		}
@@ -35,42 +33,64 @@ namespace scene
 		//! Destructor
 		virtual ~CMeshBuffer()
 		{
-			if(VertexBuffer)
-				VertexBuffer->drop();
+			for (u32 i = 0; i < VertexBuffer.size(); ++i)
+			{
+				if (VertexBuffer[i])
+					VertexBuffer[i]->drop();
+			}
 
-			if(IndexBuffer)
+			if (IndexBuffer)
 				IndexBuffer->drop();
 		}
 
-		//! Get material of this meshbuffer
-		/** \return Material of this buffer */
-		virtual const video::SMaterial& getMaterial() const
+		virtual bool addVertexBuffer(IVertexBuffer* vertexBuffer)
 		{
-			return Material;
+			bool Status = false;
+
+			if (vertexBuffer)
+			{
+				vertexBuffer->grab();
+				VertexBuffer.push_back(vertexBuffer);
+
+				Status = true;
+			}
+
+			return Status;
 		}
 
-
-		//! Get material of this meshbuffer
-		/** \return Material of this buffer */
-		virtual video::SMaterial& getMaterial()
+		virtual IVertexBuffer* getVertexBuffer(u32 id = 0) const
 		{
-			return Material;
+			IVertexBuffer* vb = 0;
+
+			if (id < VertexBuffer.size())
+				vb = VertexBuffer[id];
+
+			return vb;
 		}
 
-		virtual IVertexBuffer* getVertexBuffer() const
+		virtual u32 getVertexBufferCount() const
 		{
-			return VertexBuffer;
+			return VertexBuffer.size();
 		}
 
-		virtual bool setVertexBuffer(IVertexBuffer* vertexBuffer)
+		virtual void removeVertexBuffer(u32 id)
 		{
-			if(!vertexBuffer || VertexBuffer == vertexBuffer)
+			if (id > 0 && id < VertexBuffer.size())
+			{
+				VertexBuffer[id]->drop();
+				VertexBuffer.erase(id);
+			}
+		}
+
+		virtual bool setVertexBuffer(IVertexBuffer* vertexBuffer, u32 id = 0)
+		{
+			if (id >= VertexBuffer.size() || !vertexBuffer || VertexBuffer[id] == vertexBuffer)
 				return false;
 
-			VertexBuffer->drop();
+			VertexBuffer[id]->drop();
 			vertexBuffer->grab();
 
-			VertexBuffer = vertexBuffer;
+			VertexBuffer[id] = vertexBuffer;
 
 			return true;
 		}
@@ -91,6 +111,20 @@ namespace scene
 			IndexBuffer = indexBuffer;
 
 			return true;
+		}
+
+		//! Get material of this meshbuffer
+		/** \return Material of this buffer */
+		virtual const video::SMaterial& getMaterial() const
+		{
+			return Material;
+		}
+
+		//! Get material of this meshbuffer
+		/** \return Material of this buffer */
+		virtual video::SMaterial& getMaterial()
+		{
+			return Material;
 		}
 
 		//! Get the axis aligned bounding box
@@ -123,11 +157,11 @@ namespace scene
 
 			BoundingBoxNeedsRecalculated = false;
 
-			if(!VertexBuffer->getVertexCount() || !VertexBuffer->getVertexDescriptor())
+			if(!VertexBuffer[0]->getVertexCount() || !VertexBuffer[0]->getVertexDescriptor())
 				BoundingBox.reset(0,0,0);
 			else
 			{
-				video::IVertexAttribute* attribute = VertexBuffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+				video::IVertexAttribute* attribute = VertexBuffer[0]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
 				if(!attribute)
 				{
@@ -135,7 +169,7 @@ namespace scene
 					return;
 				}
 
-				u8* offset = static_cast<u8*>(VertexBuffer->getVertices());
+				u8* offset = static_cast<u8*>(VertexBuffer[0]->getVertices());
 				offset += attribute->getOffset();
 
 				core::vector3df position(0.0f);
@@ -144,9 +178,9 @@ namespace scene
 
 				BoundingBox.reset(position);
 
-				for(u32 j = 1; j < VertexBuffer->getVertexCount(); ++j)
+				for(u32 j = 1; j < VertexBuffer[0]->getVertexCount(); ++j)
 				{
-					offset += VertexBuffer->getVertexSize();
+					offset += VertexBuffer[0]->getVertexSize();
 					memcpy(&position, offset, sizeof(core::vector3df));
 					BoundingBox.addInternalPoint(position);
 				}
@@ -160,10 +194,10 @@ namespace scene
 		*/
 		virtual void append(IVertexBuffer* vertexBuffer, IIndexBuffer* indexBuffer)
 		{
-			if(vertexBuffer == VertexBuffer || vertexBuffer->getVertexDescriptor() != VertexBuffer->getVertexDescriptor() || vertexBuffer->getVertexSize() != VertexBuffer->getVertexSize())
+			if(vertexBuffer == VertexBuffer[0] || vertexBuffer->getVertexDescriptor() != VertexBuffer[0]->getVertexDescriptor() || vertexBuffer->getVertexSize() != VertexBuffer[0]->getVertexSize())
 				return;
 
-			VertexBuffer->reallocate(VertexBuffer->getVertexCount() + vertexBuffer->getVertexCount());
+			VertexBuffer[0]->reallocate(VertexBuffer[0]->getVertexCount() + vertexBuffer->getVertexCount());
 
 			video::IVertexAttribute* attribute = vertexBuffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
@@ -171,7 +205,7 @@ namespace scene
 
 			for(u32 i = 0; i < vertexBuffer->getVertexCount(); ++i)
 			{
-				VertexBuffer->addVertex(offset);
+				VertexBuffer[0]->addVertex(offset);
 
 				if(attribute)
 				{
@@ -208,7 +242,7 @@ namespace scene
 		//! get the current hardware mapping hint
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex() const
 		{
-			return VertexBuffer->getHardwareMappingHint();
+			return VertexBuffer[0]->getHardwareMappingHint();
 		}
 
 		//! get the current hardware mapping hint
@@ -221,7 +255,7 @@ namespace scene
 		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX)
 		{
 			if(type == EBT_VERTEX_AND_INDEX || type == EBT_VERTEX)
-				VertexBuffer->setHardwareMappingHint(pMappingHint);
+				VertexBuffer[0]->setHardwareMappingHint(pMappingHint);
 
 			if(type == EBT_VERTEX_AND_INDEX || type == EBT_INDEX)
 				IndexBuffer->setHardwareMappingHint(pMappingHint);
@@ -231,7 +265,7 @@ namespace scene
 		virtual void setDirty(E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX)
 		{
 			if(type == EBT_VERTEX_AND_INDEX || type == EBT_VERTEX)
-				VertexBuffer->setDirty();
+				VertexBuffer[0]->setDirty();
 
 			if(type == EBT_VERTEX_AND_INDEX || type == EBT_INDEX)
 				IndexBuffer->setDirty();
@@ -241,7 +275,7 @@ namespace scene
 		/** This shouldn't be used for anything outside the VideoDriver. */
 		virtual u32 getChangedID_Vertex() const
 		{
-			return VertexBuffer->getChangedID();
+			return VertexBuffer[0]->getChangedID();
 		}
 
 		//! Get the currently used ID for identification of changes.
@@ -259,7 +293,7 @@ namespace scene
 		//! Material for this meshbuffer.
 		video::SMaterial Material;
 		//! Vertices of this buffer
-		scene::IVertexBuffer* VertexBuffer;
+		core::array<scene::IVertexBuffer*> VertexBuffer;
 		//! Indices into the vertices of this buffer.
 		scene::IIndexBuffer* IndexBuffer;
 		//! Bounding box of this meshbuffer.
