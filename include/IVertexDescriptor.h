@@ -61,6 +61,8 @@ namespace video
 		virtual u32 getTypeSize() const = 0;
 
 		virtual u32 getOffset() const = 0;
+
+		virtual u32 getBufferID() const = 0;
 	};
 
 	class IVertexDescriptor : public virtual IReferenceCounted
@@ -72,7 +74,7 @@ namespace video
 
 		virtual u32 getVertexSize() const = 0;
 
-		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type) = 0;
+		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID) = 0;
 
 		virtual IVertexAttribute* getAttribute(u32 id) const = 0;
 

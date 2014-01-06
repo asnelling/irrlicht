@@ -27,7 +27,7 @@ public:
 	CD3D11VertexDescriptor(ID3D11Device* device, const core::stringc& name, u32 id, u32 layerCount);
 	virtual ~CD3D11VertexDescriptor();
 
-	virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type);
+	virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID);
 
 	virtual bool removeAttribute(u32 id);
 

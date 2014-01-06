@@ -15,7 +15,7 @@ namespace video
 	{
 	public:
 		CVertexAttribute(const CVertexAttribute& vertexAttribute);
-		CVertexAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 offset);
+		CVertexAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 offset, u32 bufferID);
 		virtual ~CVertexAttribute();
 
 		virtual const core::stringc& getName() const;
@@ -32,6 +32,8 @@ namespace video
 
 		virtual void setOffset(u32 offset);
 
+		virtual u32 getBufferID() const;
+
 	protected:
 		core::stringc Name;
 
@@ -44,6 +46,8 @@ namespace video
 		u32 TypeSize;
 
 		u32 Offset;
+
+		u32 BufferID;
 	};
 
 	class CVertexDescriptor : public IVertexDescriptor
@@ -60,7 +64,7 @@ namespace video
 
 		virtual u32 getVertexSize() const;
 
-		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type);
+		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID);
 
 		virtual IVertexAttribute* getAttribute(u32 id) const;
 

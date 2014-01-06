@@ -55,7 +55,7 @@ namespace video
 		CD3D9VertexDescriptor(IDirect3DDevice9* device, const core::stringc& name, u32 id);
 		virtual ~CD3D9VertexDescriptor();
 
-		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type,s16 ElementStreamSource,s8 ElementUsageIndex);
+		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID);
 
 		virtual bool removeAttribute(u32 id);
 

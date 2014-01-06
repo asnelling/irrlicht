@@ -47,9 +47,9 @@ COpenGLVertexDescriptor::~COpenGLVertexDescriptor()
 	}
 }
 
-bool COpenGLVertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type)
+bool COpenGLVertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID)
 {
-	if(CVertexDescriptor::addAttribute(name, elementCount, semantic, type))
+	if(CVertexDescriptor::addAttribute(name, elementCount, semantic, type, bufferID))
 	{
 		for(u32 i = 0; i < Cache.size(); ++i)
 		{

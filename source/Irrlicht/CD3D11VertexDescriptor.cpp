@@ -34,9 +34,9 @@ CD3D11VertexDescriptor::~CD3D11VertexDescriptor()
 		Device->Release();
 }
 
-bool CD3D11VertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type)
+bool CD3D11VertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID)
 {
-	if(CVertexDescriptor::addAttribute(name, elementCount, semantic, type))
+	if(CVertexDescriptor::addAttribute(name, elementCount, semantic, type, bufferID))
 	{
 		clear();
 

@@ -39,11 +39,11 @@ CD3D9VertexDescriptor::~CD3D9VertexDescriptor()
 	clear();
 }
 
-bool CD3D9VertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type,s16 ElementStreamSource,s8 ElementUsageIndex)
+bool CD3D9VertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID)
 {
 	bool Status = false;
 
-	if (CVertexDescriptor::addAttribute(name, elementCount, semantic, type))
+	if (CVertexDescriptor::addAttribute(name, elementCount, semantic, type, bufferID))
 	{
 		clear();
 
