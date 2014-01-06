@@ -16,6 +16,7 @@ namespace video
 		Type = vertexAttribute.getType();
 		TypeSize = vertexAttribute.getTypeSize();
 		Offset = vertexAttribute.getOffset();
+		BufferID = vertexAttribute.getBufferID();
 	}
 
 	CVertexAttribute::CVertexAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 offset, u32 bufferID) :

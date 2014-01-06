@@ -47,7 +47,7 @@ namespace scene
 		{
 			bool Status = false;
 
-			if (vertexBuffer)
+			if (vertexBuffer && vertexBuffer->getVertexDescriptor() == VertexBuffer[0]->getVertexDescriptor())
 			{
 				vertexBuffer->grab();
 				VertexBuffer.push_back(vertexBuffer);
@@ -169,7 +169,9 @@ namespace scene
 					return;
 				}
 
-				u8* offset = static_cast<u8*>(VertexBuffer[0]->getVertices());
+				const u32 bufferID = attribute->getBufferID();
+
+				u8* offset = static_cast<u8*>(VertexBuffer[bufferID]->getVertices());
 				offset += attribute->getOffset();
 
 				core::vector3df position(0.0f);
@@ -178,9 +180,12 @@ namespace scene
 
 				BoundingBox.reset(position);
 
-				for(u32 j = 1; j < VertexBuffer[0]->getVertexCount(); ++j)
+				const u32 vertexCount = VertexBuffer[bufferID]->getVertexCount();
+				const u32 vertexSize = VertexBuffer[bufferID]->getVertexSize();
+
+				for(u32 j = 1; j < vertexCount; ++j)
 				{
-					offset += VertexBuffer[0]->getVertexSize();
+					offset += vertexSize;
 					memcpy(&position, offset, sizeof(core::vector3df));
 					BoundingBox.addInternalPoint(position);
 				}
@@ -192,37 +197,54 @@ namespace scene
 		or the main buffer is of standard type. Otherwise, behavior is
 		undefined.
 		*/
-		virtual void append(IVertexBuffer* vertexBuffer, IIndexBuffer* indexBuffer)
+		virtual void append(IVertexBuffer* vertexBuffer, IIndexBuffer* indexBuffer, u32 id = 0)
 		{
-			if(vertexBuffer == VertexBuffer[0] || vertexBuffer->getVertexDescriptor() != VertexBuffer[0]->getVertexDescriptor() || vertexBuffer->getVertexSize() != VertexBuffer[0]->getVertexSize())
+			if (id >= VertexBuffer.size() || !vertexBuffer || vertexBuffer->getVertexDescriptor() != VertexBuffer[id]->getVertexDescriptor() ||
+				vertexBuffer->getVertexSize() != VertexBuffer[id]->getVertexSize())
 				return;
 
-			VertexBuffer[0]->reallocate(VertexBuffer[0]->getVertexCount() + vertexBuffer->getVertexCount());
+			/*for (u32 i = 0; i < VertexBuffer.size(); ++i)
+			{
+				if (vertexBuffer == vertexBuffer[i])
+					return;
+			}*/
+
+			const u32 vertexCount = vertexBuffer->getVertexCount();
+			const u32 vertexSize = vertexBuffer->getVertexSize();
+
+			VertexBuffer[id]->reallocate(VertexBuffer[id]->getVertexCount() + vertexCount);
 
 			video::IVertexAttribute* attribute = vertexBuffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
 			u8* offset = static_cast<u8*>(vertexBuffer->getVertices());
 
-			for(u32 i = 0; i < vertexBuffer->getVertexCount(); ++i)
-			{
-				VertexBuffer[0]->addVertex(offset);
+			const u32 attributeOffset = attribute ? attribute->getOffset() : 0;
 
-				if(attribute)
+			for (u32 i = 0; i < vertexCount; ++i)
+			{
+				VertexBuffer[id]->addVertex(offset);
+
+				if (attribute)
 				{
-					u8* positionBuffer = offset + attribute->getOffset();
+					u8* positionBuffer = offset + attributeOffset;
 
 					core::vector3df position(0.0f);
 					memcpy(&position, positionBuffer, sizeof(core::vector3df));
 					BoundingBox.addInternalPoint(position);
 				}
 
-				offset += vertexBuffer->getVertexSize();
+				offset += vertexSize;
 			}
 
-			IndexBuffer->reallocate(IndexBuffer->getIndexCount() + indexBuffer->getIndexCount());
+			if (indexBuffer)
+			{
+				const u32 indexCount = indexBuffer->getIndexCount();
 
-			for(u32 i = 0; i < indexBuffer->getIndexCount(); ++i)
-				IndexBuffer->addIndex(indexBuffer->getIndex(i));
+				IndexBuffer->reallocate(IndexBuffer->getIndexCount() + indexCount);
+
+				for (u32 i = 0; i < indexCount; ++i)
+					IndexBuffer->addIndex(indexBuffer->getIndex(i));
+			}
 		}
 
 		//! Append the meshbuffer to the current buffer
@@ -233,16 +255,21 @@ namespace scene
 		*/
 		virtual void append(IMeshBuffer* meshBuffer)
 		{
-			if(this == meshBuffer)
+			if (this == meshBuffer)
 				return;
 
-			append(meshBuffer->getVertexBuffer(), meshBuffer->getIndexBuffer());
+			append(meshBuffer->getVertexBuffer(0), meshBuffer->getIndexBuffer());
+
+			const u32 bufferCount = meshBuffer->getVertexBufferCount();
+
+			for (u32 i = 1; i < bufferCount && i < VertexBuffer.size(); ++i)
+				append(meshBuffer->getVertexBuffer(i), 0, i);
 		}
 
 		//! get the current hardware mapping hint
-		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex() const
+		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex(u32 id = 0) const
 		{
-			return VertexBuffer[0]->getHardwareMappingHint();
+			return (id < VertexBuffer.size()) ? VertexBuffer[id]->getHardwareMappingHint() : EHM_NEVER;
 		}
 
 		//! get the current hardware mapping hint
@@ -252,20 +279,20 @@ namespace scene
 		}
 
 		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX)
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX, u32 id = 0)
 		{
-			if(type == EBT_VERTEX_AND_INDEX || type == EBT_VERTEX)
-				VertexBuffer[0]->setHardwareMappingHint(pMappingHint);
+			if((type == EBT_VERTEX_AND_INDEX || type == EBT_VERTEX) && id < VertexBuffer.size())
+				VertexBuffer[id]->setHardwareMappingHint(pMappingHint);
 
 			if(type == EBT_VERTEX_AND_INDEX || type == EBT_INDEX)
 				IndexBuffer->setHardwareMappingHint(pMappingHint);
 		}
 
 		//! flags the mesh as changed, reloads hardware buffers
-		virtual void setDirty(E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX)
+		virtual void setDirty(E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX, u32 id = 0)
 		{
-			if(type == EBT_VERTEX_AND_INDEX || type == EBT_VERTEX)
-				VertexBuffer[0]->setDirty();
+			if((type == EBT_VERTEX_AND_INDEX || type == EBT_VERTEX) && id < VertexBuffer.size())
+				VertexBuffer[id]->setDirty();
 
 			if(type == EBT_VERTEX_AND_INDEX || type == EBT_INDEX)
 				IndexBuffer->setDirty();
@@ -273,9 +300,9 @@ namespace scene
 
 		//! Get the currently used ID for identification of changes.
 		/** This shouldn't be used for anything outside the VideoDriver. */
-		virtual u32 getChangedID_Vertex() const
+		virtual u32 getChangedID_Vertex(u32 id = 0) const
 		{
-			return VertexBuffer[0]->getChangedID();
+			return (id < VertexBuffer.size()) ? VertexBuffer[id]->getChangedID() : 0;
 		}
 
 		//! Get the currently used ID for identification of changes.

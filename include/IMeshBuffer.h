@@ -81,7 +81,7 @@ namespace scene
 		//! Recalculates the bounding box. Should be called if the mesh changed.
 		virtual void recalculateBoundingBox() = 0;
 
-		virtual void append(IVertexBuffer* vertexBuffer, IIndexBuffer* indexBuffer) = 0;
+		virtual void append(IVertexBuffer* vertexBuffer, IIndexBuffer* indexBuffer, u32 id = 0) = 0;
 
 		//! Append the meshbuffer to the current buffer
 		/** Only works for compatible vertex types
@@ -89,20 +89,20 @@ namespace scene
 		virtual void append(IMeshBuffer* meshBuffer) = 0;
 
 		//! get the current hardware mapping hint
-		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex() const = 0;
+		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex(u32 id = 0) const = 0;
 
 		//! get the current hardware mapping hint
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint_Index() const = 0;
 
 		//! set the hardware mapping hint, for driver
-		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX) = 0;
+		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING pMappingHint, E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX, u32 id = 0) = 0;
 
 		//! flags the meshbuffer as changed, reloads hardware buffers
-		virtual void setDirty(E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX) = 0;
+		virtual void setDirty(E_BUFFER_TYPE type = EBT_VERTEX_AND_INDEX, u32 id = 0) = 0;
 
 		//! Get the currently used ID for identification of changes.
 		/** This shouldn't be used for anything outside the VideoDriver. */
-		virtual u32 getChangedID_Vertex() const = 0;
+		virtual u32 getChangedID_Vertex(u32 id = 0) const = 0;
 
 		//! Get the currently used ID for identification of changes.
 		/** This shouldn't be used for anything outside the VideoDriver. */
