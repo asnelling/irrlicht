@@ -376,7 +376,7 @@ namespace video
 		//! Draws the normals of a mesh buffer
 		virtual void drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length=10.f, SColor color=0xffffffff);
 
-		virtual bool addVertexDescriptor(const core::stringc& pName);
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName);
 
 		virtual IVertexDescriptor* getVertexDescriptor(u32 id) const;
 

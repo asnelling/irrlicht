@@ -45,17 +45,17 @@ namespace scene
 
 		virtual bool addVertexBuffer(IVertexBuffer* vertexBuffer)
 		{
-			bool Status = false;
+			bool status = false;
 
 			if (vertexBuffer && vertexBuffer->getVertexDescriptor() == VertexBuffer[0]->getVertexDescriptor())
 			{
 				vertexBuffer->grab();
 				VertexBuffer.push_back(vertexBuffer);
 
-				Status = true;
+				status = true;
 			}
 
-			return Status;
+			return status;
 		}
 
 		virtual IVertexBuffer* getVertexBuffer(u32 id = 0) const

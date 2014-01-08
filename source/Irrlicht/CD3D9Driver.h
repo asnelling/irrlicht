@@ -354,7 +354,7 @@ namespace video
 		//! Get Irrlicht color format from D3D color format.
 		ECOLOR_FORMAT getColorFormatFromD3DFormat(D3DFORMAT format) const;
 
-		virtual bool addVertexDescriptor(const core::stringc& pName);
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName);
 
 		//! Get Cg context
 		#ifdef _IRR_COMPILE_WITH_CG_

@@ -60,7 +60,13 @@ namespace scene
 
 		virtual void set_used(u32 used)
 		{
-			Vertices.set_used(used);
+			Vertices.reallocate(used);
+
+			for (u32 i = 0; i < used; ++i)
+			{
+				T element;
+				Vertices.push_back(element);
+			}
 		}
 
 		virtual void reallocate(u32 size)

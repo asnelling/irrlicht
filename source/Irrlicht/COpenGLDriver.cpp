@@ -37,7 +37,7 @@ COpenGLVertexDescriptor::COpenGLVertexDescriptor(const core::stringc& name, u32 
 	for(u32 i = 0; i < layerCount; ++i)
 		addLocationLayer();
 }
-		
+
 COpenGLVertexDescriptor::~COpenGLVertexDescriptor()
 {
 	for(u32 i = 0; i < Cache.size(); ++i)
@@ -60,7 +60,7 @@ bool COpenGLVertexDescriptor::addAttribute(const core::stringc& name, u32 elemen
 		return true;
 	}
 
-	return false;	
+	return false;
 }
 
 bool COpenGLVertexDescriptor::removeAttribute(u32 id)
@@ -76,7 +76,7 @@ bool COpenGLVertexDescriptor::removeAttribute(u32 id)
 		return true;
 	}
 
-	return false;	
+	return false;
 }
 
 void COpenGLVertexDescriptor::removeAllAttribute()
@@ -748,7 +748,7 @@ COpenGLDriver::~COpenGLDriver()
 	if (CgContext)
 		cgDestroyContext(CgContext);
 	#endif
-    
+
     if (BridgeCalls)
         delete BridgeCalls;
 
@@ -813,10 +813,10 @@ bool COpenGLDriver::genericDriverInit()
 	CurrentTexture.clear();
 	// load extensions
 	initExtensions(Params.Stencilbuffer);
-    
+
     if (!BridgeCalls)
         BridgeCalls = new COpenGLCallBridge(this);
-    
+
 	if (queryFeature(EVDF_ARB_GLSL))
 	{
 		char buf[32];
@@ -892,7 +892,7 @@ bool COpenGLDriver::genericDriverInit()
     Quad2DIndices[3] = 0;
     Quad2DIndices[4] = 1;
     Quad2DIndices[5] = 2;
-    
+
     Line2DIndices[0] = 0;
     Line2DIndices[1] = 1;
 
@@ -1165,13 +1165,13 @@ bool COpenGLDriver::updateVertexHardwareBuffer(SHWBufferLink_opengl* buffer)
 	const scene::IMeshBuffer* meshBuffer = buffer->MeshBuffer;
 
 	const void* Vertices = meshBuffer->getVertexBuffer()->getVertices();
-	u32 VertexCount = meshBuffer->getVertexBuffer()->getVertexCount();
-	u32 VertexSize = meshBuffer->getVertexBuffer()->getVertexSize();
+	const u32 VertexCount = meshBuffer->getVertexBuffer()->getVertexCount();
+	const u32 VertexSize = meshBuffer->getVertexBuffer()->getVertexSize();
 	IVertexDescriptor* vertexDescriptor = meshBuffer->getVertexBuffer()->getVertexDescriptor();
 
 	if(!vertexDescriptor)
 		return false;
-		
+
 	/*
 		const c8* vbuf = static_cast<const c8*>(vertices);
 		core::array<c8> buffer;
@@ -1224,7 +1224,7 @@ bool COpenGLDriver::updateVertexHardwareBuffer(SHWBufferLink_opengl* buffer)
 
 	bool CreateBuffer = false;
 
-	if(!buffer->vbo_verticesID)
+	if (!buffer->vbo_verticesID)
 	{
 		extGlGenBuffers(1, &buffer->vbo_verticesID);
 
@@ -1233,7 +1233,7 @@ bool COpenGLDriver::updateVertexHardwareBuffer(SHWBufferLink_opengl* buffer)
 
 		CreateBuffer = true;
 	}
-	else if(buffer->vbo_verticesSize < VertexCount * VertexSize)
+	else if (buffer->vbo_verticesSize < VertexCount * VertexSize)
 	{
 		CreateBuffer = true;
 	}
@@ -1242,15 +1242,15 @@ bool COpenGLDriver::updateVertexHardwareBuffer(SHWBufferLink_opengl* buffer)
 
 	glGetError();
 
-	if(!CreateBuffer)
-		extGlBufferSubData(GL_ARRAY_BUFFER, 0,  VertexCount * VertexSize, buffer);
+	if (!CreateBuffer)
+		extGlBufferSubData(GL_ARRAY_BUFFER, 0,  VertexCount * VertexSize, Vertices);
 	else
 	{
 		buffer->vbo_verticesSize = VertexCount * VertexSize;
 
-		if(buffer->Mapped_Vertex == scene::EHM_STATIC)
+		if (buffer->Mapped_Vertex == scene::EHM_STATIC)
 			extGlBufferData(GL_ARRAY_BUFFER,  VertexCount * VertexSize, Vertices, GL_STATIC_DRAW);
-		else if(buffer->Mapped_Vertex == scene::EHM_DYNAMIC)
+		else if (buffer->Mapped_Vertex == scene::EHM_DYNAMIC)
 			extGlBufferData(GL_ARRAY_BUFFER,  VertexCount * VertexSize, Vertices, GL_DYNAMIC_DRAW);
 		else //scene::EHM_STREAM
 			extGlBufferData(GL_ARRAY_BUFFER,  VertexCount * VertexSize, Vertices, GL_STREAM_DRAW);
@@ -1267,22 +1267,22 @@ bool COpenGLDriver::updateVertexHardwareBuffer(SHWBufferLink_opengl* buffer)
 
 bool COpenGLDriver::updateIndexHardwareBuffer(SHWBufferLink_opengl* buffer)
 {
-	if(!buffer)
+	if (!buffer)
 		return false;
 
-	if(!FeatureAvailable[IRR_ARB_vertex_buffer_object])
+	if (!FeatureAvailable[IRR_ARB_vertex_buffer_object])
 		return false;
 
 #if defined(GL_ARB_vertex_buffer_object)
 	const scene::IMeshBuffer* meshBuffer = buffer->MeshBuffer;
 
 	void* Indices = meshBuffer->getIndexBuffer()->getIndices();
-	u32 IndexCount = meshBuffer->getIndexBuffer()->getIndexCount();
-	GLenum IndexSize = meshBuffer->getIndexBuffer()->getIndexSize();
+	const u32 IndexCount = meshBuffer->getIndexBuffer()->getIndexCount();
+	const GLenum IndexSize = meshBuffer->getIndexBuffer()->getIndexSize();
 
 	bool CreateBuffer = false;
 
-	if(!buffer->vbo_indicesID)
+	if (!buffer->vbo_indicesID)
 	{
 		extGlGenBuffers(1, &buffer->vbo_indicesID);
 
@@ -1291,7 +1291,7 @@ bool COpenGLDriver::updateIndexHardwareBuffer(SHWBufferLink_opengl* buffer)
 
 		CreateBuffer = true;
 	}
-	else if(buffer->vbo_indicesSize < IndexCount * IndexSize)
+	else if (buffer->vbo_indicesSize < IndexCount * IndexSize)
 	{
 		CreateBuffer = true;
 	}
@@ -1300,15 +1300,15 @@ bool COpenGLDriver::updateIndexHardwareBuffer(SHWBufferLink_opengl* buffer)
 
 	glGetError();
 
-	if(!CreateBuffer)
+	if (!CreateBuffer)
 		extGlBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, IndexCount * IndexSize, Indices);
 	else
 	{
 		buffer->vbo_indicesSize = IndexCount * IndexSize;
 
-		if(buffer->Mapped_Index == scene::EHM_STATIC)
+		if (buffer->Mapped_Index == scene::EHM_STATIC)
 			extGlBufferData(GL_ELEMENT_ARRAY_BUFFER, IndexCount * IndexSize, Indices, GL_STATIC_DRAW);
-		else if(buffer->Mapped_Index == scene::EHM_DYNAMIC)
+		else if (buffer->Mapped_Index == scene::EHM_DYNAMIC)
 			extGlBufferData(GL_ELEMENT_ARRAY_BUFFER, IndexCount * IndexSize, Indices, GL_DYNAMIC_DRAW);
 		else //scene::EHM_STREAM
 			extGlBufferData(GL_ELEMENT_ARRAY_BUFFER, IndexCount * IndexSize, Indices, GL_STREAM_DRAW);
@@ -1814,7 +1814,7 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 							location = extGlGetAttribLocation(glslProgram, vertexDescriptor->getAttribute(i)->getName().c_str());
 							vertexDescriptor->setLocation((u32)Material.MaterialType, i, location);
 						}
-					}					
+					}
 
 					if(location != -1)
 					{
@@ -2691,7 +2691,7 @@ void COpenGLDriver::draw2DImage(const video::ITexture* texture,
 		Quad2DVertices[1].TCoords = core::vector2df(tcoords.LowerRightCorner.X, tcoords.UpperLeftCorner.Y);
 		Quad2DVertices[2].TCoords = core::vector2df(tcoords.LowerRightCorner.X, tcoords.LowerRightCorner.Y);
 		Quad2DVertices[3].TCoords = core::vector2df(tcoords.UpperLeftCorner.X, tcoords.LowerRightCorner.Y);
-	
+
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, Quad2DIndices);
 
 		targetPos.X += sourceRects[currentIndex].getWidth();
@@ -3548,7 +3548,7 @@ void COpenGLDriver::setBasicRenderStates(const SMaterial& material, const SMater
 	// be sure to leave in texture stage 0
     BridgeCalls->setActiveTexture(GL_TEXTURE0_ARB);
 }
-    
+
 //! Compare in SMaterial doesn't check texture parameters, so we should call this on each OnRender call.
 void COpenGLDriver::setTextureRenderStates(const SMaterial& material, bool resetAllRenderstates, bool fixedPipeline)
 {
@@ -3774,7 +3774,7 @@ void COpenGLDriver::setRenderStates2DMode(bool alpha, bool texture, bool alphaCh
             setTextureRenderStates(OverrideMaterial2D, false, true);
         else
             setTextureRenderStates(InitMaterial2D, false, true);
-        
+
 		Material.setTexture(0, const_cast<video::ITexture*>(CurrentTexture[0]));
 		setTransform(ETS_TEXTURE_0, core::IdentityMatrix);
 		// Due to the transformation change, the previous line would call a reset each frame
@@ -5160,16 +5160,16 @@ void COpenGLDriver::removeDepthTexture(ITexture* texture)
 }
 
 
-bool COpenGLDriver::addVertexDescriptor(const core::stringc& pName)
+IVertexDescriptor* COpenGLDriver::addVertexDescriptor(const core::stringc& pName)
 {
 	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
 		if(pName == VertexDescriptor[i]->getName())
-			return false;
+			return VertexDescriptor[i];
 
 	CVertexDescriptor* vertexDescriptor = new COpenGLVertexDescriptor(pName, VertexDescriptor.size(), MaterialRenderers.size());
 	VertexDescriptor.push_back(vertexDescriptor);
 
-	return true;
+	return vertexDescriptor;
 }
 
 
@@ -5345,7 +5345,7 @@ const SMaterial& COpenGLDriver::getCurrentMaterial() const
 {
     return Material;
 }
-    
+
 COpenGLCallBridge* COpenGLDriver::getBridgeCalls() const
 {
     return BridgeCalls;
@@ -5357,7 +5357,7 @@ const CGcontext& COpenGLDriver::getCgContext()
     return CgContext;
 }
 #endif
-    
+
 COpenGLCallBridge::COpenGLCallBridge(COpenGLDriver* driver) : Driver(driver),
 	AlphaMode(GL_ALWAYS), AlphaRef(0.0f), AlphaTest(false),
 	BlendSource(GL_ONE), BlendDestination(GL_ZERO), Blend(false),
@@ -5382,19 +5382,19 @@ COpenGLCallBridge::COpenGLCallBridge(COpenGLDriver* driver) : Driver(driver),
 
 	glCullFace(GL_BACK);
 	glDisable(GL_CULL_FACE);
-    
+
 	glDepthFunc(GL_LESS);
     glDepthMask(GL_TRUE);
     glDisable(GL_DEPTH_TEST);
 
     glMatrixMode(GL_MODELVIEW);
-    
+
     if(Driver->MultiTextureExtension)
 	{
         Driver->extGlActiveTexture(GL_TEXTURE0_ARB);
 		Driver->extGlClientActiveTexture(GL_TEXTURE0_ARB);
 	}
-    
+
     glDisable(GL_TEXTURE_2D);
 
 	glDisableClientState(GL_VERTEX_ARRAY);
@@ -5422,7 +5422,7 @@ void COpenGLCallBridge::setAlphaTest(bool enable)
             glEnable(GL_ALPHA_TEST);
         else
             glDisable(GL_ALPHA_TEST);
-                
+
         AlphaTest = enable;
     }
 }
@@ -5446,7 +5446,7 @@ void COpenGLCallBridge::setBlend(bool enable)
             glEnable(GL_BLEND);
         else
             glDisable(GL_BLEND);
-                
+
         Blend = enable;
     }
 }
@@ -5501,7 +5501,7 @@ void COpenGLCallBridge::setCullFaceFunc(GLenum mode)
     if(CullFaceMode != mode)
     {
 		glCullFace(mode);
-                
+
         CullFaceMode = mode;
     }
 }
@@ -5514,7 +5514,7 @@ void COpenGLCallBridge::setCullFace(bool enable)
             glEnable(GL_CULL_FACE);
         else
             glDisable(GL_CULL_FACE);
-                
+
         CullFace = enable;
     }
 }
@@ -5524,11 +5524,11 @@ void COpenGLCallBridge::setDepthFunc(GLenum mode)
     if(DepthFunc != mode)
     {
 		glDepthFunc(mode);
-                
+
         DepthFunc = mode;
     }
 }
-        
+
 void COpenGLCallBridge::setDepthMask(bool enable)
 {
     if(DepthMask != enable)
@@ -5537,7 +5537,7 @@ void COpenGLCallBridge::setDepthMask(bool enable)
             glDepthMask(GL_TRUE);
         else
             glDepthMask(GL_FALSE);
-                
+
         DepthMask = enable;
     }
 }
@@ -5550,11 +5550,11 @@ void COpenGLCallBridge::setDepthTest(bool enable)
             glEnable(GL_DEPTH_TEST);
         else
             glDisable(GL_DEPTH_TEST);
-                
+
         DepthTest = enable;
     }
 }
-        
+
 void COpenGLCallBridge::setMatrixMode(GLenum mode)
 {
     if (MatrixMode != mode)
@@ -5563,7 +5563,7 @@ void COpenGLCallBridge::setMatrixMode(GLenum mode)
         MatrixMode = mode;
     }
 }
-        
+
 void COpenGLCallBridge::setActiveTexture(GLenum texture)
 {
     if (Driver->MultiTextureExtension && ActiveTexture != texture)
@@ -5581,7 +5581,7 @@ void COpenGLCallBridge::setClientActiveTexture(GLenum texture)
         ClientActiveTexture = texture;
     }
 }
-        
+
 void COpenGLCallBridge::setTexture(u32 stage, bool fixedPipeline)
 {
     if (stage < MATERIAL_MAX_TEXTURES)
@@ -5599,7 +5599,7 @@ void COpenGLCallBridge::setTexture(u32 stage, bool fixedPipeline)
             }
             else if(fixedPipeline)
                 glDisable(GL_TEXTURE_2D);
-                
+
             TextureFixedPipeline[stage] = fixedPipeline;
             Texture[stage] = Driver->CurrentTexture[stage];
         }

@@ -3558,16 +3558,16 @@ bool CD3D11Driver::disableTextures(u32 fromStage)
 	return result;
 }
 
-bool CD3D11Driver::addVertexDescriptor(const core::stringc& pName)
+IVertexDescriptor* CD3D11Driver::addVertexDescriptor(const core::stringc& pName)
 {
 	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
 		if(pName == VertexDescriptor[i]->getName())
-			return false;
+			return VertexDescriptor[i];
 
 	CVertexDescriptor* vertexDescriptor = new CD3D11VertexDescriptor(Device, pName, VertexDescriptor.size(), MaterialRenderers.size());
 	VertexDescriptor.push_back(vertexDescriptor);
 
-	return true;
+	return vertexDescriptor;
 }
 
 } // end namespace video

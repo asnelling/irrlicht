@@ -595,11 +595,12 @@ namespace scene
 
 			for(u32 i = 0; i < mesh->getMeshBufferCount(); ++i)
 			{
-				IMeshBuffer* meshBuffer = mesh->getMeshBuffer(i);
+				const IMeshBuffer* meshBuffer = mesh->getMeshBuffer(i);
 
-				if (meshBuffer->getVertexBuffer()->getVertexCount() && meshBuffer->getIndexBuffer()->getIndexCount())
+				if (meshBuffer->getIndexBuffer()->getIndexCount() > 0)
 				{
-					CMeshBuffer<T>* newMeshBuffer = new CMeshBuffer<T>(meshBuffer->getVertexBuffer()->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getType());
+					CMeshBuffer<T>* newMeshBuffer = new CMeshBuffer<T>(meshBuffer->getVertexBuffer(0)->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getType());
+
 					newMeshBuffer->Material = meshBuffer->getMaterial();
 					meshBufferA.push_back(newMeshBuffer);
 				}
@@ -1680,4 +1681,3 @@ namespace scene
 } // end namespace irr
 
 #endif
-

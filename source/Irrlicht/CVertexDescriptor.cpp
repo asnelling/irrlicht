@@ -143,7 +143,7 @@ namespace video
 
 		VertexSize += (attribute.getTypeSize() * attribute.getElementCount());
 
-		return false;
+		return true;
 	}
 
 	IVertexAttribute* CVertexDescriptor::getAttribute(u32 id) const

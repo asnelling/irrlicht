@@ -1764,16 +1764,16 @@ void CNullDriver::drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length
 }
 
 
-bool CNullDriver::addVertexDescriptor(const core::stringc& pName)
+IVertexDescriptor* CNullDriver::addVertexDescriptor(const core::stringc& pName)
 {
-	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
-		if(pName == VertexDescriptor[i]->getName())
-			return false;
+	for (u32 i = 0; i < VertexDescriptor.size(); ++i)
+		if (pName == VertexDescriptor[i]->getName())
+			return VertexDescriptor[i];
 
 	CVertexDescriptor* vertexDescriptor = new CVertexDescriptor(pName, VertexDescriptor.size());
 	VertexDescriptor.push_back(vertexDescriptor);
 
-	return true;
+	return vertexDescriptor;
 }
 
 

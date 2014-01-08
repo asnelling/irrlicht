@@ -550,7 +550,7 @@ namespace video
 
 		bool disableTextures( u32 fromStage = 0);
 
-		virtual bool addVertexDescriptor(const core::stringc& pName);
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName);
 	};
 }
 }

@@ -2220,16 +2220,16 @@ void CD3D9Driver::drawPixel(u32 x, u32 y, const SColor & color)
 }
 
 
-bool CD3D9Driver::addVertexDescriptor(const core::stringc& pName)
+IVertexDescriptor* CD3D9Driver::addVertexDescriptor(const core::stringc& pName)
 {
 	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
 		if(pName == VertexDescriptor[i]->getName())
-			return false;
+			return VertexDescriptor[i];
 
 	CVertexDescriptor* vertexDescriptor = new CD3D9VertexDescriptor(pID3DDevice, pName, VertexDescriptor.size());
 	VertexDescriptor.push_back(vertexDescriptor);
 
-	return true;
+	return vertexDescriptor;
 }
 
 

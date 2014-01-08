@@ -1485,7 +1485,7 @@ namespace video
 		virtual void convertColor(const void* sP, ECOLOR_FORMAT sF, s32 sN,
 				void* dP, ECOLOR_FORMAT dF) const =0;
 
-		virtual bool addVertexDescriptor(const core::stringc& pName) = 0;
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName) = 0;
 
 		virtual IVertexDescriptor* getVertexDescriptor(u32 id) const = 0;
 

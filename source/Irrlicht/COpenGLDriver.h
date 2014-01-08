@@ -448,7 +448,7 @@ namespace video
         //! Get current material.
         const SMaterial& getCurrentMaterial() const;
 		
-		virtual bool addVertexDescriptor(const core::stringc& pName);
+		virtual IVertexDescriptor* addVertexDescriptor(const core::stringc& pName);
 
 		GLuint getActiveGLSLProgram();
 		

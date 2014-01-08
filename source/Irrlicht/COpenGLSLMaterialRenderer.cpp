@@ -106,7 +106,7 @@ COpenGLSLMaterialRenderer::~COpenGLSLMaterialRenderer()
 	{
 		if (Driver->getActiveGLSLProgram() == Program)
 			Driver->setActiveGLSLProgram(0);
-	}	
+	}
 
 	if (CallBack)
 		CallBack->drop();
@@ -429,8 +429,15 @@ bool COpenGLSLMaterialRenderer::linkProgram()
 
 			GLint size;
 			Driver->extGlGetActiveUniform(Program2, i, maxlen, 0, &size, &ui.type, reinterpret_cast<GLchar*>(buf));
-			ui.name = buf;
-			ui.location = Driver->extGlGetUniformLocation(Program2, buf);
+
+            core::stringc name = "";
+
+			// array support.
+			for (u32 i = 0; buf[i] != '\0' && buf[i] != '['; ++i)
+                name += buf[i];
+
+			ui.name = name;
+			ui.location = Driver->extGlGetUniformLocation(Program2, name.c_str());
 
 			UniformInfo.push_back(ui);
 		}
@@ -506,8 +513,15 @@ bool COpenGLSLMaterialRenderer::linkProgram()
 
 			GLint size;
 			Driver->extGlGetActiveUniformARB(Program, i, maxlen, 0, &size, &ui.type, reinterpret_cast<GLcharARB*>(buf));
-			ui.name = buf;
-			ui.location = Driver->extGlGetUniformLocationARB(Program, buf);
+
+			core::stringc name = "";
+
+			// array support.
+			for (u32 i = 0; buf[i] != '\0' && buf[i] != '['; ++i)
+                name += buf[i];
+
+			ui.name = name;
+			ui.location = Driver->extGlGetUniformLocationARB(Program, name.c_str());
 
 			UniformInfo.push_back(ui);
 		}
