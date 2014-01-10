@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectName>29.HardwareSkinning</ProjectName>
-    <ProjectGuid>{5CE0E2E7-879D-4152-B61D-24E7D0707B45}</ProjectGuid>
+    <ProjectGuid>{8C7E28D3-7CCC-4BDE-BAA9-5B18C5304503}</ProjectGuid>
     <RootNamespace>HardwareSkinning</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

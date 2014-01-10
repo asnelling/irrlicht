@@ -62,7 +62,7 @@ namespace scene
 		{
 			Vertices.reallocate(used);
 
-			for (u32 i = 0; i < used; ++i)
+			while (Vertices.size() < used)
 			{
 				T element;
 				Vertices.push_back(element);
