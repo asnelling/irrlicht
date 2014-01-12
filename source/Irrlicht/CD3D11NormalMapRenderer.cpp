@@ -140,22 +140,20 @@ CD3D11NormalMapRenderer::CD3D11NormalMapRenderer(ID3D11Device* device, video::IV
 	{
 		CD3D11NormalMapRenderer* r = static_cast<CD3D11NormalMapRenderer*>(renderer);
 
-		vsShader = r->vsShader;
+		shaders[EST_VERTEX_SHADER] = r->shaders[EST_VERTEX_SHADER];
 
-		if(vsShader)
-			vsShader->AddRef();
+		if (shaders[EST_VERTEX_SHADER])
+			shaders[EST_VERTEX_SHADER]->AddRef();
 
-		psShader = r->psShader;
+		shaders[EST_PIXEL_SHADER] = r->shaders[EST_PIXEL_SHADER];
 
-		if(psShader)
-			psShader->AddRef();
+		if (shaders[EST_PIXEL_SHADER])
+			shaders[EST_PIXEL_SHADER]->AddRef();
 
 		buffer = r->buffer;
 
 		if(buffer)
 			buffer->AddRef();
-
-		sameFile = r->sameFile;
 
 		cbPerFrameId = r->cbPerFrameId;
 	}

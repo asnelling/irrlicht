@@ -162,23 +162,21 @@ CD3D11ParallaxMapRenderer::CD3D11ParallaxMapRenderer(
 	{
 		CD3D11ParallaxMapRenderer* r = static_cast<CD3D11ParallaxMapRenderer*>(renderer);
 
-		vsShader = r->vsShader;
+		shaders[EST_VERTEX_SHADER] = r->shaders[EST_VERTEX_SHADER];
 
-		if(vsShader)
-			vsShader->AddRef();
+		if (shaders[EST_VERTEX_SHADER])
+			shaders[EST_VERTEX_SHADER]->AddRef();
 
-		psShader = r->psShader;
+		shaders[EST_PIXEL_SHADER] = r->shaders[EST_PIXEL_SHADER];
 
-		if(psShader)
-			psShader->AddRef();
+		if (shaders[EST_PIXEL_SHADER])
+			shaders[EST_PIXEL_SHADER]->AddRef();
 
 		buffer = r->buffer;
 		UserData = r->UserData;
 
 		if(buffer)
 			buffer->AddRef();
-
-		sameFile = r->sameFile;
 
 		cbPerFrameId = r->cbPerFrameId;
 	}

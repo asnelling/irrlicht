@@ -19,18 +19,29 @@
 
 #include <d3dcompiler.h>
 
-class IncludeFX : public ID3DInclude 
+class CShaderInclude : public ID3DInclude
 { 
 public:
-	IncludeFX(irr::io::IFileSystem* fileSystem)
+	CShaderInclude(irr::io::IFileSystem* fileSystem)
 	{
 		FileSystem = fileSystem;
+
+		if (FileSystem)
+			FileSystem->grab();
 	} 
+
+	~CShaderInclude()
+	{
+		if (FileSystem)
+			FileSystem->drop();
+	}
 
 	virtual STDMETHODIMP Close( THIS_ LPCVOID pData ) 
 	{
-		if(pData)
-			delete[] pData;
+		irr::c8* data = (irr::c8*)pData;
+		
+		if(data)
+			delete[] data;
 
 		return S_OK;
 	}
@@ -38,12 +49,12 @@ public:
 	virtual STDMETHODIMP Open( THIS_ D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes ) 
 	{
 		irr::io::IReadFile* file = FileSystem->createAndOpenFile(pFileName);
+		
 		if (!file)
 		{
-			irr::os::Printer::log("Could not open included shader program file.",
-				pFileName, irr::ELL_WARNING);
+			irr::os::Printer::log("Could not open included shader program file",
+				pFileName, irr::ELL_ERROR);
 			return S_FALSE;
-
 		}
 
 		irr::u32 mBytes = file->getSize();
@@ -51,7 +62,8 @@ public:
 
 		irr::c8* retInclude = new irr::c8[mBytes+1];
 		file->read(retInclude, mBytes);
-		retInclude[mBytes] = 0;
+		retInclude[mBytes] = '\0';
+
 		ppData = (LPCVOID*)retInclude;
 
 		file->drop();
@@ -77,14 +89,16 @@ CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device, video::IVid
 		IShaderConstantSetCallBack* callback, IMaterialRenderer* baseRenderer, s32 userData, io::IFileSystem* fileSystem)
 	: Driver(driver), Device(device), Context(NULL), BridgeCalls(bridgeCalls),
 	BaseRenderer(baseRenderer), CallBack(callback), UserData(userData),
-	vsShader(NULL), psShader(NULL), gsShader(NULL), hsShader(NULL), dsShader(NULL), csShader(NULL),
-	includer(NULL), buffer(NULL), sameFile(false)
+	includer(NULL), buffer(NULL)
 {
 #ifdef _DEBUG
 	setDebugName("CD3D11MaterialRenderer");
 #endif
 
 	outMaterialTypeNr = -1;
+
+	for (int i = 0; i < EST_COUNT; ++i)
+		shaders[i] = NULL;
 
 	if (Device)
 	{
@@ -99,7 +113,7 @@ CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device, video::IVid
 		CallBack->grab();
 
 	if(fileSystem)
-		includer = new IncludeFX(fileSystem);
+		includer = new CShaderInclude(fileSystem);
 
 	if(!init(vertexShaderProgram, vertexShaderEntryPointName, vsCompileTarget,
 		     pixelShaderProgram, pixelShaderEntryPointName, psCompileTarget,
@@ -114,8 +128,7 @@ CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device, video::IVid
 
 CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device, video::IVideoDriver* driver, CD3D11CallBridge* bridgeCalls, IShaderConstantSetCallBack* callback, IMaterialRenderer* baseRenderer, io::IFileSystem* fileSystem, s32 userData)
 											   : Driver(driver), Device(device), Context(NULL), BridgeCalls(bridgeCalls), BaseRenderer(baseRenderer), CallBack(callback), UserData(userData),
-											   vsShader(NULL), psShader(NULL), gsShader(NULL), hsShader(NULL), dsShader(NULL), csShader(NULL),
-											   includer(NULL), buffer(NULL), sameFile(false)
+											   includer(NULL), buffer(NULL)
 {
 #ifdef _DEBUG
 	setDebugName("CD3D11MaterialRenderer");
@@ -133,8 +146,11 @@ CD3D11MaterialRenderer::CD3D11MaterialRenderer(ID3D11Device* device, video::IVid
 	if(CallBack)
 		CallBack->grab();
 
+	for (int i = 0; i < EST_COUNT; ++i)
+		shaders[i] = NULL;
+
 	if(fileSystem)
-		includer = new IncludeFX(fileSystem);
+		includer = new CShaderInclude(fileSystem);
 }
 
 CD3D11MaterialRenderer::~CD3D11MaterialRenderer()
@@ -154,26 +170,29 @@ CD3D11MaterialRenderer::~CD3D11MaterialRenderer()
 	if(includer)
 		delete includer;
 
-	if(vsShader)
-		vsShader->Release();
-
-	if(psShader)
-		psShader->Release();
-
-	if(gsShader)
-		gsShader->Release();
-
-	if(hsShader)
-		hsShader->Release();
-
-	if(dsShader)
-		dsShader->Release();
-
-	if(csShader)
-		csShader->Release();
+	for (int i = 0; i < EST_COUNT; ++i)
+		if (shaders[i])
+			shaders[i]->Release();
 
 	if(buffer)
 		buffer->Release();
+}
+
+void CD3D11MaterialRenderer::addMacros(core::array<D3D_SHADER_MACRO>& macroArray)
+{
+	core::stringc value = "";
+	D3D_SHADER_MACRO macro;
+
+	// indicates how match textures are supported by the engine
+	macro.Name = "MAX_TEXTURES";
+	value += MATERIAL_MAX_TEXTURES;
+	macro.Definition = value.c_str();
+	macroArray.push_back(macro);
+
+	// last macro has to be NULL
+	macro.Definition = NULL;
+	macro.Name = NULL;
+	macroArray.push_back(macro);
 }
 
 bool CD3D11MaterialRenderer::createShader(const char* code,
@@ -186,40 +205,38 @@ bool CD3D11MaterialRenderer::createShader(const char* code,
 	HRESULT hr = 0;
 	ID3D10Blob* shaderBuffer = 0;
 
-	if(!stubD3DXCompileShader(code, strlen(code), "", NULL, includer, entryPointName, targetName, flags, 0, &shaderBuffer))
+	core::array<D3D_SHADER_MACRO> macroArray;
+
+	addMacros(macroArray);
+
+	if (!compileShader(code, strlen(code), "", &macroArray[0], includer, entryPointName, targetName, flags, 0, &shaderBuffer))
 		return false;
 
 	if(!shaderBuffer)
 		return false;
 
-	SShader* s = new SShader();
+	shaders[type] = new SShader();
 
 	// Create the shader from the buffer.
 	switch(type)
 	{
 	case EST_VERTEX_SHADER:
-		vsShader = s;
-		hr = Device->CreateVertexShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11VertexShader**)(&vsShader->shader));
+		hr = Device->CreateVertexShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11VertexShader**)(&shaders[type]->shader));
 		break;
 	case EST_PIXEL_SHADER:
-		psShader = s;
-		hr = Device->CreatePixelShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11PixelShader**)(&psShader->shader));
+		hr = Device->CreatePixelShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11PixelShader**)(&shaders[type]->shader));
 		break;
 	case EST_GEOMETRY_SHADER:
-		gsShader = s;
-		hr = Device->CreateGeometryShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11GeometryShader**)(&gsShader->shader));
+		hr = Device->CreateGeometryShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11GeometryShader**)(&shaders[type]->shader));
 		break;
 	case EST_DOMAIN_SHADER:
-		dsShader = s;
-		hr = Device->CreateDomainShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11DomainShader**)(&dsShader->shader));
+		hr = Device->CreateDomainShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11DomainShader**)(&shaders[type]->shader));
 		break;
 	case EST_HULL_SHADER:
-		hsShader = s;
-		hr = Device->CreateHullShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11HullShader**)(&hsShader->shader));
+		hr = Device->CreateHullShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11HullShader**)(&shaders[type]->shader));
 		break;
 	case EST_COMPUTE_SHADER:
-		csShader = s;
-		hr = Device->CreateComputeShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11ComputeShader**)(&csShader->shader));
+		hr = Device->CreateComputeShader(shaderBuffer->GetBufferPointer(), shaderBuffer->GetBufferSize(), NULL, (ID3D11ComputeShader**)(&shaders[type]->shader));
 		break;
 	}
 
@@ -254,7 +271,7 @@ bool CD3D11MaterialRenderer::createShader(const char* code,
 		return false;
 	}
 
-	createConstantBuffer(shaderBuffer, type);
+	createResources(shaderBuffer, type);
 
 	switch (type)
 	{
@@ -278,52 +295,31 @@ bool CD3D11MaterialRenderer::createShader(const char* code,
 	return true;
 }
 
-SShader* CD3D11MaterialRenderer::getShader( E_SHADER_TYPE type )
-{
-	switch(type)
-	{
-	case EST_VERTEX_SHADER:
-		return vsShader;
-	case EST_PIXEL_SHADER:
-		return psShader;
-	case EST_GEOMETRY_SHADER:
-		return gsShader;
-	case EST_DOMAIN_SHADER:
-		return dsShader;
-	case EST_HULL_SHADER:
-		return hsShader;
-	case EST_COMPUTE_SHADER:
-		return csShader;
-	default:
-		return NULL;
-	}
-}
-
 SShaderVariable* CD3D11MaterialRenderer::getVariable( SShader* sh, s32 id )
-{
-	if(id < 0 || id >= (s32)sh->vars.size())
+{	
+	if(id < 0 || id >= (s32)sh->variableArray.size())
 		return NULL;
 
-	return sh->vars[id];
+	return sh->variableArray[id];
 }
 
 SShaderBuffer* CD3D11MaterialRenderer::getBuffer( E_SHADER_TYPE type, s32 id )
 {
-	SShader* sh = getShader(type);
+	SShader* sh = shaders[type];
 
 	if(!sh)
 		return NULL;
 
-	if(id < 0 || id >= (s32)sh->buffers.size())
+	if (id < 0 || id >= (s32)sh->bufferArray.size())
 		return NULL;
 
-	return sh->buffers[id];
+	return sh->bufferArray[id];
 }
 
 
 bool CD3D11MaterialRenderer::setVariable(s32 id, const f32* floats, int count, E_SHADER_TYPE type)
 {
-	SShader* sh = getShader(type);
+	SShader* sh = shaders[type];
 
 	if(!sh)
 		return false;
@@ -373,7 +369,7 @@ bool CD3D11MaterialRenderer::setVariable(s32 id, const f32* floats, int count, E
 
 bool CD3D11MaterialRenderer::setVariable(s32 id, const s32* ints, int count, E_SHADER_TYPE type)
 {
-	SShader* sh = getShader(type);
+	SShader* sh = shaders[type];
 
 	if(!sh)
 		return false;
@@ -407,7 +403,7 @@ bool CD3D11MaterialRenderer::setVariable(s32 id, const s32* ints, int count, E_S
 	return true;
 }
 
-bool CD3D11MaterialRenderer::setConstantBuffer( s32 id, const void* data, E_SHADER_TYPE type)
+bool CD3D11MaterialRenderer::setConstantBuffer(s32 id, const void* data, E_SHADER_TYPE type)
 {
 	SShaderBuffer* buff = getBuffer(type, id);
 
@@ -434,14 +430,17 @@ bool CD3D11MaterialRenderer::setConstantBuffer( s32 id, const void* data, E_SHAD
 
 s32 CD3D11MaterialRenderer::getConstantBufferID(const c8* name, E_SHADER_TYPE type)
 {
-	SShader* sh = getShader(type);
+	SShader* sh = shaders[type];
 
-	const u32 size = sh->buffers.size();
-
-	for(u32 i = 0; i < size; ++i)
+	if (sh)
 	{
-		if(sh->buffers[i]->name == name)
-			return i;
+		const u32 size = sh->bufferArray.size();
+
+		for (u32 i = 0; i < size; ++i)
+		{
+			if (sh->bufferArray[i]->name == name)
+				return i;
+		}
 	}
 
 	core::stringc s = "HLSL buffer to get ID not found: '";
@@ -456,14 +455,17 @@ s32 CD3D11MaterialRenderer::getConstantBufferID(const c8* name, E_SHADER_TYPE ty
 
 s32 CD3D11MaterialRenderer::getVariableID(const c8* name, E_SHADER_TYPE type)
 {
-	SShader* sh = getShader(type);
+	SShader* sh = shaders[type];
 
-	const u32 size = sh->vars.size();
-
-	for(u32 i = 0; i < size; ++i)
+	if (sh)
 	{
-		if(sh->vars[i]->name == name)
-			return i;
+		const u32 size = sh->variableArray.size();
+
+		for(u32 i = 0; i < size; ++i)
+		{
+			if (sh->variableArray[i]->name == name)
+				return i;
+		}
 	}
 
 	core::stringc s = "HLSL variable to get ID not found: '";
@@ -484,16 +486,16 @@ bool CD3D11MaterialRenderer::OnRender(IMaterialRendererServices* service, E_VERT
 	if (BaseRenderer)
 		BaseRenderer->OnRender(service, vtxtype);
 
-	if (CallBack && (vsShader || psShader || gsShader))
+	if (CallBack)
 		CallBack->OnSetConstants(service, UserData);
 
-	BridgeCalls->setVertexShader(vsShader);
-	BridgeCalls->setPixelShader(psShader);
-	BridgeCalls->setGeometryShader(gsShader);
+	BridgeCalls->setVertexShader(shaders[EST_VERTEX_SHADER]);
+	BridgeCalls->setPixelShader(shaders[EST_PIXEL_SHADER]);
+	BridgeCalls->setGeometryShader(shaders[EST_GEOMETRY_SHADER]);
 
-	BridgeCalls->setHullShader(hsShader);
-	BridgeCalls->setDomainShader(dsShader);
-	BridgeCalls->setComputeShader(csShader);
+	BridgeCalls->setHullShader(shaders[EST_HULL_SHADER]);
+	BridgeCalls->setDomainShader(shaders[EST_DOMAIN_SHADER]);
+	BridgeCalls->setComputeShader(shaders[EST_COMPUTE_SHADER]);
 
 	return true;
 }
@@ -534,22 +536,22 @@ u32 CD3D11MaterialRenderer::getShaderByteCodeSize() const
 
 void CD3D11MaterialRenderer::printVariables(E_SHADER_TYPE type)
 {
-	SShader* sh = getShader(type);
+	SShader* sh = shaders[type];
 
 	if(!sh)
 		return;
 
 	core::stringc text = "";
 
-	const u32 size = sh->vars.size();
+	const u32 size = sh->variableArray.size();
 	for(u32 i = 0; i < size; ++i)
 	{
 		text += "Name: ";
-		text += sh->vars[i]->name;
+		text += sh->variableArray[i]->name;
 		text += " Size: ";
-		text += sh->vars[i]->size;
+		text += sh->variableArray[i]->size;
 		text += " Offset: ";
-		text += sh->vars[i]->offset;
+		text += sh->variableArray[i]->offset;
 		text += "\n";
 	}
 	os::Printer::log(text.c_str());
@@ -557,21 +559,21 @@ void CD3D11MaterialRenderer::printVariables(E_SHADER_TYPE type)
 
 void CD3D11MaterialRenderer::printBuffers(E_SHADER_TYPE type)
 {
-	SShader* sh = getShader(type);
+	SShader* sh = shaders[type];
 
 	if(!sh)
 		return;
 
 	core::stringc text = "";
 	
-	const u32 size = sh->buffers.size();
+	const u32 size = sh->bufferArray.size();
 	
 	for(u32 i = 0; i < size; ++i)
 	{
 		text += "Name: ";
-		text += sh->buffers[i]->name;
+		text += sh->bufferArray[i]->name;
 		text += " Size: ";
-		text += sh->buffers[i]->size;
+		text += sh->bufferArray[i]->size;
 		text += "\n";
 	}
 
@@ -611,9 +613,6 @@ bool CD3D11MaterialRenderer::init(const c8* vertexShaderProgram, const c8* verte
 	flags |= D3D10_SHADER_OPTIMIZATION_LEVEL3;
 #endif
 
-	if(vertexShaderProgram == pixelShaderProgram)
-		sameFile = true;
-
 	if (!createShader(vertexShaderProgram, vertexShaderEntryPointName, VERTEX_SHADER_TYPE_NAMES[vsCompileTarget], flags, EST_VERTEX_SHADER))
 		return false;
 
@@ -635,7 +634,7 @@ bool CD3D11MaterialRenderer::init(const c8* vertexShaderProgram, const c8* verte
 	return true;
 }
 
-bool CD3D11MaterialRenderer::stubD3DXCompileShader(LPCVOID pSrcData, SIZE_T SrcDataSize, LPCSTR pSourceName, const D3D_SHADER_MACRO* pDefines, ID3DInclude* pInclude,
+bool CD3D11MaterialRenderer::compileShader(LPCVOID pSrcData, SIZE_T SrcDataSize, LPCSTR pSourceName, const D3D_SHADER_MACRO* pDefines, ID3DInclude* pInclude,
 												   LPCSTR pEntrypoint, LPCSTR pTarget, UINT Flags1, UINT Flags2, ID3DBlob** ppCode)
 {	
 	static bool LoadFailed = false;
@@ -706,7 +705,76 @@ bool CD3D11MaterialRenderer::stubD3DXCompileShader(LPCVOID pSrcData, SIZE_T SrcD
 	return true;
 }
 
-bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYPE type)
+SShaderBuffer* CD3D11MaterialRenderer::createConstantBuffer(D3D11_SHADER_BUFFER_DESC& bufferDesc)
+{
+	SShaderBuffer* sBuffer = NULL;
+
+	// take the same buffer from the other shader if it has the same name
+	for (u32 i = 0; i < (u32)EST_COUNT; ++i)
+	{
+		SShader* shader = shaders[(E_SHADER_TYPE)i];
+
+		if(shader == NULL)
+			continue;
+
+		bool found = false;
+
+		for (u32 j = 0; j < shader->bufferArray.size(); ++j)
+		{
+			if (shader->bufferArray[j]->name == bufferDesc.Name)
+			{
+				sBuffer = shader->bufferArray[j];
+				sBuffer->AddRef();
+				found = true;
+				break;
+			}
+		}
+
+		if (found)
+			break;
+	}
+
+	// no buffer found so create a new one
+	if (!sBuffer)
+	{
+		sBuffer = new SShaderBuffer();
+		sBuffer->name = bufferDesc.Name;
+		sBuffer->size = bufferDesc.Size;
+	}
+
+	if (!sBuffer->data)
+	{
+		D3D11_BUFFER_DESC cbDesc;
+		cbDesc.ByteWidth = sBuffer->size;
+		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		cbDesc.MiscFlags = 0;
+		cbDesc.StructureByteStride = 0;
+
+		// Create the buffer.
+		HRESULT hr = Device->CreateBuffer(&cbDesc, NULL, &sBuffer->data);
+
+		if (FAILED(hr))
+		{
+			core::stringc error = "Could not create constant buffer \"";
+			error += sBuffer->name;
+			error += "\"";
+
+			logFormatError(hr, error);
+
+			delete sBuffer;
+
+			return NULL;
+		}
+
+		sBuffer->cData = malloc(sBuffer->size);
+	}
+
+	return sBuffer;
+}
+
+void CD3D11MaterialRenderer::createResources(ID3D10Blob* code, E_SHADER_TYPE type)
 {
 	// D3DXCompile
 	typedef HRESULT (WINAPI *D3DX11ReflectFunc)(LPCVOID pSrcData, SIZE_T SrcDataSize, REFIID pInterface, void** ppReflector);
@@ -715,7 +783,7 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 	static bool LoadFailed = false;
 
 	if(LoadFailed)
-		return false;
+		return;
 
 	if (!pFn && !LoadFailed)
 	{
@@ -726,7 +794,7 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 			LoadFailed = true;
 
 			os::Printer::log("Could not load library", D3DCOMPILER_DLL, ELL_ERROR);
-			return false;
+			return;
 		}
 
 		pFn = (D3DX11ReflectFunc)GetProcAddress(D3DLibrary, "D3DReflect");
@@ -738,7 +806,7 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 			os::Printer::log("Could not load shader function D3DReflect from dll",
 				D3DCOMPILER_DLL, ELL_ERROR);
 
-			return false;
+			return;
 		}
 	}
 
@@ -749,106 +817,82 @@ bool CD3D11MaterialRenderer::createConstantBuffer(ID3D10Blob* code, E_SHADER_TYP
 
 	if(FAILED(hr))
 	{
-		logFormatError(hr, "Could not reflect constant buffer in shader");
+		logFormatError(hr, "Could not reflect shader");
 
-		return false;
+		return;
 	}
 
 	D3D11_SHADER_DESC shaderDesc;
 	pReflector->GetDesc(&shaderDesc);
 
-	SShader* sh = getShader(type);
+	SShader* sh = shaders[type];
 
-	const u32 size = shaderDesc.ConstantBuffers;
-
-	for(u32 i = 0; i < size; ++i)
+	for (u32 i = 0; i < shaderDesc.BoundResources; ++i)
 	{
-		ID3D11ShaderReflectionConstantBuffer* buffer = pReflector->GetConstantBufferByIndex(i);
+		D3D11_SHADER_INPUT_BIND_DESC resourceDesc;
+		pReflector->GetResourceBindingDesc(i, &resourceDesc);
 
-		D3D11_SHADER_BUFFER_DESC bufferDesc;
-		buffer->GetDesc(&bufferDesc);
-
-		SShaderBuffer* sBuffer = NULL;
-
-		// take the same buffer from the vertex shader if vs and ps are in the same file
-		if(sameFile && type != EST_VERTEX_SHADER)
+		switch (resourceDesc.Type)
 		{
-			SShader* shader = getShader(EST_VERTEX_SHADER);
-	
-			for(u32 j = 0; j < shader->buffers.size(); j++)
+		case D3D_SIT_CBUFFER:
 			{
-				if(shader->buffers[j]->name == bufferDesc.Name)
+				ID3D11ShaderReflectionConstantBuffer* reflectionBuffer = pReflector->GetConstantBufferByName(resourceDesc.Name);
+
+				D3D11_SHADER_BUFFER_DESC bufferDesc;
+				reflectionBuffer->GetDesc(&bufferDesc);
+
+				SShaderBuffer* sBuffer = createConstantBuffer(bufferDesc);
+
+				if (sBuffer)
 				{
-					sBuffer = shader->buffers[j];
-					sBuffer->AddRef();
-					break;
+					sh->bufferArray.push_back(sBuffer);
+
+					// add vars to shader
+					for (u32 j = 0; j < bufferDesc.Variables; j++)
+					{
+						ID3D11ShaderReflectionVariable* var = reflectionBuffer->GetVariableByIndex(j);
+
+						D3D11_SHADER_VARIABLE_DESC varDesc;
+						var->GetDesc(&varDesc);
+
+						D3D11_SHADER_TYPE_DESC typeDesc;
+						var->GetType()->GetDesc(&typeDesc);
+
+						SShaderVariable* sv = new SShaderVariable();
+						sv->name = varDesc.Name;
+						sv->buffer = sBuffer;
+						sv->offset = varDesc.StartOffset;
+						sv->size = varDesc.Size;
+						sv->baseType = typeDesc.Type;
+						sv->classType = typeDesc.Class;
+
+						sh->variableArray.push_back(sv);
+					}
 				}
+				
+				break;
 			}
-		}
-
-		if(!sBuffer)
-		{
-			sBuffer = new SShaderBuffer();
-			sBuffer->name = bufferDesc.Name;
-			sBuffer->size = bufferDesc.Size;
-		}
-
-		for(u32 j = 0; j < bufferDesc.Variables; j++)
-		{
-			ID3D11ShaderReflectionVariable* var = buffer->GetVariableByIndex(j);
-
-			D3D11_SHADER_VARIABLE_DESC varDesc;
-			var->GetDesc(&varDesc);
-
-			D3D11_SHADER_TYPE_DESC typeDesc;
-			var->GetType()->GetDesc(&typeDesc);
-
-			SShaderVariable* sv = new SShaderVariable();
-			sv->name = varDesc.Name;
-			sv->buffer = sBuffer;
-			sv->offset = varDesc.StartOffset;
-			sv->size = varDesc.Size;
-			sv->baseType = typeDesc.Type;
-			sv->classType = typeDesc.Class;
-
-			sh->vars.push_back(sv);
-		}
-
-		if(!sBuffer->data)
-		{	
-			D3D11_BUFFER_DESC cbDesc;
-			cbDesc.ByteWidth = sBuffer->size;
-			cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-			cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-			cbDesc.MiscFlags = 0;
-			cbDesc.StructureByteStride = 0;
-
-			// Create the buffer.
-			hr = Device->CreateBuffer(&cbDesc, NULL, &sBuffer->data);
-
-			if(FAILED(hr))
+		case D3D_SIT_TBUFFER:
 			{
-				core::stringc error = "Could not create constant buffer \"";
-				error += sBuffer->name;
-				error += "\"";
-
-				logFormatError(hr, error);
-
-				delete sBuffer;
-
-				continue;
+				// same as cbuffer?
+				break;
 			}
-
-			sBuffer->cData = malloc(sBuffer->size);
+		case D3D_SIT_SAMPLER:
+			{
+				for (u32 i = resourceDesc.BindPoint; i < resourceDesc.BindPoint + resourceDesc.BindCount; ++i)
+					sh->samplersUsed += 1 << i;
+				break;
+			}
+		case D3D_SIT_TEXTURE:
+			{
+				for (u32 i = resourceDesc.BindPoint; i < resourceDesc.BindPoint + resourceDesc.BindCount; ++i)
+					sh->texturesUsed += 1 << i;
+				break;
+			}
 		}
-
-		sh->buffers.push_back(sBuffer);
 	}
 
 	pReflector->Release();
-
-	return true;
 }
 
 } // end namespace video

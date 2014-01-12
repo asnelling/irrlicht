@@ -16,14 +16,17 @@ namespace video
 
 CD3D11CallBridge::CD3D11CallBridge(ID3D11Device* device, CD3D11Driver* driver)
 	: Context(NULL), Device(device), Driver(driver), InputLayout(NULL),
-	VsShader(NULL), PsShader(NULL), GsShader(NULL), HsShader(NULL), DsShader(NULL), CsShader(NULL),
-	Topology(D3D_PRIMITIVE_TOPOLOGY_UNDEFINED), VtxDescriptor(NULL), ShaderByteCode(NULL), ShaderByteCodeSize(0)
+	Topology(D3D_PRIMITIVE_TOPOLOGY_UNDEFINED), VtxDescriptor(NULL), ShaderByteCode(NULL), ShaderByteCodeSize(0),
+	samplersChanged(0), texturesChanged(0)
 {
 	if (Device)
 	{
 		Device->AddRef();
 		Device->GetImmediateContext( &Context );
 	}
+
+	for (int i = 0; i < EST_COUNT; ++i)
+		shaders[i] = NULL;
 
 	ZeroMemory(CurrentTextures, sizeof(CurrentTextures[0]) * MATERIAL_MAX_TEXTURES);
 	ZeroMemory(SamplerStates, sizeof(SamplerStates[0]) * MATERIAL_MAX_TEXTURES);
@@ -90,85 +93,325 @@ CD3D11CallBridge::~CD3D11CallBridge()
 
 void CD3D11CallBridge::setVertexShader(SShader* shader)
 {
-	if(VsShader != shader)
+	if (shaders[EST_VERTEX_SHADER] != shader)
 	{
-		VsShader = shader;
+		shaders[EST_VERTEX_SHADER] = shader;
 
-		Context->VSSetShader((ID3D11VertexShader*)VsShader->shader, NULL, 0);
+		if (shader)
+		{
+			Context->VSSetShader((ID3D11VertexShader*)shader->shader, NULL, 0);
 
-		const u32 size = VsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->VSSetConstantBuffers(i, 1, &VsShader->buffers[i]->data);
-	}		
+			const u32 size = shader->bufferArray.size();
+
+			if (size != 0)
+			{
+				core::array<ID3D11Buffer*> buffs;
+				buffs.reallocate(size);
+
+				for (u32 i = 0; i < size; ++i)
+					buffs.push_back(shader->bufferArray[i]->data);
+
+				Context->VSSetConstantBuffers(0, size, &buffs[0]);
+			}
+		}
+		else
+			Context->VSSetShader(NULL, NULL, 0);
+	}	
+
+	if (shader)
+	{
+		// only set samplers and textures if a shader is set and if samplers / textures are used, setted and changed
+		u32 samplersToSet = shader->samplersUsed & samplersChanged;
+		u32 texturesToSet = shader->texturesUsed & texturesChanged;
+
+		if (samplersToSet || texturesToSet)
+		{
+			for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
+			{
+				if (samplersToSet & (1 << i))
+					Context->VSSetSamplers(i, 1, &SamplerStates[i]);
+
+				if (texturesChanged & (1 << i))
+				{
+					ID3D11ShaderResourceView* views = NULL;
+
+					if (CurrentTextures[i])
+						views = ((CD3D11Texture*)CurrentTextures[i])->getShaderResourceView();
+
+					Context->VSSetShaderResources(i, 1, &views);
+				}
+			}
+		}
+	}
 }
 
 void CD3D11CallBridge::setPixelShader(SShader* shader)
 {
-	if(PsShader != shader)
+	if (shaders[EST_PIXEL_SHADER] != shader)
 	{
-		PsShader = shader;
-	
-		Context->PSSetShader((ID3D11PixelShader*)PsShader->shader, NULL, 0);
+		shaders[EST_PIXEL_SHADER] = shader;
 
-		const u32 size = PsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->PSSetConstantBuffers(i, 1, &PsShader->buffers[i]->data);
+		if (shader)
+		{
+			Context->PSSetShader((ID3D11PixelShader*)shader->shader, NULL, 0);
+			
+			const u32 size = shader->bufferArray.size();
+
+			if (size != 0)
+			{
+				core::array<ID3D11Buffer*> buffs;
+				buffs.reallocate(size);
+
+				for (u32 i = 0; i < size; ++i)
+					buffs.push_back(shader->bufferArray[i]->data);
+
+				Context->PSSetConstantBuffers(0, size, &buffs[0]);
+			}
+		}
+		else
+			Context->PSSetShader(NULL, NULL, 0);
+	}
+
+	if (shader)
+	{
+		// only set samplers and textures if a shader is set and if samplers / textures are used, setted and changed
+		u32 samplersToSet = shader->samplersUsed & samplersChanged;
+		u32 texturesToSet = shader->texturesUsed & texturesChanged;
+
+		if (samplersToSet || texturesToSet)
+		{
+			for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
+			{
+				if (samplersToSet & (1 << i))
+					Context->PSSetSamplers(i, 1, &SamplerStates[i]);
+
+				if (texturesChanged & (1 << i))
+				{
+					ID3D11ShaderResourceView* views = NULL;
+
+					if (CurrentTextures[i])
+						views = ((CD3D11Texture*)CurrentTextures[i])->getShaderResourceView();
+
+					Context->PSSetShaderResources(i, 1, &views);
+				}
+			}
+		}
 	}
 }
 
 void CD3D11CallBridge::setGeometryShader(SShader* shader)
 {
-	if(GsShader != shader)
+	if (shaders[EST_GEOMETRY_SHADER] != shader)
 	{
-		GsShader = shader;
+		shaders[EST_GEOMETRY_SHADER] = shader;
 
-		Context->GSSetShader((ID3D11GeometryShader*)GsShader->shader, NULL, 0);
+		if (shader)
+		{
+			Context->GSSetShader((ID3D11GeometryShader*)shader->shader, NULL, 0);
 
-		const u32 size = GsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->GSSetConstantBuffers(i, 1, &GsShader->buffers[i]->data);
+			const u32 size = shader->bufferArray.size();
+
+			if (size != 0)
+			{
+				core::array<ID3D11Buffer*> buffs;
+				buffs.reallocate(size);
+
+				for (u32 i = 0; i < size; ++i)
+					buffs.push_back(shader->bufferArray[i]->data);
+
+				Context->GSSetConstantBuffers(0, size, &buffs[0]);
+			}
+		}
+		else
+			Context->GSSetShader(NULL, NULL, 0);
+	}
+
+	if (shader)
+	{
+		// only set samplers and textures if a shader is set and if samplers / textures are used, setted and changed
+		u32 samplersToSet = shader->samplersUsed & samplersChanged;
+		u32 texturesToSet = shader->texturesUsed & texturesChanged;
+
+		if (samplersToSet || texturesToSet)
+		{
+			for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
+			{
+				if (samplersToSet & (1 << i))
+					Context->GSSetSamplers(i, 1, &SamplerStates[i]);
+
+				if (texturesChanged & (1 << i))
+				{
+					ID3D11ShaderResourceView* views = NULL;
+
+					if (CurrentTextures[i])
+						views = ((CD3D11Texture*)CurrentTextures[i])->getShaderResourceView();
+
+					Context->GSSetShaderResources(i, 1, &views);
+				}
+			}
+		}
 	}
 }
 
 void CD3D11CallBridge::setHullShader(SShader* shader)
 {
-	if(HsShader != shader)
+	if (shaders[EST_HULL_SHADER] != shader)
 	{
-		HsShader = shader;
+		shaders[EST_HULL_SHADER] = shader;
 
-		Context->HSSetShader((ID3D11HullShader*)HsShader->shader, NULL, 0);
+		if (shader)
+		{
+			Context->HSSetShader((ID3D11HullShader*)shader->shader, NULL, 0);
 
-		const u32 size = HsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->HSSetConstantBuffers(i, 1, &HsShader->buffers[i]->data);
+			const u32 size = shader->bufferArray.size();
+
+			if (size != 0)
+			{
+				core::array<ID3D11Buffer*> buffs;
+				buffs.reallocate(size);
+
+				for (u32 i = 0; i < size; ++i)
+					buffs.push_back(shader->bufferArray[i]->data);
+
+				Context->HSSetConstantBuffers(0, size, &buffs[0]);
+			}
+		}
+		else
+			Context->HSSetShader(NULL, NULL, 0);
+	}
+
+	if (shader)
+	{
+		// only set samplers and textures if a shader is set and if samplers / textures are used, setted and changed
+		u32 samplersToSet = shader->samplersUsed & samplersChanged;
+		u32 texturesToSet = shader->texturesUsed & texturesChanged;
+
+		if (samplersToSet || texturesToSet)
+		{
+			for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
+			{
+				if (samplersToSet & (1 << i))
+					Context->HSSetSamplers(i, 1, &SamplerStates[i]);
+
+				if (texturesChanged & (1 << i))
+				{
+					ID3D11ShaderResourceView* views = NULL;
+
+					if (CurrentTextures[i])
+						views = ((CD3D11Texture*)CurrentTextures[i])->getShaderResourceView();
+
+					Context->HSSetShaderResources(i, 1, &views);
+				}
+			}
+		}
 	}
 }
 
 void CD3D11CallBridge::setDomainShader(SShader* shader)
 {
-	if(DsShader != shader)
+	if (shaders[EST_DOMAIN_SHADER] != shader)
 	{
-		DsShader = shader;
+		shaders[EST_DOMAIN_SHADER] = shader;
 
-		Context->DSSetShader((ID3D11DomainShader*)DsShader->shader, NULL, 0);
+		if (shader)
+		{
+			Context->DSSetShader((ID3D11DomainShader*)shader->shader, NULL, 0);
 
-		const u32 size = DsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->DSSetConstantBuffers(i, 1, &DsShader->buffers[i]->data);
+			const u32 size = shader->bufferArray.size();
+
+			if (size != 0)
+			{
+				core::array<ID3D11Buffer*> buffs;
+				buffs.reallocate(size);
+
+				for (u32 i = 0; i < size; ++i)
+					buffs.push_back(shader->bufferArray[i]->data);
+
+				Context->DSSetConstantBuffers(0, size, &buffs[0]);
+			}
+		}
+		else
+			Context->DSSetShader(NULL, NULL, 0);
+	}
+
+	if (shader)
+	{
+		// only set samplers and textures if a shader is set and if samplers / textures are used, setted and changed
+		u32 samplersToSet = shader->samplersUsed & samplersChanged;
+		u32 texturesToSet = shader->texturesUsed & texturesChanged;
+
+		if (samplersToSet || texturesToSet)
+		{
+			for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
+			{
+				if (samplersToSet & (1 << i))
+					Context->DSSetSamplers(i, 1, &SamplerStates[i]);
+
+				if (texturesChanged & (1 << i))
+				{
+					ID3D11ShaderResourceView* views = NULL;
+
+					if (CurrentTextures[i])
+						views = ((CD3D11Texture*)CurrentTextures[i])->getShaderResourceView();
+
+					Context->DSSetShaderResources(i, 1, &views);
+				}
+			}
+		}
 	}
 }
 
 void CD3D11CallBridge::setComputeShader(SShader* shader)
 {
-	if(CsShader != shader)
+	if (shaders[EST_COMPUTE_SHADER] != shader)
 	{
-		CsShader = shader;
+		shaders[EST_COMPUTE_SHADER] = shader;
 
-		Context->CSSetShader((ID3D11ComputeShader*)CsShader->shader, NULL, 0);
+		if (shader)
+		{
+			Context->CSSetShader((ID3D11ComputeShader*)shader->shader, NULL, 0);
 
-		const u32 size = CsShader->buffers.size();
-		for(u32 i = 0; i < size; ++i)
-			Context->CSSetConstantBuffers(i, 1, &CsShader->buffers[i]->data);
+			const u32 size = shader->bufferArray.size();
+
+			if (size != 0)
+			{
+				core::array<ID3D11Buffer*> buffs;
+				buffs.reallocate(size);
+
+				for (u32 i = 0; i < size; ++i)
+					buffs.push_back(shader->bufferArray[i]->data);
+
+				Context->CSSetConstantBuffers(0, size, &buffs[0]);
+			}
+		}
+		else
+			Context->CSSetShader(NULL, NULL, 0);
+	}
+
+	if (shader)
+	{
+		// only set samplers and textures if a shader is set and if samplers / textures are used, setted and changed
+		u32 samplersToSet = shader->samplersUsed & samplersChanged;
+		u32 texturesToSet = shader->texturesUsed & texturesChanged;
+
+		if (samplersToSet || texturesToSet)
+		{
+			for (u32 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
+			{
+				if (samplersToSet & (1 << i))
+					Context->CSSetSamplers(i, 1, &SamplerStates[i]);
+
+				if (texturesChanged & (1 << i))
+				{
+					ID3D11ShaderResourceView* views = NULL;
+
+					if (CurrentTextures[i])
+						views = ((CD3D11Texture*)CurrentTextures[i])->getShaderResourceView();
+
+					Context->CSSetShaderResources(i, 1, &views);
+				}
+			}
+		}
 	}
 }
 
@@ -271,10 +514,8 @@ void CD3D11CallBridge::setBlendState(const SD3D11_BLEND_DESC& blendDesc)
 
 void CD3D11CallBridge::setShaderResources(SD3D11_SAMPLER_DESC samplerDesc[], ITexture* currentTextures[])
 {
-	bool resetSamplers = false;
-	bool resetViews = false;
-
-	ID3D11ShaderResourceView* shaderViews[MATERIAL_MAX_TEXTURES] = { NULL };
+	texturesChanged = 0;
+	samplersChanged = 0;
 
 	for(u32 i = 0; i < MATERIAL_MAX_TEXTURES; ++i)
 	{
@@ -283,25 +524,17 @@ void CD3D11CallBridge::setShaderResources(SD3D11_SAMPLER_DESC samplerDesc[], ITe
 			SamplerDesc[i] = samplerDesc[i];
 
 			SamplerStates[i] = getSamplerState(i);
-			resetSamplers = true;
+
+			samplersChanged += 1 << i;
 		}
 
 		if(CurrentTextures[i] != currentTextures[i])
 		{
 			CurrentTextures[i] = currentTextures[i];
 
-			resetViews = true;
+			texturesChanged += 1 << i;
 		}
-
-		if(CurrentTextures[i] != NULL)
-			shaderViews[i] = ((CD3D11Texture*)CurrentTextures[i])->getShaderResourceView();
 	}
-
-	if(resetViews)
-		Context->PSSetShaderResources(0, MATERIAL_MAX_TEXTURES, shaderViews);
-
-	if(resetSamplers)
-		Context->PSSetSamplers(0, MATERIAL_MAX_TEXTURES, SamplerStates);
 }
 
 void CD3D11CallBridge::setPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY topology)

@@ -20,7 +20,6 @@ namespace video
 	const char FIXED_FUNCTION_SHADER[] =
 		"// Constants\n"\
 		"#define MAX_LIGHTS 								8\n"\
-		"#define MAX_TEXTURES 								8\n"\
 		"\n"\
 		"#define FOGMODE_NONE    							0\n"\
 		"#define FOGMODE_LINEAR  							1\n"\
@@ -686,8 +685,6 @@ CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, 
 		if(coords2TBuffer)
 			coords2TBuffer->AddRef();
 
-		sameFile = r->sameFile;
-
 		cbPerFrameId = r->cbPerFrameId;
 		cbLightsId = r->cbLightsId;
 		cbPerTechniqueId = r->cbPerTechniqueId;
@@ -700,24 +697,24 @@ CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, 
 				FIXED_FUNCTION_SHADER, "standardPS", EPST_PS_5_0))
 				return;
 
-			vsStandardShader = vsShader;
-			psStandardShader = psShader;
+			vsStandardShader = shaders[EST_VERTEX_SHADER];
+			psStandardShader = shaders[EST_PIXEL_SHADER];
 			standardBuffer = buffer;
 
 			if(!init(FIXED_FUNCTION_SHADER, "coords2TVS", EVST_VS_5_0,
 				FIXED_FUNCTION_SHADER, "coords2TPS", EPST_PS_5_0))
 				return;
 
-			vsCoords2TShader = vsShader;
-			psCoords2TShader = psShader;
+			vsCoords2TShader = shaders[EST_VERTEX_SHADER];
+			psCoords2TShader = shaders[EST_PIXEL_SHADER];
 			coords2TBuffer = buffer;
 
 			if(!init(FIXED_FUNCTION_SHADER, "tangentsVS", EVST_VS_5_0,
 				FIXED_FUNCTION_SHADER, "tangentsPS", EPST_PS_5_0))
 				return;
 
-			vsTangentsShader = vsShader;
-			psTangentsShader = psShader;
+			vsTangentsShader = shaders[EST_VERTEX_SHADER];
+			psTangentsShader = shaders[EST_PIXEL_SHADER];
 			tangentsBuffer = buffer;
 		}
 		else
@@ -726,24 +723,24 @@ CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, 
 				FIXED_FUNCTION_SHADER, "standardPS", EPST_PS_4_1))
 				return;
 
-			vsStandardShader = vsShader;
-			psStandardShader = psShader;
+			vsStandardShader = shaders[EST_VERTEX_SHADER];
+			psStandardShader = shaders[EST_PIXEL_SHADER];
 			standardBuffer = buffer;
 
 			if(!init(FIXED_FUNCTION_SHADER, "coords2TVS", EVST_VS_4_1,
 				FIXED_FUNCTION_SHADER, "coords2TPS", EPST_PS_4_1))
 				return;
 
-			vsCoords2TShader = vsShader;
-			psCoords2TShader = psShader;
+			vsCoords2TShader = shaders[EST_VERTEX_SHADER];
+			psCoords2TShader = shaders[EST_PIXEL_SHADER];
 			coords2TBuffer = buffer;
 		
 			if(!init(FIXED_FUNCTION_SHADER, "tangentsVS", EVST_VS_4_1,
 				FIXED_FUNCTION_SHADER, "tangentsPS", EPST_PS_4_1))
 				return;
 
-			vsTangentsShader = vsShader;
-			psTangentsShader = psShader;
+			vsTangentsShader = shaders[EST_VERTEX_SHADER];
+			psTangentsShader = shaders[EST_PIXEL_SHADER];
 			tangentsBuffer = buffer;
 		}
 
@@ -758,8 +755,8 @@ CD3D11FixedPipelineRenderer::~CD3D11FixedPipelineRenderer()
 	if(CallBack == this)
 		CallBack = NULL;
 
-	vsShader = NULL;
-	psShader = NULL;
+	shaders[EST_VERTEX_SHADER] = NULL;
+	shaders[EST_PIXEL_SHADER] = NULL;
 	buffer = NULL;
 
 	if(vsStandardShader)
@@ -795,23 +792,23 @@ bool CD3D11FixedPipelineRenderer::OnRender(IMaterialRendererServices* service, E
 	switch (vtxtype)
 	{
 	case EVT_STANDARD:
-		vsShader = vsStandardShader;
-		psShader = psStandardShader;
+		shaders[EST_VERTEX_SHADER] = vsStandardShader;
+		shaders[EST_PIXEL_SHADER] = psStandardShader;
 		buffer = standardBuffer;
 		break;
 	case EVT_2TCOORDS:
-		vsShader = vsCoords2TShader;
-		psShader = psCoords2TShader;
+		shaders[EST_VERTEX_SHADER] = vsCoords2TShader;
+		shaders[EST_PIXEL_SHADER] = psCoords2TShader;
 		buffer = coords2TBuffer;
 		break;
 	case EVT_TANGENTS:
-		vsShader = vsTangentsShader;
-		psShader = psTangentsShader;
+		shaders[EST_VERTEX_SHADER] = vsTangentsShader;
+		shaders[EST_PIXEL_SHADER] = psTangentsShader;
 		buffer = tangentsBuffer;
 		break;
 	default:
-		vsShader = NULL;
-		psShader = NULL;
+		shaders[EST_VERTEX_SHADER] = NULL;
+		shaders[EST_PIXEL_SHADER] = NULL;
 		os::Printer::log("Error: vertextype is not supported by FixedPipelineRenderer", ELL_ERROR);
 		break;
 	}

@@ -167,17 +167,7 @@ namespace scene
 
 		virtual video::E_VERTEX_TYPE getVertexType() const
 		{
-			switch(sizeof(T))
-			{
-			case sizeof(video::S3DVertex):
-				return video::EVT_STANDARD;
-			case sizeof(video::S3DVertex2TCoords):
-				return video::EVT_2TCOORDS;		
-			case sizeof(video::S3DVertexTangents):
-				return video::EVT_TANGENTS;
-			default:
-				return (video::E_VERTEX_TYPE)-1;
-			}
+			return vertexDescriptor ? (video::E_VERTEX_TYPE)vertexDescriptor->getID() : (video::E_VERTEX_TYPE)-1;
 		}
 
 	protected:

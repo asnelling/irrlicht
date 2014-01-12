@@ -19,6 +19,8 @@
 
 #define ALIGN16 __declspec(align(16))
 
+typedef struct _D3D11_SHADER_BUFFER_DESC D3D11_SHADER_BUFFER_DESC;
+
 namespace irr
 {
 namespace io
@@ -63,10 +65,15 @@ struct SShaderBuffer
 			}
 	};
 
+	// name of the buffer
 	core::stringc name;
+
+	// size in bytes
 	s32 size;
+
 	// data on the gpu
 	ID3D11Buffer* data;
+
 	// whole data that will be pushed to the gpu
 	void* cData;
 };
@@ -79,13 +86,19 @@ struct SShaderVariable
 	}
 
 	SShaderBuffer* buffer;
+
+	// name of the var
 	core::stringc name;
+
 	// offset in the buffer
 	s32 offset;
+
 	// eg sizeof(float)
 	s32 size;
+
 	// eg float, int etc
 	s32 baseType;
+
 	// eg matrix, vector etc
 	s32 classType;
 };
@@ -95,27 +108,29 @@ struct SShader
 	SShader()
 		: shader(NULL)
 	{
+		samplersUsed = 0;
+		texturesUsed = 0;
 	}
 
 	~SShader()
 	{
-		const u32 size = vars.size();
+		const u32 size = variableArray.size();
 
 		for(u32 i = 0; i < size; ++i)
 		{
-			delete vars[i];
+			delete variableArray[i];
 		}
 
-		vars.clear();
-		buffers.clear();
+		variableArray.clear();
+		bufferArray.clear();
 	}
 
 	void AddRef()
 	{
-		const u32 size = buffers.size();
+		const u32 size = bufferArray.size();
 
 		for(u32 i = 0; i < size; ++i)
-			buffers[i]->AddRef();
+			bufferArray[i]->AddRef();
 
 		if(shader)
 			shader->AddRef();
@@ -123,11 +138,11 @@ struct SShader
 
 	void Release()
 	{
-		const u32 size = buffers.size();
+		const u32 size = bufferArray.size();
 
 		for(u32 i = 0; i < size; ++i)
 		{
-			buffers[i]->Release();
+			bufferArray[i]->Release();
 		}
 
 		if(shader)
@@ -137,8 +152,16 @@ struct SShader
 			}
 	}
 
-	core::array<SShaderBuffer*> buffers;
-	core::array<SShaderVariable*> vars;
+	// constant buffers in the shader
+	core::array<SShaderBuffer*> bufferArray;
+
+	// 
+	u32 samplersUsed;
+	u32 texturesUsed;
+
+	// all vars in all buffers
+	// all vars are in one array for quicker access (no searching is needed)
+	core::array<SShaderVariable*> variableArray;
 
 	IUnknown* shader;
 };
@@ -203,20 +226,20 @@ protected:
 
 	bool createShader(const char* code, const char* entryPointName, const char* targetName, UINT flags, E_SHADER_TYPE type);
 
-	bool createConstantBuffer(ID3D10Blob* program, E_SHADER_TYPE type);
+	SShaderBuffer* createConstantBuffer(D3D11_SHADER_BUFFER_DESC& bufferDesc);
+
+	void createResources(ID3D10Blob* program, E_SHADER_TYPE type);
 
 	void printVariables(E_SHADER_TYPE type);
-
 	void printBuffers(E_SHADER_TYPE type);
 
-	bool stubD3DXCompileShader(LPCVOID pSrcData, SIZE_T SrcDataSize, LPCSTR pSourceName, const D3D_SHADER_MACRO* pDefines, ID3DInclude* pInclude,
+	void addMacros(core::array<D3D_SHADER_MACRO>& macroArray);
+
+	bool compileShader(LPCVOID pSrcData, SIZE_T SrcDataSize, LPCSTR pSourceName, const D3D_SHADER_MACRO* pDefines, ID3DInclude* pInclude,
 		LPCSTR pEntrypoint, LPCSTR pTarget, UINT Flags1, UINT Flags2, ID3DBlob** ppCode);
 	
-	SShader* getShader( E_SHADER_TYPE type );
 	SShaderVariable* getVariable( SShader* sh, s32 id );
 	SShaderBuffer* getBuffer( E_SHADER_TYPE type, s32 id );
-
-	bool sameFile;
 
 	// DX 11 objects
 	ID3D11Device* Device;
@@ -235,12 +258,7 @@ protected:
 
 	ID3DInclude* includer;
 
-	SShader* vsShader;
-	SShader* psShader;
-	SShader* gsShader;
-	SShader* hsShader;
-	SShader* dsShader;
-	SShader* csShader;
+	SShader* shaders[EST_COUNT];
 
 	CD3D11CallBridge* BridgeCalls;
 };

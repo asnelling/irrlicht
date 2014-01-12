@@ -79,8 +79,6 @@ CD3D11Driver::CD3D11Driver(const irr::SIrrlichtCreationParameters& params,
 	setDebugName("CD3D11Driver");
 #endif
 
-	printVersion();
-
 	disableTextures();
 
 	// init clip planes
@@ -301,7 +299,6 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 		// Try creating hardware device
 		//! If you got an error here that 'D3D_FEATURE_LEVEL_11_1' is undeclared you have to download an appropriate DXSDK
 		//! Download: http://msdn.microsoft.com/en-us/windows/desktop/hh852363.aspx
-
 		D3D_FEATURE_LEVEL RequestedLevels[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0 };
 
 		const u32 featureLevelSize = sizeof(RequestedLevels) / sizeof(RequestedLevels[0]);
@@ -309,7 +306,7 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 		hr = CreateDeviceFunc(Adapter, DriverType, NULL, deviceFlags, RequestedLevels, featureLevelSize, D3D11_SDK_VERSION, &Device, &FeatureLevel, &Context );
 		if (FAILED(hr))
 		{
-			// Try creating warp device and feature level 10.1
+			// Try creating warp device
 			DriverType = D3D_DRIVER_TYPE_WARP;
 			hr = CreateDeviceFunc(Adapter, DriverType, NULL, deviceFlags, RequestedLevels, featureLevelSize, D3D11_SDK_VERSION, &Device, &FeatureLevel, &Context );
 			
@@ -319,20 +316,16 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 
 				return false;
 			}
+
+			Name += "WARP ";
 		}
 
-		core::stringw tmp = (FeatureLevel == D3D_FEATURE_LEVEL_11_1) ? "11.1" :
+		Name += (FeatureLevel == D3D_FEATURE_LEVEL_11_1) ? "11.1" :
 			(FeatureLevel == D3D_FEATURE_LEVEL_11_0) ? "11.0" :
 			(FeatureLevel == D3D_FEATURE_LEVEL_10_1) ? "10.1" : "10.0";
-
-		Name += tmp;
-		// Printing type of Direct3D 11 device and feature level
-		char msg[512];
-		sprintf(msg, "Using %s device, feature level %s",
-					 (DriverType == D3D_DRIVER_TYPE_HARDWARE) ? "hardware" : "warp", tmp);
-
-		os::Printer::log(msg, ELL_INFORMATION);
 	}
+
+	printVersion();
 
 	// Get adapter used by this device and query informations
 	IDXGIDevice1* DXGIDevice = NULL;
@@ -1291,8 +1284,6 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 	ID3D11Buffer* buffers[1] = { vertexBuffer->getBufferResource() };
 	Context->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
 
-	BridgeCalls->setShaderResources(SamplerDesc, CurrentTexture);
-
 	// Bind depth-stencil view
 	BridgeCalls->setDepthStencilState(DepthStencilDesc);
 
@@ -2052,6 +2043,8 @@ void CD3D11Driver::setRenderStatesStencilShadowMode(bool zfail, u32 debugDataVis
 
 	CurrentRenderMode = zfail ? ERM_SHADOW_VOLUME_ZFAIL : ERM_SHADOW_VOLUME_ZPASS;
 
+	BridgeCalls->setShaderResources(SamplerDesc, CurrentTexture);
+
 	MaterialRenderers[Material.MaterialType].Renderer->OnRender(this, EVT_STANDARD);
 }
 
@@ -2158,6 +2151,8 @@ bool CD3D11Driver::setRenderStates3DMode(E_VERTEX_TYPE vType)
 			Material, LastMaterial, ResetRenderStates, this);
 	}
 
+	BridgeCalls->setShaderResources(SamplerDesc, CurrentTexture);
+
 	bool shaderOK = true;
 	if (Material.MaterialType >= 0 && Material.MaterialType < (s32)MaterialRenderers.size())
 		shaderOK = MaterialRenderers[Material.MaterialType].Renderer->OnRender(this, vType);
@@ -2238,6 +2233,8 @@ void CD3D11Driver::setRenderStates2DMode(bool alpha, bool texture, bool alphaCha
 
 		Transformation3DChanged = false;
 	}
+
+	BridgeCalls->setShaderResources(SamplerDesc, CurrentTexture);
 
 	MaterialRenderers[Material.MaterialType].Renderer->OnRender(this, video::EVT_STANDARD);
 

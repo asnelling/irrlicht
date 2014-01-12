@@ -213,12 +213,10 @@ private:
 	ID3D11Device* Device;
 	CD3D11Driver* Driver;
 
-	SShader* VsShader;
-	SShader* PsShader;
-	SShader* GsShader;
-	SShader* HsShader;
-	SShader* DsShader;
-	SShader* CsShader;
+	SShader* shaders[EST_COUNT];
+
+	u32 samplersChanged;
+	u32 texturesChanged;
 
 	SD3D11_DEPTH_STENCIL_DESC DepthStencilDesc;
 	core::map<SD3D11_DEPTH_STENCIL_DESC, ID3D11DepthStencilState*> DepthStencilMap;
