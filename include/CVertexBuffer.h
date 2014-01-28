@@ -60,13 +60,7 @@ namespace scene
 
 		virtual void set_used(u32 used)
 		{
-			Vertices.reallocate(used);
-
-			while (Vertices.size() < used)
-			{
-				T element;
-				Vertices.push_back(element);
-			}
+			Vertices.set_used(used);
 		}
 
 		virtual void reallocate(u32 size)
@@ -88,6 +82,17 @@ namespace scene
 		{
 			T* Element = (T*)element;
 			return Vertices.linear_reverse_search(*Element);
+		}
+
+		virtual void fill(u32 used)
+		{
+			Vertices.reallocate(used);
+
+			while (Vertices.size() < used)
+			{
+				T element;
+				Vertices.push_back(element);
+			}
 		}
 
 		virtual video::IVertexDescriptor* getVertexDescriptor() const

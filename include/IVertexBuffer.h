@@ -27,6 +27,8 @@ namespace scene
 
 		virtual s32 linear_reverse_search(const void* element) const = 0;
 
+		virtual void fill(u32 used) = 0;
+
 		virtual video::IVertexDescriptor* getVertexDescriptor() const = 0;
 
 		virtual bool setVertexDescriptor(video::IVertexDescriptor* vertexDescriptor) = 0;

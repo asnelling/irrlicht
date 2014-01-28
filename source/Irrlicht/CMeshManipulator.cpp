@@ -665,7 +665,7 @@ bool CMeshManipulator::copyVertices(IVertexBuffer* srcBuffer, IVertexBuffer* dst
 	if(!srcBuffer || !dstBuffer || !srcBuffer->getVertexDescriptor() || !dstBuffer->getVertexDescriptor() || srcBuffer->getVertexCount() == 0)
 		return false;
 
-	dstBuffer->set_used(srcBuffer->getVertexCount());
+	dstBuffer->fill(srcBuffer->getVertexCount());
 
 	for(u32 i = 0; i < dstBuffer->getVertexDescriptor()->getAttributeCount(); ++i)
 	{
