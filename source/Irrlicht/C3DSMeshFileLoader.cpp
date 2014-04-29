@@ -189,7 +189,7 @@ IAnimatedMesh* C3DSMeshFileLoader::createMesh(io::IReadFile* file)
 
 		for (u32 i=0; i<Mesh->getMeshBufferCount(); ++i)
 		{
-			CMeshBuffer<video::S3DVertex>* mb = ((CMeshBuffer<video::S3DVertex>*)Mesh->getMeshBuffer(i));
+			IMeshBuffer* mb = Mesh->getMeshBuffer(i);
 			// drop empty buffers
 			if (mb->getIndexBuffer()->getIndexCount() == 0 || mb->getVertexBuffer()->getVertexCount() == 0)
 			{
@@ -198,9 +198,14 @@ IAnimatedMesh* C3DSMeshFileLoader::createMesh(io::IReadFile* file)
 			}
 			else
 			{
-				if (mb->Material.MaterialType == video::EMT_PARALLAX_MAP_SOLID)
+				if (mb->getMaterial().MaterialType == video::EMT_PARALLAX_MAP_SOLID)
 				{
-					SceneManager->getMeshManipulator()->createTangents<video::S3DVertexTangents>(mb, SceneManager->getVideoDriver()->getVertexDescriptor(2), false);
+					CVertexBuffer<video::S3DVertexTangents>* vb = new CVertexBuffer<video::S3DVertexTangents>(SceneManager->getVideoDriver()->getVertexDescriptor(2));
+					SceneManager->getMeshManipulator()->copyVertices(mb->getVertexBuffer(0), vb, 0, 0, false);
+					mb->setVertexBuffer(vb, 0);
+					vb->drop();
+
+					SceneManager->getMeshManipulator()->recalculateTangents(mb, false, false, false);
 				}
 				Mesh->MeshBuffers[i]->recalculateBoundingBox();
 			}

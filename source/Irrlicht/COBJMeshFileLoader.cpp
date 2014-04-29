@@ -287,8 +287,14 @@ IAnimatedMesh* COBJMeshFileLoader::createMesh(io::IReadFile* file)
 				SceneManager->getMeshManipulator()->recalculateNormals(Materials[m]->Meshbuffer);
 			if (Materials[m]->Meshbuffer->Material.MaterialType == video::EMT_PARALLAX_MAP_SOLID)
 			{
-				if(SceneManager->getMeshManipulator()->createTangents<video::S3DVertexTangents>(Materials[m]->Meshbuffer, SceneManager->getVideoDriver()->getVertexDescriptor(2), false))
-					mesh->addMeshBuffer(Materials[m]->Meshbuffer);
+				CVertexBuffer<video::S3DVertexTangents>* vb = new CVertexBuffer<video::S3DVertexTangents>(SceneManager->getVideoDriver()->getVertexDescriptor(2));
+				SceneManager->getMeshManipulator()->copyVertices(Materials[m]->Meshbuffer->getVertexBuffer(0), vb, 0, 0, false);
+				Materials[m]->Meshbuffer->setVertexBuffer(vb, 0);
+				vb->drop();
+
+				SceneManager->getMeshManipulator()->recalculateTangents(Materials[m]->Meshbuffer, false, false, false);
+
+				mesh->addMeshBuffer(Materials[m]->Meshbuffer);
 			}
 			else
 				mesh->addMeshBuffer( Materials[m]->Meshbuffer );

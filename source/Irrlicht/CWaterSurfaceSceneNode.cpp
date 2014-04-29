@@ -101,7 +101,8 @@ void CWaterSurfaceSceneNode::setMesh(IMesh* mesh)
 		return;
 	if (OriginalMesh)
 		OriginalMesh->drop();
-	IMesh* clone = SceneManager->getMeshManipulator()->createMeshCopy<video::S3DVertex>(mesh, SceneManager->getVideoDriver()->getVertexDescriptor(0));
+	IMesh* clone = SceneManager->getMeshManipulator()->createMeshCopy<video::S3DVertex>(mesh,
+		SceneManager->getVideoDriver()->getVertexDescriptor(0));
 	OriginalMesh = mesh;
 	Mesh = clone;
 	Mesh->setHardwareMappingHint(scene::EHM_STATIC, scene::EBT_INDEX);
@@ -140,7 +141,8 @@ void CWaterSurfaceSceneNode::deserializeAttributes(io::IAttributes* in, io::SAtt
 
 	if (Mesh)
 	{
-		IMesh* clone = SceneManager->getMeshManipulator()->createMeshCopy<video::S3DVertex>(Mesh, SceneManager->getVideoDriver()->getVertexDescriptor(0));
+		IMesh* clone = SceneManager->getMeshManipulator()->createMeshCopy<video::S3DVertex>(Mesh,
+			SceneManager->getVideoDriver()->getVertexDescriptor(0));
 		OriginalMesh = Mesh;
 		Mesh = clone;
 	}

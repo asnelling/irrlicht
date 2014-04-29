@@ -206,7 +206,7 @@ namespace scene
 			Vertices[i].Pos += TerrainData.Position;
 		}
 
-		SceneManager->getMeshManipulator()->copyVertices(mb->getVertexBuffer(), RenderBuffer->getVertexBuffer(), false);
+		SceneManager->getMeshManipulator()->copyVertices(mb->getVertexBuffer(), RenderBuffer->getVertexBuffer(), 0, 0, false);
 
 		for (u32 i = 0; i < numVertices; ++i)
 		{
@@ -459,7 +459,7 @@ namespace scene
 			Vertices[i].Pos += TerrainData.Position;
 		}
 
-		SceneManager->getMeshManipulator()->copyVertices(mb->getVertexBuffer(), RenderBuffer->getVertexBuffer(), false);
+		SceneManager->getMeshManipulator()->copyVertices(mb->getVertexBuffer(), RenderBuffer->getVertexBuffer(), 0, 0, false);
 
 		for (u32 i = 0; i < vertexCount; ++i)
 		{
@@ -858,7 +858,7 @@ namespace scene
 
 		LOD = core::clamp(LOD, 0, TerrainData.MaxLOD - 1);
 
-        SceneManager->getMeshManipulator()->copyVertices(Mesh->getMeshBuffer(0)->getVertexBuffer(), mb.getVertexBuffer(), false);
+        SceneManager->getMeshManipulator()->copyVertices(Mesh->getMeshBuffer(0)->getVertexBuffer(), mb.getVertexBuffer(), 0, 0, false);
 		mb.getIndexBuffer()->setType(RenderBuffer->getIndexBuffer()->getType());
 
 		// calculate the step we take for all patches, since LOD is the same

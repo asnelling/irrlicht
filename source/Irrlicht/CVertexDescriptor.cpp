@@ -89,18 +89,19 @@ namespace video
 		return BufferID;
 	}
 
-	CVertexDescriptor::CVertexDescriptor(const core::stringc& name, u32 id) : ID(id), Name(name), VertexSize(0)
+	CVertexDescriptor::CVertexDescriptor(const core::stringc& name, u32 id) : ID(id), Name(name)
 	{
 #ifdef _DEBUG
 		setDebugName("CVertexDescriptor");
 #endif
 
-		for(u32 i = 0; i < EVAS_COUNT; ++i)
+		for (u32 i = 0; i < EVAS_COUNT; ++i)
 			AttributePointer[i] = -1;
 	}
 
 	CVertexDescriptor::~CVertexDescriptor()
 	{
+		VertexSize.clear();
 		Attribute.clear();
 	}
 
@@ -119,36 +120,44 @@ namespace video
 		return Name;
 	}
 
-	u32 CVertexDescriptor::getVertexSize() const
+	u32 CVertexDescriptor::getVertexSize(u32 bufferID) const
 	{
-		return VertexSize;
+		u32 size = 0;
+
+		if (bufferID < VertexSize.size())
+			size = VertexSize[bufferID];
+
+		return size;
 	}
 
 	bool CVertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID)
 	{
-		for(u32 i = 0; i < Attribute.size(); ++i)
-			if(name == Attribute[i].getName() || (semantic != EVAS_CUSTOM && semantic == Attribute[i].getSemantic()))
+		for (u32 i = 0; i < Attribute.size(); ++i)
+			if (name == Attribute[i].getName() || (semantic != EVAS_CUSTOM && semantic == Attribute[i].getSemantic()))
 				return false;
 
-		if(elementCount < 1)
+		if (elementCount < 1)
 			elementCount = 1;
 
-		if(elementCount > 4)
+		if (elementCount > 4)
 			elementCount = 4;
 
-		CVertexAttribute attribute(name, elementCount, semantic, type, VertexSize, bufferID);
+		for (u32 i = VertexSize.size(); i <= bufferID; ++i)
+			VertexSize.push_back(0);
+
+		CVertexAttribute attribute(name, elementCount, semantic, type, VertexSize[bufferID], bufferID);
 		Attribute.push_back(attribute);
 
 		AttributePointer[(u32)attribute.getSemantic()] = Attribute.size()-1;
 
-		VertexSize += (attribute.getTypeSize() * attribute.getElementCount());
+		VertexSize[bufferID] += (attribute.getTypeSize() * attribute.getElementCount());
 
 		return true;
 	}
 
 	IVertexAttribute* CVertexDescriptor::getAttribute(u32 id) const
 	{
-		if(id < Attribute.size())
+		if (id < Attribute.size())
 			return (IVertexAttribute*)(&Attribute[id]);
 
 		return 0;
@@ -156,8 +165,8 @@ namespace video
 
 	IVertexAttribute* CVertexDescriptor::getAttributeByName(const core::stringc& name) const
 	{
-		for(u32 i = 0; i < Attribute.size(); ++i)
-			if(name == Attribute[i].getName())
+		for (u32 i = 0; i < Attribute.size(); ++i)
+			if (name == Attribute[i].getName())
 				return (IVertexAttribute*)(&Attribute[i]);
 
 		return 0;
@@ -167,7 +176,7 @@ namespace video
 	{
 		s32 ID = AttributePointer[(u32)semantic];
 
-		if(ID >= 0)
+		if (ID >= 0)
 			return (IVertexAttribute*)(&Attribute[ID]);
 
 		return 0;
@@ -180,19 +189,24 @@ namespace video
 
 	bool CVertexDescriptor::removeAttribute(u32 id)
 	{
-		if(id < Attribute.size())
+		if (id < Attribute.size())
 		{
+			const u32 bufferID = Attribute[id].getBufferID();
+
 			AttributePointer[(u32)Attribute[id].getSemantic()] = -1;
 			Attribute.erase(id);
 
 			// Recalculate vertex size and attribute offsets.
 
-			VertexSize = 0;
+			VertexSize[bufferID] = 0;
 
-			for(u32 i = 0; i < Attribute.size(); ++i)
+			for (u32 i = 0; i < Attribute.size(); ++i)
 			{
-				Attribute[i].setOffset(VertexSize);
-				VertexSize += (Attribute[id].getTypeSize() * Attribute[id].getElementCount());
+				if (Attribute[i].getBufferID() == bufferID)
+				{
+					Attribute[i].setOffset(VertexSize[bufferID]);
+					VertexSize[bufferID] += (Attribute[id].getTypeSize() * Attribute[id].getElementCount());
+				}
 			}
 
 			return true;
@@ -204,8 +218,7 @@ namespace video
 	void CVertexDescriptor::removeAllAttribute()
 	{
 		Attribute.clear();
-
-		VertexSize = 0;
+		VertexSize.clear();
 
 		for(u32 i = 0; i < EVAS_COUNT; ++i)
 			AttributePointer[i] = -1;

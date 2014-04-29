@@ -373,8 +373,14 @@ IAnimatedMesh* CLWOMeshFileLoader::createMesh(io::IReadFile* file)
 		// add bump maps
 		if (Materials[i]->Meshbuffer->Material.MaterialType==video::EMT_NORMAL_MAP_SOLID)
 		{
-			if(SceneManager->getMeshManipulator()->createTangents<video::S3DVertexTangents>(Materials[i]->Meshbuffer, SceneManager->getVideoDriver()->getVertexDescriptor(2), false))
-				Mesh->addMeshBuffer(Materials[i]->Meshbuffer);
+			CVertexBuffer<video::S3DVertexTangents>* vb = new CVertexBuffer<video::S3DVertexTangents>(SceneManager->getVideoDriver()->getVertexDescriptor(2));
+			SceneManager->getMeshManipulator()->copyVertices(Materials[i]->Meshbuffer->getVertexBuffer(0), vb, 0, 0, false);
+			Materials[i]->Meshbuffer->setVertexBuffer(vb, 0);
+			vb->drop();
+
+			SceneManager->getMeshManipulator()->recalculateTangents(Materials[i]->Meshbuffer, false, false, false);
+
+			Mesh->addMeshBuffer(Materials[i]->Meshbuffer);
 		}
 		else
 		{

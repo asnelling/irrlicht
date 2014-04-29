@@ -14,7 +14,7 @@ namespace scene
 	class CIndexBuffer : public IIndexBuffer
 	{
 	public:
-		CIndexBuffer(video::E_INDEX_TYPE type = video::EIT_16BIT) : Indices(0), Type(type), HardwareMappingHint(EHM_NEVER), ChangedID(1)
+		CIndexBuffer(video::E_INDEX_TYPE type = video::EIT_16BIT) : Type(type), HardwareMappingHint(EHM_NEVER), ChangedID(1)
 		{
 #ifdef _DEBUG
 			setDebugName("CIndexBuffer");
@@ -206,7 +206,7 @@ namespace scene
 			{
 				Data.reallocate(indexList.Data.size());
 
-				for(u32 i = 0; i < indexList.Data.size(); ++i)
+				for (u32 i = 0; i < indexList.Data.size(); ++i)
 					Data.push_back(indexList.Data[i]);
 			}
 
@@ -262,7 +262,7 @@ namespace scene
 
 			virtual u32 getIndex(u32 id) const
 			{
-				if(id < Data.size())
+				if (id < Data.size())
 					return Data[id];
 
 				return 0;
@@ -270,7 +270,7 @@ namespace scene
 
 			virtual void setIndex(u32 id, u32 index)
 			{
-				if(id < Data.size())
+				if (id < Data.size())
 					Data[id] = (T)index;
 			}	
 

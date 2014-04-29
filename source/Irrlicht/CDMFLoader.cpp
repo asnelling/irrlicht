@@ -158,8 +158,13 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 			if(materiali[faces[i].materialID].lightmapName.size())
 				bool use2TCoords = true;
 
-			if (use2TCoords)
-				SceneMgr->getMeshManipulator()->convertVertices<video::S3DVertex2TCoords>(meshBuffer, SceneMgr->getVideoDriver()->getVertexDescriptor(1), false);
+			if (use2TCoords && meshBuffer->getVertexBuffer(0)->getVertexSize() != sizeof(video::S3DVertex2TCoords))
+			{
+				CVertexBuffer<video::S3DVertex2TCoords>* vb = new CVertexBuffer<video::S3DVertex2TCoords>(SceneMgr->getVideoDriver()->getVertexDescriptor(1));
+				SceneMgr->getMeshManipulator()->copyVertices(meshBuffer->getVertexBuffer(0), vb, 0, 0, false);
+				meshBuffer->setVertexBuffer(vb, 0);
+				vb->drop();
+			}
 
 			const u32 base = meshBuffer->getVertexBuffer()->getVertexCount();
 

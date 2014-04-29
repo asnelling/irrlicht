@@ -1242,7 +1242,6 @@ class COpenGLExtensionHandler
 		PFNGLGETOCCLUSIONQUERYIVNVPROC pGlGetOcclusionQueryivNV;
 		PFNGLGETOCCLUSIONQUERYUIVNVPROC pGlGetOcclusionQueryuivNV;
 		PFNGLBLENDEQUATIONEXTPROC pGlBlendEquationEXT;
-		PFNGLBLENDEQUATIONPROC pGlBlendEquation;
 		#if defined(WGL_EXT_swap_control)
 		PFNWGLSWAPINTERVALEXTPROC pWglSwapIntervalEXT;
 		#endif
@@ -2623,9 +2622,7 @@ inline void COpenGLExtensionHandler::extGlSwapInterval(int interval)
 inline void COpenGLExtensionHandler::extGlBlendEquation(GLenum mode)
 {
 #ifdef _IRR_OPENGL_USE_EXTPOINTER_
-	if (pGlBlendEquation)
-		pGlBlendEquation(mode);
-	else if (pGlBlendEquationEXT)
+	if (pGlBlendEquationEXT)
 		pGlBlendEquationEXT(mode);
 #elif defined(GL_EXT_blend_minmax) || defined(GL_EXT_blend_subtract) || defined(GL_EXT_blend_logic_op)
 	glBlendEquationEXT(mode);

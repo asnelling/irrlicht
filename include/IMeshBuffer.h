@@ -41,6 +41,9 @@ namespace scene
 	class IMeshBuffer : public virtual IReferenceCounted
 	{
 	public:
+		IMeshBuffer() : VertexBufferCompatible(true)
+		{
+		}
 
 		virtual ~IMeshBuffer() {}
 
@@ -57,6 +60,12 @@ namespace scene
 		virtual IIndexBuffer* getIndexBuffer() const = 0;
 
 		virtual bool setIndexBuffer(IIndexBuffer* indexBuffer) = 0;
+
+		//! Inform if stored vertex buffers have the same vertex descriptors.
+		bool isVertexBufferCompatible() const
+		{
+			return VertexBufferCompatible;
+		}
 
 		//! Get the material of this meshbuffer
 		/** \return Material of this buffer. */
@@ -109,6 +118,9 @@ namespace scene
 		virtual u32 getChangedID_Index() const = 0;
 
 		virtual core::matrix4& getTransformation() = 0;
+
+	protected:
+		bool VertexBufferCompatible;
 	};
 
 } // end namespace scene

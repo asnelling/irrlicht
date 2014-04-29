@@ -25,7 +25,16 @@ namespace scene
 			#endif
 
 			if (vertexDescriptor)
+			{
 				VertexBuffer.push_back(new CVertexBuffer<T>(vertexDescriptor));
+
+				if (vertexDescriptor->getVertexSize(0) != VertexBuffer[0]->getVertexSize())
+					VertexBufferCompatible = false;
+			}
+			else
+			{
+				VertexBufferCompatible = false;
+			}
 
 			IndexBuffer = new CIndexBuffer(type);
 		}
@@ -47,8 +56,13 @@ namespace scene
 		{
 			bool status = false;
 
-			if (vertexBuffer && vertexBuffer->getVertexDescriptor() == VertexBuffer[0]->getVertexDescriptor())
+			if (vertexBuffer && vertexBuffer->getVertexDescriptor())
 			{
+				const video::IVertexDescriptor* vd = vertexBuffer->getVertexDescriptor();
+
+				if (vd->getVertexSize(VertexBuffer.size()) != sizeof(T))
+					VertexBufferCompatible = false;
+
 				vertexBuffer->grab();
 				VertexBuffer.push_back(vertexBuffer);
 
@@ -79,18 +93,48 @@ namespace scene
 			{
 				VertexBuffer[id]->drop();
 				VertexBuffer.erase(id);
+
+				bool vertexBufferCompatible = true;
+
+				for (u32 i = 0; i < VertexBuffer.size(); ++i)
+				{
+					const video::IVertexDescriptor* vd = VertexBuffer[i]->getVertexDescriptor();
+
+					if (!vd || (vd && vd->getVertexSize(i) != sizeof(T)))
+					{
+						vertexBufferCompatible = false;
+						break;
+					}
+				}
+
+				VertexBufferCompatible = vertexBufferCompatible;
 			}
 		}
 
 		virtual bool setVertexBuffer(IVertexBuffer* vertexBuffer, u32 id = 0)
 		{
-			if (id >= VertexBuffer.size() || !vertexBuffer || VertexBuffer[id] == vertexBuffer)
+			if (id >= VertexBuffer.size() || !vertexBuffer || !vertexBuffer->getVertexDescriptor() || VertexBuffer[id] == vertexBuffer)
 				return false;
 
 			VertexBuffer[id]->drop();
 			vertexBuffer->grab();
 
 			VertexBuffer[id] = vertexBuffer;
+
+			bool vertexBufferCompatible = true;
+
+			for (u32 i = 0; i < VertexBuffer.size(); ++i)
+			{
+				const video::IVertexDescriptor* vd = VertexBuffer[i]->getVertexDescriptor();
+
+				if (vd->getVertexSize(i) != sizeof(T))
+				{
+					vertexBufferCompatible = false;
+					break;
+				}
+			}
+
+			VertexBufferCompatible = vertexBufferCompatible;
 
 			return true;
 		}
@@ -157,13 +201,15 @@ namespace scene
 
 			BoundingBoxNeedsRecalculated = false;
 
-			if(!VertexBuffer[0]->getVertexCount() || !VertexBuffer[0]->getVertexDescriptor())
+			const video::IVertexDescriptor* vd = VertexBuffer[0]->getVertexDescriptor();
+
+			if (!VertexBuffer[0]->getVertexCount() || !vd || !VertexBufferCompatible)
 				BoundingBox.reset(0,0,0);
 			else
 			{
-				video::IVertexAttribute* attribute = VertexBuffer[0]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+				video::IVertexAttribute* attribute = vd->getAttributeBySemantic(video::EVAS_POSITION);
 
-				if(!attribute)
+				if (!attribute)
 				{
 					BoundingBox.reset(0,0,0);
 					return;
@@ -202,12 +248,6 @@ namespace scene
 			if (id >= VertexBuffer.size() || !vertexBuffer || vertexBuffer->getVertexDescriptor() != VertexBuffer[id]->getVertexDescriptor() ||
 				vertexBuffer->getVertexSize() != VertexBuffer[id]->getVertexSize())
 				return;
-
-			/*for (u32 i = 0; i < VertexBuffer.size(); ++i)
-			{
-				if (vertexBuffer == vertexBuffer[i])
-					return;
-			}*/
 
 			const u32 vertexCount = vertexBuffer->getVertexCount();
 			const u32 vertexSize = vertexBuffer->getVertexSize();

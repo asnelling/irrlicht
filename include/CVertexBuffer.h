@@ -21,7 +21,7 @@ namespace scene
 #ifdef _DEBUG
 			setDebugName("CVertexBuffer");
 #endif
-			if(vertexDescriptor)
+			if (vertexDescriptor)
 				vertexDescriptor->grab();
 		}
 
@@ -29,14 +29,14 @@ namespace scene
 		{
 			vertexDescriptor = vertexBuffer.getVertexDescriptor();
 
-			if(vertexDescriptor)
+			if (vertexDescriptor)
 				vertexDescriptor->grab();
 
 			HardwareMappingHint = vertexBuffer.getHardwareMappingHint();
 
 			Vertices.reallocate(vertexBuffer.getVertexCount());
 
-			for(u32 i = 0; i < vertexBuffer.getVertexCount(); ++i)
+			for (u32 i = 0; i < vertexBuffer.getVertexCount(); ++i)
 				Vertices.push_back(vertexBuffer.getVertex(i));
 		}
 
@@ -44,7 +44,7 @@ namespace scene
 		{
 			Vertices.clear();
 
-			if(vertexDescriptor)
+			if (vertexDescriptor)
 				vertexDescriptor->drop();
 		}
 
@@ -102,9 +102,9 @@ namespace scene
 
 		virtual bool setVertexDescriptor(video::IVertexDescriptor* vtxDescriptor)
 		{
-			if(vtxDescriptor && vtxDescriptor != vertexDescriptor)
+			if (vtxDescriptor && vtxDescriptor != vertexDescriptor)
 			{
-				if(vertexDescriptor)
+				if (vertexDescriptor)
 					vertexDescriptor->drop();
 
 				vertexDescriptor = vtxDescriptor;
@@ -123,7 +123,7 @@ namespace scene
 
 		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING hardwareMappingHint)
 		{
-			if(HardwareMappingHint != hardwareMappingHint)
+			if (HardwareMappingHint != hardwareMappingHint)
 				setDirty();
 
 			HardwareMappingHint = hardwareMappingHint;
@@ -136,13 +136,16 @@ namespace scene
 
 		virtual void addVertex(const void* vertex)
 		{
-			T* Vertex = (T*)vertex;
-			Vertices.push_back(*Vertex);
+			T* vtx = (T*)vertex;
+			Vertices.push_back(*vtx);
 		}
 
-		virtual T& getVertex(u32 id)
+		virtual const void* getVertex(u32 id) const
 		{
-			return Vertices[id];
+			if (id < Vertices.size())
+				return &Vertices[id];
+
+			return 0;
 		}
 
 		virtual void* getVertices()
@@ -155,9 +158,23 @@ namespace scene
 			return Vertices.size();
 		}
 
+		virtual video::E_VERTEX_TYPE getVertexType() const
+		{
+			return vertexDescriptor ? (video::E_VERTEX_TYPE)vertexDescriptor->getID() : (video::E_VERTEX_TYPE) - 1;
+		}
+
 		virtual u32 getVertexSize() const
 		{
 			return sizeof(T);
+		}
+
+		virtual void setVertex(u32 id, const void* vertex)
+		{
+			if (id < Vertices.size())
+			{
+				T* vtx = (T*)vertex;
+				Vertices[id] = *vtx;
+			}
 		}
 
 		virtual void setDirty()
@@ -168,11 +185,6 @@ namespace scene
 		virtual u32 getChangedID() const
 		{
 			return ChangedID;
-		}
-
-		virtual video::E_VERTEX_TYPE getVertexType() const
-		{
-			return vertexDescriptor ? (video::E_VERTEX_TYPE)vertexDescriptor->getID() : (video::E_VERTEX_TYPE)-1;
 		}
 
 	protected:

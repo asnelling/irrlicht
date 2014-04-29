@@ -1276,7 +1276,7 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 		return;
 
 	CD3D11HardwareBuffer* vertexBuffer = static_cast<CD3D11HardwareBuffer*>(vertices);
-	const u32 stride = VertexDescriptor[vType]->getVertexSize();
+	const u32 stride = VertexDescriptor[vType]->getVertexSize(0);
 	const u32 vertexCount = vertexBuffer->size() / stride;
 	UINT offset = 0;
 

@@ -39,6 +39,8 @@ namespace scene
 
 		virtual void addVertex(const void* vertex) = 0;
 
+		virtual const void* getVertex(u32 id) const = 0;
+
 		virtual void* getVertices() = 0;
 
 		virtual u32 getVertexCount() const = 0;
@@ -46,6 +48,8 @@ namespace scene
 		virtual video::E_VERTEX_TYPE getVertexType() const = 0;
 
 		virtual u32 getVertexSize() const = 0;
+
+		virtual void setVertex(u32 id, const void* vertex) = 0;
 
 		virtual void setDirty() = 0;
 

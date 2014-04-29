@@ -37,8 +37,17 @@ public:
 
 	virtual void makePlanarTextureMapping(IMeshBuffer* meshBuffer, f32 resolutionS, f32 resolutionT, u8 axis, const core::vector3df& offset) const;
 
-	virtual bool copyVertices(IVertexBuffer* srcBuffer, IVertexBuffer* dstBuffer, bool copyCustomAttribute) const;
-	
+	virtual bool copyIndices(IIndexBuffer* srcBuffer, IIndexBuffer* dstBuffer) const;
+
+	virtual bool copyVertices(IVertexBuffer* srcBuffer, IVertexBuffer* dstBuffer, u32 srcDescriptionBufferID, u32 dstDescriptionBufferID, bool copyCustomAttribute) const;
+
+	virtual bool createTangents(IMeshBuffer* srcBuffer, IMeshBuffer* dstBuffer, bool copyCustomAttribute);
+
+	virtual bool createUniquePrimitives(IMeshBuffer* srcBuffer, IMeshBuffer* dstBuffer) const;
+
+	virtual bool createWelded(IMeshBuffer* srcBuffer, IMeshBuffer* dstBuffer, f32 tolerance = core::ROUNDING_ERROR_f32,
+		bool check4Component = true, bool check3Component = true, bool check2Component = true, bool check1Component = true) const;
+
 	virtual s32 getPolyCount(IMesh* mesh) const;
 
 	virtual s32 getPolyCount(IAnimatedMesh* mesh) const;

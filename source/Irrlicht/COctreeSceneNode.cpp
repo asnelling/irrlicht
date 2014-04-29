@@ -281,7 +281,7 @@ bool COctreeSceneNode::createTree(IMesh* mesh)
 				else
 					nchunk->setHardwareMappingHint(scene::EHM_STATIC);
 
-				SceneManager->getMeshManipulator()->copyVertices(b->getVertexBuffer(), nchunk->getVertexBuffer(), true);
+				SceneManager->getMeshManipulator()->copyVertices(b->getVertexBuffer(), nchunk->getVertexBuffer(), 0, 0, true);
 
 				polyCount += b->getIndexBuffer()->getIndexCount();
 				nchunk->getIndexBuffer()->reallocate(b->getIndexBuffer()->getIndexCount());

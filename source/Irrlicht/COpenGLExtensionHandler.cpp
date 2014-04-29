@@ -81,7 +81,7 @@ COpenGLExtensionHandler::COpenGLExtensionHandler() :
 	pGlIsOcclusionQueryNV(0), pGlBeginOcclusionQueryNV(0),
 	pGlEndOcclusionQueryNV(0), pGlGetOcclusionQueryivNV(0),
 	pGlGetOcclusionQueryuivNV(0),
-	pGlBlendEquationEXT(0), pGlBlendEquation(0)
+	pGlBlendEquationEXT(0)
 #if defined(GLX_SGI_swap_control)
 	,pGlxSwapIntervalSGI(0)
 #endif
@@ -552,7 +552,6 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 
 	// blend equation
 	pGlBlendEquationEXT = (PFNGLBLENDEQUATIONEXTPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquationEXT");
-	pGlBlendEquation = (PFNGLBLENDEQUATIONPROC) IRR_OGL_LOAD_EXTENSION("glBlendEquation");
 
 	// get vsync extension
 	#if defined(WGL_EXT_swap_control) && !defined(_IRR_COMPILE_WITH_SDL_DEVICE_)

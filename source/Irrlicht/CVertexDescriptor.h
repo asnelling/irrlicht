@@ -62,7 +62,7 @@ namespace video
 
 		virtual const core::stringc& getName() const;
 
-		virtual u32 getVertexSize() const;
+		virtual u32 getVertexSize(u32 bufferID) const;
 
 		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID);
 
@@ -83,8 +83,7 @@ namespace video
 
 		core::stringc Name;
 
-		u32 VertexSize;
-
+		core::array<u32> VertexSize;
 		core::array<CVertexAttribute> Attribute;
 
 		s32 AttributePointer[(u32)EVAS_CUSTOM+1];

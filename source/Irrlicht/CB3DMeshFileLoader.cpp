@@ -539,8 +539,17 @@ bool CB3DMeshFileLoader::readChunkTRIS(scene::IMeshBuffer *meshBuffer, u32 meshB
 			if (AnimatedVertices_VertexID[ vertex_id[i] ] == -1) //If this vertex is not in the meshbuffer
 			{
 				//Check for lightmapping:
-				if (BaseVertices[ vertex_id[i] ].TCoords2 != core::vector2df(0.f,0.f))
-					SceneManager->getMeshManipulator()->convertVertices<video::S3DVertex2TCoords>(meshBuffer, SceneManager->getVideoDriver()->getVertexDescriptor(1), false); //Will only affect the meshbuffer the first time this is called
+				if (BaseVertices[vertex_id[i]].TCoords2 != core::vector2df(0.f, 0.f))
+				{
+					if (meshBuffer->getVertexBuffer(0)->getVertexSize() != sizeof(video::S3DVertex2TCoords))
+					{
+						CVertexBuffer<video::S3DVertex2TCoords>* vb = new CVertexBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
+						SceneManager->getMeshManipulator()->copyVertices(meshBuffer->getVertexBuffer(0), vb, 0, 0, false);
+						meshBuffer->setVertexBuffer(vb, 0);
+						vb->drop();
+					}
+				}
+					
 
 				//Add the vertex to the meshbuffer:
 				if (meshBuffer->getVertexBuffer()->getVertexSize() == sizeof(video::S3DVertex2TCoords))
