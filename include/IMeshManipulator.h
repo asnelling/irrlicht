@@ -222,7 +222,7 @@ namespace scene
 		template <class T>
 		bool convertVertices(IMeshBuffer* buffer, video::IVertexDescriptor* descriptor, bool copyCustomAttribute = false)
 		{
-			if (!buffer || !buffer->isVertexBufferCompatible() || buffer->getVertexBufferCount() > 0 ||
+			if (!buffer || !buffer->isVertexBufferCompatible() || buffer->getVertexBufferCount() > 1 ||
 				!descriptor || descriptor->getVertexSize(0) != sizeof(T))
 				return false;
 
@@ -266,7 +266,7 @@ namespace scene
 			{
 				const IMeshBuffer* const mb = mesh->getMeshBuffer(i);
 
-				if (!mb->isVertexBufferCompatible() || mb->getVertexBufferCount() > 0)
+				if (!mb->isVertexBufferCompatible() || mb->getVertexBufferCount() > 1)
 					return false;
 			}
 

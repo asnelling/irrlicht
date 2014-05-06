@@ -60,7 +60,7 @@ namespace scene
 			{
 				const video::IVertexDescriptor* vd = vertexBuffer->getVertexDescriptor();
 
-				if (vd->getVertexSize(VertexBuffer.size()) != sizeof(T))
+				if (vd->getVertexSize(VertexBuffer.size()) != VertexBuffer[0]->getVertexSize())
 					VertexBufferCompatible = false;
 
 				vertexBuffer->grab();
@@ -94,13 +94,15 @@ namespace scene
 				VertexBuffer[id]->drop();
 				VertexBuffer.erase(id);
 
+				const u32 vertexSize = VertexBuffer[0]->getVertexSize();
+
 				bool vertexBufferCompatible = true;
 
 				for (u32 i = 0; i < VertexBuffer.size(); ++i)
 				{
 					const video::IVertexDescriptor* vd = VertexBuffer[i]->getVertexDescriptor();
 
-					if (!vd || (vd && vd->getVertexSize(i) != sizeof(T)))
+					if (!vd || (vd && vd->getVertexSize(i) != vertexSize))
 					{
 						vertexBufferCompatible = false;
 						break;
@@ -121,13 +123,15 @@ namespace scene
 
 			VertexBuffer[id] = vertexBuffer;
 
+			const u32 vertexSize = VertexBuffer[0]->getVertexSize();
+
 			bool vertexBufferCompatible = true;
 
 			for (u32 i = 0; i < VertexBuffer.size(); ++i)
 			{
 				const video::IVertexDescriptor* vd = VertexBuffer[i]->getVertexDescriptor();
 
-				if (vd->getVertexSize(i) != sizeof(T))
+				if (vd->getVertexSize(i) != vertexSize)
 				{
 					vertexBufferCompatible = false;
 					break;

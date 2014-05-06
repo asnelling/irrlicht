@@ -59,10 +59,10 @@ IMesh* CGeometryCreator::createCubeMesh(const core::vector3df& size) const
 
 	for (u32 i = 0; i < 12; ++i)
 	{
-		vb->addVertex(&Vertices[i]);
-
 		Vertices[i].Pos -= core::vector3df(0.5f, 0.5f, 0.5f);
 		Vertices[i].Pos *= size;
+
+		vb->addVertex(&Vertices[i]);
 		buffer->BoundingBox.addInternalPoint(Vertices[i].Pos);
 	}
 

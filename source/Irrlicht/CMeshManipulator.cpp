@@ -978,7 +978,7 @@ bool CMeshManipulator::createWelded(IMeshBuffer* srcBuffer, IMeshBuffer* dstBuff
 	bool check4Component, bool check3Component, bool check2Component, bool check1Component) const
 {
 	if (!srcBuffer || !srcBuffer->isVertexBufferCompatible() || !dstBuffer || !dstBuffer->isVertexBufferCompatible() ||
-		srcBuffer->getVertexBufferCount() > 0 || dstBuffer->getVertexBufferCount() > 0)
+		srcBuffer->getVertexBufferCount() > 1 || dstBuffer->getVertexBufferCount() > 1)
 		return false;
 
 	IIndexBuffer* srcIndexBuffer = srcBuffer->getIndexBuffer();
