@@ -1167,7 +1167,7 @@ bool COpenGLDriver::updateVertexHardwareBuffer(SHWBufferLink_opengl* buffer)
 	const void* Vertices = meshBuffer->getVertexBuffer()->getVertices();
 	const u32 VertexCount = meshBuffer->getVertexBuffer()->getVertexCount();
 	const u32 VertexSize = meshBuffer->getVertexBuffer()->getVertexSize();
-	IVertexDescriptor* vertexDescriptor = meshBuffer->getVertexBuffer()->getVertexDescriptor();
+	IVertexDescriptor* vertexDescriptor = meshBuffer->getVertexDescriptor();
 
 	if(!vertexDescriptor)
 		return false;
@@ -1445,7 +1445,7 @@ void COpenGLDriver::drawHardwareBuffer(SHWBufferLink* buffer)
 		hardwareIndex = true;
 	}
 
-	drawVertexPrimitiveList(hardwareVertex, meshBuffer->getVertexBuffer(), hardwareIndex, meshBuffer->getIndexBuffer(), meshBuffer->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
+	drawVertexPrimitiveList(meshBuffer->getVertexBuffer(), meshBuffer->getIndexBuffer(), meshBuffer->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
 
 	if(buffer->Mapped_Vertex != scene::EHM_NEVER)
 		extGlBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1579,20 +1579,15 @@ static inline u8* buffer_offset(const long offset)
 
 
 //! draws a vertex primitive list
-void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer, bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void COpenGLDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer, IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
 {
-	if(!primitiveCount || !vertexBuffer->getVertexCount())
+	if (!primitiveCount || !vertexBuffer || vertexBuffer->getVertexCount() == 0 || !descriptor)
 		return;
 
-	COpenGLVertexDescriptor* vertexDescriptor = (COpenGLVertexDescriptor*)vertexBuffer->getVertexDescriptor();
-
-	if(!vertexDescriptor)
+	if (!checkPrimitiveCount(primitiveCount))
 		return;
 
-	if(!checkPrimitiveCount(primitiveCount))
-		return;
-
-	CNullDriver::drawVertexPrimitiveList(hardwareVertex, vertexBuffer, hardwareIndex, indexBuffer, primitiveCount, pType);
+	CNullDriver::drawVertexPrimitiveList(vertexBuffer, indexBuffer, descriptor, primitiveCount, pType);
 
 	/*if (vertices && !FeatureAvailable[IRR_ARB_vertex_array_bgra] && !FeatureAvailable[IRR_EXT_vertex_array_bgra])
 		getColorBuffer(vertices, vertexCount, vType);*/
@@ -1637,6 +1632,11 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 		}
 	}*/
 
+	// Hardware buffers
+
+	bool hardwareVertex = (vertexBuffer->getHardwareMappingHint() != scene::EHM_NEVER) ? true : false;
+	bool hardwareIndex = (indexBuffer && indexBuffer->getHardwareMappingHint() != scene::EHM_NEVER) ? true : false;
+
 	// Enable client states.
 
 	bool VertexClientState = false;
@@ -1644,9 +1644,9 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 	bool ColorClientState = false;
 	bool TexCoord0ClientState = false;
 
-	for(u32 i = 0; i < vertexDescriptor->getAttributeCount() && i < 16; ++i)
+	for(u32 i = 0; i < descriptor->getAttributeCount() && i < 16; ++i)
 	{
-		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = vertexDescriptor->getAttribute(i)->getSemantic();
+		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = descriptor->getAttribute(i)->getSemantic();
 
 		switch(semantic)
 		{
@@ -1675,12 +1675,12 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 	GLuint glslProgram = getActiveGLSLProgram();
 	GLuint arbProgram = getActiveARBProgram();
 
-	for(u32 i = 0; i < vertexDescriptor->getAttributeCount() && i < 16; ++i)
+	for(u32 i = 0; i < descriptor->getAttributeCount() && i < 16; ++i)
 	{
-		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = vertexDescriptor->getAttribute(i)->getSemantic();
+		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = descriptor->getAttribute(i)->getSemantic();
 		GLenum type = 0;
 
-		switch(vertexDescriptor->getAttribute(i)->getType())
+		switch(descriptor->getAttribute(i)->getType())
 		{
 		case EVAT_BYTE:
 			type = GL_BYTE;
@@ -1712,34 +1712,34 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 		{
 		case EVAS_POSITION:
 			if(hardwareVertex)
-				glVertexPointer(vertexDescriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
+				glVertexPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
 			else
 			{
 				u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-				buffer += vertexDescriptor->getAttribute(i)->getOffset();
-				glVertexPointer(vertexDescriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), &(*buffer));
+				buffer += descriptor->getAttribute(i)->getOffset();
+				glVertexPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), &(*buffer));
 			}
 			break;
 		case EVAS_NORMAL:
 			if((type != scene::EPT_POINTS) && (type != scene::EPT_POINT_SPRITES))
 			{
 				if(hardwareVertex)
-					glNormalPointer(type, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
+					glNormalPointer(type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
 				else
 				{
 					u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-					buffer += vertexDescriptor->getAttribute(i)->getOffset();
+					buffer += descriptor->getAttribute(i)->getOffset();
 					glNormalPointer(type, vertexBuffer->getVertexSize(), &(*buffer));
 				}
 			}
 			break;
 		case EVAS_COLOR:
 			if(hardwareVertex)
-				glColorPointer(colorSize, type, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
+				glColorPointer(colorSize, type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
 			else
 			{
 				u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-				buffer += vertexDescriptor->getAttribute(i)->getOffset();
+				buffer += descriptor->getAttribute(i)->getOffset();
 				glColorPointer(colorSize, type, vertexBuffer->getVertexSize(), &(*buffer));
 			}
 			break;
@@ -1766,12 +1766,12 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 							}
 
 							if(hardwareVertex)
-								glTexCoordPointer(vertexDescriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
+								glTexCoordPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
 							else
 							{
 								u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-								buffer += vertexDescriptor->getAttribute(i)->getOffset();
-								glTexCoordPointer(vertexDescriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), &(*buffer));
+								buffer += descriptor->getAttribute(i)->getOffset();
+								glTexCoordPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), &(*buffer));
 							}
 						}
 					}
@@ -1782,12 +1782,12 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
 					if(hardwareVertex)
-						glTexCoordPointer(vertexDescriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
+						glTexCoordPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
 					else
 					{
 						u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-						buffer += vertexDescriptor->getAttribute(i)->getOffset();
-						glTexCoordPointer(vertexDescriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), &(*buffer));
+						buffer += descriptor->getAttribute(i)->getOffset();
+						glTexCoordPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), &(*buffer));
 					}
 				}
 			}
@@ -1800,19 +1800,19 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 			{
 				if(glslProgram)
 				{
-					s32 status = vertexDescriptor->getLocationStatus((u32)Material.MaterialType, i);
+					s32 status = ((COpenGLVertexDescriptor*)descriptor)->getLocationStatus((u32)Material.MaterialType, i);
 					GLint location = -1;
 
 					if(status != -1)
 					{
 						if(status)
 						{
-							location = vertexDescriptor->getLocation((u32)Material.MaterialType, i);
+							location = ((COpenGLVertexDescriptor*)descriptor)->getLocation((u32)Material.MaterialType, i);
 						}
 						else
 						{
-							location = extGlGetAttribLocation(glslProgram, vertexDescriptor->getAttribute(i)->getName().c_str());
-							vertexDescriptor->setLocation((u32)Material.MaterialType, i, location);
+							location = extGlGetAttribLocation(glslProgram, descriptor->getAttribute(i)->getName().c_str());
+							((COpenGLVertexDescriptor*)descriptor)->setLocation((u32)Material.MaterialType, i, location);
 						}
 					}
 
@@ -1823,12 +1823,12 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 						extGlEnableVertexAttribArray(location);
 
 						if(hardwareVertex)
-							extGlVertexAttribPointer(location, vertexDescriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
+							extGlVertexAttribPointer(location, descriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
 						else
 						{
 							u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-							buffer += vertexDescriptor->getAttribute(i)->getOffset();
-							extGlVertexAttribPointer(location, vertexDescriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), &(*buffer));
+							buffer += descriptor->getAttribute(i)->getOffset();
+							extGlVertexAttribPointer(location, descriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), &(*buffer));
 						}
 					}
 				}
@@ -1852,12 +1852,12 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 						extGlEnableVertexAttribArray(location);
 
 						if(hardwareVertex)
-							extGlVertexAttribPointer(location, vertexDescriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), buffer_offset(vertexDescriptor->getAttribute(i)->getOffset()));
+							extGlVertexAttribPointer(location, descriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
 						else
 						{
 							u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-							buffer += vertexDescriptor->getAttribute(i)->getOffset();
-							extGlVertexAttribPointer(location, vertexDescriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), &(*buffer));
+							buffer += descriptor->getAttribute(i)->getOffset();
+							extGlVertexAttribPointer(location, descriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), &(*buffer));
 						}
 					}
 				}
@@ -1877,9 +1877,9 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 
 	bool UsedMultiTexture = false;
 
-	for(u32 i = 0; i < vertexDescriptor->getAttributeCount() && i < 16; ++i)
+	for(u32 i = 0; i < descriptor->getAttributeCount() && i < 16; ++i)
 	{
-		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = vertexDescriptor->getAttribute(i)->getSemantic();
+		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = descriptor->getAttribute(i)->getSemantic();
 
 		switch(semantic)
 		{
@@ -1924,7 +1924,7 @@ void COpenGLDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexB
 	if (UsedMultiTexture)
 		BridgeCalls->setClientActiveTexture(GL_TEXTURE0_ARB);
 
-	LastVertexDescriptor = vertexDescriptor;
+	LastVertexDescriptor = descriptor;
 }
 
 

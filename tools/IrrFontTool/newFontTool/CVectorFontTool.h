@@ -768,7 +768,7 @@ public:
 		{
 			STriangleList &t = groups[g].triangles;
 
-			scene::CVertexBuffer<S3DVertex> vertexBuffer(device->getVideoDriver()->getVertexDescriptor(0));
+			scene::CVertexBuffer<S3DVertex> vertexBuffer;
 			scene::CIndexBuffer indexBuffer(video::EIT_16BIT);
 
 			for(u32 v=0; v< t.positions.size(); ++v)
@@ -783,7 +783,7 @@ public:
 				indexBuffer.addIndex(t.indexes[i]);
 			}
 
-			device->getVideoDriver()->drawIndexedTriangleList(false, &vertexBuffer, false, &indexBuffer, t.indexes.size()/3 );
+			device->getVideoDriver()->drawIndexedTriangleList(&vertexBuffer, &indexBuffer, device->getVideoDriver()->getVertexDescriptor(0), t.indexes.size() / 3);
 		}
 	}
 

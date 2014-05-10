@@ -165,7 +165,7 @@ void COctreeSceneNode::render()
 					driver->drawMeshBuffer ( StdMeshes[i] );
 			}
 			else
-				driver->drawIndexedTriangleList(false, StdMeshes[i]->getVertexBuffer(), false, d[i].IndexBuffer, d[i].CurrentSize / 3);
+				driver->drawIndexedTriangleList(StdMeshes[i]->getVertexBuffer(0), d[i].IndexBuffer, StdMeshes[i]->getVertexDescriptor(), d[i].CurrentSize / 3);
 		}
 	}
 
@@ -281,7 +281,7 @@ bool COctreeSceneNode::createTree(IMesh* mesh)
 				else
 					nchunk->setHardwareMappingHint(scene::EHM_STATIC);
 
-				SceneManager->getMeshManipulator()->copyVertices(b->getVertexBuffer(), nchunk->getVertexBuffer(), 0, 0, true);
+				SceneManager->getMeshManipulator()->copyVertices(b->getVertexBuffer(), 0, b->getVertexDescriptor(), nchunk->getVertexBuffer(), 0, nchunk->getVertexDescriptor(), true);
 
 				polyCount += b->getIndexBuffer()->getIndexCount();
 				nchunk->getIndexBuffer()->reallocate(b->getIndexBuffer()->getIndexCount());

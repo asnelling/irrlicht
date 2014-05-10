@@ -1039,9 +1039,7 @@ bool CD3D11Driver::updateVertexHardwareBuffer(SD3D11HwBufferLink *hwBuffer)
 	const void* vertices = mb->getVertexBuffer()->getVertices();
 	const u32 vertexCount = mb->getVertexBuffer()->getVertexCount();
 
-	E_VERTEX_TYPE vType = mb->getVertexBuffer()->getVertexType();
-
-	IVertexDescriptor* vertexDescriptor = mb->getVertexBuffer()->getVertexDescriptor();
+	IVertexDescriptor* vertexDescriptor = mb->getVertexDescriptor();
 
 	if(!vertexDescriptor)
 		return false;
@@ -1227,8 +1225,6 @@ void CD3D11Driver::drawHardwareBuffer(SHWBufferLink* buffer)
 	hwBuffer->LastUsed = 0;				//reset count
 
 	const scene::IMeshBuffer* mb = hwBuffer->MeshBuffer;
-
-	E_VERTEX_TYPE vType = mb->getVertexBuffer()->getVertexType();
 
 	const u32 stride = mb->getVertexBuffer()->getVertexSize();
 	UINT offset = 0;

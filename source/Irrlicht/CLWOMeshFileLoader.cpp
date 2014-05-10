@@ -280,11 +280,11 @@ IAnimatedMesh* CLWOMeshFileLoader::createMesh(io::IReadFile* file)
 		video::S3DVertex* Vertices = (video::S3DVertex*)Materials[i]->Meshbuffer->getVertexBuffer()->getVertices();
 
 		for (u32 j=0; j<Materials[i]->Meshbuffer->getVertexBuffer()->getVertexCount(); ++j)
-			Vertices[j].Color=Materials[i]->Meshbuffer->Material.DiffuseColor;
+			Vertices[j].Color = Materials[i]->Meshbuffer->getMaterial().DiffuseColor;
 		Materials[i]->Meshbuffer->recalculateBoundingBox();
 
 		// load textures
-		video::SMaterial& irrMat=Materials[i]->Meshbuffer->Material;
+		video::SMaterial& irrMat = Materials[i]->Meshbuffer->getMaterial();
 		if (Materials[i]->Texture[0].Map != "") // diffuse
 			irrMat.setTexture(0,loadTexture(Materials[i]->Texture[0].Map));
 		if (Materials[i]->Texture[3].Map != "") // reflection
@@ -371,10 +371,12 @@ IAnimatedMesh* CLWOMeshFileLoader::createMesh(io::IReadFile* file)
 		}
 
 		// add bump maps
-		if (Materials[i]->Meshbuffer->Material.MaterialType==video::EMT_NORMAL_MAP_SOLID)
+		if (Materials[i]->Meshbuffer->getMaterial().MaterialType == video::EMT_NORMAL_MAP_SOLID)
 		{
-			CVertexBuffer<video::S3DVertexTangents>* vb = new CVertexBuffer<video::S3DVertexTangents>(SceneManager->getVideoDriver()->getVertexDescriptor(2));
-			SceneManager->getMeshManipulator()->copyVertices(Materials[i]->Meshbuffer->getVertexBuffer(0), vb, 0, 0, false);
+			video::IVertexDescriptor* vd = SceneManager->getVideoDriver()->getVertexDescriptor(2);
+			CVertexBuffer<video::S3DVertexTangents>* vb = new CVertexBuffer<video::S3DVertexTangents>();
+			SceneManager->getMeshManipulator()->copyVertices(Materials[i]->Meshbuffer->getVertexBuffer(0), 0, Materials[i]->Meshbuffer->getVertexDescriptor(), vb, 0, vd, false);
+			Materials[i]->Meshbuffer->setVertexDescriptor(vd);
 			Materials[i]->Meshbuffer->setVertexBuffer(vb, 0);
 			vb->drop();
 
@@ -874,7 +876,7 @@ void CLWOMeshFileLoader::readMat(u32 size)
 	if (FormatVersion==2)
 		size -= readString(name);
 
-	video::SMaterial& irrMat=mat->Meshbuffer->Material;
+	video::SMaterial& irrMat = mat->Meshbuffer->getMaterial();
 
 	u8 currTexture=0;
 	while (size!=0)

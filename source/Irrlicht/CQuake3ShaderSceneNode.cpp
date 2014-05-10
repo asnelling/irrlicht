@@ -89,7 +89,7 @@ CQuake3ShaderSceneNode::~CQuake3ShaderSceneNode()
 */
 void CQuake3ShaderSceneNode::cloneBuffer( scene::CMeshBuffer<video::S3DVertex> *dest, const scene::CMeshBuffer<video::S3DVertex2TCoords> * buffer, bool translateCenter )
 {
-	dest->Material = buffer->Material;
+	dest->getMaterial() = buffer->getMaterial();
 
 	dest->getIndexBuffer()->set_used(buffer->getIndexBuffer()->getIndexCount());
 
@@ -110,9 +110,9 @@ void CQuake3ShaderSceneNode::cloneBuffer( scene::CMeshBuffer<video::S3DVertex> *
 		dst[i].TCoords = src[i].TCoords;
 
 		if ( i == 0 )
-			dest->BoundingBox.reset ( src[i].Pos );
+			dest->getBoundingBox().reset ( src[i].Pos );
 		else
-			dest->BoundingBox.addInternalPoint ( src[i].Pos );
+			dest->getBoundingBox().addInternalPoint(src[i].Pos);
 	}
 
 	// move the (temp) Mesh to a ScenePosititon
@@ -120,7 +120,7 @@ void CQuake3ShaderSceneNode::cloneBuffer( scene::CMeshBuffer<video::S3DVertex> *
 
 	if ( translateCenter )
 	{
-		MeshOffset = dest->BoundingBox.getCenter();
+		MeshOffset = dest->getBoundingBox().getCenter();
 		setPosition( MeshOffset );
 
 		core::matrix4 m;
@@ -129,7 +129,7 @@ void CQuake3ShaderSceneNode::cloneBuffer( scene::CMeshBuffer<video::S3DVertex> *
 	}
 
 	// No Texture!. Use Shader-Pointer for sorting
-	dest->Material.setTexture(0, (video::ITexture*) Shader);
+	dest->getMaterial().setTexture(0, (video::ITexture*) Shader);
 }
 
 
@@ -567,9 +567,9 @@ void CQuake3ShaderSceneNode::deformvertexes_wave( f32 dt, SModifierFunction &fun
 		dst[i].Pos.Z += f * src[i].Normal.Z;
 
 		if ( i == 0 )
-			MeshBuffer->BoundingBox.reset ( dst[i].Pos );
+			MeshBuffer->getBoundingBox().reset(dst[i].Pos);
 		else
-			MeshBuffer->BoundingBox.addInternalPoint ( dst[i].Pos );
+			MeshBuffer->getBoundingBox().addInternalPoint(dst[i].Pos);
 	}
 	function.count = 1;
 }
@@ -614,9 +614,9 @@ void CQuake3ShaderSceneNode::deformvertexes_move( f32 dt, SModifierFunction &fun
 		dst[i].Pos.Z += f * function.z;
 
 		if ( i == 0 )
-			MeshBuffer->BoundingBox.reset ( dst[i].Pos );
+			MeshBuffer->getBoundingBox().reset(dst[i].Pos);
 		else
-			MeshBuffer->BoundingBox.addInternalPoint ( dst[i].Pos );
+			MeshBuffer->getBoundingBox().addInternalPoint(dst[i].Pos);
 	}
 	function.count = 1;
 
@@ -731,9 +731,9 @@ void CQuake3ShaderSceneNode::deformvertexes_bulge( f32 dt, SModifierFunction &fu
 		dst[i].Pos.Z += f * src[i].Normal.Z;
 
 		if ( i == 0 )
-			MeshBuffer->BoundingBox.reset ( dst[i].Pos );
+			MeshBuffer->getBoundingBox().reset(dst[i].Pos);
 		else
-			MeshBuffer->BoundingBox.addInternalPoint ( dst[i].Pos );
+			MeshBuffer->getBoundingBox().addInternalPoint(dst[i].Pos);
 	}
 
 	function.count = 1;
@@ -1374,7 +1374,7 @@ u32 CQuake3ShaderSceneNode::getMaterialCount() const
 
 video::SMaterial& CQuake3ShaderSceneNode::getMaterial(u32 i)
 {
-	video::SMaterial& m = MeshBuffer->Material;
+	video::SMaterial& m = MeshBuffer->getMaterial();
 	m.setTexture(0, 0);
 	if ( Q3Texture [ i ].TextureIndex )
 		m.setTexture(0, Q3Texture [ i ].Texture [ Q3Texture [ i ].TextureIndex ]);

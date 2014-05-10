@@ -7,8 +7,7 @@
 
 #include "ISceneNode.h"
 #include "S3DVertex.h"
-#include "CVertexBuffer.h"
-#include "CIndexBuffer.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -54,11 +53,7 @@ namespace scene
 
 	private:
 
-		core::aabbox3d<f32> Box;
-		video::SMaterial Material[6];
-
-		IVertexBuffer* VertexBuffer[6];
-		IIndexBuffer* IndexBuffer;
+		IMeshBuffer* MeshBuffer[6];
 	};
 
 } // end namespace scene

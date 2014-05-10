@@ -47,10 +47,10 @@ private:
 			RecalculateNormals(false), SceneManager(smgr)
 		{
 			Meshbuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
-			Meshbuffer->Material.Shininess = 0.0f;
-			Meshbuffer->Material.AmbientColor = video::SColorf(0.2f, 0.2f, 0.2f, 1.0f).toSColor();
-			Meshbuffer->Material.DiffuseColor = video::SColorf(0.8f, 0.8f, 0.8f, 1.0f).toSColor();
-			Meshbuffer->Material.SpecularColor = video::SColorf(1.0f, 1.0f, 1.0f, 1.0f).toSColor();
+			Meshbuffer->getMaterial().Shininess = 0.0f;
+			Meshbuffer->getMaterial().AmbientColor = video::SColorf(0.2f, 0.2f, 0.2f, 1.0f).toSColor();
+			Meshbuffer->getMaterial().DiffuseColor = video::SColorf(0.8f, 0.8f, 0.8f, 1.0f).toSColor();
+			Meshbuffer->getMaterial().SpecularColor = video::SColorf(1.0f, 1.0f, 1.0f, 1.0f).toSColor();
 		}
 
 		SObjMtl(const SObjMtl& o)
@@ -59,7 +59,7 @@ private:
 			RecalculateNormals(false), SceneManager(o.SceneManager)
 		{
 			Meshbuffer = new CMeshBuffer<video::S3DVertex>(SceneManager->getVideoDriver()->getVertexDescriptor(0));
-			Meshbuffer->Material = o.Meshbuffer->Material;
+			Meshbuffer->getMaterial() = o.Meshbuffer->getMaterial();
 		}
 
 		core::map<video::S3DVertex, int> VertMap;

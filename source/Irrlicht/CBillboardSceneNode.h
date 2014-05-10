@@ -7,8 +7,7 @@
 
 #include "IBillboardSceneNode.h"
 #include "S3DVertex.h"
-#include "CVertexBuffer.h"
-#include "CIndexBuffer.h"
+#include "CMeshBuffer.h"
 
 namespace irr
 {
@@ -89,11 +88,8 @@ private:
 	//! Size.Width is the bottom edge width
 	core::dimension2d<f32> Size;
 	f32 TopEdgeWidth;
-	core::aabbox3d<f32> BBox;
-	video::SMaterial Material;
 
-	IVertexBuffer* VertexBuffer;
-	IIndexBuffer* IndexBuffer;
+	IMeshBuffer* MeshBuffer;
 };
 
 

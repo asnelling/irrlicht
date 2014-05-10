@@ -22,7 +22,7 @@ namespace scene
 //! class for creating geometry on the fly
 class CGeometryCreator : public IGeometryCreator
 {
-	void addToBuffer(const video::S3DVertex& v, CMeshBuffer<video::S3DVertex>* Buffer) const;
+	void addToBuffer(const video::S3DVertex& v, IMeshBuffer* Buffer) const;
 
 	video::IVideoDriver* Driver;
 public:

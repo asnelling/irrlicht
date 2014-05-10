@@ -112,7 +112,7 @@ void CParticleSystemSceneNode::removeAllAffectors()
 //! Returns the material based on the zero based index i.
 video::SMaterial& CParticleSystemSceneNode::getMaterial(u32 i)
 {
-	return Buffer->Material;
+	return Buffer->getMaterial();
 }
 
 
@@ -383,9 +383,9 @@ void CParticleSystemSceneNode::render()
 		mat.setTranslation(AbsoluteTransformation.getTranslation());
 	driver->setTransform(video::ETS_WORLD, mat);
 
-	driver->setMaterial(Buffer->Material);
+	driver->setMaterial(Buffer->getMaterial());
 
-	driver->drawVertexPrimitiveList(false, Buffer->getVertexBuffer(), false, Buffer->getIndexBuffer(), Particles.size()*2, EPT_TRIANGLES);
+	driver->drawVertexPrimitiveList(Buffer->getVertexBuffer(0), Buffer->getIndexBuffer(), Buffer->getVertexDescriptor(), Particles.size()*2, EPT_TRIANGLES);
 
 
 	// for debug purposes only:
@@ -395,7 +395,7 @@ void CParticleSystemSceneNode::render()
 		video::SMaterial deb_m;
 		deb_m.Lighting = false;
 		driver->setMaterial(deb_m);
-		driver->draw3DBox(Buffer->BoundingBox, video::SColor(0,255,255,255));
+		driver->draw3DBox(Buffer->getBoundingBox(), video::SColor(0,255,255,255));
 	}
 }
 
@@ -448,9 +448,9 @@ void CParticleSystemSceneNode::doParticleSystem(u32 time)
 		(*ait)->affect(now, Particles.pointer(), Particles.size());
 
 	if (ParticlesAreGlobal)
-		Buffer->BoundingBox.reset(AbsoluteTransformation.getTranslation());
+		Buffer->getBoundingBox().reset(AbsoluteTransformation.getTranslation());
 	else
-		Buffer->BoundingBox.reset(core::vector3df(0,0,0));
+		Buffer->getBoundingBox().reset(core::vector3df(0, 0, 0));
 
 	// animate all particles
 	f32 scale = (f32)timediff;
@@ -470,24 +470,24 @@ void CParticleSystemSceneNode::doParticleSystem(u32 time)
 		else
 		{
 			Particles[i].pos += (Particles[i].vector * scale);
-			Buffer->BoundingBox.addInternalPoint(Particles[i].pos);
+			Buffer->getBoundingBox().addInternalPoint(Particles[i].pos);
 			++i;
 		}
 	}
 
 	const f32 m = (ParticleSize.Width > ParticleSize.Height ? ParticleSize.Width : ParticleSize.Height) * 0.5f;
-	Buffer->BoundingBox.MaxEdge.X += m;
-	Buffer->BoundingBox.MaxEdge.Y += m;
-	Buffer->BoundingBox.MaxEdge.Z += m;
+	Buffer->getBoundingBox().MaxEdge.X += m;
+	Buffer->getBoundingBox().MaxEdge.Y += m;
+	Buffer->getBoundingBox().MaxEdge.Z += m;
 
-	Buffer->BoundingBox.MinEdge.X -= m;
-	Buffer->BoundingBox.MinEdge.Y -= m;
-	Buffer->BoundingBox.MinEdge.Z -= m;
+	Buffer->getBoundingBox().MinEdge.X -= m;
+	Buffer->getBoundingBox().MinEdge.Y -= m;
+	Buffer->getBoundingBox().MinEdge.Z -= m;
 
 	if (ParticlesAreGlobal)
 	{
 		core::matrix4 absinv( AbsoluteTransformation, core::matrix4::EM4CONST_INVERSE );
-		absinv.transformBoxEx(Buffer->BoundingBox);
+		absinv.transformBoxEx(Buffer->getBoundingBox());
 	}
 }
 

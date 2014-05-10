@@ -599,9 +599,9 @@ namespace scene
 
 				if (meshBuffer->getIndexBuffer()->getIndexCount() > 0)
 				{
-					CMeshBuffer<T>* newMeshBuffer = new CMeshBuffer<T>(meshBuffer->getVertexBuffer(0)->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getType());
+					CMeshBuffer<T>* newMeshBuffer = new CMeshBuffer<T>(meshBuffer->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getType());
 
-					newMeshBuffer->Material = meshBuffer->getMaterial();
+					newMeshBuffer->getMaterial() = meshBuffer->getMaterial();
 					meshBufferA.push_back(newMeshBuffer);
 				}
 			}

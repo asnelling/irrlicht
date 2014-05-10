@@ -505,7 +505,7 @@ scene::CMeshBuffer<video::S3DVertex>* COgreMeshFileLoader::composeMeshBuffer(con
 					u32 ePos=geom.Elements[i].Offset;
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						Vertices[k].Color=mb->Material.DiffuseColor;
+						Vertices[k].Color = mb->getMaterial().DiffuseColor;
 						Vertices[k].Pos.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
 						ePos += eSize;
 					}
@@ -576,7 +576,7 @@ scene::CMeshBuffer<video::S3DVertex2TCoords>* COgreMeshFileLoader::composeMeshBu
 					u32 ePos=geom.Elements[i].Offset;
 					for (s32 k=0; k<geom.NumVertex; ++k)
 					{
-						Vertices[k].Color=mb->Material.DiffuseColor;
+						Vertices[k].Color = mb->getMaterial().DiffuseColor;
 						Vertices[k].Pos.set(geom.Buffers[j].Data[ePos],geom.Buffers[j].Data[ePos+1],geom.Buffers[j].Data[ePos+2]);
 						ePos += eSize;
 					}

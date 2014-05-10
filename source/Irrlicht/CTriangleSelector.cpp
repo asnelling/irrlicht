@@ -87,7 +87,7 @@ void CTriangleSelector::createFromMesh(const IMesh* mesh)
 
 		const u32 idxCnt = buf->getIndexBuffer()->getIndexCount();
 
-		video::IVertexAttribute* attribute = buf->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+		video::IVertexAttribute* attribute = buf->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
 		if(!attribute)
 			continue;
@@ -125,7 +125,7 @@ void CTriangleSelector::updateFromMesh(const IMesh* mesh) const
 		IMeshBuffer* buf = mesh->getMeshBuffer(i);
 		u32 idxCnt = buf->getIndexBuffer()->getIndexCount();
 		
-		video::IVertexAttribute* attribute = buf->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+		video::IVertexAttribute* attribute = buf->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
 		if(!attribute)
 			continue;

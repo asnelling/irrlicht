@@ -200,8 +200,10 @@ IAnimatedMesh* C3DSMeshFileLoader::createMesh(io::IReadFile* file)
 			{
 				if (mb->getMaterial().MaterialType == video::EMT_PARALLAX_MAP_SOLID)
 				{
-					CVertexBuffer<video::S3DVertexTangents>* vb = new CVertexBuffer<video::S3DVertexTangents>(SceneManager->getVideoDriver()->getVertexDescriptor(2));
-					SceneManager->getMeshManipulator()->copyVertices(mb->getVertexBuffer(0), vb, 0, 0, false);
+					video::IVertexDescriptor* vd = SceneManager->getVideoDriver()->getVertexDescriptor(2);
+					CVertexBuffer<video::S3DVertexTangents>* vb = new CVertexBuffer<video::S3DVertexTangents>();
+					SceneManager->getMeshManipulator()->copyVertices(mb->getVertexBuffer(0), 0, mb->getVertexDescriptor(), vb, 0, vd, false);
+					mb->setVertexDescriptor(vd);
 					mb->setVertexBuffer(vb, 0);
 					vb->drop();
 

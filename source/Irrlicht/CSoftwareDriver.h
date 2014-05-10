@@ -56,8 +56,8 @@ namespace video
 		virtual const core::dimension2d<u32>& getCurrentRenderTargetSize() const;
 
 		//! draws a vertex primitive list
-		void drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
-			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
+		void drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
+			IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
 
 		//! Draws a 3d line.
 		virtual void draw3DLine(const core::vector3df& start,

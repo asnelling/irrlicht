@@ -47,6 +47,10 @@ namespace scene
 
 		virtual ~IMeshBuffer() {}
 
+		virtual video::IVertexDescriptor* getVertexDescriptor() const = 0;
+
+		virtual bool setVertexDescriptor(video::IVertexDescriptor* vertexDescriptor) = 0;
+
 		virtual bool addVertexBuffer(IVertexBuffer* vertexBuffer) = 0;
 
 		virtual IVertexBuffer* getVertexBuffer(u32 id = 0) const = 0;
@@ -79,10 +83,9 @@ namespace scene
 		/** \return Axis aligned bounding box of this buffer. */
 		virtual const core::aabbox3df& getBoundingBox() const = 0;
 
-		//! Set axis aligned bounding box
-		/** \param box User defined axis aligned bounding box to use
-		for this buffer. */
-		virtual void setBoundingBox(const core::aabbox3df& pBox) = 0;
+		//! Get the axis aligned bounding box of this meshbuffer.
+		/** \return Axis aligned bounding box of this buffer. */
+		virtual core::aabbox3df& getBoundingBox() = 0;
 
 		//! Call this after changing the positions of any vertex.
 		virtual void boundingBoxNeedsRecalculated() = 0;
@@ -90,7 +93,7 @@ namespace scene
 		//! Recalculates the bounding box. Should be called if the mesh changed.
 		virtual void recalculateBoundingBox() = 0;
 
-		virtual void append(IVertexBuffer* vertexBuffer, IIndexBuffer* indexBuffer, u32 id = 0) = 0;
+		virtual void append(IVertexBuffer* vertexBuffer, u32 vertexBufferID, IIndexBuffer* indexBuffer) = 0;
 
 		//! Append the meshbuffer to the current buffer
 		/** Only works for compatible vertex types

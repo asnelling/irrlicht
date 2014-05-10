@@ -1267,7 +1267,7 @@ bool CD3D9Driver::updateVertexHardwareBuffer(SHWBufferLink_d3d9* buffer)
 	u32 VertexCount = meshBuffer->getVertexBuffer()->getVertexCount();
 	u32 VertexSize = meshBuffer->getVertexBuffer()->getVertexSize();
 	u32 bufferSize = VertexCount * VertexSize;
-	IVertexDescriptor* vertexDescriptor = meshBuffer->getVertexBuffer()->getVertexDescriptor();
+	IVertexDescriptor* vertexDescriptor = meshBuffer->getVertexDescriptor();
 
 	if(!vertexDescriptor)
 		return false;
@@ -1493,7 +1493,7 @@ void CD3D9Driver::drawHardwareBuffer(SHWBufferLink* buffer)
 		hardwareIndex = true;
 	}
 
-	drawVertexPrimitiveList(hardwareVertex, meshBuffer->getVertexBuffer(), hardwareIndex, meshBuffer->getIndexBuffer(), meshBuffer->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
+	drawVertexPrimitiveList(meshBuffer->getVertexBuffer(), meshBuffer->getIndexBuffer(), meshBuffer->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
 
 	if (hwBuffer->vertexBuffer)
 		pID3DDevice->SetStreamSource(0, 0, 0, 0);
@@ -1595,22 +1595,25 @@ u32 CD3D9Driver::getOcclusionQueryResult(scene::ISceneNode* node) const
 
 
 //! draws a vertex primitive list
-void CD3D9Driver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer, bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void CD3D9Driver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer, IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
 {
-	if(!primitiveCount || !vertexBuffer->getVertexCount())
+	if (!primitiveCount || !vertexBuffer || vertexBuffer->getVertexCount() == 0 || !descriptor)
 		return;
 
-	if(!checkPrimitiveCount(primitiveCount))
+	if (!checkPrimitiveCount(primitiveCount))
 		return;
 
-	CNullDriver::drawVertexPrimitiveList(hardwareVertex, vertexBuffer, hardwareIndex, indexBuffer, primitiveCount, pType);
+	CNullDriver::drawVertexPrimitiveList(vertexBuffer, indexBuffer, descriptor, primitiveCount, pType);
 
-	setVertexDescriptor(vertexBuffer->getVertexDescriptor());
+	setVertexDescriptor(descriptor);
 
 	D3DFORMAT IndexType = D3DFMT_INDEX16;
 	
 	if(indexBuffer->getType() == EIT_32BIT)
 		IndexType = D3DFMT_INDEX32;
+
+	bool hardwareVertex = (vertexBuffer->getHardwareMappingHint() != scene::EHM_NEVER) ? true : false;
+	bool hardwareIndex = (indexBuffer && indexBuffer->getHardwareMappingHint() != scene::EHM_NEVER) ? true : false;
 
 	void* Vertices = hardwareVertex ? 0 : vertexBuffer->getVertices();
 	void* Indices = hardwareIndex ? 0 : indexBuffer->getIndices();

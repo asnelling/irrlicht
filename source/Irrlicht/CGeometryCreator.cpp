@@ -26,7 +26,7 @@ IMesh* CGeometryCreator::createCubeMesh(const core::vector3df& size) const
 	IVertexBuffer* vb = buffer->getVertexBuffer(0);
 
 	// Recalculate bounding box
-	buffer->BoundingBox.reset(0, 0, 0);
+	buffer->getBoundingBox().reset(0, 0, 0);
 
 	// Create indices
 	const u16 u[36] = {   0,2,1,   0,3,2,   1,5,4,   1,2,5,   4,6,7,   4,5,6,
@@ -63,7 +63,7 @@ IMesh* CGeometryCreator::createCubeMesh(const core::vector3df& size) const
 		Vertices[i].Pos *= size;
 
 		vb->addVertex(&Vertices[i]);
-		buffer->BoundingBox.addInternalPoint(Vertices[i].Pos);
+		buffer->getBoundingBox().addInternalPoint(Vertices[i].Pos);
 	}
 
 	SMesh* mesh = new SMesh;
@@ -172,7 +172,7 @@ IMesh* CGeometryCreator::createHillPlaneMesh(
 	}
 
 	if (material)
-		buffer->Material = *material;
+		buffer->getMaterial() = *material;
 
 	buffer->recalculateBoundingBox();
 	buffer->setHardwareMappingHint(EHM_STATIC);
@@ -297,14 +297,14 @@ IMesh* CGeometryCreator::createTerrainMesh(video::IImage* texture,
 
 				sprintf(textureName, "terrain%u_%u", tm, mesh->getMeshBufferCount());
 
-				buffer->Material.setTexture(0, driver->addTexture(textureName, img));
+				buffer->getMaterial().setTexture(0, driver->addTexture(textureName, img));
 
-				if (buffer->Material.getTexture(0))
+				if (buffer->getMaterial().getTexture(0))
 				{
 					c8 tmp[255];
 					sprintf(tmp, "Generated terrain texture (%dx%d): %s",
-						buffer->Material.getTexture(0)->getSize().Width,
-						buffer->Material.getTexture(0)->getSize().Height,
+						buffer->getMaterial().getTexture(0)->getSize().Width,
+						buffer->getMaterial().getTexture(0)->getSize().Height,
 						textureName);
 					os::Printer::log(tmp);
 				}
@@ -530,12 +530,12 @@ IMesh* CGeometryCreator::createSphereMesh(f32 radius, u32 polyCountX, u32 polyCo
 
 	// recalculate bounding box
 
-	buffer->BoundingBox.reset(Vertices[i].Pos);
-	buffer->BoundingBox.addInternalPoint(Vertices[i-1].Pos);
-	buffer->BoundingBox.addInternalPoint(radius,0.0f,0.0f);
-	buffer->BoundingBox.addInternalPoint(-radius,0.0f,0.0f);
-	buffer->BoundingBox.addInternalPoint(0.0f,0.0f,radius);
-	buffer->BoundingBox.addInternalPoint(0.0f,0.0f,-radius);
+	buffer->getBoundingBox().reset(Vertices[i].Pos);
+	buffer->getBoundingBox().addInternalPoint(Vertices[i - 1].Pos);
+	buffer->getBoundingBox().addInternalPoint(radius, 0.0f, 0.0f);
+	buffer->getBoundingBox().addInternalPoint(-radius, 0.0f, 0.0f);
+	buffer->getBoundingBox().addInternalPoint(0.0f, 0.0f, radius);
+	buffer->getBoundingBox().addInternalPoint(0.0f, 0.0f, -radius);
 
 	SMesh* mesh = new SMesh();
 	mesh->addMeshBuffer(buffer);
@@ -793,7 +793,7 @@ IMesh* CGeometryCreator::createConeMesh(f32 radius, f32 length, u32 tesselation,
 }
 
 
-void CGeometryCreator::addToBuffer(const video::S3DVertex& v, CMeshBuffer<video::S3DVertex>* buffer) const
+void CGeometryCreator::addToBuffer(const video::S3DVertex& v, IMeshBuffer* buffer) const
 {
 	IIndexBuffer* ib = buffer->getIndexBuffer();
 	IVertexBuffer* vb = buffer->getVertexBuffer(0);
@@ -940,11 +940,11 @@ IMesh* CGeometryCreator::createVolumeLightMesh(
 
 	buffer->recalculateBoundingBox();
 
-	buffer->Material.MaterialType = video::EMT_ONETEXTURE_BLEND;
-	buffer->Material.MaterialTypeParam = pack_textureBlendFunc(video::EBF_SRC_COLOR, video::EBF_SRC_ALPHA, video::EMFN_MODULATE_1X);
+	buffer->getMaterial().MaterialType = video::EMT_ONETEXTURE_BLEND;
+	buffer->getMaterial().MaterialTypeParam = pack_textureBlendFunc(video::EBF_SRC_COLOR, video::EBF_SRC_ALPHA, video::EMFN_MODULATE_1X);
 
-	buffer->Material.Lighting = false;
-	buffer->Material.ZWriteEnable = false;
+	buffer->getMaterial().Lighting = false;
+	buffer->getMaterial().ZWriteEnable = false;
 
 	buffer->setDirty(EBT_VERTEX_AND_INDEX);
 

@@ -120,8 +120,8 @@ CBillboardTextSceneNode::CBillboardTextSceneNode(ISceneNode* parent, ISceneManag
 			for (u32 i=0; i<Font->getSpriteBank()->getTextureCount(); ++i)
 			{
 				CMeshBuffer<video::S3DVertex> *mb = new CMeshBuffer<video::S3DVertex>(mgr->getVideoDriver()->getVertexDescriptor(0));
-				mb->Material = Material;
-				mb->Material.setTexture(0, Font->getSpriteBank()->getTexture(i));
+				mb->getMaterial() = Material;
+				mb->getMaterial().setTexture(0, Font->getSpriteBank()->getTexture(i));
 				Mesh->addMeshBuffer(mb);
 				mb->drop();
 			}

@@ -467,12 +467,12 @@ namespace scene
 				lmapName += io::path(surface->getLightMapId());
 
 				CMeshBuffer<video::S3DVertex2TCoords>* buffer = new CMeshBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
-				buffer->Material.setTexture(0, texture);
+				buffer->getMaterial().setTexture(0, texture);
 				if (surface->getLightMapId())
 				{
-					buffer->Material.setTexture(1, driver->getTexture(lmapName));
-					buffer->Material.Lighting = false;
-					buffer->Material.MaterialType = video::EMT_LIGHTMAP_ADD;
+					buffer->getMaterial().setTexture(1, driver->getTexture(lmapName));
+					buffer->getMaterial().Lighting = false;
+					buffer->getMaterial().MaterialType = video::EMT_LIGHTMAP_ADD;
 				}
 
 				buffer->getVertexBuffer()->reallocate(surface->getVertexCount());

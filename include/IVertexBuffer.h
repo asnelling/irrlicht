@@ -7,7 +7,6 @@
 
 #include "IReferenceCounted.h"
 #include "irrArray.h"
-#include "IVertexDescriptor.h"
 #include "EHardwareBufferFlags.h"
 
 namespace irr
@@ -29,10 +28,6 @@ namespace scene
 
 		virtual void fill(u32 used) = 0;
 
-		virtual video::IVertexDescriptor* getVertexDescriptor() const = 0;
-
-		virtual bool setVertexDescriptor(video::IVertexDescriptor* vertexDescriptor) = 0;
-
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const = 0;
 
 		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING hardwareMappingHint) = 0;
@@ -44,8 +39,6 @@ namespace scene
 		virtual void* getVertices() = 0;
 
 		virtual u32 getVertexCount() const = 0;
-
-		virtual video::E_VERTEX_TYPE getVertexType() const = 0;
 
 		virtual u32 getVertexSize() const = 0;
 

@@ -1734,10 +1734,12 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 }
 
 
-void CBurningVideoDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
-			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
-
+void CBurningVideoDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
+	IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
 {
+	if (!vertexBuffer || !indexBuffer || !descriptor || primitiveCount == 0)
+		return;
+
 	E_VERTEX_TYPE vType = EVT_STANDARD;
 
 	// Supported are only built-in Irrlicht vertex formats.

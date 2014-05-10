@@ -1466,11 +1466,11 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 	{
 		totalVertexCount += mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexCount();
 
-		if (mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1))
+		if (mesh->getMeshBuffer(i)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1))
 			totalTCoords2Count += mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexCount();
 
 		if (!needsTangents)
-			needsTangents = mesh->getMeshBuffer(i)->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TANGENT) != 0;
+			needsTangents = mesh->getMeshBuffer(i)->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TANGENT) != 0;
 	}
 
 	SComponentGlobalStartPos* globalIndices = new SComponentGlobalStartPos[mesh->getMeshBufferCount()];
@@ -1758,7 +1758,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 				scene::IMeshBuffer* buffer = mesh->getMeshBuffer(i);
 				u32 vertexCount = buffer->getVertexBuffer()->getVertexCount();
 
-				if (buffer->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1))
+				if (buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1))
 				{
 					globalIndices[i].TCoord1StartIndex = 0;
 
@@ -1849,7 +1849,7 @@ void CColladaMeshWriter::writeMeshGeometry(const irr::core::stringw& meshname, s
 		Writer->writeElement(L"input", true, L"semantic", L"NORMAL", L"source", toRef(meshNormalId).c_str(), L"offset", L"2");
 		Writer->writeLineBreak();
 
-		bool has2ndTexCoords = buffer->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1) != 0;
+		bool has2ndTexCoords = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1) != 0;
 		if (has2ndTexCoords)
 		{
 			// TODO: when working on second uv-set - my suspicion is that this one should be called "TEXCOORD2"

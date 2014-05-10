@@ -266,9 +266,9 @@ void CLMTSMeshFileLoader::constructMesh(SMesh* mesh)
 		CMeshBuffer<video::S3DVertex2TCoords>* meshBuffer = new CMeshBuffer<video::S3DVertex2TCoords>(Driver->getVertexDescriptor(1));
 
 		// EMT_LIGHTMAP_M2/EMT_LIGHTMAP_M4 also possible
-		meshBuffer->Material.MaterialType = video::EMT_LIGHTMAP;
-		meshBuffer->Material.Wireframe = false;
-		meshBuffer->Material.Lighting = false;
+		meshBuffer->getMaterial().MaterialType = video::EMT_LIGHTMAP;
+		meshBuffer->getMaterial().Wireframe = false;
+		meshBuffer->getMaterial().Lighting = false;
 
 		mesh->addMeshBuffer(meshBuffer);
 

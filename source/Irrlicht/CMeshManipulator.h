@@ -39,7 +39,8 @@ public:
 
 	virtual bool copyIndices(IIndexBuffer* srcBuffer, IIndexBuffer* dstBuffer) const;
 
-	virtual bool copyVertices(IVertexBuffer* srcBuffer, IVertexBuffer* dstBuffer, u32 srcDescriptionBufferID, u32 dstDescriptionBufferID, bool copyCustomAttribute) const;
+	virtual bool copyVertices(IVertexBuffer* srcBuffer, u32 srcDescriptionBufferID, video::IVertexDescriptor* srcDescriptor,
+		IVertexBuffer* dstBuffer, u32 dstDescriptionBufferID, video::IVertexDescriptor* dstDescriptor, bool copyCustomAttribute) const;
 
 	virtual bool createTangents(IMeshBuffer* srcBuffer, IMeshBuffer* dstBuffer, bool copyCustomAttribute);
 

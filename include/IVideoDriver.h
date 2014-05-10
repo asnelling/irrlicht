@@ -734,8 +734,8 @@ namespace video
 		\param vType Vertex type, e.g. video::EVT_STANDARD for S3DVertex.
 		\param type Primitive type, e.g. scene::EPT_TRIANGLE_FAN for a triangle fan.
 		\param iType Index type, e.g. video::EIT_16BIT for 16bit indices. */
-		virtual void drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
-			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType = scene::EPT_TRIANGLES) = 0;
+		virtual void drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
+			IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType = scene::EPT_TRIANGLES) = 0;
 
 		//! Draws a vertex primitive list in 2d
 		/** Compared to the general (3d) version of this method, this
@@ -764,17 +764,17 @@ namespace video
 				E_INDEX_TYPE iType=EIT_16BIT) =0;
 
 		//! Draws an indexed triangle list.
-		void drawIndexedTriangleList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
-			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount)
+		void drawIndexedTriangleList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
+			IVertexDescriptor* descriptor, u32 primitiveCount)
 		{
-			drawVertexPrimitiveList(hardwareVertex, vertexBuffer, hardwareIndex, indexBuffer, primitiveCount, scene::EPT_TRIANGLES);
+			drawVertexPrimitiveList(vertexBuffer, indexBuffer, descriptor, primitiveCount, scene::EPT_TRIANGLES);
 		}
 
 		//! Draws an indexed triangle fan.
-		void drawIndexedTriangleFan(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer,
-			bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount)
+		void drawIndexedTriangleFan(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
+			IVertexDescriptor* descriptor, u32 primitiveCount)
 		{
-			drawVertexPrimitiveList(hardwareVertex, vertexBuffer, hardwareIndex, indexBuffer, primitiveCount, scene::EPT_TRIANGLE_FAN);
+			drawVertexPrimitiveList(vertexBuffer, indexBuffer, descriptor, primitiveCount, scene::EPT_TRIANGLE_FAN);
 		}
 
 		//! Draws a 3d line.

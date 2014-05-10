@@ -163,7 +163,7 @@ private:
 
 			for (i=0; i<indices->size(); ++i)
 			{
-				video::IVertexAttribute* attribute = meshes[i]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+				video::IVertexAttribute* attribute = meshes[i]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
 				if(!attribute)
 					continue;
@@ -192,7 +192,7 @@ private:
 			// now lets calculate our bounding box
 			for (i=0; i<indices->size(); ++i)
 			{
-				video::IVertexAttribute* attribute = meshes[i]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+				video::IVertexAttribute* attribute = meshes[i]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
 				if(!attribute)
 					continue;
@@ -229,7 +229,7 @@ private:
 				cindexChunks->reallocate(meshes.size());
 				for (i=0; i<meshes.size(); ++i)
 				{
-					video::IVertexAttribute* attribute = meshes[i]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+					video::IVertexAttribute* attribute = meshes[i]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
 					if(!attribute)
 						continue;

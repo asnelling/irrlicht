@@ -126,9 +126,9 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 		{
 			//create a new SMeshBufferLightMap for each material
 			CMeshBuffer<video::S3DVertex>* buffer = new CMeshBuffer<video::S3DVertex>(SceneMgr->getVideoDriver()->getVertexDescriptor(0));
-			buffer->Material.MaterialType = video::EMT_LIGHTMAP_LIGHTING;
-			buffer->Material.Wireframe = false;
-			buffer->Material.Lighting = true;
+			buffer->getMaterial().MaterialType = video::EMT_LIGHTMAP_LIGHTING;
+			buffer->getMaterial().Wireframe = false;
+			buffer->getMaterial().Lighting = true;
 			mesh->addMeshBuffer(buffer);
 			buffer->drop();
 		}
@@ -160,8 +160,10 @@ IAnimatedMesh* CDMFLoader::createMesh(io::IReadFile* file)
 
 			if (use2TCoords && meshBuffer->getVertexBuffer(0)->getVertexSize() != sizeof(video::S3DVertex2TCoords))
 			{
-				CVertexBuffer<video::S3DVertex2TCoords>* vb = new CVertexBuffer<video::S3DVertex2TCoords>(SceneMgr->getVideoDriver()->getVertexDescriptor(1));
-				SceneMgr->getMeshManipulator()->copyVertices(meshBuffer->getVertexBuffer(0), vb, 0, 0, false);
+				video::IVertexDescriptor* vd = SceneMgr->getVideoDriver()->getVertexDescriptor(1);
+				CVertexBuffer<video::S3DVertex2TCoords>* vb = new CVertexBuffer<video::S3DVertex2TCoords>();
+				SceneMgr->getMeshManipulator()->copyVertices(meshBuffer->getVertexBuffer(0), 0, meshBuffer->getVertexDescriptor(), vb, 0, vd, false);
+				meshBuffer->setVertexDescriptor(vd);
 				meshBuffer->setVertexBuffer(vb, 0);
 				vb->drop();
 			}

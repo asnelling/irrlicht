@@ -151,7 +151,7 @@ void CGUIMeshViewer::draw()
 		for (u32 i=0; i<m->getMeshBufferCount(); ++i)
 		{
 			scene::IMeshBuffer* mb = m->getMeshBuffer(i);
-			driver->drawVertexPrimitiveList(false, mb->getVertexBuffer(), false, mb->getIndexBuffer(),
+			driver->drawVertexPrimitiveList(mb->getVertexBuffer(), mb->getIndexBuffer(), mb->getVertexDescriptor(),
 					mb->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
 		}
 

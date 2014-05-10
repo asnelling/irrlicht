@@ -53,13 +53,16 @@ class CSampleSceneNode : public ISceneNode
 	aabbox3d<f32> Box;
 	scene::IVertexBuffer* VertexBuffer;
 	scene::IIndexBuffer* IndexBuffer;
+	video::IVertexDescriptor* Descriptor;
 	SMaterial Material;
 public:
 
 	CSampleSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 id)
 		: ISceneNode(parent, mgr, id)
 	{
-		VertexBuffer = new scene::CVertexBuffer<S3DVertex>(mgr->getVideoDriver()->getVertexDescriptor(0));
+		Descriptor = mgr->getVideoDriver()->getVertexDescriptor(0);
+
+		VertexBuffer = new scene::CVertexBuffer<S3DVertex>();
 		IndexBuffer = new scene::CIndexBuffer(video::EIT_16BIT);
 
 		Material.Wireframe = false;
@@ -113,7 +116,7 @@ public:
 
 		driver->setMaterial(Material);
 		driver->setTransform(ETS_WORLD, AbsoluteTransformation);
-		driver->drawIndexedTriangleList(false, VertexBuffer, false, IndexBuffer, 4);
+		driver->drawIndexedTriangleList(VertexBuffer, IndexBuffer, Descriptor, 4);
 	}
 
 	virtual const aabbox3d<f32>& getBoundingBox() const

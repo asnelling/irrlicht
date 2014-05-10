@@ -686,9 +686,9 @@ const core::rect<s32>& CNullDriver::getViewPort() const
 
 
 //! draws a vertex primitive list
-void CNullDriver::drawVertexPrimitiveList(bool hardwareVertex, scene::IVertexBuffer* vertexBuffer, bool hardwareIndex, scene::IIndexBuffer* indexBuffer, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void CNullDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer, IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
 {
-	if((indexBuffer->getType() == EIT_16BIT) && (vertexBuffer->getVertexCount() > 65536))
+	if ((indexBuffer->getType() == EIT_16BIT) && (vertexBuffer->getVertexCount() > 65536))
 		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
 
 	PrimitivesDrawn += primitiveCount;
@@ -708,7 +708,7 @@ void CNullDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCoun
 void CNullDriver::draw3DLine(const core::vector3df& start,
 				const core::vector3df& end, SColor color)
 {
-	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_STANDARD));
+	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer();
 	scene::CIndexBuffer* indices = new scene::CIndexBuffer();
 	indices->reallocate(2);
 	vertices->reallocate(2);
@@ -725,7 +725,7 @@ void CNullDriver::draw3DLine(const core::vector3df& start,
 	vert.Pos = end;
 	vertices->addVertex(vert);
 
-	drawVertexPrimitiveList(false, vertices, false, indices, 1, scene::EPT_LINES);
+	drawVertexPrimitiveList(vertices, indices, VertexDescriptor[0], 1, scene::EPT_LINES);
 
 	vertices->clear();
 	vertices->drop();
@@ -737,7 +737,7 @@ void CNullDriver::draw3DLine(const core::vector3df& start,
 //! Draws a 3d triangle.
 void CNullDriver::draw3DTriangle(const core::triangle3df& triangle, SColor color)
 {
-	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_STANDARD));
+	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer();
 	scene::CIndexBuffer* indices = new scene::CIndexBuffer();
 	indices->reallocate(3);
 	vertices->reallocate(3);
@@ -762,7 +762,7 @@ void CNullDriver::draw3DTriangle(const core::triangle3df& triangle, SColor color
 	vert.TCoords.set(1.f,0.f);
 	vertices->addVertex(vert);
 
-	drawVertexPrimitiveList(false, vertices, false, indices, 1, scene::EPT_TRIANGLES);
+	drawVertexPrimitiveList(vertices, indices, VertexDescriptor[0], 1, scene::EPT_TRIANGLES);
 
 	vertices->clear();
 	vertices->drop();
@@ -777,7 +777,7 @@ void CNullDriver::draw3DBox(const core::aabbox3d<f32>& box, SColor color)
 	core::vector3df edges[8];
 	box.getEdges(edges);
 
-	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_STANDARD));
+	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer();
 	scene::CIndexBuffer* indices = new scene::CIndexBuffer();
 	indices->reallocate(24);
 	vertices->reallocate(24);
@@ -837,7 +837,7 @@ void CNullDriver::draw3DBox(const core::aabbox3d<f32>& box, SColor color)
 	vert.Pos = edges[4];
 	vertices->addVertex(vert);
 
-	drawVertexPrimitiveList(false, vertices, false, indices, 12, scene::EPT_LINES);
+	drawVertexPrimitiveList(vertices, indices, VertexDescriptor[0], 12, scene::EPT_LINES);
 
 	vertices->clear();
 	vertices->drop();
@@ -1695,7 +1695,7 @@ void CNullDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 	if (HWBuffer)
 		drawHardwareBuffer(HWBuffer);
 	else
-		drawVertexPrimitiveList(false, mb->getVertexBuffer(), false, mb->getIndexBuffer(), mb->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
+		drawVertexPrimitiveList(mb->getVertexBuffer(), mb->getIndexBuffer(), mb->getVertexDescriptor(), mb->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
 }
 
 
@@ -1705,22 +1705,26 @@ void CNullDriver::drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length
 	const u32 count = mb->getVertexBuffer()->getVertexCount();
 	const bool normalize = mb->getMaterial().NormalizeNormals;
 
-	video::S3DVertex* data = NULL;
-	scene::SVertexBuffer* vertices = NULL;
+	S3DVertex* data = 0;
+	scene::SVertexBuffer* vertices = 0;
+	IVertexDescriptor* descriptor = 0;
 
-	switch(mb->getVertexBuffer()->getVertexSize())
+	switch (mb->getVertexBuffer()->getVertexSize())
 	{
 	case sizeof(S3DVertex):
-		vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_STANDARD));
+		vertices = new scene::SVertexBuffer();
 		data = (video::S3DVertex*)mb->getVertexBuffer()->getVertices();
+		descriptor = VertexDescriptor[0];
 		break;
 	case sizeof(S3DVertex2TCoords):
-		vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_2TCOORDS));
+		vertices = new scene::SVertexBuffer();
 		data = (video::S3DVertex2TCoords*)mb->getVertexBuffer()->getVertices();
+		descriptor = VertexDescriptor[1];
 		break;
 	case sizeof(S3DVertexTangents):
-		vertices = new scene::SVertexBuffer(getVertexDescriptor(EVT_TANGENTS));
+		vertices = new scene::SVertexBuffer();
 		data = (video::S3DVertexTangents*)mb->getVertexBuffer()->getVertices();
+		descriptor = VertexDescriptor[2];
 		break;
 	default:
 		return;
@@ -1755,7 +1759,7 @@ void CNullDriver::drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length
 		++data;
 	}
 
-	drawVertexPrimitiveList(false, vertices, false, indices, indices->getIndexCount() / 2, scene::EPT_LINES);
+	drawVertexPrimitiveList(vertices, indices, descriptor, indices->getIndexCount() / 2, scene::EPT_LINES);
 
 	vertices->clear();
 	vertices->drop();

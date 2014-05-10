@@ -54,6 +54,7 @@ class CSampleSceneNode : public scene::ISceneNode
 	core::aabbox3d<f32> Box;
 	scene::IVertexBuffer* VertexBuffer;
 	scene::IIndexBuffer* IndexBuffer;
+	video::IVertexDescriptor* Descriptor;
 	video::SMaterial Material;
 
 	/*
@@ -69,7 +70,9 @@ public:
 	CSampleSceneNode(scene::ISceneNode* parent, scene::ISceneManager* mgr, s32 id)
 		: scene::ISceneNode(parent, mgr, id)
 	{
-		VertexBuffer = new scene::CVertexBuffer<video::S3DVertex>(mgr->getVideoDriver()->getVertexDescriptor(0));
+		Descriptor = mgr->getVideoDriver()->getVertexDescriptor(0);
+
+		VertexBuffer = new scene::CVertexBuffer<video::S3DVertex>();
 		IndexBuffer = new scene::CIndexBuffer(video::EIT_16BIT);
 
 		Material.Wireframe = false;
@@ -155,7 +158,7 @@ public:
 		driver->setMaterial(Material);
 		driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 
-		driver->drawVertexPrimitiveList(false, VertexBuffer, false, IndexBuffer, 4, scene::EPT_TRIANGLES);
+		driver->drawVertexPrimitiveList(VertexBuffer, IndexBuffer, Descriptor, 4, scene::EPT_TRIANGLES);
 	}
 
 	/*

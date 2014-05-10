@@ -281,7 +281,7 @@ bool CB3DMeshFileLoader::readChunkMESH(CSkinnedMesh::SJoint *inJoint)
 			if (brushID!=-1)
 			{
 				loadTextures(Materials[brushID]);
-				meshBuffer->Material=Materials[brushID].Material;
+				meshBuffer->getMaterial() = Materials[brushID].Material;
 			}
 
 			if(readChunkTRIS(meshBuffer,AnimatedMesh->getMeshBuffers().size()-1, VerticesStart)==false)
@@ -294,12 +294,12 @@ bool CB3DMeshFileLoader::readChunkMESH(CSkinnedMesh::SJoint *inJoint)
 				video::IVertexAttribute* attributeP = 0;
 				video::IVertexAttribute* attributeN = 0;
 
-				for(u32 t = 0; t < meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttributeCount(); ++t)
+				for(u32 t = 0; t < meshBuffer->getVertexDescriptor()->getAttributeCount(); ++t)
 				{
-					if(meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(t)->getSemantic() == video::EVAS_POSITION)
-						attributeP = meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(t);
-					else if(meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(t)->getSemantic() == video::EVAS_NORMAL)
-						attributeN = meshBuffer->getVertexBuffer()->getVertexDescriptor()->getAttribute(t);
+					if(meshBuffer->getVertexDescriptor()->getAttribute(t)->getSemantic() == video::EVAS_POSITION)
+						attributeP = meshBuffer->getVertexDescriptor()->getAttribute(t);
+					else if(meshBuffer->getVertexDescriptor()->getAttribute(t)->getSemantic() == video::EVAS_NORMAL)
+						attributeN = meshBuffer->getVertexDescriptor()->getAttribute(t);
 				}
 
 				if(attributeP && attributeN)
@@ -543,8 +543,10 @@ bool CB3DMeshFileLoader::readChunkTRIS(scene::IMeshBuffer *meshBuffer, u32 meshB
 				{
 					if (meshBuffer->getVertexBuffer(0)->getVertexSize() != sizeof(video::S3DVertex2TCoords))
 					{
-						CVertexBuffer<video::S3DVertex2TCoords>* vb = new CVertexBuffer<video::S3DVertex2TCoords>(SceneManager->getVideoDriver()->getVertexDescriptor(1));
-						SceneManager->getMeshManipulator()->copyVertices(meshBuffer->getVertexBuffer(0), vb, 0, 0, false);
+						video::IVertexDescriptor* vd = SceneManager->getVideoDriver()->getVertexDescriptor(1);
+						CVertexBuffer<video::S3DVertex2TCoords>* vb = new CVertexBuffer<video::S3DVertex2TCoords>();
+						SceneManager->getMeshManipulator()->copyVertices(meshBuffer->getVertexBuffer(0), 0, meshBuffer->getVertexDescriptor(), vb, 0, vd, false);
+						meshBuffer->setVertexDescriptor(vd);
 						meshBuffer->setVertexBuffer(vb, 0);
 						vb->drop();
 					}

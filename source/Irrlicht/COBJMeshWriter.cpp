@@ -98,7 +98,7 @@ bool COBJMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 
 			u8* Vertices = static_cast<u8*>(buffer->getVertexBuffer()->getVertices());
 
-			video::IVertexAttribute* attribute = buffer->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+			video::IVertexAttribute* attribute = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
 
 			if(attribute)
 				for (j=0; j<vertexCount; ++j)
@@ -110,7 +110,7 @@ bool COBJMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 					file->write(num.c_str(), num.size());
 				}
 
-			attribute = buffer->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1);
+			attribute = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TEXCOORD1);
 
 			if(attribute)
 				for (j=0; j<vertexCount; ++j)
@@ -122,7 +122,7 @@ bool COBJMeshWriter::writeMesh(io::IWriteFile* file, scene::IMesh* mesh, s32 fla
 					file->write(num.c_str(), num.size());
 				}
 
-			attribute = buffer->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TANGENT);
+			attribute = buffer->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_TANGENT);
 
 			if(attribute)
 				for (j=0; j<vertexCount; ++j)

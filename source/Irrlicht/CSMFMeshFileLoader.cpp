@@ -107,13 +107,13 @@ void CSMFMeshFileLoader::loadLimb(io::IReadFile* file, SMesh* mesh, const core::
 	if (i == mesh->MeshBuffers.size())
 	{
 		CMeshBuffer<video::S3DVertex>* mb = new CMeshBuffer<video::S3DVertex>(Driver->getVertexDescriptor(0));
-		mb->Material.TextureLayer[0].Texture = texture;
+		mb->getMaterial().TextureLayer[0].Texture = texture;
 
 		// horribly hacky way to do this, maybe it's in the flags?
 		if (core::hasFileExtension(textureName, "tga", "png"))
-			mb->Material.MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
+			mb->getMaterial().MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
 		else
-			mb->Material.MaterialType = video::EMT_SOLID;
+			mb->getMaterial().MaterialType = video::EMT_SOLID;
 
 		mesh->MeshBuffers.push_back(mb);
 	}

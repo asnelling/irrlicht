@@ -504,8 +504,8 @@ void CSkinnedMesh::skinJoint(SJoint *joint, SJoint *parentJoint)
 		{
 			SWeight& weight = joint->Weights[i];
 
-			video::IVertexAttribute* attributeP = buffersUsed[weight.buffer_id]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
-			video::IVertexAttribute* attributeN = buffersUsed[weight.buffer_id]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
+			video::IVertexAttribute* attributeP = buffersUsed[weight.buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+			video::IVertexAttribute* attributeN = buffersUsed[weight.buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
 
 			if(!attributeP || !attributeN)
 				continue;
@@ -744,8 +744,8 @@ bool CSkinnedMesh::setHardwareSkinning(bool on)
 					const u16 buffer_id=joint->Weights[j].buffer_id;
 					const u32 vertex_id=joint->Weights[j].vertex_id;
 
-					video::IVertexAttribute* attributeP = LocalBuffers[buffer_id]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
-					video::IVertexAttribute* attributeN = LocalBuffers[buffer_id]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
+					video::IVertexAttribute* attributeP = LocalBuffers[buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+					video::IVertexAttribute* attributeN = LocalBuffers[buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
 
 					if(!attributeP || !attributeN)
 						continue;
@@ -898,8 +898,8 @@ void CSkinnedMesh::checkForAnimation()
 				const u16 buffer_id=joint->Weights[j].buffer_id;
 				const u32 vertex_id=joint->Weights[j].vertex_id;
 
-				video::IVertexAttribute* attributeP = LocalBuffers[buffer_id]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
-				video::IVertexAttribute* attributeN = LocalBuffers[buffer_id]->getVertexBuffer()->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
+				video::IVertexAttribute* attributeP = LocalBuffers[buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_POSITION);
+				video::IVertexAttribute* attributeN = LocalBuffers[buffer_id]->getVertexDescriptor()->getAttributeBySemantic(video::EVAS_NORMAL);
 
 				if(!attributeP || !attributeN)
 					continue;
