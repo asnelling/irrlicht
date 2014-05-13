@@ -43,10 +43,12 @@ CSkyBoxSceneNode::CSkyBoxSceneNode(video::ITexture* top, video::ITexture* bottom
 
 		IIndexBuffer* IndexBuffer = MeshBuffer[i]->getIndexBuffer();
 
+		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(2);
 		IndexBuffer->addIndex(0);
 		IndexBuffer->addIndex(1);
-		IndexBuffer->addIndex(2);
 		IndexBuffer->addIndex(3);
+		IndexBuffer->addIndex(0);
 
 		MeshBuffer[i]->getMaterial() = mat;
 	}
@@ -222,7 +224,7 @@ void CSkyBoxSceneNode::render()
 		for (s32 i=0; i<6; ++i)
 		{
 			driver->setMaterial(MeshBuffer[i]->getMaterial());
-			driver->drawVertexPrimitiveList(MeshBuffer[i]->getVertexBuffer(0), MeshBuffer[i]->getIndexBuffer(), MeshBuffer[i]->getVertexDescriptor(), 2, EPT_TRIANGLE_STRIP);
+			driver->drawVertexPrimitiveList(MeshBuffer[i]->getVertexBuffer(0), MeshBuffer[i]->getIndexBuffer(), MeshBuffer[i]->getVertexDescriptor(), 2, EPT_TRIANGLES);
 		}
 	}
 	else
