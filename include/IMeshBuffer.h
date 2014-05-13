@@ -41,7 +41,7 @@ namespace scene
 	class IMeshBuffer : public virtual IReferenceCounted
 	{
 	public:
-		IMeshBuffer() : VertexBufferCompatible(true)
+		IMeshBuffer() : VertexBufferCompatible(true), PrimitiveType(EPT_TRIANGLES)
 		{
 		}
 
@@ -61,14 +61,26 @@ namespace scene
 
 		virtual bool setVertexBuffer(IVertexBuffer* vertexBuffer, u32 id = 0) = 0;
 
-		virtual IIndexBuffer* getIndexBuffer() const = 0;
-
-		virtual bool setIndexBuffer(IIndexBuffer* indexBuffer) = 0;
-
 		//! Inform if stored vertex buffers have the same vertex descriptors.
 		bool isVertexBufferCompatible() const
 		{
 			return VertexBufferCompatible;
+		}
+
+		virtual IIndexBuffer* getIndexBuffer() const = 0;
+
+		virtual bool setIndexBuffer(IIndexBuffer* indexBuffer) = 0;
+
+		//! Get primitive type of this mesh buffer.
+		E_PRIMITIVE_TYPE getPrimitiveType() const
+		{
+			return PrimitiveType;
+		}
+
+		//! Set primitive type of this mesh buffer.
+		void setPrimitiveType(E_PRIMITIVE_TYPE primitiveType)
+		{
+			PrimitiveType = primitiveType;
 		}
 
 		//! Get the material of this meshbuffer
@@ -124,6 +136,8 @@ namespace scene
 
 	protected:
 		bool VertexBufferCompatible;
+
+		E_PRIMITIVE_TYPE PrimitiveType;
 	};
 
 } // end namespace scene
