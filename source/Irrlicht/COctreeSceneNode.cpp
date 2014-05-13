@@ -264,15 +264,37 @@ bool COctreeSceneNode::createTree(IMesh* mesh)
 
 		for ( i=0; i < mesh->getMeshBufferCount(); ++i)
 		{
-			IMeshBuffer* b = mesh->getMeshBuffer(i);
+			const scene::IMeshManipulator* meshManipulator = SceneManager->getMeshManipulator();
 
-			if (b->getVertexBuffer()->getVertexCount() && b->getIndexBuffer()->getIndexCount())
+			IMeshBuffer* meshBuffer = mesh->getMeshBuffer(i);
+			IMeshBuffer* nchunk = StdMeshes[i];
+
+			// copy vertices
+
+			video::IVertexDescriptor* srcDescriptor = meshBuffer->getVertexDescriptor();
+			video::IVertexDescriptor* dstDescriptor = nchunk->getVertexDescriptor();
+			const u32 vbCount = meshBuffer->getVertexBufferCount();
+
+			for (u32 j = 0; j < vbCount; ++j)
+				meshManipulator->copyVertices(meshBuffer->getVertexBuffer(j), j, srcDescriptor, nchunk->getVertexBuffer(j), j, dstDescriptor, true);
+
+			// copy indices
+
+			scene::IIndexBuffer* srcIndexBuffer = meshBuffer->getIndexBuffer();
+			scene::IIndexBuffer* dstIndexBuffer = nchunk->getIndexBuffer();
+			meshManipulator->copyIndices(srcIndexBuffer, dstIndexBuffer);
+
+			// copy material
+
+			Materials.push_back(meshBuffer->getMaterial());
+			StdMeshesMatID.push_back(Materials.size() - 1);
+
+			// others
+
+			polyCount += dstIndexBuffer->getIndexCount();
+
+			if (UseVBOs)
 			{
-				Materials.push_back(b->getMaterial());
-
-				IMeshBuffer* nchunk = StdMeshes[i];
-				StdMeshesMatID.push_back(Materials.size() - 1);
-
 				if (UseVisibilityAndVBOs)
 				{
 					nchunk->setHardwareMappingHint(scene::EHM_STATIC, scene::EBT_VERTEX);
@@ -280,14 +302,10 @@ bool COctreeSceneNode::createTree(IMesh* mesh)
 				}
 				else
 					nchunk->setHardwareMappingHint(scene::EHM_STATIC);
-
-				SceneManager->getMeshManipulator()->copyVertices(b->getVertexBuffer(), 0, b->getVertexDescriptor(), nchunk->getVertexBuffer(), 0, nchunk->getVertexDescriptor(), true);
-
-				polyCount += b->getIndexBuffer()->getIndexCount();
-				nchunk->getIndexBuffer()->reallocate(b->getIndexBuffer()->getIndexCount());
-
-				for (u32 v=0; v<b->getIndexBuffer()->getIndexCount(); ++v)
-					nchunk->getIndexBuffer()->addIndex(b->getIndexBuffer()->getIndex(v));
+			}
+			else
+			{
+				nchunk->setHardwareMappingHint(scene::EHM_NEVER);
 			}
 		}
 
