@@ -384,8 +384,7 @@ void CParticleSystemSceneNode::render()
 	driver->setTransform(video::ETS_WORLD, mat);
 
 	driver->setMaterial(Buffer->getMaterial());
-
-	driver->drawVertexPrimitiveList(Buffer->getVertexBuffer(0), Buffer->getIndexBuffer(), Buffer->getVertexDescriptor(), Particles.size()*2, EPT_TRIANGLES);
+	driver->drawMeshBuffer(Buffer);
 
 
 	// for debug purposes only:

@@ -79,9 +79,7 @@ namespace video
 		//! \param color: New color of the ambient light.
 		virtual void setAmbientLight(const SColorf& color);
 
-		//! draws a vertex primitive list
-		void drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
-			IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
+		virtual void drawMeshBuffer(const scene::IMeshBuffer* mb);
 
 		//! draws a vertex primitive list
 		void drawVertexPrimitiveList(const void* vertices, u32 vertexCount,

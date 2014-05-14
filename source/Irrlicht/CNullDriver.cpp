@@ -685,16 +685,6 @@ const core::rect<s32>& CNullDriver::getViewPort() const
 }
 
 
-//! draws a vertex primitive list
-void CNullDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer, IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
-{
-	if ((indexBuffer->getType() == EIT_16BIT) && (vertexBuffer->getVertexCount() > 65536))
-		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
-
-	PrimitivesDrawn += primitiveCount;
-}
-
-
 //! draws a vertex primitive list in 2d
 void CNullDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount, const void* indexList, u32 primitiveCount, E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
 {
@@ -708,8 +698,12 @@ void CNullDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCoun
 void CNullDriver::draw3DLine(const core::vector3df& start,
 				const core::vector3df& end, SColor color)
 {
-	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer();
-	scene::CIndexBuffer* indices = new scene::CIndexBuffer();
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], EIT_16BIT);
+	meshBuffer->setPrimitiveType(scene::EPT_LINES);
+
+	scene::IVertexBuffer* vertices = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* indices = meshBuffer->getIndexBuffer();
+
 	indices->reallocate(2);
 	vertices->reallocate(2);
 
@@ -720,25 +714,26 @@ void CNullDriver::draw3DLine(const core::vector3df& start,
 	vert.Color = color;
 	
 	vert.Pos = start;
-	vertices->addVertex(vert);
+	vertices->addVertex(&vert);
 
 	vert.Pos = end;
-	vertices->addVertex(vert);
+	vertices->addVertex(&vert);
 
-	drawVertexPrimitiveList(vertices, indices, VertexDescriptor[0], 1, scene::EPT_LINES);
+	drawMeshBuffer(meshBuffer);
 
-	vertices->clear();
-	vertices->drop();
-	indices->clear();
-	indices->drop();
+	meshBuffer->drop();
 }
 
 
 //! Draws a 3d triangle.
 void CNullDriver::draw3DTriangle(const core::triangle3df& triangle, SColor color)
 {
-	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer();
-	scene::CIndexBuffer* indices = new scene::CIndexBuffer();
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], EIT_16BIT);
+	meshBuffer->setPrimitiveType(scene::EPT_LINES);
+
+	scene::IVertexBuffer* vertices = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* indices = meshBuffer->getIndexBuffer();
+
 	indices->reallocate(3);
 	vertices->reallocate(3);
 
@@ -752,22 +747,19 @@ void CNullDriver::draw3DTriangle(const core::triangle3df& triangle, SColor color
 
 	vert.Pos=triangle.pointA;
 	vert.TCoords.set(0.f,0.f);
-	vertices->addVertex(vert);
+	vertices->addVertex(&vert);
 
 	vert.Pos=triangle.pointB;
 	vert.TCoords.set(0.5f,1.f);
-	vertices->addVertex(vert);
+	vertices->addVertex(&vert);
 
 	vert.Pos=triangle.pointC;
 	vert.TCoords.set(1.f,0.f);
-	vertices->addVertex(vert);
+	vertices->addVertex(&vert);
 
-	drawVertexPrimitiveList(vertices, indices, VertexDescriptor[0], 1, scene::EPT_TRIANGLES);
+	drawMeshBuffer(meshBuffer);
 
-	vertices->clear();
-	vertices->drop();
-	indices->clear();
-	indices->drop();
+	meshBuffer->drop();
 }
 
 
@@ -777,8 +769,12 @@ void CNullDriver::draw3DBox(const core::aabbox3d<f32>& box, SColor color)
 	core::vector3df edges[8];
 	box.getEdges(edges);
 
-	scene::SVertexBuffer* vertices = vertices = new scene::SVertexBuffer();
-	scene::CIndexBuffer* indices = new scene::CIndexBuffer();
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], EIT_16BIT);
+	meshBuffer->setPrimitiveType(scene::EPT_LINES);
+
+	scene::IVertexBuffer* vertices = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* indices = meshBuffer->getIndexBuffer();
+
 	indices->reallocate(24);
 	vertices->reallocate(24);
 	
@@ -788,61 +784,17 @@ void CNullDriver::draw3DBox(const core::aabbox3d<f32>& box, SColor color)
 	video::S3DVertex vert;
 	vert.Color = color;
 
-	vert.Pos = edges[5];
-	vertices->addVertex(vert);
-	vert.Pos = edges[1];
-	vertices->addVertex(vert);
-	vert.Pos = edges[1];
-	vertices->addVertex(vert);
-	vert.Pos = edges[3];
-	vertices->addVertex(vert);
-	vert.Pos = edges[3];
-	vertices->addVertex(vert);
-	vert.Pos = edges[7];
-	vertices->addVertex(vert);
-	vert.Pos = edges[7];
-	vertices->addVertex(vert);
-	vert.Pos = edges[5];
-	vertices->addVertex(vert);
-	vert.Pos = edges[0];
-	vertices->addVertex(vert);
-	vert.Pos = edges[2];
-	vertices->addVertex(vert);
-	vert.Pos = edges[2];
-	vertices->addVertex(vert);
-	vert.Pos = edges[6];
-	vertices->addVertex(vert);
-	vert.Pos = edges[6];
-	vertices->addVertex(vert);
-	vert.Pos = edges[4];
-	vertices->addVertex(vert);
-	vert.Pos = edges[4];
-	vertices->addVertex(vert);
-	vert.Pos = edges[0];
-	vertices->addVertex(vert);
-	vert.Pos = edges[1];
-	vertices->addVertex(vert);
-	vert.Pos = edges[0];
-	vertices->addVertex(vert);
-	vert.Pos = edges[3];
-	vertices->addVertex(vert);
-	vert.Pos = edges[2];
-	vertices->addVertex(vert);
-	vert.Pos = edges[7];
-	vertices->addVertex(vert);
-	vert.Pos = edges[6];
-	vertices->addVertex(vert);
-	vert.Pos = edges[5];
-	vertices->addVertex(vert);
-	vert.Pos = edges[4];
-	vertices->addVertex(vert);
+	u32 edgeIndex[] { 5, 1, 1, 3, 3, 7, 7, 5, 0, 2, 2, 6, 6, 4, 4, 0, 1, 0, 3, 2, 7, 6, 5, 4 };
 
-	drawVertexPrimitiveList(vertices, indices, VertexDescriptor[0], 12, scene::EPT_LINES);
+	for (u32 i = 0; i < 24; ++i)
+	{
+		vert.Pos = edges[edgeIndex[i]];
+		vertices->addVertex(&vert);
+	}
 
-	vertices->clear();
-	vertices->drop();
-	indices->clear();
-	indices->drop();
+	drawMeshBuffer(meshBuffer);
+
+	meshBuffer->drop();
 }
 
 
@@ -1686,85 +1638,120 @@ void CNullDriver::getFog(SColor& color, E_FOG_TYPE& fogType, f32& start, f32& en
 //! Draws a mesh buffer
 void CNullDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 {
-	if (!mb)
+	if (!mb || !mb->isVertexBufferCompatible())
 		return;
 
-	//IVertexBuffer and IIndexBuffer later
+	if ((mb->getIndexBuffer()->getType() == EIT_16BIT) && (mb->getVertexBuffer(0)->getVertexCount() > 65536))
+		os::Printer::log("Too many vertices for 16bit index type, render artifacts may occur.");
+
+	PrimitivesDrawn += mb->getPrimitiveCount();
+
+
+	/*
 	SHWBufferLink *HWBuffer=getBufferLink(mb);
 
 	if (HWBuffer)
 		drawHardwareBuffer(HWBuffer);
 	else
-		drawVertexPrimitiveList(mb->getVertexBuffer(), mb->getIndexBuffer(), mb->getVertexDescriptor(), mb->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
+		drawVertexPrimitiveList(mb->getVertexBuffer(), mb->getIndexBuffer(), mb->getVertexDescriptor(), mb->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);*/
 }
 
 
 //! Draws the normals of a mesh buffer
 void CNullDriver::drawMeshBufferNormals(const scene::IMeshBuffer* mb, f32 length, SColor color)
 {
-	const u32 count = mb->getVertexBuffer()->getVertexCount();
+	if (!mb || !mb->isVertexBufferCompatible())
+		return;
+
 	const bool normalize = mb->getMaterial().NormalizeNormals;
 
-	S3DVertex* data = 0;
-	scene::SVertexBuffer* vertices = 0;
-	IVertexDescriptor* descriptor = 0;
+	int Found = 0;
 
-	switch (mb->getVertexBuffer()->getVertexSize())
+	video::IVertexDescriptor* vd = mb->getVertexDescriptor();
+
+	u32 positionBufferID = 0;
+	u32 positionOffset = 0;
+
+	u32 normalBufferID = 0;
+	u32 normalOffset = 0;
+
+	const u32 attributeCount = vd->getAttributeCount();
+
+	for (u32 i = 0; i < attributeCount; ++i)
 	{
-	case sizeof(S3DVertex):
-		vertices = new scene::SVertexBuffer();
-		data = (video::S3DVertex*)mb->getVertexBuffer()->getVertices();
-		descriptor = VertexDescriptor[0];
-		break;
-	case sizeof(S3DVertex2TCoords):
-		vertices = new scene::SVertexBuffer();
-		data = (video::S3DVertex2TCoords*)mb->getVertexBuffer()->getVertices();
-		descriptor = VertexDescriptor[1];
-		break;
-	case sizeof(S3DVertexTangents):
-		vertices = new scene::SVertexBuffer();
-		data = (video::S3DVertexTangents*)mb->getVertexBuffer()->getVertices();
-		descriptor = VertexDescriptor[2];
-		break;
-	default:
-		return;
+		video::IVertexAttribute * attribute = vd->getAttribute(i);
+
+		switch (attribute->getSemantic())
+		{
+		case video::EVAS_POSITION:
+			positionBufferID = attribute->getBufferID();
+			positionOffset = attribute->getOffset();
+			++Found;
+			break;
+		case video::EVAS_NORMAL:
+			normalBufferID = attribute->getBufferID();
+			normalOffset = attribute->getOffset();
+			++Found;
+			break;
+		default:
+			break;
+		}
 	}
 
-	scene::CIndexBuffer* indices = new scene::CIndexBuffer(mb->getIndexBuffer()->getType());
-	indices->set_used(count * 2);
-	vertices->reallocate(count * 2);
+	if (Found != 2)
+		return;
 
-	u32 current = 0;
-	
-	video::S3DVertex vert;
-	vert.Color = color;
+	core::vector3df* position = 0;
+	core::vector3df* normal = 0;
 
-	for (u32 i=0; i < count; ++i)
+	scene::IIndexBuffer* ib = mb->getIndexBuffer();
+	scene::IVertexBuffer* vbP = mb->getVertexBuffer(positionBufferID);
+	scene::IVertexBuffer* vbN = mb->getVertexBuffer(normalBufferID);
+
+	const u32 vertexSizeP = vbP->getVertexSize();
+	const u32 vertexCountP = vbP->getVertexCount();
+	const u32 vertexSizeN = vbN->getVertexSize();
+	const u32 vertexCountN = vbN->getVertexCount();
+
+	u8* positionData = static_cast<u8*>(vbP->getVertices());
+	positionData += positionOffset;
+
+	u8* normalData = static_cast<u8*>(vbN->getVertices());
+	normalData += normalOffset;
+
+	scene::IMeshBuffer* meshBuffer = new scene::CMeshBuffer<S3DVertex>(VertexDescriptor[0], ib->getType());
+	meshBuffer->setPrimitiveType(scene::EPT_LINES);
+
+	scene::IVertexBuffer* vertexBuffer = meshBuffer->getVertexBuffer(0);
+	scene::IIndexBuffer* indexBuffer = meshBuffer->getIndexBuffer();
+
+	vertexBuffer->reallocate(vertexCountP * 2);
+	indexBuffer->reallocate(vertexCountP * 2);
+
+	for (u32 i = 0; i < vertexCountP; ++i)
 	{
-		core::vector3df normalizedNormal = data->Normal;
+		indexBuffer->addIndex(i * 2);
+		indexBuffer->addIndex(i * 2 + 1);
+
+		position = (core::vector3df*)(positionData + vertexSizeP * i);
+		normal = (core::vector3df*)(normalData + vertexSizeN * i);
+
+		core::vector3df normalizedNormal = *normal;
+
 		if (normalize)
 			normalizedNormal.normalize();
 
-		const core::vector3df& pos = data->Pos;
-
-		indices->setIndex(current, current);
-		vert.Pos = pos;
-		vertices->addVertex(vert);
-		++current;
-		indices->setIndex(current, current);
-		vert.Pos = pos + (normalizedNormal * length);
-		vertices->addVertex(vert);
-		++current;
-
-		++data;
+		S3DVertex vert;
+		vert.Color = color;
+		vert.Pos = *position;
+		vertexBuffer->addVertex(&vert);
+		vert.Pos = *position + (normalizedNormal * length);
+		vertexBuffer->addVertex(&vert);
 	}
 
-	drawVertexPrimitiveList(vertices, indices, descriptor, indices->getIndexCount() / 2, scene::EPT_LINES);
+	drawMeshBuffer(meshBuffer);
 
-	vertices->clear();
-	vertices->drop();
-	indices->clear();
-	indices->drop();
+	meshBuffer->drop();
 }
 
 

@@ -144,7 +144,7 @@ void CBillboardSceneNode::render()
 
 	driver->setMaterial(MeshBuffer->getMaterial());
 
-	driver->drawIndexedTriangleList(MeshBuffer->getVertexBuffer(0), MeshBuffer->getIndexBuffer(), MeshBuffer->getVertexDescriptor(), 2);
+	driver->drawMeshBuffer(MeshBuffer);
 }
 
 

@@ -144,28 +144,25 @@ void COctreeSceneNode::render()
 		{
 			driver->setMaterial(Materials[i]);
 
-			if (UseVBOs)
+			if (!UseVBOs || (UseVBOs && UseVisibilityAndVBOs))
 			{
-				if (UseVisibilityAndVBOs)
-				{
-					scene::IIndexBuffer* oldBuffer = StdMeshes[i]->getIndexBuffer();
-					oldBuffer->grab();
+				scene::IIndexBuffer* oldBuffer = StdMeshes[i]->getIndexBuffer();
+				oldBuffer->grab();
 
-					StdMeshes[i]->setIndexBuffer(d[i].IndexBuffer);
-					StdMeshes[i]->setDirty(scene::EBT_INDEX);
+				StdMeshes[i]->setIndexBuffer(d[i].IndexBuffer);
+				StdMeshes[i]->setDirty(scene::EBT_INDEX);
 
-					driver->drawMeshBuffer ( StdMeshes[i] );
+				driver->drawMeshBuffer ( StdMeshes[i] );
 
-					StdMeshes[i]->setIndexBuffer(oldBuffer);
-					oldBuffer->drop();
+				StdMeshes[i]->setIndexBuffer(oldBuffer);
+				oldBuffer->drop();
 
-					StdMeshes[i]->setDirty(scene::EBT_INDEX);
-				}
-				else
-					driver->drawMeshBuffer ( StdMeshes[i] );
+				StdMeshes[i]->setDirty(scene::EBT_INDEX);
 			}
 			else
-				driver->drawIndexedTriangleList(StdMeshes[i]->getVertexBuffer(0), d[i].IndexBuffer, StdMeshes[i]->getVertexDescriptor(), d[i].CurrentSize / 3);
+			{
+				driver->drawMeshBuffer ( StdMeshes[i] );
+			}
 		}
 	}
 

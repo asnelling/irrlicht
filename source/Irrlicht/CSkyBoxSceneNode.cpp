@@ -224,7 +224,7 @@ void CSkyBoxSceneNode::render()
 		for (s32 i=0; i<6; ++i)
 		{
 			driver->setMaterial(MeshBuffer[i]->getMaterial());
-			driver->drawVertexPrimitiveList(MeshBuffer[i]->getVertexBuffer(0), MeshBuffer[i]->getIndexBuffer(), MeshBuffer[i]->getVertexDescriptor(), 2, EPT_TRIANGLES);
+			driver->drawMeshBuffer(MeshBuffer[i]);
 		}
 	}
 	else

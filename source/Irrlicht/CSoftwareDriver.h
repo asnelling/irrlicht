@@ -55,9 +55,7 @@ namespace video
 		//! returns size of the current render target
 		virtual const core::dimension2d<u32>& getCurrentRenderTargetSize() const;
 
-		//! draws a vertex primitive list
-		void drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
-			IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
+		virtual void drawMeshBuffer(const scene::IMeshBuffer* mb);
 
 		//! Draws a 3d line.
 		virtual void draw3DLine(const core::vector3df& start,

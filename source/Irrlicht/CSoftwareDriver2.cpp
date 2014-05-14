@@ -1712,18 +1712,6 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 			VertexCache.indexCount = primitiveCount + 2;
 			VertexCache.primitivePitch = 1;
 			break;
-		case scene::EPT_QUAD_STRIP:
-			VertexCache.indexCount = 2*primitiveCount + 2;
-			VertexCache.primitivePitch = 2;
-			break;
-		case scene::EPT_QUADS:
-			VertexCache.indexCount = 4*primitiveCount;
-			VertexCache.primitivePitch = 4;
-			break;
-		case scene::EPT_POLYGON:
-			VertexCache.indexCount = primitiveCount+1;
-			VertexCache.primitivePitch = 1;
-			break;
 		case scene::EPT_POINT_SPRITES:
 			VertexCache.indexCount = primitiveCount;
 			VertexCache.primitivePitch = 1;
@@ -1734,31 +1722,44 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 }
 
 
-void CBurningVideoDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
-	IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void CBurningVideoDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 {
-	if (!vertexBuffer || !indexBuffer || !descriptor || primitiveCount == 0)
+	if (!mb || !mb->isVertexBufferCompatible())
 		return;
 
-	E_VERTEX_TYPE vType = EVT_STANDARD;
+	if (!checkPrimitiveCount(mb->getPrimitiveCount()))
+		return;
+
+	if (mb->getVertexBufferCount() > 1)
+	{
+		os::Printer::log("Software driver can not handle more than one vertex buffer per mesh buffer", ELL_ERROR);
+		return;
+	}
+
+	scene::IVertexBuffer* vertexBuffer = mb->getVertexBuffer(0);
+	E_VERTEX_TYPE vertexType = EVT_STANDARD;
+
+	scene::IIndexBuffer* indexBuffer = mb->getIndexBuffer();
+	const u32 primitiveCount = mb->getPrimitiveCount();
+	const scene::E_PRIMITIVE_TYPE primitiveType = mb->getPrimitiveType();
 
 	// Supported are only built-in Irrlicht vertex formats.
 	switch(vertexBuffer->getVertexSize())
 	{
 	case sizeof(S3DVertex):
-		vType = EVT_STANDARD;
+		vertexType = EVT_STANDARD;
 		break;
 	case sizeof(S3DVertex2TCoords):
-		vType = EVT_2TCOORDS;
+		vertexType = EVT_2TCOORDS;
 		break;
 	case sizeof(S3DVertexTangents):
-		vType = EVT_TANGENTS;
+		vertexType = EVT_TANGENTS;
 		break;
 	default:
 		return;
 	}
 
-	drawVertexPrimitiveList(vertexBuffer->getVertices(), vertexBuffer->getVertexCount(), indexBuffer->getIndices(), primitiveCount, vType, pType, indexBuffer->getType());
+	drawVertexPrimitiveList(vertexBuffer->getVertices(), vertexBuffer->getVertexCount(), indexBuffer->getIndices(), primitiveCount, vertexType, primitiveType, indexBuffer->getType());
 }
 
 
@@ -1778,7 +1779,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	// The vertex cache needs to be rewritten for these primitives.
 	if (pType==scene::EPT_POINTS || pType==scene::EPT_LINE_STRIP ||
 		pType==scene::EPT_LINE_LOOP || pType==scene::EPT_LINES ||
-		pType==scene::EPT_TRIANGLE_FAN || pType==scene::EPT_POLYGON ||
+		pType==scene::EPT_TRIANGLE_FAN ||
 		pType==scene::EPT_POINT_SPRITES)
 		return;
 

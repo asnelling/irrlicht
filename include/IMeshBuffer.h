@@ -41,7 +41,8 @@ namespace scene
 	class IMeshBuffer : public virtual IReferenceCounted
 	{
 	public:
-		IMeshBuffer() : VertexBufferCompatible(true), PrimitiveType(EPT_TRIANGLES)
+		IMeshBuffer(video::IVertexDescriptor* vertexDescriptor) : VertexDescriptor(vertexDescriptor), VertexBufferCompatible(true),
+			IndexBuffer(0), PrimitiveType(EPT_TRIANGLES), BoundingBoxNeedsRecalculated(true)
 		{
 		}
 
@@ -70,14 +71,48 @@ namespace scene
 		virtual IIndexBuffer* getIndexBuffer() const = 0;
 
 		virtual bool setIndexBuffer(IIndexBuffer* indexBuffer) = 0;
+		
+		//! Get primitive count.
+		u32 getPrimitiveCount() const
+		{
+			u32 primitiveCount = 0;
 
-		//! Get primitive type of this mesh buffer.
+			switch (PrimitiveType)
+			{
+			case EPT_POINTS:
+			case EPT_POINT_SPRITES:
+				primitiveCount = IndexBuffer->getIndexCount();
+				break;
+			case scene::EPT_LINE_STRIP:
+				primitiveCount = IndexBuffer->getIndexCount() - 1;
+				break;
+			case scene::EPT_LINE_LOOP:
+				primitiveCount = IndexBuffer->getIndexCount();
+				break;
+			case scene::EPT_LINES:
+				primitiveCount = IndexBuffer->getIndexCount() / 2;
+				break;
+			case scene::EPT_TRIANGLE_STRIP:
+				primitiveCount = IndexBuffer->getIndexCount() - 2;
+				break;
+			case scene::EPT_TRIANGLE_FAN:
+				primitiveCount = IndexBuffer->getIndexCount() - 2;
+				break;
+			case scene::EPT_TRIANGLES:
+				primitiveCount = IndexBuffer->getIndexCount() / 3;
+				break;
+			}
+
+			return primitiveCount;
+		}
+
+		//! Get primitive type.
 		E_PRIMITIVE_TYPE getPrimitiveType() const
 		{
 			return PrimitiveType;
 		}
 
-		//! Set primitive type of this mesh buffer.
+		//! Set primitive type.
 		void setPrimitiveType(E_PRIMITIVE_TYPE primitiveType)
 		{
 			PrimitiveType = primitiveType;
@@ -135,9 +170,32 @@ namespace scene
 		virtual core::matrix4& getTransformation() = 0;
 
 	protected:
+		//! Vertex descriptor.
+		video::IVertexDescriptor* VertexDescriptor;
+
+		// Inform if mesh buffers store compatible vertex buffers and vertex descriptor.
 		bool VertexBufferCompatible;
 
+		//! Vertex buffer array.
+		core::array<scene::IVertexBuffer*> VertexBuffer;
+
+		//! Index buffer.
+		scene::IIndexBuffer* IndexBuffer;
+
+		// Primitive type.
 		E_PRIMITIVE_TYPE PrimitiveType;
+
+		//! Material.
+		video::SMaterial Material;
+
+		// Inform if bounding box need recalculation.
+		bool BoundingBoxNeedsRecalculated;
+
+		//! Bounding box.
+		core::aabbox3d<f32> BoundingBox;
+
+		// Transformation.
+		core::matrix4 Transformation;
 	};
 
 } // end namespace scene

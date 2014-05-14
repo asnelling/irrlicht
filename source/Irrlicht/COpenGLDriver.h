@@ -128,9 +128,6 @@ namespace video
 		//! Delete hardware buffer (only some drivers can)
 		virtual void deleteHardwareBuffer(SHWBufferLink *HWBuffer);
 
-		//! Draw hardware buffer
-		virtual void drawHardwareBuffer(SHWBufferLink *HWBuffer);
-
 		//! Create occlusion query.
 		/** Use node for identification and mesh for occlusion test. */
 		virtual void addOcclusionQuery(scene::ISceneNode* node,
@@ -155,9 +152,7 @@ namespace video
 		actual value of pixels. */
 		virtual u32 getOcclusionQueryResult(scene::ISceneNode* node) const;
 
-		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
-			IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
+		virtual void drawMeshBuffer(const scene::IMeshBuffer* mb);
 
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,

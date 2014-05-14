@@ -61,8 +61,11 @@ public:
 
 		for (u32 i=0; i!=meshes.size(); ++i)
 		{
+			scene::IIndexBuffer* indexBuffer = meshes[i]->getIndexBuffer();
+			u32 indexCount = indexBuffer->getIndexCount();
+
 			IndexData[i].CurrentSize = 0;
-			IndexData[i].MaxSize = meshes[i]->getIndexBuffer()->getIndexCount();
+			IndexData[i].MaxSize = indexCount;
 			IndexData[i].IndexBuffer = new scene::CIndexBuffer(meshes[i]->getIndexBuffer()->getType());
 			IndexData[i].IndexBuffer->reallocate(IndexData[i].MaxSize);
 
@@ -71,8 +74,8 @@ public:
 			SIndexChunk& tic = indexChunks->getLast();
 			tic.MaterialId = meshesMatID[i];
 
-			for(u32 j = 0; j < meshes[i]->getIndexBuffer()->getIndexCount(); ++j)
-				tic.IndexBuffer.addIndex(meshes[i]->getIndexBuffer()->getIndex(j));
+			for (u32 j = 0; j < indexCount; ++j)
+				tic.IndexBuffer.addIndex(indexBuffer->getIndex(j));
 		}
 
 		// create tree
@@ -84,7 +87,10 @@ public:
 	void calculatePolys(const core::aabbox3d<f32>& box)
 	{
 		for (u32 i=0; i!=IndexDataCount; ++i)
+		{
+			IndexData[i].IndexBuffer->set_used(0);
 			IndexData[i].CurrentSize = 0;
+		}
 
 		Root->getPolys(box, IndexData, 0);
 	}
@@ -94,7 +100,10 @@ public:
 	void calculatePolys(const scene::SViewFrustum& frustum)
 	{
 		for (u32 i=0; i!=IndexDataCount; ++i)
+		{
+			IndexData[i].IndexBuffer->set_used(0);
 			IndexData[i].CurrentSize = 0;
+		}
 
 		Root->getPolys(frustum, IndexData, 0);
 	}
@@ -355,9 +364,10 @@ private:
 							dst = dst2;
 						}
 
-						memcpy(dst, src, idxcnt * IndexType);
-
 						idxdata[i].CurrentSize += idxcnt;
+						idxdata[i].IndexBuffer->set_used(idxdata[i].CurrentSize);
+
+						memcpy(dst, src, idxcnt * IndexType);
 					}
 				}
 
@@ -425,9 +435,10 @@ private:
 						dst = dst2;
 					}
 
-					memcpy(dst, src, idxcnt * IndexType);
-
 					idxdata[i].CurrentSize += idxcnt;
+					idxdata[i].IndexBuffer->set_used(idxdata[i].CurrentSize);
+
+					memcpy(dst, src, idxcnt * IndexType);
 				}
 			}
 

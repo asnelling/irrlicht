@@ -1417,44 +1417,6 @@ void COpenGLDriver::deleteHardwareBuffer(SHWBufferLink *_HWBuffer)
 }
 
 
-//! Draw hardware buffer
-void COpenGLDriver::drawHardwareBuffer(SHWBufferLink* buffer)
-{
-	if (!buffer)
-		return;
-
-	updateHardwareBuffer(buffer);
-	buffer->LastUsed = 0;
-
-#if defined(GL_ARB_vertex_buffer_object)
-	SHWBufferLink_opengl* hwBuffer = (SHWBufferLink_opengl*)buffer;
-
-	const scene::IMeshBuffer* meshBuffer = hwBuffer->MeshBuffer;
-	bool hardwareVertex = false;
-	bool hardwareIndex = false;
-
-	if (hwBuffer->Mapped_Vertex != scene::EHM_NEVER)
-	{
-		extGlBindBuffer(GL_ARRAY_BUFFER, hwBuffer->vbo_verticesID);
-		hardwareVertex = true;
-	}
-
-	if (hwBuffer->Mapped_Index != scene::EHM_NEVER)
-	{
-		extGlBindBuffer(GL_ELEMENT_ARRAY_BUFFER, hwBuffer->vbo_indicesID);
-		hardwareIndex = true;
-	}
-
-	drawVertexPrimitiveList(meshBuffer->getVertexBuffer(), meshBuffer->getIndexBuffer(), meshBuffer->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
-
-	if(buffer->Mapped_Vertex != scene::EHM_NEVER)
-		extGlBindBuffer(GL_ARRAY_BUFFER, 0);
-	if(buffer->Mapped_Index != scene::EHM_NEVER)
-		extGlBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-#endif
-}
-
-
 //! Create occlusion query.
 /** Use node for identification and mesh for occlusion test. */
 void COpenGLDriver::addOcclusionQuery(scene::ISceneNode* node,
@@ -1578,16 +1540,53 @@ static inline u8* buffer_offset(const long offset)
 }
 
 
-//! draws a vertex primitive list
-void COpenGLDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer, IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 {
-	if (!primitiveCount || !vertexBuffer || vertexBuffer->getVertexCount() == 0 || !descriptor)
+	if (!mb || !mb->isVertexBufferCompatible())
 		return;
 
-	if (!checkPrimitiveCount(primitiveCount))
+	if (!checkPrimitiveCount(mb->getPrimitiveCount()))
 		return;
 
-	CNullDriver::drawVertexPrimitiveList(vertexBuffer, indexBuffer, descriptor, primitiveCount, pType);
+	CNullDriver::drawMeshBuffer(mb);
+
+	IVertexDescriptor* descriptor = mb->getVertexDescriptor();
+	scene::IVertexBuffer* vertexBuffer = mb->getVertexBuffer(0);
+
+	scene::IIndexBuffer* indexBuffer = mb->getIndexBuffer();
+	const GLenum indexSize = (indexBuffer->getType() == EIT_32BIT) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
+
+	const u32 primitiveCount = mb->getPrimitiveCount();
+	const scene::E_PRIMITIVE_TYPE primitiveType = mb->getPrimitiveType();
+
+	// Enable hardware buffers.
+
+	SHWBufferLink* hwBuffer = getBufferLink(mb);
+
+	bool hardwareVertex = false;
+	bool hardwareIndex = false;
+
+	if (hwBuffer)
+	{
+		updateHardwareBuffer(hwBuffer);
+		hwBuffer->LastUsed = 0;
+
+#if defined(GL_ARB_vertex_buffer_object)
+		SHWBufferLink_opengl* hwBufferGL = (SHWBufferLink_opengl*)hwBuffer;
+
+		if (hwBuffer->Mapped_Vertex != scene::EHM_NEVER)
+		{
+			extGlBindBuffer(GL_ARRAY_BUFFER, hwBufferGL->vbo_verticesID);
+			hardwareVertex = true;
+		}
+
+		if (hwBuffer->Mapped_Index != scene::EHM_NEVER)
+		{
+			extGlBindBuffer(GL_ELEMENT_ARRAY_BUFFER, hwBufferGL->vbo_indicesID);
+			hardwareIndex = true;
+		}
+#endif
+	}
 
 	/*if (vertices && !FeatureAvailable[IRR_ARB_vertex_array_bgra] && !FeatureAvailable[IRR_EXT_vertex_array_bgra])
 		getColorBuffer(vertices, vertexCount, vType);*/
@@ -1595,7 +1594,7 @@ void COpenGLDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, 
 	// draw everything
 	setRenderStates3DMode();
 
-	if ((pType!=scene::EPT_POINTS) && (pType!=scene::EPT_POINT_SPRITES))
+	if ((primitiveType != scene::EPT_POINTS) && (primitiveType != scene::EPT_POINT_SPRITES))
 		BridgeCalls->setClientState(true, true, true, true);
 	else
 		BridgeCalls->setClientState(true, false, true, false);
@@ -1632,11 +1631,6 @@ void COpenGLDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, 
 		}
 	}*/
 
-	// Hardware buffers
-
-	bool hardwareVertex = (vertexBuffer->getHardwareMappingHint() != scene::EHM_NEVER) ? true : false;
-	bool hardwareIndex = (indexBuffer && indexBuffer->getHardwareMappingHint() != scene::EHM_NEVER) ? true : false;
-
 	// Enable client states.
 
 	bool VertexClientState = false;
@@ -1654,7 +1648,7 @@ void COpenGLDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, 
 			VertexClientState = true;
 			break;
 		case EVAS_NORMAL:
-			if ((pType!=scene::EPT_POINTS) && (pType!=scene::EPT_POINT_SPRITES))
+			if ((primitiveType != scene::EPT_POINTS) && (primitiveType != scene::EPT_POINT_SPRITES))
 				NormalClientState = true;
 			break;
 		case EVAS_COLOR:
@@ -1869,9 +1863,9 @@ void COpenGLDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, 
 	// Draw.
 
 	void* Indices = hardwareIndex ? 0 : indexBuffer->getIndices();
-	GLenum IndexSize = (indexBuffer->getType() == EIT_32BIT) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
+	
 
-	renderArray(Indices, IndexSize, primitiveCount, pType);
+	renderArray(Indices, indexSize, primitiveCount, primitiveType);
 
 	// Disable semantics and attributes.
 
@@ -1891,7 +1885,7 @@ void COpenGLDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, 
 		case EVAS_TEXCOORD5:
 		case EVAS_TEXCOORD6:
 		case EVAS_TEXCOORD7:
-			if((pType != scene::EPT_POINTS) && (pType != scene::EPT_POINT_SPRITES))
+			if ((primitiveType != scene::EPT_POINTS) && (primitiveType != scene::EPT_POINT_SPRITES))
 			{
 				if(semantic == EVAS_TEXCOORD0)
 				{
@@ -1925,6 +1919,18 @@ void COpenGLDriver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, 
 		BridgeCalls->setClientActiveTexture(GL_TEXTURE0_ARB);
 
 	LastVertexDescriptor = descriptor;
+
+	// Disable hardware buffers.
+#if defined(GL_ARB_vertex_buffer_object)
+	if (hwBuffer)
+	{
+		if (hwBuffer->Mapped_Vertex != scene::EHM_NEVER)
+			extGlBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		if (hwBuffer->Mapped_Index != scene::EHM_NEVER)
+			extGlBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
+#endif
 }
 
 
@@ -2046,15 +2052,6 @@ void COpenGLDriver::renderArray(const void* pIndices, GLenum pIndexSize, u32 pri
 			break;
 		case scene::EPT_TRIANGLES:
 			glDrawElements(GL_TRIANGLES, primitiveCount*3, pIndexSize, pIndices);
-			break;
-		case scene::EPT_QUAD_STRIP:
-			glDrawElements(GL_QUAD_STRIP, primitiveCount*2+2, pIndexSize, pIndices);
-			break;
-		case scene::EPT_QUADS:
-			glDrawElements(GL_QUADS, primitiveCount*4, pIndexSize, pIndices);
-			break;
-		case scene::EPT_POLYGON:
-			glDrawElements(GL_POLYGON, primitiveCount, pIndexSize, pIndices);
 			break;
 	}
 }
@@ -5263,12 +5260,6 @@ GLenum COpenGLDriver::primitiveTypeToGL(scene::E_PRIMITIVE_TYPE type) const
 			return GL_TRIANGLE_FAN;
 		case scene::EPT_TRIANGLES:
 			return GL_TRIANGLES;
-		case scene::EPT_QUAD_STRIP:
-			return GL_QUAD_STRIP;
-		case scene::EPT_QUADS:
-			return GL_QUADS;
-		case scene::EPT_POLYGON:
-			return GL_POLYGON;
 		case scene::EPT_POINT_SPRITES:
 #ifdef GL_ARB_point_sprite
 			return GL_POINT_SPRITE_ARB;

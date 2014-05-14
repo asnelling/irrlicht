@@ -120,10 +120,6 @@ namespace video
 		//! gets the area of the current viewport
 		virtual const core::rect<s32>& getViewPort() const;
 
-		//! draws a vertex primitive list
-		virtual void drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer,
-			IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType = scene::EPT_TRIANGLES);
-
 		//! draws a vertex primitive list in 2d
 		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
 				const void* indexList, u32 primitiveCount,
@@ -415,9 +411,6 @@ namespace video
 
 		//! updates hardware buffer if needed  (only some drivers can)
 		virtual bool updateHardwareBuffer(SHWBufferLink *HWBuffer) {return false;}
-
-		//! Draw hardware buffer (only some drivers can)
-		virtual void drawHardwareBuffer(SHWBufferLink *HWBuffer) {}
 
 		//! Delete hardware buffer
 		virtual void deleteHardwareBuffer(SHWBufferLink *HWBuffer);

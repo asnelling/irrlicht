@@ -18,8 +18,7 @@ namespace scene
 	{
 	public:
 		//! Constructor
-		CMeshBuffer(video::IVertexDescriptor* vertexDescriptor, video::E_INDEX_TYPE type = video::EIT_16BIT) :
-			VertexDescriptor(vertexDescriptor), IndexBuffer(0), BoundingBoxNeedsRecalculated(true)
+		CMeshBuffer(video::IVertexDescriptor* vertexDescriptor, video::E_INDEX_TYPE type = video::EIT_16BIT) : IMeshBuffer(vertexDescriptor)
 		{
 			#ifdef _DEBUG
 			setDebugName("CMeshBuffer");
@@ -43,10 +42,8 @@ namespace scene
 		}
 
 		// Copy constructor (due to problems with detect types a vertex and index buffers aren't duplicated, they are assigned like in assignment operator)
-		CMeshBuffer(const CMeshBuffer& meshBuffer) : VertexDescriptor(0), IndexBuffer(0), BoundingBoxNeedsRecalculated(true)
+		CMeshBuffer(const CMeshBuffer& meshBuffer) : IMeshBuffer(meshBuffer.VertexDescriptor)
 		{
-			VertexDescriptor = meshBuffer.VertexDescriptor;
-
 			if (VertexDescriptor)
 				VertexDescriptor->grab();
 
@@ -426,22 +423,6 @@ namespace scene
 		{
 			return Transformation;
 		}
-
-	protected:
-		//! Vertex descriptor for this meshbuffer.
-		video::IVertexDescriptor* VertexDescriptor;
-		//! Material for this meshbuffer.
-		video::SMaterial Material;
-		//! Vertices of this buffer
-		core::array<scene::IVertexBuffer*> VertexBuffer;
-		//! Indices into the vertices of this buffer.
-		scene::IIndexBuffer* IndexBuffer;
-		//! Bounding box of this meshbuffer.
-		core::aabbox3d<f32> BoundingBox;
-
-		core::matrix4 Transformation;
-
-		bool BoundingBoxNeedsRecalculated;
 	};
 } // end namespace scene
 } // end namespace irr
