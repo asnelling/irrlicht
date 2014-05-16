@@ -14,9 +14,10 @@ namespace video
 	class CVertexAttribute : public IVertexAttribute
 	{
 	public:
-		CVertexAttribute(const CVertexAttribute& vertexAttribute);
 		CVertexAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 offset, u32 bufferID);
 		virtual ~CVertexAttribute();
+
+		bool operator < (const CVertexAttribute& other) const;
 
 		virtual const core::stringc& getName() const;
 
@@ -84,7 +85,7 @@ namespace video
 		core::stringc Name;
 
 		core::array<u32> VertexSize;
-		core::array<CVertexAttribute> Attribute;
+		core::array<CVertexAttribute*> Attribute;
 
 		s32 AttributePointer[(u32)EVAS_CUSTOM+1];
 	};

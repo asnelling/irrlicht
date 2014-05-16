@@ -32,112 +32,153 @@ namespace irr
 namespace video
 {
 
-COpenGLVertexDescriptor::COpenGLVertexDescriptor(const core::stringc& name, u32 id, u32 layerCount) : CVertexDescriptor(name, id)
+COpenGLVertexAttribute::COpenGLVertexAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type,
+	u32 offset, u32 bufferID, u32 layerCount) : CVertexAttribute(name, elementCount, semantic, type, offset, bufferID)
 {
-	for(u32 i = 0; i < layerCount; ++i)
-		addLocationLayer();
+	Cache.reallocate(layerCount);
+
+	for (u32 i = 0; i < layerCount; ++i)
+		Cache.push_back(false);
+
+	Location.reallocate(layerCount);
+
+	for (u32 i = 0; i < layerCount; ++i)
+		Location.push_back(-1);
+}
+
+COpenGLVertexAttribute::~COpenGLVertexAttribute()
+{
+}
+
+void COpenGLVertexAttribute::addLocationLayer()
+{
+	Cache.push_back(false);
+	Location.push_back(-1);
+}
+
+s32 COpenGLVertexAttribute::getLocation(u32 materialType) const
+{
+	s32 location = -1;
+
+	if (materialType < Location.size())
+		location = Location[materialType];
+
+	return location;
+}
+
+void COpenGLVertexAttribute::setLocation(u32 location, u32 materialType)
+{
+	if (materialType < Location.size())
+	{
+		Cache[materialType] = true;
+		Location[materialType] = location;
+	}
+}
+
+s32 COpenGLVertexAttribute::getLocationStatus(u32 materialType) const
+{
+	s32 status = -1;
+
+	if (materialType < Cache.size())
+	{
+		if (Cache[materialType])
+			status = 1;
+		else
+			status = 0;
+	}
+
+	return status;
+}
+
+COpenGLVertexDescriptor::COpenGLVertexDescriptor(const core::stringc& name, u32 id, u32 layerCount) : CVertexDescriptor(name, id), LayerCount(layerCount)
+{
+#ifdef _DEBUG
+	setDebugName("COpenGLVertexDescriptor");
+#endif
 }
 
 COpenGLVertexDescriptor::~COpenGLVertexDescriptor()
 {
-	for(u32 i = 0; i < Cache.size(); ++i)
-	{
-		Cache[i].clear();
-		Location[i].clear();
-	}
+}
+
+void COpenGLVertexDescriptor::addLocationLayer()
+{
+	LayerCount++;
+
+	for (u32 i = 0; i < Attribute.size(); ++i)
+		((COpenGLVertexAttribute*)Attribute[i])->addLocationLayer();
 }
 
 bool COpenGLVertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID)
 {
-	if(CVertexDescriptor::addAttribute(name, elementCount, semantic, type, bufferID))
-	{
-		for(u32 i = 0; i < Cache.size(); ++i)
-		{
-			Cache[i].push_back(false);
-			Location[i].push_back(-1);
-		}
+	for (u32 i = 0; i < Attribute.size(); ++i)
+		if (name == Attribute[i]->getName() || (semantic != EVAS_CUSTOM && semantic == Attribute[i]->getSemantic()))
+			return false;
 
-		return true;
-	}
+	if (elementCount < 1)
+		elementCount = 1;
 
-	return false;
+	if (elementCount > 4)
+		elementCount = 4;
+
+	for (u32 i = VertexSize.size(); i <= bufferID; ++i)
+		VertexSize.push_back(0);
+
+	COpenGLVertexAttribute* attribute = new COpenGLVertexAttribute(name, elementCount, semantic, type, VertexSize[bufferID], bufferID, LayerCount);
+	Attribute.push_back(attribute);
+
+	AttributePointer[(u32)attribute->getSemantic()] = Attribute.size()-1;
+
+	VertexSize[bufferID] += (attribute->getTypeSize() * attribute->getElementCount());
+
+	AttributeSorted.push_back(attribute);
+	AttributeSorted.sort();
+
+	return true;
+}
+
+COpenGLVertexAttribute* COpenGLVertexDescriptor::getAttributeSorted(u32 id) const
+{
+	if (id < AttributeSorted.size())
+		return AttributeSorted[id];
+
+	return 0;
 }
 
 bool COpenGLVertexDescriptor::removeAttribute(u32 id)
 {
-	if(CVertexDescriptor::removeAttribute(id))
-	{
-		for(u32 i = 0; i < Cache.size(); ++i)
-		{
-			Cache[i].erase(id);
-			Location[i].erase(id);
-		}
+	bool status = false;
 
-		return true;
+	u32 sortedID = 0;
+
+	if (id < Attribute.size())
+	{
+		for (u32 i = 0; i < AttributeSorted.size(); ++i)
+		{
+			if (AttributeSorted[i] == Attribute[id])
+			{
+				sortedID = i;
+
+				break;
+			}
+		}
 	}
 
-	return false;
+	if (CVertexDescriptor::removeAttribute(id))
+	{
+		AttributeSorted.erase(sortedID);
+
+		status = true;
+	}
+
+	return status;
 }
 
 void COpenGLVertexDescriptor::removeAllAttribute()
 {
 	CVertexDescriptor::removeAllAttribute();
 
-	for(u32 i = 0; i < Cache.size(); ++i)
-	{
-		Cache[i].clear();
-		Location[i].clear();
-	}
-}
-
-s32 COpenGLVertexDescriptor::getLocation(u32 materialType, u32 id) const
-{
-	if(materialType < Location.size() && id < Location[materialType].size())
-	{
-		return Location[materialType][id];
-	}
-
-	return -1;
-}
-
-s32 COpenGLVertexDescriptor::getLocationStatus(u32 materialType, u32 id) const
-{
-	if(materialType < Cache.size() && id < Cache[materialType].size())
-	{
-		if(Cache[materialType][id])
-			return 1;
-
-		return 0;
-	}
-
-	return -1;
-}
-
-void COpenGLVertexDescriptor::setLocation(u32 materialType, u32 id, u32 location)
-{
-	if(materialType < Location.size() && id < Location[materialType].size())
-	{
-		Cache[materialType][id] = true;
-		Location[materialType][id] = location;
-	}
-}
-
-void COpenGLVertexDescriptor::addLocationLayer()
-{
-	core::array<bool> cache;
-	core::array<s32> location;
-
-	cache.reallocate(Attribute.size());
-	location.reallocate(Attribute.size());
-
-	for(u32 i = 0; i < Attribute.size(); ++i)
-	{
-		cache.push_back(false);
-		location.push_back(-1);
-	}
-
-	Cache.push_back(cache);
-	Location.push_back(location);
+	AttributeSorted.clear();
 }
 
 
@@ -1550,7 +1591,7 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 
 	CNullDriver::drawMeshBuffer(mb);
 
-	IVertexDescriptor* descriptor = mb->getVertexDescriptor();
+	COpenGLVertexDescriptor* descriptor = (COpenGLVertexDescriptor*)mb->getVertexDescriptor();
 	scene::IVertexBuffer* vertexBuffer = mb->getVertexBuffer(0);
 
 	scene::IIndexBuffer* indexBuffer = mb->getIndexBuffer();
@@ -1631,6 +1672,8 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 		}
 	}*/
 
+	const u32 attributeCount = descriptor->getAttributeCount();
+
 	// Enable client states.
 
 	bool VertexClientState = false;
@@ -1638,11 +1681,11 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 	bool ColorClientState = false;
 	bool TexCoord0ClientState = false;
 
-	for(u32 i = 0; i < descriptor->getAttributeCount() && i < 16; ++i)
+	for(u32 i = 0; i < attributeCount && i < 16; ++i)
 	{
-		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = descriptor->getAttribute(i)->getSemantic();
+		E_VERTEX_ATTRIBUTE_SEMANTIC attribSemantic = descriptor->getAttribute(i)->getSemantic();
 
-		switch(semantic)
+		switch(attribSemantic)
 		{
 		case EVAS_POSITION:
 			VertexClientState = true;
@@ -1669,73 +1712,78 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 	GLuint glslProgram = getActiveGLSLProgram();
 	GLuint arbProgram = getActiveARBProgram();
 
-	for(u32 i = 0; i < descriptor->getAttributeCount() && i < 16; ++i)
-	{
-		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = descriptor->getAttribute(i)->getSemantic();
-		GLenum type = 0;
+	
 
-		switch(descriptor->getAttribute(i)->getType())
+	for (u32 i = 0; i < attributeCount && i < 16; ++i)
+	{
+		COpenGLVertexAttribute* attribute = descriptor->getAttributeSorted(i);
+
+		const u32 attribElementCount = attribute->getElementCount();
+		const E_VERTEX_ATTRIBUTE_SEMANTIC attribSemantic = attribute->getSemantic();
+		const E_VERTEX_ATTRIBUTE_TYPE attribType = attribute->getType();
+		const u32 attribOffset = attribute->getOffset();
+		const u32 attribBufferID = attribute->getBufferID();
+
+		GLenum attribTypeGL = 0;
+
+		switch (attribType)
 		{
 		case EVAT_BYTE:
-			type = GL_BYTE;
+			attribTypeGL = GL_BYTE;
 			break;
 		case EVAT_UBYTE:
-			type = GL_UNSIGNED_BYTE;
+			attribTypeGL = GL_UNSIGNED_BYTE;
 			break;
 		case EVAT_SHORT:
-			type = GL_SHORT;
+			attribTypeGL = GL_SHORT;
 			break;
 		case EVAT_USHORT:
-			type = GL_UNSIGNED_SHORT;
+			attribTypeGL = GL_UNSIGNED_SHORT;
 			break;
 		case EVAT_INT:
-			type = GL_INT;
+			attribTypeGL = GL_INT;
 			break;
 		case EVAT_UINT:
-			type = GL_UNSIGNED_INT;
+			attribTypeGL = GL_UNSIGNED_INT;
 			break;
 		case EVAT_FLOAT:
-			type = GL_FLOAT;
+			attribTypeGL = GL_FLOAT;
 			break;
 		case EVAT_DOUBLE:
-			type = GL_DOUBLE;
+			attribTypeGL = GL_DOUBLE;
 			break;
 		}
 
-		switch(semantic)
+		const u32 vertexSize = vertexBuffer->getVertexSize();
+		u8* vertexData = static_cast<u8*>(vertexBuffer->getVertices());
+
+		u8* attribData = vertexData + attribOffset;
+
+		switch (attribSemantic)
 		{
 		case EVAS_POSITION:
-			if(hardwareVertex)
-				glVertexPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
+			if (hardwareVertex)
+				glVertexPointer(attribElementCount, attribTypeGL, vertexSize, buffer_offset(attribOffset));
 			else
-			{
-				u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-				buffer += descriptor->getAttribute(i)->getOffset();
-				glVertexPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), &(*buffer));
-			}
+				glVertexPointer(attribElementCount, attribTypeGL, vertexSize, attribData);
+
 			break;
 		case EVAS_NORMAL:
-			if((type != scene::EPT_POINTS) && (type != scene::EPT_POINT_SPRITES))
+			if ((primitiveType != scene::EPT_POINTS) && (primitiveType != scene::EPT_POINT_SPRITES))
 			{
-				if(hardwareVertex)
-					glNormalPointer(type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
+				if (hardwareVertex)
+					glNormalPointer(attribTypeGL, vertexSize, buffer_offset(attribOffset));
 				else
-				{
-					u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-					buffer += descriptor->getAttribute(i)->getOffset();
-					glNormalPointer(type, vertexBuffer->getVertexSize(), &(*buffer));
-				}
+					glNormalPointer(attribTypeGL, vertexSize, attribData);
 			}
+
 			break;
 		case EVAS_COLOR:
-			if(hardwareVertex)
-				glColorPointer(colorSize, type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
+			if (hardwareVertex)
+				glColorPointer(colorSize, attribTypeGL, vertexSize, buffer_offset(attribOffset));
 			else
-			{
-				u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-				buffer += descriptor->getAttribute(i)->getOffset();
-				glColorPointer(colorSize, type, vertexBuffer->getVertexSize(), &(*buffer));
-			}
+				glColorPointer(colorSize, attribTypeGL, vertexSize, attribData);
+
 			break;
 		case EVAS_TEXCOORD0:
 		case EVAS_TEXCOORD1:
@@ -1745,44 +1793,36 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 		case EVAS_TEXCOORD5:
 		case EVAS_TEXCOORD6:
 		case EVAS_TEXCOORD7:
-			if((type != scene::EPT_POINTS) && (type != scene::EPT_POINT_SPRITES))
+			if ((primitiveType != scene::EPT_POINTS) && (primitiveType != scene::EPT_POINT_SPRITES))
 			{
-				if(semantic == EVAS_TEXCOORD0)
+				if (attribSemantic == EVAS_TEXCOORD0)
 				{
-					for(u32 j = 0; j < 2; ++j)
+					for (u32 j = 0; j < 2; ++j)
 					{
-						if(j == 0 || (MultiTextureExtension && CurrentTexture[j]))
+						if (j == 0 || (MultiTextureExtension && CurrentTexture[j]))
 						{
-							if(j == 1)
+							if (j == 1)
 							{
 								BridgeCalls->setClientActiveTexture(GL_TEXTURE1_ARB);
 								glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 							}
 
-							if(hardwareVertex)
-								glTexCoordPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
+							if (hardwareVertex)
+								glTexCoordPointer(attribElementCount, attribTypeGL, vertexSize, buffer_offset(attribOffset));
 							else
-							{
-								u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-								buffer += descriptor->getAttribute(i)->getOffset();
-								glTexCoordPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), &(*buffer));
-							}
+								glTexCoordPointer(attribElementCount, attribTypeGL, vertexSize, attribData);
 						}
 					}
 				}
-				else if(MultiTextureExtension)
+				else if (MultiTextureExtension)
 				{
-					BridgeCalls->setClientActiveTexture(GL_TEXTURE0_ARB + (u32)semantic - (u32)EVAS_TEXCOORD0);
+					BridgeCalls->setClientActiveTexture(GL_TEXTURE0_ARB + (u32)attribSemantic - (u32)EVAS_TEXCOORD0);
 					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-					if(hardwareVertex)
-						glTexCoordPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
+					if (hardwareVertex)
+						glTexCoordPointer(attribElementCount, attribTypeGL, vertexSize, buffer_offset(attribOffset));
 					else
-					{
-						u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-						buffer += descriptor->getAttribute(i)->getOffset();
-						glTexCoordPointer(descriptor->getAttribute(i)->getElementCount(), type, vertexBuffer->getVertexSize(), &(*buffer));
-					}
+						glTexCoordPointer(attribElementCount, attribTypeGL, vertexSize, attribData);
 				}
 			}
 			break;
@@ -1792,67 +1832,59 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 		case EVAS_BLEND_INDICES:
 		case EVAS_CUSTOM:
 			{
-				if(glslProgram)
+				if (glslProgram)
 				{
-					s32 status = ((COpenGLVertexDescriptor*)descriptor)->getLocationStatus((u32)Material.MaterialType, i);
+					s32 status = attribute->getLocationStatus((u32)Material.MaterialType);
 					GLint location = -1;
 
-					if(status != -1)
+					if (status != -1)
 					{
-						if(status)
+						if (status)
 						{
-							location = ((COpenGLVertexDescriptor*)descriptor)->getLocation((u32)Material.MaterialType, i);
+							location = attribute->getLocation((u32)Material.MaterialType);
 						}
 						else
 						{
-							location = extGlGetAttribLocation(glslProgram, descriptor->getAttribute(i)->getName().c_str());
-							((COpenGLVertexDescriptor*)descriptor)->setLocation((u32)Material.MaterialType, i, location);
+							location = extGlGetAttribLocation(glslProgram, attribute->getName().c_str());
+							attribute->setLocation(location, (u32)Material.MaterialType);
 						}
 					}
 
-					if(location != -1)
+					if (location != -1)
 					{
 						VertexAttributeStatus[location] = true;
 
 						extGlEnableVertexAttribArray(location);
 
-						if(hardwareVertex)
-							extGlVertexAttribPointer(location, descriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
+						if (hardwareVertex)
+							extGlVertexAttribPointer(location, attribElementCount, attribTypeGL, GL_FALSE, vertexSize, buffer_offset(attribOffset));
 						else
-						{
-							u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-							buffer += descriptor->getAttribute(i)->getOffset();
-							extGlVertexAttribPointer(location, descriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), &(*buffer));
-						}
+							extGlVertexAttribPointer(location, attribElementCount, attribTypeGL, GL_FALSE, vertexSize, attribData);
 					}
 				}
-				else if(arbProgram)
+				else if (arbProgram)
 				{
 					GLint location = -1;
 
-					if(semantic == EVAS_TANGENT)
+					if (attribSemantic == EVAS_TANGENT)
 						location = 4;
-					else if(semantic == EVAS_BINORMAL)
+					else if (attribSemantic == EVAS_BINORMAL)
 						location = 5;
-					else if(semantic == EVAS_BLEND_WEIGHTS)
+					else if (attribSemantic == EVAS_BLEND_WEIGHTS)
 						location = 6;
-					else if(semantic == EVAS_BLEND_INDICES)
+					else if (attribSemantic == EVAS_BLEND_INDICES)
 						location = 7;
 
-					if(location != -1)
+					if (location != -1)
 					{
 						VertexAttributeStatus[location] = true;
 
 						extGlEnableVertexAttribArray(location);
 
-						if(hardwareVertex)
-							extGlVertexAttribPointer(location, descriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), buffer_offset(descriptor->getAttribute(i)->getOffset()));
+						if (hardwareVertex)
+							extGlVertexAttribPointer(location, attribElementCount, attribTypeGL, GL_FALSE, vertexSize, buffer_offset(attribOffset));
 						else
-						{
-							u8* buffer = static_cast<u8*>(vertexBuffer->getVertices());
-							buffer += descriptor->getAttribute(i)->getOffset();
-							extGlVertexAttribPointer(location, descriptor->getAttribute(i)->getElementCount(), type, GL_FALSE, vertexBuffer->getVertexSize(), &(*buffer));
-						}
+							extGlVertexAttribPointer(location, attribElementCount, attribTypeGL, GL_FALSE, vertexSize, attribData);
 					}
 				}
 			}
@@ -1871,11 +1903,11 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 
 	bool UsedMultiTexture = false;
 
-	for(u32 i = 0; i < descriptor->getAttributeCount() && i < 16; ++i)
+	for (u32 i = 0; i < attributeCount && i < 16; ++i)
 	{
-		E_VERTEX_ATTRIBUTE_SEMANTIC semantic = descriptor->getAttribute(i)->getSemantic();
+		E_VERTEX_ATTRIBUTE_SEMANTIC attribSemantic = descriptor->getAttributeSorted(i)->getSemantic();
 
-		switch(semantic)
+		switch (attribSemantic)
 		{
 		case EVAS_TEXCOORD0:
 		case EVAS_TEXCOORD1:
@@ -1887,18 +1919,18 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 		case EVAS_TEXCOORD7:
 			if ((primitiveType != scene::EPT_POINTS) && (primitiveType != scene::EPT_POINT_SPRITES))
 			{
-				if(semantic == EVAS_TEXCOORD0)
+				if (attribSemantic == EVAS_TEXCOORD0)
 				{
-					if(MultiTextureExtension && CurrentTexture[1])
+					if (MultiTextureExtension && CurrentTexture[1])
 					{
 						BridgeCalls->setClientActiveTexture(GL_TEXTURE1_ARB);
 						glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 						UsedMultiTexture = true;
 					}
 				}
-				else if(MultiTextureExtension)
+				else if (MultiTextureExtension)
 				{
-					BridgeCalls->setClientActiveTexture(GL_TEXTURE0_ARB + (u32)semantic - (u32)EVAS_TEXCOORD0);
+					BridgeCalls->setClientActiveTexture(GL_TEXTURE0_ARB + (u32)attribSemantic - (u32)EVAS_TEXCOORD0);
 					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 					UsedMultiTexture = true;
 				}
@@ -1908,7 +1940,7 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 			break;
 		}
 
-		if(VertexAttributeStatus[i])
+		if (VertexAttributeStatus[i])
 		{
 			VertexAttributeStatus[i] = false;
 			extGlDisableVertexAttribArray(i);

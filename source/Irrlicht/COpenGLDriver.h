@@ -36,30 +36,49 @@ namespace video
     class COpenGLCallBridge;
 	class COpenGLTexture;
 
+	class COpenGLVertexAttribute : public CVertexAttribute
+	{
+	public:
+		COpenGLVertexAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 offset, u32 bufferID, u32 layerCount);
+		virtual ~COpenGLVertexAttribute();
+
+		// Add location layer.
+		void addLocationLayer();
+
+		// Get attribute location in a shader program.
+		s32 getLocation(u32 materialType) const;
+
+		// Set attribute location in a shader program.
+		void setLocation(u32 location, u32 materialType);
+
+		// -1 -> location entry doesn't exist, eg. material type or id is wrong; 0 - location isn't cached, so use glGetAttribLocation call; 1 - location is cached.
+		s32 getLocationStatus(u32 materialType) const;
+
+	protected:
+		core::array<bool> Cache;
+		core::array<s32> Location;
+	};
+
 	class COpenGLVertexDescriptor : public CVertexDescriptor
 	{
 	public:
 		COpenGLVertexDescriptor(const core::stringc& name, u32 id, u32 layerCount);
 		virtual ~COpenGLVertexDescriptor();
 
+		void addLocationLayer();
+
 		virtual bool addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID);
+
+		COpenGLVertexAttribute* getAttributeSorted(u32 id) const;
 
 		virtual bool removeAttribute(u32 id);
 
 		virtual void removeAllAttribute();
 
-		virtual s32 getLocation(u32 materialType, u32 id) const;
-
-		// -1 -> location entry doesn't exist, eg. material type or id is wrong; 0 - location isn't cached, so use glGetAttribLocation call; 1 - location is cached
-		virtual s32 getLocationStatus(u32 materialType, u32 id) const;
-
-		virtual void setLocation(u32 materialType, u32 id, u32 location);
-
-		virtual void addLocationLayer();
-
 	protected:
-		core::array< core::array<bool> > Cache;
-		core::array< core::array<s32> > Location;
+		u32 LayerCount;
+
+		core::array<COpenGLVertexAttribute*> AttributeSorted;
 	};
 
 	class COpenGLDriver : public CNullDriver, public IMaterialRendererServices, public COpenGLExtensionHandler
