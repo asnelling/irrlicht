@@ -561,11 +561,9 @@ namespace video
 		0 or another texture first. */
 		virtual void removeAllTextures() =0;
 
-		//! Remove hardware buffer
-		virtual void removeHardwareBuffer(const scene::IMeshBuffer* mb) =0;
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer) = 0;
 
-		//! Remove all hardware buffers
-		virtual void removeAllHardwareBuffers() =0;
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer) = 0;
 
 		//! Create occlusion query.
 		/** Use node for identification and mesh for occlusion test. */

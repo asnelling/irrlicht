@@ -322,8 +322,6 @@ CSceneManager::~CSceneManager()
 	//! force to remove hardwareTextures from the driver
 	//! because Scenes may hold internally data bounded to sceneNodes
 	//! which may be destroyed twice
-	if (Driver)
-		Driver->removeAllHardwareBuffers();
 
 	if (FileSystem)
 		FileSystem->drop();

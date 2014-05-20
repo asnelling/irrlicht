@@ -380,55 +380,10 @@ namespace video
 
 		virtual u32 getVertexDescriptorCount() const;
 
-	protected:
-		struct SHWBufferLink
-		{
-			SHWBufferLink(const scene::IMeshBuffer *_MeshBuffer)
-				:MeshBuffer(_MeshBuffer),
-				ChangedID_Vertex(0),ChangedID_Index(0),LastUsed(0),
-				Mapped_Vertex(scene::EHM_NEVER),Mapped_Index(scene::EHM_NEVER)
-			{
-				if (MeshBuffer)
-					MeshBuffer->grab();
-			}
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer);
 
-			virtual ~SHWBufferLink()
-			{
-				if (MeshBuffer)
-					MeshBuffer->drop();
-			}
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer);
 
-			const scene::IMeshBuffer *MeshBuffer;
-			u32 ChangedID_Vertex;
-			u32 ChangedID_Index;
-			u32 LastUsed;
-			scene::E_HARDWARE_MAPPING Mapped_Vertex;
-			scene::E_HARDWARE_MAPPING Mapped_Index;
-		};
-
-		//! Gets hardware buffer link from a meshbuffer (may create or update buffer)
-		virtual SHWBufferLink *getBufferLink(const scene::IMeshBuffer* mb);
-
-		//! updates hardware buffer if needed  (only some drivers can)
-		virtual bool updateHardwareBuffer(SHWBufferLink *HWBuffer) {return false;}
-
-		//! Delete hardware buffer
-		virtual void deleteHardwareBuffer(SHWBufferLink *HWBuffer);
-
-		//! Create hardware buffer from mesh (only some drivers can)
-		virtual SHWBufferLink *createHardwareBuffer(const scene::IMeshBuffer* mb) {return 0;}
-
-	public:
-		//! Update all hardware buffers, remove unused ones
-		virtual void updateAllHardwareBuffers();
-
-		//! Remove hardware buffer
-		virtual void removeHardwareBuffer(const scene::IMeshBuffer* mb);
-
-		//! Remove all hardware buffers
-		virtual void removeAllHardwareBuffers();
-
-		//! is vbo recommended on this mesh?
 		virtual bool isHardwareBufferRecommend(const scene::IMeshBuffer* mb);
 
 		//! Create occlusion query.
@@ -800,15 +755,13 @@ namespace video
 			u32 Result;
 			u32 Run;
 		};
+
 		core::array<SOccQuery> OcclusionQueries;
 
 		core::array<video::IImageLoader*> SurfaceLoader;
 		core::array<video::IImageWriter*> SurfaceWriter;
 		core::array<SLight> Lights;
 		core::array<SMaterialRenderer> MaterialRenderers;
-
-		//core::array<SHWBufferLink*> HWBufferLinks;
-		core::map< const scene::IMeshBuffer* , SHWBufferLink* > HWBufferMap;
 
 		io::IFileSystem* FileSystem;
 

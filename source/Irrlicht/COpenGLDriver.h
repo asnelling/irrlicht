@@ -33,6 +33,7 @@ namespace irr
 
 namespace video
 {
+	class COpenGLDriver;
     class COpenGLCallBridge;
 	class COpenGLTexture;
 
@@ -81,9 +82,31 @@ namespace video
 		core::array<COpenGLVertexAttribute*> AttributeSorted;
 	};
 
+	class COpenGLHardwareBuffer : public IHardwareBuffer
+	{
+	public:
+		COpenGLHardwareBuffer(scene::IIndexBuffer* indexBuffer, COpenGLDriver* driver);
+		COpenGLHardwareBuffer(scene::IVertexBuffer* vertexBuffer, COpenGLDriver* driver);
+		~COpenGLHardwareBuffer();
+
+		bool update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data);
+
+		inline GLuint getBufferID() const;
+		inline void removeFromArray(bool status);
+	
+	private:
+		COpenGLDriver* Driver;
+
+		GLuint BufferID;
+		bool RemoveFromArray;
+
+		void* LinkedBuffer;
+	};
+
 	class COpenGLDriver : public CNullDriver, public IMaterialRendererServices, public COpenGLExtensionHandler
 	{
         friend class COpenGLCallBridge;
+		friend class COpenGLHardwareBuffer;
 		friend class COpenGLTexture;
 	public:
 
@@ -127,25 +150,11 @@ namespace video
 		//! sets transformation
 		virtual void setTransform(E_TRANSFORMATION_STATE state, const core::matrix4& mat);
 
-		struct SHWBufferLink_opengl : public SHWBufferLink
-		{
-			SHWBufferLink_opengl(const scene::IMeshBuffer *meshBuffer): SHWBufferLink(meshBuffer), vbo_verticesID(0), vbo_indicesID(0), vbo_verticesSize(0), vbo_indicesSize(0){}
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer);
 
-			GLuint vbo_verticesID; //tmp
-			GLuint vbo_indicesID; //tmp
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer);
 
-			GLuint vbo_verticesSize; //tmp
-			GLuint vbo_indicesSize; //tmp
-		};
-
-		//! updates hardware buffer if needed
-		virtual bool updateHardwareBuffer(SHWBufferLink *HWBuffer);
-
-		//! Create hardware buffer from mesh
-		virtual SHWBufferLink *createHardwareBuffer(const scene::IMeshBuffer* mb);
-
-		//! Delete hardware buffer (only some drivers can)
-		virtual void deleteHardwareBuffer(SHWBufferLink *HWBuffer);
+		void removeAllHardwareBuffers();
 
 		//! Create occlusion query.
 		/** Use node for identification and mesh for occlusion test. */
@@ -489,9 +498,6 @@ namespace video
 		//! clears the zbuffer and color buffer
 		void clearBuffers(bool backBuffer, bool zBuffer, bool stencilBuffer, SColor color);
 
-		bool updateVertexHardwareBuffer(SHWBufferLink_opengl *HWBuffer);
-		bool updateIndexHardwareBuffer(SHWBufferLink_opengl *HWBuffer);
-
 		void uploadClipPlane(u32 index);
 
 		//! inits the parts of the open gl driver used on all platforms
@@ -661,7 +667,9 @@ namespace video
 			s32	HardwareLightIndex; // GL_LIGHT0 - GL_LIGHT7
 			bool	DesireToBeOn;
 		};
+
 		core::array<RequestedLight> RequestedLights;
+		core::array<COpenGLHardwareBuffer*> HardwareBuffer;
 
 		//! Built-in 2D quad for 2D rendering.
 		S3DVertex Quad2DVertices[4];
