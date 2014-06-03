@@ -227,6 +227,209 @@ void CD3D9VertexDescriptor::clear()
 	VertexDeclaration = 0;
 }
 
+CD3D9HardwareBuffer::CD3D9HardwareBuffer(scene::IIndexBuffer* indexBuffer, CD3D9Driver* driver) :
+	IHardwareBuffer(scene::EHM_NEVER, 0, 0, EHBT_NONE, EDT_DIRECT3D9), Driver(driver), IndexBuffer(0), VertexBuffer(0),
+	RemoveFromArray(true), LinkedBuffer(0)
+{
+#ifdef _DEBUG
+	setDebugName("CD3D9HardwareBuffer");
+#endif
+
+	Type = EHBT_INDEX;
+
+	if (indexBuffer)
+	{
+		LinkedBuffer = indexBuffer;
+
+		if (update(indexBuffer->getHardwareMappingHint(), indexBuffer->getIndexSize()*indexBuffer->getIndexCount(), indexBuffer->getIndices()))
+			indexBuffer->setHardwareBuffer(this);
+		else
+			LinkedBuffer = 0;
+	}
+}
+
+CD3D9HardwareBuffer::CD3D9HardwareBuffer(scene::IVertexBuffer* vertexBuffer, CD3D9Driver* driver) :
+	IHardwareBuffer(scene::EHM_NEVER, 0, 0, EHBT_NONE, EDT_DIRECT3D9), Driver(driver), IndexBuffer(0), VertexBuffer(0),
+	RemoveFromArray(true), LinkedBuffer(0)
+{
+#ifdef _DEBUG
+	setDebugName("CD3D9HardwareBuffer");
+#endif
+
+	Type = EHBT_VERTEX;
+
+	if (vertexBuffer)
+	{
+		LinkedBuffer = vertexBuffer;
+
+		if (update(vertexBuffer->getHardwareMappingHint(), vertexBuffer->getVertexSize()*vertexBuffer->getVertexCount(), vertexBuffer->getVertices()))
+			vertexBuffer->setHardwareBuffer(this);
+		else
+			LinkedBuffer = 0;
+	}
+}
+
+CD3D9HardwareBuffer::~CD3D9HardwareBuffer()
+{
+	if (RemoveFromArray)
+	{
+		for (u32 i = 0; i < Driver->HardwareBuffer.size(); ++i)
+		{
+			if (Driver->HardwareBuffer[i] == this)
+			{
+				Driver->HardwareBuffer[i] = 0;
+				break;
+			}
+		}
+	}
+
+	if (LinkedBuffer)
+	{
+		switch (Type)
+		{
+		case EHBT_INDEX:
+			((scene::IIndexBuffer*)LinkedBuffer)->setHardwareBuffer(0, true);
+			break;
+		case EHBT_VERTEX:
+			((scene::IVertexBuffer*)LinkedBuffer)->setHardwareBuffer(0, true);
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (IndexBuffer)
+		IndexBuffer->Release();
+
+	if (VertexBuffer)
+		VertexBuffer->Release();
+}
+
+bool CD3D9HardwareBuffer::update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data)
+{
+	switch (Type)
+	{
+	case EHBT_INDEX:
+		return updateIndexBuffer(mapping, size, data);
+	case EHBT_VERTEX:
+		return updateVertexBuffer(mapping, size, data);
+	default:
+		break;
+	}
+
+	return false;
+}
+
+bool CD3D9HardwareBuffer::updateIndexBuffer(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data)
+{
+	u32 oldSize = Size;
+
+	Mapping = mapping;
+	Size = size;
+
+	if (Mapping == scene::EHM_NEVER || Size == 0 || !data || !Driver)
+		return false;
+
+	if (!IndexBuffer || (Size > oldSize))
+	{
+		if (IndexBuffer)
+		{
+			IndexBuffer->Release();
+			IndexBuffer = 0;
+		}
+
+		DWORD flags = D3DUSAGE_WRITEONLY; // SIO2: Default to D3DUSAGE_WRITEONLY
+
+		if (Mapping != scene::EHM_STATIC)
+			flags |= D3DUSAGE_DYNAMIC;
+
+		D3DFORMAT indexType = (((scene::IIndexBuffer*)LinkedBuffer)->getType() == EIT_32BIT) ? D3DFMT_INDEX32 : D3DFMT_INDEX16;
+
+		if (FAILED(Driver->pID3DDevice->CreateIndexBuffer(Size, flags, indexType, D3DPOOL_DEFAULT, &IndexBuffer, NULL)))
+			return false;
+
+		flags = 0; // SIO2: Reset flags before Lock
+
+		if (Mapping != scene::EHM_STATIC)
+			flags = D3DLOCK_DISCARD;
+
+		void* lockedBuffer = 0;
+		IndexBuffer->Lock(0, Size, (void**)&lockedBuffer, flags);
+		memcpy(lockedBuffer, data, Size);
+		IndexBuffer->Unlock();
+	}
+	else
+	{
+		void* lockedBuffer = 0;
+		IndexBuffer->Lock(0, Size, (void**)&lockedBuffer, D3DLOCK_DISCARD);
+		memcpy(lockedBuffer, data, Size);
+		IndexBuffer->Unlock();
+	}
+
+	return true;
+}
+
+bool CD3D9HardwareBuffer::updateVertexBuffer(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data)
+{
+	u32 oldSize = Size;
+
+	Mapping = mapping;
+	Size = size;
+
+	if (Mapping == scene::EHM_NEVER || Size == 0 || !data || !Driver)
+		return false;
+
+	if (!VertexBuffer || (Size > oldSize))
+	{
+		if (VertexBuffer)
+		{
+			VertexBuffer->Release();
+			VertexBuffer = 0;
+		}
+
+		DWORD flags = D3DUSAGE_WRITEONLY; // SIO2: Default to D3DUSAGE_WRITEONLY
+
+		if (Mapping != scene::EHM_STATIC)
+			flags |= D3DUSAGE_DYNAMIC;
+
+		if (FAILED(Driver->pID3DDevice->CreateVertexBuffer(Size, flags, 0, D3DPOOL_DEFAULT, &VertexBuffer, NULL)))
+			return false;
+
+		flags = 0; // SIO2: Reset flags before Lock
+
+		if (Mapping != scene::EHM_STATIC)
+			flags = D3DLOCK_DISCARD;
+
+		void* lockedBuffer = 0;
+		VertexBuffer->Lock(0, Size, (void**)&lockedBuffer, flags);
+		memcpy(lockedBuffer, data, Size);
+		VertexBuffer->Unlock();
+	}
+	else
+	{
+		void* lockedBuffer = 0;
+		VertexBuffer->Lock(0, Size, (void**)&lockedBuffer, D3DLOCK_DISCARD);
+		memcpy(lockedBuffer, data, Size);
+		VertexBuffer->Unlock();
+	}
+
+	return true;
+}
+
+IDirect3DIndexBuffer9* CD3D9HardwareBuffer::getIndexBuffer() const
+{
+	return IndexBuffer;
+}
+
+IDirect3DVertexBuffer9* CD3D9HardwareBuffer::getVertexBuffer() const
+{
+	return VertexBuffer;
+}
+
+void CD3D9HardwareBuffer::removeFromArray(bool status)
+{
+	RemoveFromArray = status;
+}
 
 //! constructor
 CD3D9Driver::CD3D9Driver(const SIrrlichtCreationParameters& params, io::IFileSystem* io)
@@ -1256,249 +1459,64 @@ const core::rect<s32>& CD3D9Driver::getViewPort() const
 }
 
 
-bool CD3D9Driver::updateVertexHardwareBuffer(SHWBufferLink_d3d9* buffer)
+IHardwareBuffer* CD3D9Driver::createHardwareBuffer(scene::IIndexBuffer* indexBuffer)
 {
-	if(!buffer)
-		return false;
+	CD3D9HardwareBuffer* hardwareBuffer = new CD3D9HardwareBuffer(indexBuffer, this);
 
-	const scene::IMeshBuffer* meshBuffer = buffer->MeshBuffer;
+	bool extendArray = true;
 
-	const void* Vertices = meshBuffer->getVertexBuffer()->getVertices();
-	u32 VertexCount = meshBuffer->getVertexBuffer()->getVertexCount();
-	u32 VertexSize = meshBuffer->getVertexBuffer()->getVertexSize();
-	u32 bufferSize = VertexCount * VertexSize;
-	IVertexDescriptor* vertexDescriptor = meshBuffer->getVertexDescriptor();
-
-	if(!vertexDescriptor)
-		return false;
-
-	if(!buffer->vertexBuffer || (bufferSize > buffer->vertexBufferSize))
+	for (u32 i = 0; i < HardwareBuffer.size(); ++i)
 	{
-		if(buffer->vertexBuffer)
+		if (!HardwareBuffer[i])
 		{
-			buffer->vertexBuffer->Release();
-			buffer->vertexBuffer=0;
-		}
-
-		DWORD flags = D3DUSAGE_WRITEONLY; // SIO2: Default to D3DUSAGE_WRITEONLY
-
-		if(buffer->Mapped_Vertex != scene::EHM_STATIC)
-			flags |= D3DUSAGE_DYNAMIC;
-
-		setVertexDescriptor(vertexDescriptor);
-
-		if(FAILED(pID3DDevice->CreateVertexBuffer(bufferSize, flags, 0, D3DPOOL_DEFAULT, &buffer->vertexBuffer, NULL)))
-			return false;
-
-		buffer->vertexBufferSize = bufferSize;
-
-		flags = 0; // SIO2: Reset flags before Lock
-
-		if(buffer->Mapped_Vertex != scene::EHM_STATIC)
-			flags = D3DLOCK_DISCARD;
-
-		void* lockedBuffer = 0;
-		buffer->vertexBuffer->Lock(0, bufferSize, (void**)&lockedBuffer, flags);
-		memcpy(lockedBuffer, Vertices, bufferSize);
-		buffer->vertexBuffer->Unlock();
-	}
-	else
-	{
-		void* lockedBuffer = 0;
-		buffer->vertexBuffer->Lock(0, bufferSize, (void**)&lockedBuffer, D3DLOCK_DISCARD);
-		memcpy(lockedBuffer, Vertices, bufferSize);
-		buffer->vertexBuffer->Unlock();
-	}
-
-	return true;
-}
-
-
-bool CD3D9Driver::updateIndexHardwareBuffer(SHWBufferLink_d3d9* buffer)
-{
-	if(!buffer)
-		return false;
-
-	const scene::IMeshBuffer* meshBuffer = buffer->MeshBuffer;
-
-	void* Indices = meshBuffer->getIndexBuffer()->getIndices();
-	u32 IndexCount = meshBuffer->getIndexBuffer()->getIndexCount();
-	u32 IndexSize = 2;
-	D3DFORMAT IndexType = D3DFMT_INDEX16;
-
-	if(meshBuffer->getIndexBuffer()->getType() == video::EIT_32BIT)
-	{
-		IndexSize = 4;
-		IndexType = D3DFMT_INDEX32;
-	}
-
-	u32 bufferSize = IndexCount * IndexSize;
-
-	if(!buffer->indexBuffer || (bufferSize > buffer->indexBufferSize))
-	{
-		if(buffer->indexBuffer)
-		{
-			buffer->indexBuffer->Release();
-			buffer->indexBuffer=0;
-		}
-
-		DWORD flags = D3DUSAGE_WRITEONLY; // SIO2: Default to D3DUSAGE_WRITEONLY
-
-		if(buffer->Mapped_Index != scene::EHM_STATIC)
-			flags |= D3DUSAGE_DYNAMIC; // SIO2: Add DYNAMIC flag for dynamic buffer data
-
-		if(FAILED(pID3DDevice->CreateIndexBuffer(bufferSize, flags, IndexType, D3DPOOL_DEFAULT, &buffer->indexBuffer, NULL)))
-			return false;
-
-		flags = 0; // SIO2: Reset flags before Lock
-		if(buffer->Mapped_Index != scene::EHM_STATIC)
-			flags = D3DLOCK_DISCARD;
-
-		void* lockedBuffer = 0;
-		if (FAILED(buffer->indexBuffer->Lock( 0, 0, (void**)&lockedBuffer, flags)))
-			return false;
-
-		memcpy(lockedBuffer, Indices, bufferSize);
-		buffer->indexBuffer->Unlock();
-
-		buffer->indexBufferSize = bufferSize;
-	}
-	else
-	{
-		void* lockedBuffer = 0;
-		if(SUCCEEDED(buffer->indexBuffer->Lock( 0, 0, (void**)&lockedBuffer, D3DLOCK_DISCARD)))
-		{
-			memcpy(lockedBuffer, Indices, bufferSize);
-			buffer->indexBuffer->Unlock();
+			HardwareBuffer[i] = hardwareBuffer;
+			extendArray = false;
+			break;
 		}
 	}
 
-	return true;
+	if (extendArray)
+		HardwareBuffer.push_back(hardwareBuffer);
+
+	return hardwareBuffer;
 }
 
 
-//! updates hardware buffer if needed
-bool CD3D9Driver::updateHardwareBuffer(SHWBufferLink *hwBuffer)
+IHardwareBuffer* CD3D9Driver::createHardwareBuffer(scene::IVertexBuffer* vertexBuffer)
 {
-	if (!hwBuffer)
-		return false;
+	CD3D9HardwareBuffer* hardwareBuffer = new CD3D9HardwareBuffer(vertexBuffer, this);
 
-	if (hwBuffer->Mapped_Vertex!=scene::EHM_NEVER)
+	bool extendArray = true;
+
+	for (u32 i = 0; i < HardwareBuffer.size(); ++i)
 	{
-		if (hwBuffer->ChangedID_Vertex != hwBuffer->MeshBuffer->getChangedID_Vertex()
-			|| !((SHWBufferLink_d3d9*)hwBuffer)->vertexBuffer)
+		if (!HardwareBuffer[i])
 		{
-			hwBuffer->ChangedID_Vertex = hwBuffer->MeshBuffer->getChangedID_Vertex();
-
-			if (!updateVertexHardwareBuffer((SHWBufferLink_d3d9*)hwBuffer))
-				return false;
+			HardwareBuffer[i] = hardwareBuffer;
+			extendArray = false;
+			break;
 		}
 	}
 
-	if (hwBuffer->Mapped_Index!=scene::EHM_NEVER)
-	{
-		if (hwBuffer->ChangedID_Index != hwBuffer->MeshBuffer->getChangedID_Index()
-			|| !((SHWBufferLink_d3d9*)hwBuffer)->indexBuffer)
-		{
-			hwBuffer->ChangedID_Index = hwBuffer->MeshBuffer->getChangedID_Index();
+	if (extendArray)
+		HardwareBuffer.push_back(hardwareBuffer);
 
-			if (!updateIndexHardwareBuffer((SHWBufferLink_d3d9*)hwBuffer))
-				return false;
+	return hardwareBuffer;
+}
+
+
+void CD3D9Driver::removeAllHardwareBuffers()
+{
+	for (u32 i = 0; i < HardwareBuffer.size(); ++i)
+	{
+		if (HardwareBuffer[i])
+		{
+			HardwareBuffer[i]->removeFromArray(false);
+			delete HardwareBuffer[i];
 		}
 	}
 
-	return true;
-}
-
-
-//! Create hardware buffer from meshbuffer
-CD3D9Driver::SHWBufferLink *CD3D9Driver::createHardwareBuffer(const scene::IMeshBuffer* mb)
-{
-	// Looks like d3d does not support only partial buffering, so refuse
-	// in any case of NEVER
-	if (!mb || (mb->getHardwareMappingHint_Index()==scene::EHM_NEVER || mb->getHardwareMappingHint_Vertex()==scene::EHM_NEVER))
-		return 0;
-
-	SHWBufferLink_d3d9 *hwBuffer=new SHWBufferLink_d3d9(mb);
-
-	//add to map
-	HWBufferMap.insert(hwBuffer->MeshBuffer, hwBuffer);
-
-	hwBuffer->ChangedID_Vertex=hwBuffer->MeshBuffer->getChangedID_Vertex();
-	hwBuffer->ChangedID_Index=hwBuffer->MeshBuffer->getChangedID_Index();
-	hwBuffer->Mapped_Vertex=mb->getHardwareMappingHint_Vertex();
-	hwBuffer->Mapped_Index=mb->getHardwareMappingHint_Index();
-	hwBuffer->LastUsed=0;
-	hwBuffer->vertexBuffer=0;
-	hwBuffer->indexBuffer=0;
-	hwBuffer->vertexBufferSize=0;
-	hwBuffer->indexBufferSize=0;
-
-	if (!updateHardwareBuffer(hwBuffer))
-	{
-		deleteHardwareBuffer(hwBuffer);
-		return 0;
-	}
-
-	return hwBuffer;
-}
-
-
-void CD3D9Driver::deleteHardwareBuffer(SHWBufferLink *_HWBuffer)
-{
-	if (!_HWBuffer)
-		return;
-
-	SHWBufferLink_d3d9 *HWBuffer=(SHWBufferLink_d3d9*)_HWBuffer;
-	if (HWBuffer->indexBuffer)
-	{
-		HWBuffer->indexBuffer->Release();
-		HWBuffer->indexBuffer = 0;
-	}
-
-	if (HWBuffer->vertexBuffer)
-	{
-		HWBuffer->vertexBuffer->Release();
-		HWBuffer->vertexBuffer = 0;
-	}
-
-	CNullDriver::deleteHardwareBuffer(_HWBuffer);
-}
-
-
-//! Draw hardware buffer
-void CD3D9Driver::drawHardwareBuffer(SHWBufferLink* buffer)
-{
-	if(!buffer)
-		return;
-
-	SHWBufferLink_d3d9* hwBuffer = (SHWBufferLink_d3d9*)buffer;
-
-	updateHardwareBuffer(buffer);
-	buffer->LastUsed=0;	
-
-	const scene::IMeshBuffer* meshBuffer = hwBuffer->MeshBuffer;
-	bool hardwareVertex = false;
-	bool hardwareIndex = false;
-
-	if (hwBuffer->Mapped_Vertex != scene::EHM_NEVER)
-	{
-		pID3DDevice->SetStreamSource(0, hwBuffer->vertexBuffer, 0, meshBuffer->getVertexBuffer()->getVertexSize());
-		hardwareVertex = true;
-	}
-
-	if (hwBuffer->Mapped_Index != scene::EHM_NEVER)
-	{
-		pID3DDevice->SetIndices(hwBuffer->indexBuffer);
-		hardwareIndex = true;
-	}
-
-	drawVertexPrimitiveList(meshBuffer->getVertexBuffer(), meshBuffer->getIndexBuffer(), meshBuffer->getVertexDescriptor(), meshBuffer->getIndexBuffer()->getIndexCount() / 3, scene::EPT_TRIANGLES);
-
-	if (hwBuffer->vertexBuffer)
-		pID3DDevice->SetStreamSource(0, 0, 0, 0);
-	if (hwBuffer->indexBuffer)
-		pID3DDevice->SetIndices(0);
+	HardwareBuffer.clear();
 }
 
 
@@ -1594,31 +1612,215 @@ u32 CD3D9Driver::getOcclusionQueryResult(scene::ISceneNode* node) const
 }
 
 
-//! draws a vertex primitive list
-void CD3D9Driver::drawVertexPrimitiveList(scene::IVertexBuffer* vertexBuffer, scene::IIndexBuffer* indexBuffer, IVertexDescriptor* descriptor, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void CD3D9Driver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 {
-	if (!primitiveCount || !vertexBuffer || vertexBuffer->getVertexCount() == 0 || !descriptor)
+	if (!mb || !mb->isVertexBufferCompatible())
 		return;
 
-	if (!checkPrimitiveCount(primitiveCount))
+	if (!checkPrimitiveCount(mb->getPrimitiveCount()))
 		return;
 
-	CNullDriver::drawVertexPrimitiveList(vertexBuffer, indexBuffer, descriptor, primitiveCount, pType);
+	CNullDriver::drawMeshBuffer(mb);
 
+	// draw everything
+	setRenderStates3DMode();
+
+	CD3D9VertexDescriptor* descriptor = (CD3D9VertexDescriptor*)mb->getVertexDescriptor();
 	setVertexDescriptor(descriptor);
 
-	D3DFORMAT IndexType = D3DFMT_INDEX16;
-	
-	if(indexBuffer->getType() == EIT_32BIT)
-		IndexType = D3DFMT_INDEX32;
+	scene::IIndexBuffer* indexBuffer = mb->getIndexBuffer();
 
-	bool hardwareVertex = (vertexBuffer->getHardwareMappingHint() != scene::EHM_NEVER) ? true : false;
-	bool hardwareIndex = (indexBuffer && indexBuffer->getHardwareMappingHint() != scene::EHM_NEVER) ? true : false;
+	const u32 indexSize = indexBuffer->getIndexSize();
+	const u32 indexCount = indexBuffer->getIndexCount();
+	const D3DFORMAT indexType = (indexBuffer->getType() == EIT_32BIT) ? D3DFMT_INDEX32 : D3DFMT_INDEX16;
+	const scene::E_HARDWARE_MAPPING indexMapping = indexBuffer->getHardwareMappingHint();
+	const void* indexData = indexBuffer->getIndices();
 
-	void* Vertices = hardwareVertex ? 0 : vertexBuffer->getVertices();
-	void* Indices = hardwareIndex ? 0 : indexBuffer->getIndices();
+	scene::IVertexBuffer* vertexBuffer = 0;
 
-	draw2D3DVertexPrimitiveList(Vertices, vertexBuffer->getVertexCount(), vertexBuffer->getVertexSize(), Indices, IndexType, primitiveCount, pType, true);
+	u32 vertexCount = 0;
+	u32 vertexSize = 0;
+	scene::E_HARDWARE_MAPPING vertexMapping = scene::EHM_NEVER;
+	u8* vertexData = 0;
+	const u32 vertexBufferCount = mb->getVertexBufferCount();
+
+	const u32 primitiveCount = mb->getPrimitiveCount();
+	const scene::E_PRIMITIVE_TYPE primitiveType = mb->getPrimitiveType();
+
+	const bool hwRecommended = (isHardwareBufferRecommend(mb) || vertexBufferCount > 1);
+
+	IDirect3DIndexBuffer9* hwIndexBuffer = 0;
+	IDirect3DVertexBuffer9* hwVertexBuffer = 0;
+
+	u32 streamCount = 0;
+
+	for (u32 i = 0; i < vertexBufferCount; ++i)
+	{
+		vertexBuffer = mb->getVertexBuffer(i);
+
+		vertexCount = vertexBuffer->getVertexCount();
+		vertexSize = vertexBuffer->getVertexSize();
+		vertexMapping = vertexBuffer->getHardwareMappingHint();
+		vertexData = static_cast<u8*>(vertexBuffer->getVertices());
+
+		// Update Vertex Buffer.
+
+		CD3D9HardwareBuffer* vertexBufferObject = (CD3D9HardwareBuffer*)vertexBuffer->getHardwareBuffer();
+
+		if (vertexBufferObject)
+		{
+			if (vertexMapping != scene::EHM_NEVER)
+			{
+				if (vertexBufferObject->isRequiredUpdate())
+					vertexBufferObject->update(vertexMapping, vertexSize*vertexCount, vertexData);
+
+				hwVertexBuffer = vertexBufferObject->getVertexBuffer();
+			}
+			else
+			{
+				vertexBuffer->setHardwareBuffer(0);
+				hwVertexBuffer = 0;
+			}
+		}
+		else if (vertexMapping != scene::EHM_NEVER && hwRecommended)
+		{
+			vertexBufferObject = (CD3D9HardwareBuffer*)createHardwareBuffer(vertexBuffer);
+			vertexBuffer->setHardwareBuffer(vertexBufferObject);
+			vertexBufferObject->drop();
+
+			hwVertexBuffer = vertexBufferObject->getVertexBuffer();
+		}
+		else
+		{
+			hwVertexBuffer = 0;
+		}
+
+		if (hwVertexBuffer)
+		{
+			pID3DDevice->SetStreamSource(i, hwVertexBuffer, 0, vertexSize);
+			streamCount = vertexBufferCount;
+		}
+	}
+
+	// Update Index Buffer.
+
+	CD3D9HardwareBuffer* indexBufferObject = (CD3D9HardwareBuffer*)indexBuffer->getHardwareBuffer();
+
+	if (indexBufferObject)
+	{
+		if (indexMapping != scene::EHM_NEVER)
+		{
+			if (indexBufferObject->isRequiredUpdate())
+				indexBufferObject->update(indexMapping, indexSize*indexCount, indexData);
+
+			hwIndexBuffer = indexBufferObject->getIndexBuffer();
+		}
+		else
+		{
+			indexBuffer->setHardwareBuffer(0);
+			hwIndexBuffer = 0;
+		}
+	}
+	else if (indexMapping != scene::EHM_NEVER && hwRecommended)
+	{
+		indexBufferObject = (CD3D9HardwareBuffer*)createHardwareBuffer(indexBuffer);
+		indexBuffer->setHardwareBuffer(indexBufferObject);
+		indexBufferObject->drop();
+
+		hwIndexBuffer = indexBufferObject->getIndexBuffer();
+	}
+	else
+	{
+		hwIndexBuffer = 0;
+	}
+
+	if (hwIndexBuffer)
+		pID3DDevice->SetIndices(hwIndexBuffer);
+
+	renderArray(streamCount > 0 ? 0 : vertexData, vertexSize, vertexCount, hwIndexBuffer ? 0 : indexData, indexType, primitiveCount, primitiveType);
+
+	if (hwIndexBuffer)
+		pID3DDevice->SetIndices(0);
+
+	for (u32 i = 0; i <= streamCount; ++i)
+		pID3DDevice->SetStreamSource(i, 0, 0, 0);
+}
+
+
+void CD3D9Driver::renderArray(const void* vertices, u32 vertexSize, u32 vertexCount, const void* indices, D3DFORMAT indexType, u32 primitiveCount, scene::E_PRIMITIVE_TYPE primitiveType)
+{
+	switch (primitiveType)
+	{
+	case scene::EPT_POINT_SPRITES:
+	case scene::EPT_POINTS:
+		{
+			if (primitiveType == scene::EPT_POINT_SPRITES)
+				pID3DDevice->SetRenderState(D3DRS_POINTSPRITEENABLE, TRUE);
+
+			pID3DDevice->SetRenderState(D3DRS_POINTSCALEENABLE, TRUE);
+			f32 tmp = Material.Thickness / getScreenSize().Height;
+			pID3DDevice->SetRenderState(D3DRS_POINTSIZE, F2DW(tmp));
+			tmp = 1.0f;
+			pID3DDevice->SetRenderState(D3DRS_POINTSCALE_A, F2DW(tmp));
+			pID3DDevice->SetRenderState(D3DRS_POINTSCALE_B, F2DW(tmp));
+			pID3DDevice->SetRenderState(D3DRS_POINTSIZE_MIN, F2DW(tmp));
+			tmp = 0.0f;
+			pID3DDevice->SetRenderState(D3DRS_POINTSCALE_C, F2DW(tmp));
+
+			if (!vertices)
+				pID3DDevice->DrawIndexedPrimitive(D3DPT_POINTLIST, 0, 0, vertexCount, 0, primitiveCount);
+			else
+				pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_POINTLIST, 0, vertexCount, primitiveCount, indices, indexType, vertices, vertexSize);
+
+			pID3DDevice->SetRenderState(D3DRS_POINTSCALEENABLE, FALSE);
+
+			if (primitiveType == scene::EPT_POINT_SPRITES)
+				pID3DDevice->SetRenderState(D3DRS_POINTSPRITEENABLE, FALSE);
+		}
+		break;
+	case scene::EPT_LINE_STRIP:
+		if (!vertices)
+			pID3DDevice->DrawIndexedPrimitive(D3DPT_LINESTRIP, 0, 0, vertexCount, 0, primitiveCount);
+		else
+			pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_LINESTRIP, 0, vertexCount, primitiveCount, indices, indexType, vertices, vertexSize);
+		break;
+	case scene::EPT_LINE_LOOP:
+		if (!vertices)
+			pID3DDevice->DrawIndexedPrimitive(D3DPT_LINELIST, 0, 0, vertexCount, 0, primitiveCount);
+		else
+		{
+			pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_LINESTRIP, 0, vertexCount, primitiveCount - 1, indices, indexType, vertices, vertexSize);
+
+			u16 tmpIndices[] = { primitiveCount - 1, 0 };
+
+			pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_LINELIST, 0, vertexCount, 1, tmpIndices, indexType, vertices, vertexSize);
+		}
+		break;
+	case scene::EPT_LINES:
+		if (!vertices)
+			pID3DDevice->DrawIndexedPrimitive(D3DPT_LINELIST, 0, 0, vertexCount, 0, primitiveCount);
+		else
+			pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_LINELIST, 0, vertexCount, primitiveCount, indices, indexType, vertices, vertexSize);
+		break;
+	case scene::EPT_TRIANGLE_STRIP:
+		if (!vertices)
+			pID3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, 0, 0, vertexCount, 0, primitiveCount);
+		else
+			pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLESTRIP, 0, vertexCount, primitiveCount, indices, indexType, vertices, vertexSize);
+		break;
+	case scene::EPT_TRIANGLE_FAN:
+		if (!vertices)
+			pID3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLEFAN, 0, 0, vertexCount, 0, primitiveCount);
+		else
+			pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLEFAN, 0, vertexCount, primitiveCount, indices, indexType, vertices, vertexSize);
+		break;
+	case scene::EPT_TRIANGLES:
+		if (!vertices)
+			pID3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, vertexCount, 0, primitiveCount);
+		else
+			pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, vertexCount, primitiveCount, indices, indexType, vertices, vertexSize);
+		break;
+	}
 }
 
 
@@ -1688,99 +1890,7 @@ void CD3D9Driver::draw2D3DVertexPrimitiveList(const void* pVertices, u32 pVertex
 			setRenderStates2DMode(Material.MaterialType==EMT_TRANSPARENT_VERTEX_ALPHA, (Material.getTexture(0) != 0), Material.MaterialType==EMT_TRANSPARENT_ALPHA_CHANNEL);
 	}
 
-	switch (pType)
-	{
-		case scene::EPT_POINT_SPRITES:
-		case scene::EPT_POINTS:
-		{
-			f32 tmp=Material.Thickness/getScreenSize().Height;
-			if (pType==scene::EPT_POINT_SPRITES)
-				pID3DDevice->SetRenderState(D3DRS_POINTSPRITEENABLE, TRUE);
-			pID3DDevice->SetRenderState(D3DRS_POINTSCALEENABLE, TRUE);
-			pID3DDevice->SetRenderState(D3DRS_POINTSIZE, F2DW(tmp));
-			tmp=1.0f;
-			pID3DDevice->SetRenderState(D3DRS_POINTSCALE_A, F2DW(tmp));
-			pID3DDevice->SetRenderState(D3DRS_POINTSCALE_B, F2DW(tmp));
-			pID3DDevice->SetRenderState(D3DRS_POINTSIZE_MIN, F2DW(tmp));
-			tmp=0.0f;
-			pID3DDevice->SetRenderState(D3DRS_POINTSCALE_C, F2DW(tmp));
-
-			if (!pVertices)
-			{
-				pID3DDevice->DrawIndexedPrimitive(D3DPT_POINTLIST, 0, 0, pVertexCount, 0, primitiveCount);
-			}
-			else
-			{
-				pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_POINTLIST, 0, pVertexCount,
-				primitiveCount, pIndices, pIndexType, pVertices, pVertexSize);
-			}
-
-			pID3DDevice->SetRenderState(D3DRS_POINTSCALEENABLE, FALSE);
-			if (pType==scene::EPT_POINT_SPRITES)
-				pID3DDevice->SetRenderState(D3DRS_POINTSPRITEENABLE, FALSE);
-		}
-			break;
-		case scene::EPT_LINE_STRIP:
-			if(!pVertices)
-				pID3DDevice->DrawIndexedPrimitive(D3DPT_LINESTRIP, 0, 0, pVertexCount, 0, primitiveCount);
-			else
-				pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_LINESTRIP, 0, pVertexCount,
-					primitiveCount, pIndices, pIndexType, pVertices, pVertexSize);
-			break;
-		case scene::EPT_LINE_LOOP:
-			if(!pVertices)
-			{
-				// TODO: Implement proper hardware support for this primitive type.
-				// (No looping occurs currently because this would require a way to
-				// draw the hardware buffer with a custom set of indices. We may even
-				// need to create a new mini index buffer specifically for this
-				// primitive type.)
-				pID3DDevice->DrawIndexedPrimitive(D3DPT_LINELIST, 0, 0, pVertexCount, 0, primitiveCount);
-			}
-			else
-			{
-				pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_LINESTRIP, 0, pVertexCount,
-				primitiveCount - 1, pIndices, pIndexType, pVertices, pVertexSize);
-
-				u16 tmpIndices[] = {primitiveCount - 1, 0};
-
-				pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_LINELIST, 0, pVertexCount,
-					1, tmpIndices, pIndexType, pVertices, pVertexSize);
-			}
-			break;
-		case scene::EPT_LINES:
-			if(!pVertices)
-				pID3DDevice->DrawIndexedPrimitive(D3DPT_LINELIST, 0, 0, pVertexCount, 0, primitiveCount);
-			else
-				pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_LINELIST, 0, pVertexCount,
-					primitiveCount, pIndices, pIndexType, pVertices, pVertexSize);
-			break;
-		case scene::EPT_TRIANGLE_STRIP:
-			if(!pVertices)
-				pID3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, 0, 0, pVertexCount, 0, primitiveCount);
-			else
-				pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLESTRIP, 0, pVertexCount, primitiveCount,
-						pIndices, pIndexType, pVertices, pVertexSize);
-			break;
-		case scene::EPT_TRIANGLE_FAN:
-			if(!pVertices)
-				pID3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLEFAN, 0, 0, pVertexCount, 0, primitiveCount);
-			else
-				pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLEFAN, 0, pVertexCount, primitiveCount,
-						pIndices, pIndexType, pVertices, pVertexSize);
-				break;
-		case scene::EPT_TRIANGLES:
-			if(!pVertices)
-			{
-				pID3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, pVertexCount, 0, primitiveCount);
-			}
-			else
-			{
-				pID3DDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, pVertexCount,
-					primitiveCount, pIndices, pIndexType, pVertices, pVertexSize);
-			}
-			break;
-	}
+	renderArray(pVertices, pVertexSize, pVertexCount, pIndices, pIndexType, primitiveCount, pType);
 }
 
 

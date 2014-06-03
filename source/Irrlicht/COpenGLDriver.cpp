@@ -266,8 +266,6 @@ bool COpenGLHardwareBuffer::update(const scene::E_HARDWARE_MAPPING mapping, cons
 	if (Mapping == scene::EHM_NEVER || Size == 0 || !data || !Driver || !Driver->FeatureAvailable[COpenGLDriver::IRR_ARB_vertex_buffer_object])
 		return false;
 
-	RequiredUpdate = false;
-
 #if defined(GL_ARB_vertex_buffer_object)
 	GLenum target = 0;
 
@@ -1534,20 +1532,20 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 
 	CNullDriver::drawMeshBuffer(mb);
 
-	const bool hwRecommended = isHardwareBufferRecommend(mb);
-
 	COpenGLVertexDescriptor* descriptor = (COpenGLVertexDescriptor*)mb->getVertexDescriptor();
 
 	scene::IIndexBuffer* indexBuffer = mb->getIndexBuffer();
 
 	const u32 indexSize = indexBuffer->getIndexSize();
 	const u32 indexCount = indexBuffer->getIndexCount();
-	const E_INDEX_TYPE indexType = indexBuffer->getType();
+	const GLenum indexType = (indexBuffer->getType() == EIT_32BIT) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 	const scene::E_HARDWARE_MAPPING indexMapping = indexBuffer->getHardwareMappingHint();
 	const void* indexData = indexBuffer->getIndices();
 
 	const u32 primitiveCount = mb->getPrimitiveCount();
 	const scene::E_PRIMITIVE_TYPE primitiveType = mb->getPrimitiveType();
+
+	const bool hwRecommended = isHardwareBufferRecommend(mb);
 
 	/*if (vertices && !FeatureAvailable[IRR_ARB_vertex_array_bgra] && !FeatureAvailable[IRR_EXT_vertex_array_bgra])
 		getColorBuffer(vertices, vertexCount, vType);*/
@@ -1897,7 +1895,7 @@ void COpenGLDriver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 
 	// Draw.
 
-	renderArray(hwIndexBuffer ? 0 : indexData, (indexType == EIT_32BIT) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT, primitiveCount, primitiveType);
+	renderArray(hwIndexBuffer ? 0 : indexData, indexType, primitiveCount, primitiveType);
 
 	// Disable semantics and attributes.
 
@@ -2006,15 +2004,15 @@ void COpenGLDriver::getColorBuffer(const void* vertices, u32 vertexCount, E_VERT
 }
 
 
-void COpenGLDriver::renderArray(const void* pIndices, GLenum pIndexSize, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType)
+void COpenGLDriver::renderArray(const void* indices, GLenum indexType, u32 primitiveCount, scene::E_PRIMITIVE_TYPE primitiveType)
 {
-	switch (pType)
+	switch (primitiveType)
 	{
 		case scene::EPT_POINTS:
 		case scene::EPT_POINT_SPRITES:
 		{
 #ifdef GL_ARB_point_sprite
-			if (pType==scene::EPT_POINT_SPRITES && FeatureAvailable[IRR_ARB_point_sprite])
+			if (primitiveType == scene::EPT_POINT_SPRITES && FeatureAvailable[IRR_ARB_point_sprite])
 				glEnable(GL_POINT_SPRITE_ARB);
 #endif
 
@@ -2051,12 +2049,12 @@ void COpenGLDriver::renderArray(const void* pIndices, GLenum pIndexSize, u32 pri
 			glPointSize(particleSize);
 
 #ifdef GL_ARB_point_sprite
-			if (pType==scene::EPT_POINT_SPRITES && FeatureAvailable[IRR_ARB_point_sprite])
+			if (primitiveType == scene::EPT_POINT_SPRITES && FeatureAvailable[IRR_ARB_point_sprite])
 				glTexEnvf(GL_POINT_SPRITE_ARB,GL_COORD_REPLACE, GL_TRUE);
 #endif
 			glDrawArrays(GL_POINTS, 0, primitiveCount);
 #ifdef GL_ARB_point_sprite
-			if (pType==scene::EPT_POINT_SPRITES && FeatureAvailable[IRR_ARB_point_sprite])
+			if (primitiveType == scene::EPT_POINT_SPRITES && FeatureAvailable[IRR_ARB_point_sprite])
 			{
 				glDisable(GL_POINT_SPRITE_ARB);
 				glTexEnvf(GL_POINT_SPRITE_ARB,GL_COORD_REPLACE, GL_FALSE);
@@ -2065,22 +2063,22 @@ void COpenGLDriver::renderArray(const void* pIndices, GLenum pIndexSize, u32 pri
 		}
 			break;
 		case scene::EPT_LINE_STRIP:
-			glDrawElements(GL_LINE_STRIP, primitiveCount+1, pIndexSize, pIndices);
+			glDrawElements(GL_LINE_STRIP, primitiveCount + 1, indexType, indices);
 			break;
 		case scene::EPT_LINE_LOOP:
-			glDrawElements(GL_LINE_LOOP, primitiveCount, pIndexSize, pIndices);
+			glDrawElements(GL_LINE_LOOP, primitiveCount, indexType, indices);
 			break;
 		case scene::EPT_LINES:
-			glDrawElements(GL_LINES, primitiveCount*2, pIndexSize, pIndices);
+			glDrawElements(GL_LINES, primitiveCount * 2, indexType, indices);
 			break;
 		case scene::EPT_TRIANGLE_STRIP:
-			glDrawElements(GL_TRIANGLE_STRIP, primitiveCount+2, pIndexSize, pIndices);
+			glDrawElements(GL_TRIANGLE_STRIP, primitiveCount + 2, indexType, indices);
 			break;
 		case scene::EPT_TRIANGLE_FAN:
-			glDrawElements(GL_TRIANGLE_FAN, primitiveCount+2, pIndexSize, pIndices);
+			glDrawElements(GL_TRIANGLE_FAN, primitiveCount + 2, indexType, indices);
 			break;
 		case scene::EPT_TRIANGLES:
-			glDrawElements(GL_TRIANGLES, primitiveCount*3, pIndexSize, pIndices);
+			glDrawElements(GL_TRIANGLES, primitiveCount * 3, indexType, indices);
 			break;
 	}
 }

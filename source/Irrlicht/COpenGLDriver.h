@@ -531,8 +531,7 @@ namespace video
 		//! helper function for render setup.
 		void getColorBuffer(const void* vertices, u32 vertexCount, E_VERTEX_TYPE vType);
 
-		//! helper function doing the actual rendering.
-		void renderArray(const void* pIndices, GLenum pIndexSize, u32 primitiveCount, scene::E_PRIMITIVE_TYPE pType);
+		void renderArray(const void* indices, GLenum indexType, u32 primitiveCount, scene::E_PRIMITIVE_TYPE primitiveType);
 
 		core::stringw Name;
 		core::matrix4 Matrices[ETS_COUNT];
