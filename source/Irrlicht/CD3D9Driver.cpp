@@ -1641,6 +1641,7 @@ void CD3D9Driver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 	u32 vertexCount = 0;
 	u32 vertexSize = 0;
 	scene::E_HARDWARE_MAPPING vertexMapping = scene::EHM_NEVER;
+	scene::E_VERTEX_BUFFER_DATA_RATE dataRate = scene::EVBDR_PER_VERTEX;
 	u8* vertexData = 0;
 	const u32 vertexBufferCount = mb->getVertexBufferCount();
 
@@ -1653,6 +1654,18 @@ void CD3D9Driver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 	IDirect3DVertexBuffer9* hwVertexBuffer = 0;
 
 	u32 streamCount = 0;
+	bool PerInstanceBufferPresent = false;
+	u32 drawVertexCount = 0;
+
+	for (u32 i = 0; i < vertexBufferCount; ++i)
+	{
+		vertexBuffer = mb->getVertexBuffer(i);
+
+		if (vertexBuffer->getDataRate() == scene::EVBDR_PER_INSTANCE)
+			PerInstanceBufferPresent = true;
+		else if (vertexBuffer->getDataRate() == scene::EVBDR_PER_VERTEX)
+			drawVertexCount = vertexBuffer->getVertexCount();
+	}
 
 	for (u32 i = 0; i < vertexBufferCount; ++i)
 	{
@@ -1661,6 +1674,7 @@ void CD3D9Driver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 		vertexCount = vertexBuffer->getVertexCount();
 		vertexSize = vertexBuffer->getVertexSize();
 		vertexMapping = vertexBuffer->getHardwareMappingHint();
+		dataRate = vertexBuffer->getDataRate();
 		vertexData = static_cast<u8*>(vertexBuffer->getVertices());
 
 		// Update Vertex Buffer.
@@ -1699,6 +1713,11 @@ void CD3D9Driver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 		{
 			pID3DDevice->SetStreamSource(i, hwVertexBuffer, 0, vertexSize);
 			streamCount = vertexBufferCount;
+
+			if (PerInstanceBufferPresent && dataRate == scene::EVBDR_PER_VERTEX)
+				pID3DDevice->SetStreamSourceFreq(i, D3DSTREAMSOURCE_INDEXEDDATA | vertexCount);
+			else if (PerInstanceBufferPresent && dataRate == scene::EVBDR_PER_INSTANCE)
+				pID3DDevice->SetStreamSourceFreq(i, D3DSTREAMSOURCE_INSTANCEDATA | 1ul);
 		}
 	}
 
@@ -1737,13 +1756,18 @@ void CD3D9Driver::drawMeshBuffer(const scene::IMeshBuffer* mb)
 	if (hwIndexBuffer)
 		pID3DDevice->SetIndices(hwIndexBuffer);
 
-	renderArray(streamCount > 0 ? 0 : vertexData, vertexSize, vertexCount, hwIndexBuffer ? 0 : indexData, indexType, primitiveCount, primitiveType);
+	renderArray(streamCount > 0 ? 0 : vertexData, vertexSize, drawVertexCount, hwIndexBuffer ? 0 : indexData, indexType, primitiveCount, primitiveType);
 
 	if (hwIndexBuffer)
 		pID3DDevice->SetIndices(0);
 
 	for (u32 i = 0; i <= streamCount; ++i)
+	{
 		pID3DDevice->SetStreamSource(i, 0, 0, 0);
+
+		if (PerInstanceBufferPresent)
+			pID3DDevice->SetStreamSourceFreq(i, 1);
+	}
 }
 
 

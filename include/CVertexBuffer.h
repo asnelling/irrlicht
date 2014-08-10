@@ -16,7 +16,8 @@ namespace scene
 	class CVertexBuffer : public IVertexBuffer
 	{
 	public:
-		CVertexBuffer() : HardwareMappingHint(EHM_NEVER), ChangedID(1)
+		CVertexBuffer(E_VERTEX_BUFFER_DATA_RATE dataRate = EVBDR_PER_VERTEX) : IVertexBuffer(dataRate),
+			HardwareMappingHint(EHM_NEVER), ChangedID(1)
 		{
 #ifdef _DEBUG
 			setDebugName("CVertexBuffer");
@@ -25,6 +26,7 @@ namespace scene
 
 		CVertexBuffer(const CVertexBuffer& vertexBuffer) : HardwareMappingHint(EHM_NEVER), ChangedID(1)
 		{
+			DataStepRate = vertexBuffer.DataStepRate;
 			HardwareMappingHint = vertexBuffer.HardwareMappingHint;
 
 			const u32 vbCount = vertexBuffer.Vertices.size();
