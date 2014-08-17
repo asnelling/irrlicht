@@ -13,16 +13,10 @@ namespace irr
 {
 namespace scene
 {
-	enum E_VERTEX_BUFFER_DATA_RATE
-	{
-		EVBDR_PER_VERTEX,
-		EVBDR_PER_INSTANCE
-	};
-
 	class IVertexBuffer : public virtual IReferenceCounted
 	{
 	public:
-		IVertexBuffer(E_VERTEX_BUFFER_DATA_RATE dataRate = EVBDR_PER_VERTEX) : DataRate(dataRate), HardwareBuffer(0)
+		IVertexBuffer() : HardwareBuffer(0)
 		{
 		}
 
@@ -47,16 +41,6 @@ namespace scene
 		virtual E_HARDWARE_MAPPING getHardwareMappingHint() const = 0;
 
 		virtual void setHardwareMappingHint(E_HARDWARE_MAPPING hardwareMappingHint) = 0;
-		
-		E_VERTEX_BUFFER_DATA_RATE getDataRate() const
-		{
-			return DataRate;
-		}
-
-		void setDataRate(E_VERTEX_BUFFER_DATA_RATE dataRate)
-		{
-			DataRate = dataRate;
-		}
 
 		virtual void addVertex(const void* vertex) = 0;
 
@@ -92,7 +76,6 @@ namespace scene
 		}
 
 	protected:
-		E_VERTEX_BUFFER_DATA_RATE DataRate;
 		video::IHardwareBuffer* HardwareBuffer;
 	};
 }

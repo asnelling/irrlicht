@@ -124,6 +124,9 @@ bool COpenGLVertexDescriptor::addAttribute(const core::stringc& name, u32 elemen
 	for (u32 i = VertexSize.size(); i <= bufferID; ++i)
 		VertexSize.push_back(0);
 
+	for (u32 i = InstanceDataStepRate.size(); i <= bufferID; ++i)
+		InstanceDataStepRate.push_back(EIDSR_PER_VERTEX);
+
 	COpenGLVertexAttribute* attribute = new COpenGLVertexAttribute(name, elementCount, semantic, type, VertexSize[bufferID], bufferID, LayerCount);
 	Attribute.push_back(attribute);
 

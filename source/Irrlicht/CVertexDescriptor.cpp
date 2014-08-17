@@ -125,6 +125,22 @@ namespace video
 		return size;
 	}
 
+	E_INSTANCE_DATA_STEP_RATE CVertexDescriptor::getInstanceDataStepRate(u32 bufferID) const
+	{
+		E_INSTANCE_DATA_STEP_RATE Rate = EIDSR_PER_VERTEX;
+
+		if (bufferID < InstanceDataStepRate.size())
+			Rate = InstanceDataStepRate[bufferID];
+
+		return Rate;
+	}
+
+	void CVertexDescriptor::setInstanceDataStepRate(E_INSTANCE_DATA_STEP_RATE rate, u32 bufferID)
+	{
+		if (bufferID < InstanceDataStepRate.size())
+			InstanceDataStepRate[bufferID] = rate;
+	}
+
 	bool CVertexDescriptor::addAttribute(const core::stringc& name, u32 elementCount, E_VERTEX_ATTRIBUTE_SEMANTIC semantic, E_VERTEX_ATTRIBUTE_TYPE type, u32 bufferID)
 	{
 		for (u32 i = 0; i < Attribute.size(); ++i)
@@ -139,6 +155,9 @@ namespace video
 
 		for (u32 i = VertexSize.size(); i <= bufferID; ++i)
 			VertexSize.push_back(0);
+
+		for (u32 i = InstanceDataStepRate.size(); i <= bufferID; ++i)
+			InstanceDataStepRate.push_back(EIDSR_PER_VERTEX);
 
 		CVertexAttribute* attribute = new CVertexAttribute(name, elementCount, semantic, type, VertexSize[bufferID], bufferID);
 		Attribute.push_back(attribute);
