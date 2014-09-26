@@ -1085,9 +1085,9 @@ bool COpenGLDriver::genericDriverInit()
     Line2DIndices[1] = 1;
 
     Quad2DVertices[0] = S3DVertex(core::vector3df(-1.0f, 1.0f, 0.0f), core::vector3df(0.0f, 0.0f, 0.0f), SColor(255,255,255,255), core::vector2df(0.0f, 1.0f));
-	Quad2DVertices[0] = S3DVertex(core::vector3df(1.0f, 1.0f, 0.0f), core::vector3df(0.0f, 0.0f, 0.0f), SColor(255,255,255,255), core::vector2df(1.0f, 1.0f));
-	Quad2DVertices[0] = S3DVertex(core::vector3df(1.0f, -1.0f, 0.0f), core::vector3df(0.0f, 0.0f, 0.0f), SColor(255,255,255,255), core::vector2df(1.0f, 0.0f));
-	Quad2DVertices[0] = S3DVertex(core::vector3df(-1.0f, -1.0f, 0.0f), core::vector3df(0.0f, 0.0f, 0.0f), SColor(255,255,255,255), core::vector2df(0.0f, 0.0f));
+	Quad2DVertices[1] = S3DVertex(core::vector3df(1.0f, 1.0f, 0.0f), core::vector3df(0.0f, 0.0f, 0.0f), SColor(255,255,255,255), core::vector2df(1.0f, 1.0f));
+	Quad2DVertices[2] = S3DVertex(core::vector3df(1.0f, -1.0f, 0.0f), core::vector3df(0.0f, 0.0f, 0.0f), SColor(255,255,255,255), core::vector2df(1.0f, 0.0f));
+	Quad2DVertices[3] = S3DVertex(core::vector3df(-1.0f, -1.0f, 0.0f), core::vector3df(0.0f, 0.0f, 0.0f), SColor(255,255,255,255), core::vector2df(0.0f, 0.0f));
 
 	// create material renderers
 	createMaterialRenderers();
