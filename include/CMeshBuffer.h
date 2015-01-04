@@ -83,6 +83,9 @@ namespace scene
 
 			if (IndexBuffer)
 				IndexBuffer->drop();
+
+			if (VertexDescriptor)
+				VertexDescriptor->drop();
 		}
 
 		virtual video::IVertexDescriptor* getVertexDescriptor() const

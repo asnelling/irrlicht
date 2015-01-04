@@ -71,6 +71,7 @@ namespace video
 		"Direct3D 8.1",
 		"Direct3D 9.0c",
 		"OpenGL 1.x/2.x/3.x",
+		"Direct3D 11.0",
 		0 
 	};
 	
