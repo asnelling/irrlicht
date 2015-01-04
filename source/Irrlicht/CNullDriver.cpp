@@ -790,7 +790,7 @@ void CNullDriver::draw3DBox(const core::aabbox3d<f32>& box, SColor color)
 	video::S3DVertex vert;
 	vert.Color = color;
 
-	u32 edgeIndex[] { 5, 1, 1, 3, 3, 7, 7, 5, 0, 2, 2, 6, 6, 4, 4, 0, 1, 0, 3, 2, 7, 6, 5, 4 };
+	u32 edgeIndex[] = { 5, 1, 1, 3, 3, 7, 7, 5, 0, 2, 2, 6, 6, 4, 4, 0, 1, 0, 3, 2, 7, 6, 5, 4 };
 
 	for (u32 i = 0; i < 24; ++i)
 	{

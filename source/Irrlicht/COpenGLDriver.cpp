@@ -821,7 +821,7 @@ COpenGLDriver::COpenGLDriver(const SIrrlichtCreationParameters& params,
 COpenGLDriver::COpenGLDriver(const SIrrlichtCreationParameters& params,
 		io::IFileSystem* io, CIrrDeviceLinux* device)
 : CNullDriver(io, params.WindowSize), COpenGLExtensionHandler(),
-	BridgeCalls(0), CurrentRenderMode(ERM_NONE), ResetRenderStates(true),
+	CurrentRenderMode(ERM_NONE), ResetRenderStates(true),
 	Transformation3DChanged(true), AntiAlias(params.AntiAlias),
 	RenderTargetTexture(0), CurrentRendertargetSize(0,0),
 	ColorFormat(ECF_R8G8B8), FixedPipelineState(EOFPS_ENABLE),
