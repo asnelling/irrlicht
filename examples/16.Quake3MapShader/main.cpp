@@ -373,6 +373,7 @@ int IRRCALLCONV main(int argc, char* argv[])
 			str += driver->getName();
 			str += "] FPS:";
 			str += fps;
+#ifdef _IRR_SCENEMANAGER_DEBUG			
 			str += " Cull:";
 			str += attr->getAttributeAsInt("calls");
 			str += "/";
@@ -383,7 +384,7 @@ int IRRCALLCONV main(int argc, char* argv[])
 			str += attr->getAttributeAsInt("drawn_transparent");
 			str += "/";
 			str += attr->getAttributeAsInt("drawn_transparent_effect");
-
+#endif
 			device->setWindowCaption(str.c_str());
 			lastFPS = fps;
 		}

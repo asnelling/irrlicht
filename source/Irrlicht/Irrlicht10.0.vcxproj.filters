@@ -351,6 +351,9 @@
     <ClInclude Include="..\..\include\IMeshSceneNode.h">
       <Filter>include\scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\IMeshTextureLoader.h">
+      <Filter>include\scene</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\IMeshWriter.h">
       <Filter>include\scene</Filter>
     </ClInclude>
@@ -483,6 +486,9 @@
     <ClInclude Include="..\..\include\EMessageBoxFlags.h">
       <Filter>include\gui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\EFocusFlags.h">
+      <Filter>include\gui</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\ICursorControl.h">
       <Filter>include\gui</Filter>
     </ClInclude>
@@ -529,6 +535,9 @@
       <Filter>include\gui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\IGUIMeshViewer.h">
+      <Filter>include\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\IGUIProfiler.h">
       <Filter>include\gui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\IGUIScrollBar.h">
@@ -619,6 +628,9 @@
       <Filter>Irrlicht\scene\loaders</Filter>
     </ClInclude>
     <ClInclude Include="CMD3MeshFileLoader.h">
+      <Filter>Irrlicht\scene\loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="CMeshTextureLoader.h">
       <Filter>Irrlicht\scene\loaders</Filter>
     </ClInclude>
     <ClInclude Include="CMS3DMeshFileLoader.h">
@@ -1011,6 +1023,9 @@
     <ClInclude Include="os.h">
       <Filter>Irrlicht\irr</Filter>
     </ClInclude>
+    <ClInclude Include="EProfileIDs.h">
+      <Filter>Irrlicht\irr</Filter>
+    </ClInclude>
     <ClInclude Include="lzma\LzmaDec.h">
       <Filter>Irrlicht\irr\extern</Filter>
     </ClInclude>
@@ -1242,6 +1257,9 @@
     <ClInclude Include="CGUIModalScreen.h">
       <Filter>Irrlicht\gui</Filter>
     </ClInclude>
+    <ClInclude Include="CGUIProfiler.h">
+      <Filter>Irrlicht\gui</Filter>
+    </ClInclude>
     <ClInclude Include="CGUIScrollBar.h">
       <Filter>Irrlicht\gui</Filter>
     </ClInclude>
@@ -1315,6 +1333,12 @@
     <ClInclude Include="..\..\include\IIndexBuffer.h">
       <Filter>include\scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\IProfiler.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="CProfiler.h">
+      <Filter>Irrlicht\irr</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\changes.txt">
@@ -1383,6 +1407,9 @@
       <Filter>Irrlicht\scene\loaders</Filter>
     </ClCompile>
     <ClCompile Include="CMD3MeshFileLoader.cpp">
+      <Filter>Irrlicht\scene\loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="CMeshTextureLoader.cpp">
       <Filter>Irrlicht\scene\loaders</Filter>
     </ClCompile>
     <ClCompile Include="CMS3DMeshFileLoader.cpp">
@@ -1817,6 +1844,12 @@
     <ClCompile Include="os.cpp">
       <Filter>Irrlicht\irr</Filter>
     </ClCompile>
+    <ClCompile Include="utf8.cpp">
+      <Filter>Irrlicht\irr</Filter>
+    </ClCompile>
+    <ClCompile Include="CProfiler.cpp">
+      <Filter>Irrlicht\irr</Filter>
+    </ClCompile>
     <ClCompile Include="lzma\LzmaDec.c">
       <Filter>Irrlicht\irr\extern</Filter>
     </ClCompile>
@@ -2202,6 +2235,9 @@
       <Filter>Irrlicht\gui</Filter>
     </ClCompile>
     <ClCompile Include="CGUIModalScreen.cpp">
+      <Filter>Irrlicht\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="CGUIProfiler.cpp">
       <Filter>Irrlicht\gui</Filter>
     </ClCompile>
     <ClCompile Include="CGUIScrollBar.cpp">

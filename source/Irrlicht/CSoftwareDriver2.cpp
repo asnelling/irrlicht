@@ -488,7 +488,8 @@ void CBurningVideoDriver::setCurrentShader()
 
 	bool zMaterialTest =	Material.org.ZBuffer != ECFN_DISABLED &&
 							Material.org.ZWriteEnable &&
-							( AllowZWriteOnTransparent || !Material.org.isTransparent() );
+							( AllowZWriteOnTransparent || (!Material.org.isTransparent() &&
+							!MaterialRenderers[Material.org.MaterialType].Renderer->isTransparent()) );
 
 	EBurningFFShader shader = zMaterialTest ? ETR_TEXTURE_GOURAUD : ETR_TEXTURE_GOURAUD_NOZ;
 
@@ -545,7 +546,8 @@ void CBurningVideoDriver::setCurrentShader()
 			break;
 
 		case EMT_DETAIL_MAP:
-			shader = ETR_TEXTURE_GOURAUD_DETAIL_MAP;
+			if ( texture1 )
+				shader = ETR_TEXTURE_GOURAUD_DETAIL_MAP;
 			break;
 
 		case EMT_SPHERE_MAP:
@@ -714,7 +716,7 @@ bool CBurningVideoDriver::endScene()
 
 //! sets a render target
 bool CBurningVideoDriver::setRenderTarget(video::ITexture* texture, bool clearBackBuffer,
-								 bool clearZBuffer, SColor color)
+	bool clearZBuffer, SColor color, video::ITexture* depthStencil)
 {
 	if (texture && texture->getDriverType() != EDT_BURNINGSVIDEO)
 	{

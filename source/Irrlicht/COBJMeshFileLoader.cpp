@@ -6,6 +6,7 @@
 #ifdef _IRR_COMPILE_WITH_OBJ_LOADER_
 
 #include "COBJMeshFileLoader.h"
+#include "CMeshTextureLoader.h"
 #include "IMeshManipulator.h"
 #include "IVideoDriver.h"
 #include "SMesh.h"
@@ -38,6 +39,8 @@ COBJMeshFileLoader::COBJMeshFileLoader(scene::ISceneManager* smgr, io::IFileSyst
 
 	if (FileSystem)
 		FileSystem->grab();
+
+	TextureLoader = new CMeshTextureLoader( FileSystem, SceneManager->getVideoDriver() );
 }
 
 
@@ -63,6 +66,12 @@ bool COBJMeshFileLoader::isALoadableFileExtension(const io::path& filename) cons
 //! See IReferenceCounted::drop() for more information.
 IAnimatedMesh* COBJMeshFileLoader::createMesh(io::IReadFile* file)
 {
+	if (!file)
+		return 0;
+
+	if ( getMeshTextureLoader() )
+		getMeshTextureLoader()->setMeshFile(file);
+
 	const long filesize = file->getSize();
 	if (!filesize)
 		return 0;
@@ -216,18 +225,25 @@ IAnimatedMesh* COBJMeshFileLoader::createMesh(io::IReadFile* file)
 				// sends the buffer sizes and gets the actual indices
 				// if index not set returns -1
 				s32 Idx[3];
-				Idx[1] = Idx[2] = -1;
+				Idx[0] = Idx[1] = Idx[2] = -1;
 
 				// read in next vertex's data
 				u32 wlength = copyWord(vertexWord, linePtr, WORD_BUFFER_LENGTH, endPtr);
 				// this function will also convert obj's 1-based index to c++'s 0-based index
 				retrieveVertexIndices(vertexWord, Idx, vertexWord+wlength+1, vertexBuffer.size(), textureCoordBuffer.size(), normalsBuffer.size());
-				v.Pos = vertexBuffer[Idx[0]];
-				if ( -1 != Idx[1] )
+				if ( -1 != Idx[0] && Idx[0] < (irr::s32)vertexBuffer.size() )
+					v.Pos = vertexBuffer[Idx[0]];
+				else
+				{
+					os::Printer::log("Invalid vertex index in this line:", wordBuffer.c_str(), ELL_ERROR);
+					delete [] buf;
+					return 0;
+				}
+				if ( -1 != Idx[1] && Idx[1] < (irr::s32)textureCoordBuffer.size() )
 					v.TCoords = textureCoordBuffer[Idx[1]];
 				else
 					v.TCoords.set(0.0f,0.0f);
-				if ( -1 != Idx[2] )
+				if ( -1 != Idx[2] && Idx[2] < (irr::s32)normalsBuffer.size() )
 					v.Normal = normalsBuffer[Idx[2]];
 				else
 				{
@@ -425,60 +441,39 @@ const c8* COBJMeshFileLoader::readTextures(const c8* bufPtr, const c8* const buf
 		currMaterial->Meshbuffer->getMaterial().setFlag(video::EMF_TEXTURE_WRAP, video::ETC_CLAMP);
 
 	io::path texname(textureNameBuf);
-	texname.replace('\\', '/');
+	if (texname.size() && getMeshTextureLoader())
+	{
+		video::ITexture * texture = getMeshTextureLoader()->getTexture(texname);
+		if ( texture )
+		{
+			if (type==0)
+				currMaterial->Meshbuffer->getMaterial().setTexture(0, texture);
+			else if (type==1)
+			{
+				if ( texture->getSource() == video::ETS_FROM_FILE)
+					SceneManager->getVideoDriver()->makeNormalMapTexture(texture, bumpiness);
+				currMaterial->Meshbuffer->getMaterial().setTexture(1, texture);
+				currMaterial->Meshbuffer->getMaterial().MaterialType = video::EMT_PARALLAX_MAP_SOLID;
+				currMaterial->Meshbuffer->getMaterial().MaterialTypeParam = 0.035f;
+			}
+			else if (type==2)
+			{
+				currMaterial->Meshbuffer->getMaterial().setTexture(0, texture);
+				currMaterial->Meshbuffer->getMaterial().MaterialType = video::EMT_TRANSPARENT_ADD_COLOR;
+			}
+			else if (type==3)
+			{
+	//						currMaterial->Meshbuffer->Material.Textures[1] = texture;
+	//						currMaterial->Meshbuffer->Material.MaterialType=video::EMT_REFLECTION_2_LAYER;
+			}
+			// Set diffuse material color to white so as not to affect texture color
+			// Because Maya set diffuse color Kd to black when you use a diffuse color map
+			// But is this the right thing to do?
+			currMaterial->Meshbuffer->getMaterial().DiffuseColor.set(
+				currMaterial->Meshbuffer->getMaterial().DiffuseColor.getAlpha(), 255, 255, 255);
+		}
+	}
 
-	video::ITexture * texture = 0;
-	bool newTexture=false;
-	if (texname.size())
-	{
- 		io::path texnameWithUserPath( SceneManager->getParameters()->getAttributeAsString(OBJ_TEXTURE_PATH) );
- 		if ( texnameWithUserPath.size() )
- 		{
- 			texnameWithUserPath += '/';
- 			texnameWithUserPath += texname;
- 		}
- 		if (FileSystem->existFile(texnameWithUserPath))
- 			texture = SceneManager->getVideoDriver()->getTexture(texnameWithUserPath);
-		else if (FileSystem->existFile(texname))
-		{
-			newTexture = SceneManager->getVideoDriver()->findTexture(texname) == 0;
-			texture = SceneManager->getVideoDriver()->getTexture(texname);
-		}
-		else
-		{
-			newTexture = SceneManager->getVideoDriver()->findTexture(relPath + texname) == 0;
-			// try to read in the relative path, the .obj is loaded from
-			texture = SceneManager->getVideoDriver()->getTexture( relPath + texname );
-		}
-	}
-	if ( texture )
-	{
-		if (type==0)
-			currMaterial->Meshbuffer->getMaterial().setTexture(0, texture);
-		else if (type==1)
-		{
-			if (newTexture)
-				SceneManager->getVideoDriver()->makeNormalMapTexture(texture, bumpiness);
-			currMaterial->Meshbuffer->getMaterial().setTexture(1, texture);
-			currMaterial->Meshbuffer->getMaterial().MaterialType = video::EMT_PARALLAX_MAP_SOLID;
-			currMaterial->Meshbuffer->getMaterial().MaterialTypeParam = 0.035f;
-		}
-		else if (type==2)
-		{
-			currMaterial->Meshbuffer->getMaterial().setTexture(0, texture);
-			currMaterial->Meshbuffer->getMaterial().MaterialType = video::EMT_TRANSPARENT_ADD_COLOR;
-		}
-		else if (type==3)
-		{
-//						currMaterial->Meshbuffer->Material.Textures[1] = texture;
-//						currMaterial->Meshbuffer->Material.MaterialType=video::EMT_REFLECTION_2_LAYER;
-		}
-		// Set diffuse material color to white so as not to affect texture color
-		// Because Maya set diffuse color Kd to black when you use a diffuse color map
-		// But is this the right thing to do?
-		currMaterial->Meshbuffer->getMaterial().DiffuseColor.set(
-			currMaterial->Meshbuffer->getMaterial().DiffuseColor.getAlpha(), 255, 255, 255);
-	}
 	return bufPtr;
 }
 
@@ -500,6 +495,13 @@ void COBJMeshFileLoader::readMTL(const c8* fileName, const io::path& relPath)
 	{
 		os::Printer::log("Could not open material file", realFile, ELL_WARNING);
 		return;
+	}
+
+	if ( getMeshTextureLoader() )
+	{
+		getMeshTextureLoader()->setMaterialFile(mtlReader);
+		if ( SceneManager->getParameters()->existsAttribute(OBJ_TEXTURE_PATH) )
+			getMeshTextureLoader()->setTexturePath(SceneManager->getParameters()->getAttributeAsString(OBJ_TEXTURE_PATH));
 	}
 
 	const long filesize = mtlReader->getSize();

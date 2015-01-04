@@ -124,10 +124,8 @@ CNullDriver::CNullDriver(io::IFileSystem* io, const core::dimension2d<u32>& scre
 
 	// create surface loader
 
-#ifdef _IRR_COMPILE_WITH_HALFLIFE_LOADER_
-	SurfaceLoader.push_back(video::createImageLoaderHalfLife());
-#endif
 #ifdef _IRR_COMPILE_WITH_WAL_LOADER_
+	SurfaceLoader.push_back(video::createImageLoaderHalfLife());
 	SurfaceLoader.push_back(video::createImageLoaderWAL());
 #endif
 #ifdef _IRR_COMPILE_WITH_LMP_LOADER_
@@ -142,7 +140,7 @@ CNullDriver::CNullDriver(io::IFileSystem* io, const core::dimension2d<u32>& scre
 #ifdef _IRR_COMPILE_WITH_PSD_LOADER_
 	SurfaceLoader.push_back(video::createImageLoaderPSD());
 #endif
-#ifdef _IRR_COMPILE_WITH_DDS_LOADER_
+#if defined(_IRR_COMPILE_WITH_DDS_LOADER_) || defined(_IRR_COMPILE_WITH_DDS_DECODER_LOADER_)
 	SurfaceLoader.push_back(video::createImageLoaderDDS());
 #endif
 #ifdef _IRR_COMPILE_WITH_PCX_LOADER_
@@ -463,12 +461,18 @@ ITexture* CNullDriver::getTexture(const io::path& filename)
 
 	ITexture* texture = findTexture(absolutePath);
 	if (texture)
+	{
+		texture->updateSource(ETS_FROM_CACHE);
 		return texture;
+	}
 
 	// Then try the raw filename, which might be in an Archive
 	texture = findTexture(filename);
 	if (texture)
+	{
+		texture->updateSource(ETS_FROM_CACHE);
 		return texture;
+	}
 
 	// Now try to open the file using the complete path.
 	io::IReadFile* file = FileSystem->createAndOpenFile(absolutePath);
@@ -485,6 +489,7 @@ ITexture* CNullDriver::getTexture(const io::path& filename)
 		texture = findTexture(file->getFileName());
 		if (texture)
 		{
+			texture->updateSource(ETS_FROM_CACHE);
 			file->drop();
 			return texture;
 		}
@@ -494,6 +499,7 @@ ITexture* CNullDriver::getTexture(const io::path& filename)
 
 		if (texture)
 		{
+			texture->updateSource(ETS_FROM_FILE);
 			addTexture(texture);
 			texture->drop(); // drop it because we created it, one grab too much
 		}
@@ -519,12 +525,16 @@ ITexture* CNullDriver::getTexture(io::IReadFile* file)
 		texture = findTexture(file->getFileName());
 
 		if (texture)
+		{
+			texture->updateSource(ETS_FROM_CACHE);
 			return texture;
+		}
 
 		texture = loadTextureFromFile(file);
 
 		if (texture)
 		{
+			texture->updateSource(ETS_FROM_FILE);
 			addTexture(texture);
 			texture->drop(); // drop it because we created it, one grab too much
 		}
@@ -641,20 +651,9 @@ ITexture* CNullDriver::createDeviceDependentTexture(IImage* surface, const io::p
 }
 
 
-//! set or reset special render targets
-bool CNullDriver::setRenderTarget(video::E_RENDER_TARGET target, bool clearTarget,
-			bool clearZBuffer, SColor color)
-{
-	if (ERT_FRAME_BUFFER==target)
-		return setRenderTarget(0,clearTarget, clearZBuffer, color);
-	else
-		return false;
-}
-
-
 //! sets a render target
 bool CNullDriver::setRenderTarget(video::ITexture* texture, bool clearBackBuffer,
-					bool clearZBuffer, SColor color)
+					bool clearZBuffer, SColor color, video::ITexture* depthStencil)
 {
 	return false;
 }
@@ -662,9 +661,20 @@ bool CNullDriver::setRenderTarget(video::ITexture* texture, bool clearBackBuffer
 
 //! Sets multiple render targets
 bool CNullDriver::setRenderTarget(const core::array<video::IRenderTarget>& texture,
-				bool clearBackBuffer, bool clearZBuffer, SColor color)
+				bool clearBackBuffer, bool clearZBuffer, SColor color, video::ITexture* depthStencil)
 {
 	return false;
+}
+
+
+//! set or reset special render targets
+bool CNullDriver::setRenderTarget(video::E_RENDER_TARGET target, bool clearTarget,
+			bool clearZBuffer, SColor color)
+{
+	if (ERT_FRAME_BUFFER==target)
+		return setRenderTarget(0,clearTarget, clearZBuffer, color, 0);
+	else
+		return false;
 }
 
 

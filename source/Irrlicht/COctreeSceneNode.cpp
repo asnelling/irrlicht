@@ -13,6 +13,8 @@
 #include "IMeshManipulator.h"
 #include "os.h"
 #include "CShadowVolumeSceneNode.h"
+#include "EProfileIDs.h"
+#include "IProfiler.h"
 
 namespace irr
 {
@@ -30,6 +32,17 @@ COctreeSceneNode::COctreeSceneNode(const core::array<scene::IMeshBuffer*>& meshe
 #ifdef _DEBUG
 	setDebugName("COctreeSceneNode");
 #endif
+
+	IRR_PROFILE(
+		static bool initProfile = false;
+		if (!initProfile )
+		{
+			initProfile = true;
+			getProfiler().add(EPID_OC_RENDER, L"render octnode", L"Irrlicht scene");
+			getProfiler().add(EPID_OC_CALCPOLYS, L"calc octnode", L"Irrlicht scene");
+		}
+ 	)
+	
 	StdMeshes = meshes;
 }
 
@@ -69,7 +82,7 @@ void COctreeSceneNode::OnRegisterSceneNode()
 			const video::IMaterialRenderer* const rnd =
 				driver->getMaterialRenderer(Materials[i].MaterialType);
 
-			if (rnd && rnd->isTransparent())
+			if ((rnd && rnd->isTransparent()) || Materials[i].isTransparent())
 				++transparentCount;
 			else
 				++solidCount;
@@ -94,6 +107,7 @@ void COctreeSceneNode::OnRegisterSceneNode()
 //! renders the node.
 void COctreeSceneNode::render()
 {
+	IRR_PROFILE(CProfileScope psRender(EPID_OC_RENDER);)
 	video::IVideoDriver* driver = SceneManager->getVideoDriver();
 
 	if (!driver)
@@ -123,10 +137,14 @@ void COctreeSceneNode::render()
 
 	const core::aabbox3d<float> &box = frust.getBoundingBox();
 
+	IRR_PROFILE(getProfiler().start(EPID_OC_CALCPOLYS));
+	
 	if (BoxBased)
 		StdOctree->calculatePolys(box);
 	else
 		StdOctree->calculatePolys(frust);
+		
+	IRR_PROFILE(getProfiler().stop(EPID_OC_CALCPOLYS));
 
 	const Octree::SIndexData* d = StdOctree->getIndexData();
 

@@ -150,10 +150,21 @@ public:
 
 			case EGET_FILE_SELECTED:
 				{
-					// show the model filename, selected in the file dialog
+					// show the event and the selected model filename from the file dialog
 					IGUIFileOpenDialog* dialog =
 						(IGUIFileOpenDialog*)event.GUIEvent.Caller;
+					Context.listbox->addItem(L"EGET_FILE_SELECTED");
 					Context.listbox->addItem(dialog->getFileName());
+				}
+				break;
+
+			case EGET_DIRECTORY_SELECTED:
+				{
+					// show the event and the selected directory name from the file dialog
+					IGUIFileOpenDialog* dialog =
+						(IGUIFileOpenDialog*)event.GUIEvent.Caller;
+					Context.listbox->addItem(L"EGET_DIRECTORY_SELECTED");
+					Context.listbox->addItem(core::stringw(dialog->getDirectoryName()).c_str());
 				}
 				break;
 
@@ -217,7 +228,7 @@ int main()
 	creates a window and the third opens a file open dialog. The third
 	parameter is the id of the button, with which we can easily identify
 	the button in the event receiver.
-	*/	
+	*/
 
 	env->addButton(rect<s32>(10,240,110,240 + 32), 0, GUI_ID_QUIT_BUTTON,
 			L"Quit", L"Exits Program");
@@ -244,8 +255,8 @@ int main()
 	// set scrollbar position to alpha value of an arbitrary element
 	scrollbar->setPos(env->getSkin()->getColor(EGDC_WINDOW).getAlpha());
 
-	env->addStaticText(L"Logging ListBox:", rect<s32>(50,110,250,130), true);
-	IGUIListBox * listbox = env->addListBox(rect<s32>(50, 140, 250, 210));
+	env->addStaticText(L"Logging ListBox:", rect<s32>(10,110,350,130), true);
+	IGUIListBox * listbox = env->addListBox(rect<s32>(10, 140, 350, 210));
 	env->addEditBox(L"Editable Text", rect<s32>(350, 80, 550, 100));
 
 	// Store the appropriate data in a context structure.
@@ -262,7 +273,7 @@ int main()
 
 
 	/*
-	And at last, we create a nice Irrlicht Engine logo in the top left corner. 
+	And at last, we create a nice Irrlicht Engine logo in the top left corner.
 	*/
 	env->addImage(driver->getTexture("../../media/irrlichtlogo2.png"),
 			position2d<int>(10,10));
@@ -278,7 +289,7 @@ int main()
 		driver->beginScene(true, true, SColor(0,200,200,200));
 
 		env->drawAll();
-	
+
 		driver->endScene();
 	}
 

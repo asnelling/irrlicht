@@ -686,6 +686,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\include\IProfiler.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\include\ILogger.h"
 				>
 			</File>
@@ -1041,6 +1045,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\include\IMeshTextureLoader.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\include\IMeshWriter.h"
 					>
 				</File>
@@ -1225,6 +1233,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\include\EFocusFlags.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\include\ICursorControl.h"
 					>
 				</File>
@@ -1286,6 +1298,10 @@
 				</File>
 				<File
 					RelativePath="..\..\include\IGUIMeshViewer.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\include\IGUIProfiler.h"
 					>
 				</File>
 				<File
@@ -1689,6 +1705,14 @@
 					</File>
 					<File
 						RelativePath="CMeshSceneNode.h"
+						>
+					</File>
+					<File
+						RelativePath="CMeshTextureLoader.cpp"
+						>
+					</File>
+					<File
+						RelativePath="CMeshTextureLoader.h"
 						>
 					</File>
 					<File
@@ -2713,6 +2737,22 @@
 					>
 				</File>
 				<File
+					RelativePath="utf8.cpp"
+					>
+				</File>
+				<File
+					RelativePath="CProfiler.cpp"
+					>
+				</File>
+				<File
+					RelativePath="CProfiler.h"
+					>
+				</File>
+				<File
+					RelativePath="EProfileIDs.h"
+					>
+				</File>
+				<File
 					RelativePath="os.h"
 					>
 				</File>
@@ -3574,6 +3614,14 @@
 				</File>
 				<File
 					RelativePath="CGUIModalScreen.h"
+					>
+				</File>
+				<File
+					RelativePath="CGUIProfiler.cpp"
+					>
+				</File>
+				<File
+					RelativePath="CGUIProfiler.h"
 					>
 				</File>
 				<File

@@ -382,13 +382,11 @@ void Q3Player::respawn ()
 
 	Device->getLogger()->log( "respawn" );
 
-	if ( StartPositionCurrent >= Q3StartPosition (
-			Mesh, camera,StartPositionCurrent++,
-			cam ()->getEllipsoidTranslation() )
-		)
-	{
+	if (StartPositionCurrent >= Q3StartPosition(Mesh, camera,
+			StartPositionCurrent, cam()->getEllipsoidTranslation()))
 		StartPositionCurrent = 0;
-	}
+	else
+		++StartPositionCurrent;	
 }
 
 /*
@@ -2040,11 +2038,11 @@ void CQuake3EventHandler::Animate()
 	// Query Scene Manager attributes
 	if ( player->Anim[0].flags & FIRED )
 	{
-		ISceneManager *smgr = Game->Device->getSceneManager ();
 		wchar_t msg[128];
 		IVideoDriver * driver = Game->Device->getVideoDriver();
 
-		IAttributes * attr = smgr->getParameters();
+#ifdef _IRR_SCENEMANAGER_DEBUG					
+		IAttributes * attr = Game->Device->getSceneManager()->getParameters();
 		swprintf ( msg, 128,
 			L"Q3 %s [%ls], FPS:%03d Tri:%.03fm Cull %d/%d nodes (%d,%d,%d)",
 			Game->CurrentMapName.c_str(),
@@ -2057,6 +2055,15 @@ void CQuake3EventHandler::Animate()
 			attr->getAttributeAsInt ( "drawn_transparent" ),
 			attr->getAttributeAsInt ( "drawn_transparent_effect" )
 			);
+#else
+swprintf ( msg, 128,
+			L"Q3 %s [%ls], FPS:%03d Tri:%.03fm",
+			Game->CurrentMapName.c_str(),
+			driver->getName(),
+			driver->getFPS (),
+			(f32) driver->getPrimitiveCountDrawn( 0 ) * ( 1.f / 1000000.f )
+			);		
+#endif		
 		Game->Device->setWindowCaption( msg );
 
 		swprintf ( msg, 128,

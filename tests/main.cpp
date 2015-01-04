@@ -84,6 +84,7 @@ int main(int argumentCount, char * arguments[])
 	TEST(sceneNodeAnimator);
 	TEST(meshLoaders);
 	TEST(testTimer);
+	TEST(testCoreutil);
 	// software drivers only
 	TEST(softwareDevice);
 	TEST(b3dAnimation);

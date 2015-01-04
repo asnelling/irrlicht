@@ -54,6 +54,7 @@ class CSampleSceneNode : public scene::ISceneNode
 	core::aabbox3d<f32> Box;
 	scene::IVertexBuffer* VertexBuffer;
 	scene::IIndexBuffer* IndexBuffer;
+	scene::CMeshBuffer<video::S3DVertex>* MeshBuffer;
 	video::IVertexDescriptor* Descriptor;
 	video::SMaterial Material;
 
@@ -74,6 +75,7 @@ public:
 
 		VertexBuffer = new scene::CVertexBuffer<video::S3DVertex>();
 		IndexBuffer = new scene::CIndexBuffer(video::EIT_16BIT);
+		MeshBuffer = new scene::CMeshBuffer<video::S3DVertex>(Descriptor);
 
 		Material.Wireframe = false;
 		Material.Lighting = false;
@@ -87,6 +89,12 @@ public:
 
 		for (s32 i = 0; i<4; ++i)
 			VertexBuffer->addVertex(&Vertices[i]);
+			
+	/*
+	Indices into the 'Vertices' array. A triangle needs 3 vertices 
+	so you have to pass the 3 corresponding indices for each triangle to 
+	tell which of the vertices should be used for it.
+	*/
 
 		IndexBuffer->addIndex(0);
 		IndexBuffer->addIndex(2);
@@ -100,6 +108,13 @@ public:
 		IndexBuffer->addIndex(2);
 		IndexBuffer->addIndex(0);
 		IndexBuffer->addIndex(1);
+
+	/*
+	Append Vertex and Index buffers to the Mesh buffer.
+	*/
+
+		MeshBuffer->setVertexBuffer(VertexBuffer, 0);
+		MeshBuffer->setIndexBuffer(IndexBuffer);
 
 	/*
 	The Irrlicht Engine needs to know the bounding box of a scene node.
@@ -158,7 +173,7 @@ public:
 		driver->setMaterial(Material);
 		driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 
-		driver->drawVertexPrimitiveList(VertexBuffer, IndexBuffer, Descriptor, 4, scene::EPT_TRIANGLES);
+		driver->drawMeshBuffer(MeshBuffer);
 	}
 
 	/*

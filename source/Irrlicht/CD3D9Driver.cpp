@@ -433,7 +433,7 @@ void CD3D9HardwareBuffer::removeFromArray(bool status)
 
 //! constructor
 CD3D9Driver::CD3D9Driver(const SIrrlichtCreationParameters& params, io::IFileSystem* io)
-	: CNullDriver(io, params.WindowSize), CurrentRenderMode(ERM_NONE),
+	: CNullDriver(io, params.WindowSize), BridgeCalls(0), CurrentRenderMode(ERM_NONE),
 	ResetRenderStates(true), Transformation3DChanged(false),
 	D3DLibrary(0), pID3D(0), pID3DDevice(0), PrevRenderTarget(0),
 	WindowId(0), SceneSourceRect(0),
@@ -495,6 +495,8 @@ CD3D9Driver::~CD3D9Driver()
 
 	if (ShadowVertexDeclaration)
 		ShadowVertexDeclaration->Release();
+
+    delete BridgeCalls;
 
 	// drop d3d9
 
@@ -828,6 +830,9 @@ bool CD3D9Driver::initDriver(HWND hwnd, bool pureSoftware)
 		Params.Stencilbuffer = false;
 	}
 
+    if (!BridgeCalls)
+		BridgeCalls = new CD3D9CallBridge(pID3DDevice, this);
+		
 	// Create built-in vertex elements.
 	createVertexDescriptors();
 
@@ -1100,7 +1105,12 @@ bool CD3D9Driver::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 	case EVDF_POLYGON_OFFSET:
 		return (Caps.RasterCaps & (D3DPRASTERCAPS_DEPTHBIAS|D3DPRASTERCAPS_SLOPESCALEDEPTHBIAS)) != 0;
 	case EVDF_BLEND_OPERATIONS:
+        return true;
+    case EVDF_BLEND_SEPARATE:
+        return (Caps.PrimitiveMiscCaps & D3DPMISCCAPS_SEPARATEALPHABLEND) != 0;
 	case EVDF_TEXTURE_MATRIX:
+		return true;
+	case EVDF_TEXTURE_COMPRESSED_DXT:
 		return true;
 	default:
 		return false;
@@ -1210,8 +1220,8 @@ void CD3D9Driver::setTextureCreationFlag(E_TEXTURE_CREATION_FLAG flag,
 
 
 //! sets a render target
-bool CD3D9Driver::setRenderTarget(video::ITexture* texture,
-		bool clearBackBuffer, bool clearZBuffer, SColor color)
+bool CD3D9Driver::setRenderTarget(video::ITexture* texture, bool clearBackBuffer,
+	bool clearZBuffer, SColor color, video::ITexture* depthStencil)
 {
 	// check for right driver type
 
@@ -1309,10 +1319,10 @@ bool CD3D9Driver::setRenderTarget(video::ITexture* texture,
 
 //! Sets multiple render targets
 bool CD3D9Driver::setRenderTarget(const core::array<video::IRenderTarget>& targets,
-				bool clearBackBuffer, bool clearZBuffer, SColor color)
+	bool clearBackBuffer, bool clearZBuffer, SColor color, video::ITexture* depthStencil)
 {
 	if (targets.size()==0)
-		return setRenderTarget(0, clearBackBuffer, clearZBuffer, color);
+		return setRenderTarget(0, clearBackBuffer, clearZBuffer, color, depthStencil);
 
 	u32 maxMultipleRTTs = core::min_(MaxMRTs, targets.size());
 
@@ -2599,8 +2609,11 @@ void CD3D9Driver::setBasicRenderStates(const SMaterial& material, const SMateria
 	// zwrite
 //	if (resetAllRenderstates || (lastmaterial.ZWriteEnable != material.ZWriteEnable))
 	{
-		if ( material.ZWriteEnable && (AllowZWriteOnTransparent || !material.isTransparent()))
+		if (material.ZWriteEnable && (AllowZWriteOnTransparent || (!material.isTransparent() &&
+			!MaterialRenderers[material.MaterialType].Renderer->isTransparent())))
+		{
 			pID3DDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE);
+		}
 		else
 			pID3DDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE);
 	}
@@ -2653,37 +2666,54 @@ void CD3D9Driver::setBasicRenderStates(const SMaterial& material, const SMateria
 		pID3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE, flag);
 	}
 
-	if (queryFeature(EVDF_BLEND_OPERATIONS) &&
-		(resetAllRenderstates|| lastmaterial.BlendOperation != material.BlendOperation))
+    // Blend Operation
+    if (material.BlendOperation == EBO_NONE)
+        BridgeCalls->setBlend(false);
+    else
+    {
+        BridgeCalls->setBlend(true);
+
+        if (queryFeature(EVDF_BLEND_OPERATIONS))
+        {
+            switch (material.BlendOperation)
+            {
+            case EBO_MAX:
+            case EBO_MAX_FACTOR:
+            case EBO_MAX_ALPHA:
+                BridgeCalls->setBlendOperation(D3DBLENDOP_MAX);
+            break;
+            case EBO_MIN:
+            case EBO_MIN_FACTOR:
+            case EBO_MIN_ALPHA:
+                BridgeCalls->setBlendOperation(D3DBLENDOP_MIN);
+                break;
+            case EBO_SUBTRACT:
+                BridgeCalls->setBlendOperation(D3DBLENDOP_SUBTRACT);
+                break;
+            case EBO_REVSUBTRACT:
+                BridgeCalls->setBlendOperation(D3DBLENDOP_REVSUBTRACT);
+                break;
+            default:
+                BridgeCalls->setBlendOperation(D3DBLENDOP_ADD);
+                break;
+            }
+        }
+	}
+
+    // Blend Factor
+	if (IR(material.BlendFactor) & 0xFFFFFFFF)
 	{
-		if (material.BlendOperation==EBO_NONE)
-			pID3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-		else
-		{
-			pID3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			switch (material.BlendOperation)
-			{
-			case EBO_SUBTRACT:
-				pID3DDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_SUBTRACT);
-				break;
-			case EBO_REVSUBTRACT:
-				pID3DDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_REVSUBTRACT);
-				break;
-			case EBO_MIN:
-			case EBO_MIN_FACTOR:
-			case EBO_MIN_ALPHA:
-				pID3DDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_MIN);
-				break;
-			case EBO_MAX:
-			case EBO_MAX_FACTOR:
-			case EBO_MAX_ALPHA:
-				pID3DDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_MAX);
-				break;
-			default:
-				pID3DDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
-				break;
-			}
-		}
+        E_BLEND_FACTOR srcRGBFact = EBF_ZERO;
+        E_BLEND_FACTOR dstRGBFact = EBF_ZERO;
+        E_BLEND_FACTOR srcAlphaFact = EBF_ZERO;
+        E_BLEND_FACTOR dstAlphaFact = EBF_ZERO;
+        E_MODULATE_FUNC modulo = EMFN_MODULATE_1X;
+        u32 alphaSource = 0;
+
+        unpack_textureBlendFuncSeparate(srcRGBFact, dstRGBFact, srcAlphaFact, dstAlphaFact, modulo, alphaSource, material.BlendFactor);
+
+        BridgeCalls->setBlendFuncSeparate(getD3DBlend(srcRGBFact), getD3DBlend(dstRGBFact),
+            getD3DBlend(srcAlphaFact), getD3DBlend(dstAlphaFact));
 	}
 
 	// Polygon offset
@@ -2919,13 +2949,12 @@ void CD3D9Driver::setRenderStatesStencilFillMode(bool alpha)
 		pID3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
 		if (alpha)
 		{
-			pID3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			pID3DDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pID3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			BridgeCalls->setBlend(true);
+			BridgeCalls->setBlendFunc(D3DBLEND_SRCALPHA, D3DBLEND_INVSRCALPHA);
 		}
 		else
 		{
-			pID3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			BridgeCalls->setBlend(false);
 		}
 	}
 
@@ -3000,12 +3029,11 @@ void CD3D9Driver::setRenderStates2DMode(bool alpha, bool texture, bool alphaChan
 
 	if (alpha || alphaChannel)
 	{
-		pID3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pID3DDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pID3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		BridgeCalls->setBlend(true);
+		BridgeCalls->setBlendFunc(D3DBLEND_SRCALPHA, D3DBLEND_INVSRCALPHA);
 	}
 	else
-		pID3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		BridgeCalls->setBlend(false);
 	pID3DDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	pID3DDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 	pID3DDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
@@ -3649,12 +3677,15 @@ IImage* CD3D9Driver::createScreenShot(video::ECOLOR_FORMAT format, video::E_REND
 	if (target != video::ERT_FRAME_BUFFER)
 		return 0;
 
+	if (format==video::ECF_UNKNOWN)
+		format=getColorFormat();
+
+	if (IImage::isRenderTargetOnlyFormat(format) || IImage::isCompressedFormat(format) || IImage::isDepthFormat(format))
+		return 0;
+
 	// query the screen dimensions of the current adapter
 	D3DDISPLAYMODE displayMode;
 	pID3DDevice->GetDisplayMode(0, &displayMode);
-
-	if (format==video::ECF_UNKNOWN)
-		format=video::ECF_A8R8G8B8;
 
 	// create the image surface to store the front buffer image [always A8R8G8B8]
 	HRESULT hr;
@@ -3956,6 +3987,46 @@ core::dimension2du CD3D9Driver::getMaxTextureSize() const
 }
 
 
+u32 CD3D9Driver::getD3DBlend(E_BLEND_FACTOR factor) const
+{
+	u32 r = 0;
+	switch (factor)
+	{
+	case EBF_ZERO:					r = D3DBLEND_ZERO; break;
+	case EBF_ONE:					r = D3DBLEND_ONE; break;
+	case EBF_DST_COLOR:				r = D3DBLEND_DESTCOLOR; break;
+	case EBF_ONE_MINUS_DST_COLOR:	r = D3DBLEND_INVDESTCOLOR; break;
+	case EBF_SRC_COLOR:				r = D3DBLEND_SRCCOLOR; break;
+	case EBF_ONE_MINUS_SRC_COLOR:	r = D3DBLEND_INVSRCCOLOR; break;
+	case EBF_SRC_ALPHA:				r = D3DBLEND_SRCALPHA; break;
+	case EBF_ONE_MINUS_SRC_ALPHA:	r = D3DBLEND_INVSRCALPHA; break;
+	case EBF_DST_ALPHA:				r = D3DBLEND_DESTALPHA; break;
+	case EBF_ONE_MINUS_DST_ALPHA:	r = D3DBLEND_INVDESTALPHA; break;
+	case EBF_SRC_ALPHA_SATURATE:	r = D3DBLEND_SRCALPHASAT; break;
+	}
+	return r;
+}
+
+
+u32 CD3D9Driver::getD3DModulate(E_MODULATE_FUNC func) const
+{
+	u32 r = D3DTOP_MODULATE;
+	switch (func)
+	{
+	case EMFN_MODULATE_1X: r = D3DTOP_MODULATE; break;
+	case EMFN_MODULATE_2X: r = D3DTOP_MODULATE2X; break;
+	case EMFN_MODULATE_4X: r = D3DTOP_MODULATE4X; break;
+	}
+	return r;
+}
+
+
+CD3D9CallBridge* CD3D9Driver::getBridgeCalls() const
+{
+	return BridgeCalls;
+}
+
+
 #ifdef _IRR_COMPILE_WITH_CG_
 const CGcontext& CD3D9Driver::getCgContext()
 {
@@ -3963,6 +4034,122 @@ const CGcontext& CD3D9Driver::getCgContext()
 }
 #endif
 
+
+CD3D9CallBridge::CD3D9CallBridge(IDirect3DDevice9* p, CD3D9Driver* driver) : pID3DDevice(p),
+    BlendOperation(D3DBLENDOP_ADD), BlendSourceRGB(D3DBLEND_ONE), BlendDestinationRGB(D3DBLEND_ZERO),
+    BlendSourceAlpha(D3DBLEND_ONE), BlendDestinationAlpha(D3DBLEND_ZERO), Blend(false), BlendSeparate(false)
+{
+    FeatureBlendSeparate = driver->queryFeature(EVDF_BLEND_SEPARATE);
+
+    pID3DDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
+    pID3DDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+    pID3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+	pID3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+
+	if (FeatureBlendSeparate)
+	{
+        pID3DDevice->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
+        pID3DDevice->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_ZERO);
+        pID3DDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+	}
+}
+
+void CD3D9CallBridge::setBlendOperation(DWORD mode)
+{
+	if (BlendOperation != mode)
+	{
+		pID3DDevice->SetRenderState(D3DRS_BLENDOP, mode);
+
+		BlendOperation = mode;
+	}
+}
+
+void CD3D9CallBridge::setBlendFunc(DWORD source, DWORD destination)
+{
+	if (BlendSourceRGB != source)
+	{
+		pID3DDevice->SetRenderState(D3DRS_SRCBLEND, source);
+
+        BlendSourceRGB = source;
+	}
+
+	if (BlendDestinationRGB != destination)
+	{
+		pID3DDevice->SetRenderState(D3DRS_DESTBLEND, destination);
+
+        BlendDestinationRGB = destination;
+	}
+
+	if (FeatureBlendSeparate && BlendSeparate)
+	{
+        pID3DDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+
+        BlendSeparate = false;
+	}
+}
+
+void CD3D9CallBridge::setBlendFuncSeparate(DWORD sourceRGB, DWORD destinationRGB, DWORD sourceAlpha, DWORD destinationAlpha)
+{
+	if (BlendSourceRGB != sourceRGB)
+	{
+		pID3DDevice->SetRenderState(D3DRS_SRCBLEND, sourceRGB);
+
+        BlendSourceRGB = sourceRGB;
+	}
+
+	if (BlendDestinationRGB != destinationRGB)
+	{
+		pID3DDevice->SetRenderState(D3DRS_DESTBLEND, destinationRGB);
+
+        BlendDestinationRGB = destinationRGB;
+	}
+
+	if (FeatureBlendSeparate)
+	{
+        if (sourceRGB != sourceAlpha || destinationRGB != destinationAlpha)
+        {
+            if (BlendSourceAlpha != sourceAlpha)
+            {
+                pID3DDevice->SetRenderState(D3DRS_SRCBLENDALPHA, sourceAlpha);
+
+                BlendSourceAlpha = sourceAlpha;
+            }
+
+            if (BlendDestinationAlpha != destinationAlpha)
+            {
+                pID3DDevice->SetRenderState(D3DRS_DESTBLENDALPHA, destinationAlpha);
+
+                BlendDestinationAlpha = destinationAlpha;
+            }
+
+            if (!BlendSeparate)
+            {
+                pID3DDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, TRUE);
+
+                BlendSeparate = true;
+            }
+        }
+        else if (BlendSeparate)
+        {
+            pID3DDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+
+            BlendSeparate = false;
+        }
+    }
+}
+
+void CD3D9CallBridge::setBlend(bool enable)
+{
+	if (Blend != enable)
+	{
+		if (enable)
+			pID3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		else
+			pID3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+
+        Blend = enable;
+	}
+}
 
 } // end namespace video
 } // end namespace irr

@@ -42,25 +42,25 @@ public:
 	virtual ~CD3D9Texture();
 
 	//! lock function
-	virtual void* lock(E_TEXTURE_LOCK_MODE mode=ETLM_READ_WRITE, u32 mipmapLevel=0);
+	virtual void* lock(E_TEXTURE_LOCK_MODE mode=ETLM_READ_WRITE, u32 mipmapLevel=0) _IRR_OVERRIDE_;
 
 	//! unlock function
-	virtual void unlock();
+	virtual void unlock() _IRR_OVERRIDE_;
 
 	//! Returns original size of the texture.
-	virtual const core::dimension2d<u32>& getOriginalSize() const;
+	virtual const core::dimension2d<u32>& getOriginalSize() const _IRR_OVERRIDE_;
 
 	//! Returns (=size) of the texture.
-	virtual const core::dimension2d<u32>& getSize() const;
+	virtual const core::dimension2d<u32>& getSize() const _IRR_OVERRIDE_;
 
 	//! returns driver type of texture (=the driver, who created the texture)
-	virtual E_DRIVER_TYPE getDriverType() const;
+	virtual E_DRIVER_TYPE getDriverType() const _IRR_OVERRIDE_;
 
 	//! returns color format of texture
-	virtual ECOLOR_FORMAT getColorFormat() const;
+	virtual ECOLOR_FORMAT getColorFormat() const _IRR_OVERRIDE_;
 
 	//! returns pitch of texture (in bytes)
-	virtual u32 getPitch() const;
+	virtual u32 getPitch() const _IRR_OVERRIDE_;
 
 	//! returns the DIRECT3D9 Texture
 	IDirect3DBaseTexture9* getDX9Texture() const;
@@ -70,10 +70,10 @@ public:
 
 	//! Regenerates the mip map levels of the texture. Useful after locking and
 	//! modifying the texture
-	virtual void regenerateMipMapLevels(void* mipmapData=0);
+	virtual void regenerateMipMapLevels(void* mipmapData=0) _IRR_OVERRIDE_;
 
 	//! returns if it is a render target
-	virtual bool isRenderTarget() const;
+	virtual bool isRenderTarget() const _IRR_OVERRIDE_;
 
 	//! Returns pointer to the render target surface
 	IDirect3DSurface9* getRenderTargetSurface();
@@ -94,11 +94,15 @@ private:
 
 	//! Helper function for mipmap generation.
 	void copy16BitMipMap(char* src, char* tgt,
-		s32 width, s32 height,  s32 pitchsrc, s32 pitchtgt) const;
+			const s32 srcWidth, const s32 srcHeight,
+			const s32 width, const s32 height,
+			const s32 pitchsrc, const s32 pitchtgt) const;
 
 	//! Helper function for mipmap generation.
 	void copy32BitMipMap(char* src, char* tgt,
-		s32 width, s32 height,  s32 pitchsrc, s32 pitchtgt) const;
+			const s32 srcWidth, const s32 srcHeight,
+			const s32 width, const s32 height,
+			const s32 pitchsrc, const s32 pitchtgt) const;
 
 	//! set Pitch based on the d3d format
 	void setPitch(D3DFORMAT d3dformat);
@@ -117,6 +121,7 @@ private:
 	bool HasMipMaps;
 	bool HardwareMipMaps;
 	bool IsRenderTarget;
+	bool IsCompressed;
 };
 
 

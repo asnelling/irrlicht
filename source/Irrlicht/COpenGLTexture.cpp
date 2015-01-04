@@ -24,8 +24,8 @@ COpenGLTexture::COpenGLTexture(IImage* origImage, const io::path& name, void* mi
 	: ITexture(name), ColorFormat(ECF_A8R8G8B8), Driver(driver), Image(0), MipImage(0),
 	TextureName(0), InternalFormat(GL_RGBA), PixelFormat(GL_BGRA_EXT),
 	PixelType(GL_UNSIGNED_BYTE), MipLevelStored(0), MipmapLegacyMode(true),
-	IsRenderTarget(false), AutomaticMipmapUpdate(false),
-	ReadOnlyLock(false), KeepImage(true)
+	IsRenderTarget(false), IsCompressed(false), AutomaticMipmapUpdate(false),
+	ReadOnlyLock(false), KeepImage(true), IsDepthTexture(false), IsRenderBuffer(false)
 {
 	#ifdef _DEBUG
 	setDebugName("COpenGLTexture");
@@ -34,9 +34,28 @@ COpenGLTexture::COpenGLTexture(IImage* origImage, const io::path& name, void* mi
 	HasMipMaps = Driver->getTextureCreationFlag(ETCF_CREATE_MIP_MAPS);
 	getImageValues(origImage);
 
-	glGenTextures(1, &TextureName);
+	if (ColorFormat == ECF_DXT1 || ColorFormat == ECF_DXT2 || ColorFormat == ECF_DXT3 || ColorFormat == ECF_DXT4 || ColorFormat == ECF_DXT5)
+	{
+		if(!Driver->queryFeature(EVDF_TEXTURE_COMPRESSED_DXT))
+		{
+			os::Printer::log("DXT texture compression not available.", ELL_ERROR);
+			return;
+		}
 
-	if (ImageSize==TextureSize)
+		if(ImageSize != TextureSize)
+		{
+			os::Printer::log("Invalid size of image for compressed texture, size of image must be POT.", ELL_ERROR);
+			return;
+		}
+		else
+		{
+			IsCompressed = true;
+			Image = origImage;
+			Image->grab();
+			KeepImage = false;
+		}
+	}
+	else if (ImageSize==TextureSize)
 	{
 		Image = Driver->createImage(ColorFormat, ImageSize);
 		origImage->copyTo(Image);
@@ -47,6 +66,7 @@ COpenGLTexture::COpenGLTexture(IImage* origImage, const io::path& name, void* mi
 		// scale texture
 		origImage->copyToScaling(Image);
 	}
+	glGenTextures(1, &TextureName);
 	uploadTexture(true, mipmapData);
 	if (!KeepImage)
 	{
@@ -61,8 +81,9 @@ COpenGLTexture::COpenGLTexture(const io::path& name, COpenGLDriver* driver)
 	: ITexture(name), ColorFormat(ECF_A8R8G8B8), Driver(driver), Image(0), MipImage(0),
 	TextureName(0), InternalFormat(GL_RGBA), PixelFormat(GL_BGRA_EXT),
 	PixelType(GL_UNSIGNED_BYTE), MipLevelStored(0), HasMipMaps(true),
-	MipmapLegacyMode(true), IsRenderTarget(false), AutomaticMipmapUpdate(false),
-	ReadOnlyLock(false), KeepImage(true)
+	MipmapLegacyMode(true), IsRenderTarget(false), IsCompressed(false),
+	AutomaticMipmapUpdate(false), ReadOnlyLock(false), KeepImage(true),
+	IsDepthTexture(false), IsRenderBuffer(false)
 {
 	#ifdef _DEBUG
 	setDebugName("COpenGLTexture");
@@ -77,6 +98,8 @@ COpenGLTexture::~COpenGLTexture()
 		glDeleteTextures(1, &TextureName);
 	if (Image)
 		Image->drop();
+
+	Driver->getBridgeCalls()->resetTexture(this);
 }
 
 
@@ -159,96 +182,169 @@ GLint COpenGLTexture::getOpenGLFormatAndParametersFromColorFormat(ECOLOR_FORMAT 
 				type=GL_UNSIGNED_INT_8_8_8_8_REV;
 			internalformat =  GL_RGBA;
 			break;
-		// Floating Point texture formats. Thanks to Patryk "Nadro" Nadrowski.
-		case ECF_R16F:
-		{
-#ifdef GL_ARB_texture_rg
-			filtering = GL_NEAREST;
-			colorformat = GL_RED;
-			type = GL_FLOAT;
-
-			internalformat =  GL_R16F;
-#else
-			ColorFormat = ECF_A8R8G8B8;
-			internalformat =  GL_RGB8;
+		case ECF_DXT1:
+			colorformat = GL_BGRA_EXT;
+			type = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+			internalformat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+			break;
+		case ECF_DXT2:
+		case ECF_DXT3:
+			colorformat = GL_BGRA_EXT;
+			type = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			internalformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			break;
+		case ECF_DXT4:
+		case ECF_DXT5:
+			colorformat = GL_BGRA_EXT;
+			type = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			internalformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			break;
+		case ECF_D16:
+			colorformat = GL_DEPTH_COMPONENT;
+			type = GL_UNSIGNED_BYTE;
+			internalformat = GL_DEPTH_COMPONENT16;
+			break;
+		case ECF_D32:
+			colorformat = GL_DEPTH_COMPONENT;
+			type = GL_UNSIGNED_BYTE;
+			internalformat = GL_DEPTH_COMPONENT32;
+			break;
+		case ECF_D24S8:
+#ifdef GL_EXT_packed_depth_stencil
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_EXT_packed_depth_stencil))
+			{
+				colorformat = GL_DEPTH_STENCIL_EXT;
+				type = GL_UNSIGNED_INT_24_8_EXT;
+				internalformat = GL_DEPTH_STENCIL_EXT;
+			}
+			else
 #endif
-		}
+				os::Printer::log("ECF_D24S8 color format is not supported", ELL_ERROR);
+			break;
+		case ECF_R8:
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_rg))
+			{
+				colorformat = GL_RED;
+				type = GL_UNSIGNED_BYTE;
+				internalformat = GL_R8;
+			}
+			else
+				os::Printer::log("ECF_R8 color format is not supported", ELL_ERROR);
+			break;
+		case ECF_R8G8:
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_rg))
+			{
+				colorformat = GL_RG;
+				type = GL_UNSIGNED_BYTE;
+				internalformat = GL_RG8;
+			}
+			else
+				os::Printer::log("ECF_R8G8 color format is not supported", ELL_ERROR);
+			break;
+		case ECF_R16:
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_rg))
+			{
+				colorformat = GL_RED;
+				type = GL_UNSIGNED_SHORT;
+				internalformat = GL_R16;
+			}
+			else
+				os::Printer::log("ECF_R16 color format is not supported", ELL_ERROR);
+			break;
+		case ECF_R16G16:
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_rg))
+			{
+				colorformat = GL_RG;
+				type = GL_UNSIGNED_SHORT;
+				internalformat = GL_RG16;
+			}
+			else
+				os::Printer::log("ECF_R16G16 color format is not supported", ELL_ERROR);
+			break;
+		case ECF_R16F:
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_rg))
+			{
+				filtering = GL_NEAREST;
+				colorformat = GL_RED;
+				internalformat =  GL_R16F;
+#ifdef GL_ARB_half_float_pixel
+				if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_half_float_pixel))
+					type = GL_HALF_FLOAT_ARB;
+				else
+#endif
+					type = GL_FLOAT;
+			}
+			else
+				os::Printer::log("ECF_R16F color format is not supported", ELL_ERROR);
 			break;
 		case ECF_G16R16F:
-		{
-#ifdef GL_ARB_texture_rg
-			filtering = GL_NEAREST;
-			colorformat = GL_RG;
-			type = GL_FLOAT;
-
-			internalformat =  GL_RG16F;
-#else
-			ColorFormat = ECF_A8R8G8B8;
-			internalformat =  GL_RGB8;
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_rg))
+			{
+				filtering = GL_NEAREST;
+				colorformat = GL_RG;
+				internalformat =  GL_RG16F;
+#ifdef GL_ARB_half_float_pixel
+				if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_half_float_pixel))
+					type = GL_HALF_FLOAT_ARB;
+				else
 #endif
-		}
+					type = GL_FLOAT;
+			}
+			else
+				os::Printer::log("ECF_G16R16F color format is not supported", ELL_ERROR);
 			break;
 		case ECF_A16B16G16R16F:
-		{
-#ifdef GL_ARB_texture_rg
-			filtering = GL_NEAREST;
-			colorformat = GL_RGBA;
-			type = GL_FLOAT;
-
-			internalformat =  GL_RGBA16F_ARB;
-#else
-			ColorFormat = ECF_A8R8G8B8;
-			internalformat =  GL_RGBA8;
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_float))
+			{
+				filtering = GL_NEAREST;
+				colorformat = GL_RGBA;
+				internalformat =  GL_RGBA16F_ARB;
+#ifdef GL_ARB_half_float_pixel
+				if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_half_float_pixel))
+					type = GL_HALF_FLOAT_ARB;
+				else
 #endif
-		}
+					type = GL_FLOAT;
+			}
+			else
+				os::Printer::log("ECF_A16B16G16R16F color format is not supported", ELL_ERROR);
 			break;
 		case ECF_R32F:
-		{
-#ifdef GL_ARB_texture_rg
-			filtering = GL_NEAREST;
-			colorformat = GL_RED;
-			type = GL_FLOAT;
-
-			internalformat =  GL_R32F;
-#else
-			ColorFormat = ECF_A8R8G8B8;
-			internalformat =  GL_RGB8;
-#endif
-		}
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_rg))
+			{
+				filtering = GL_NEAREST;
+				colorformat = GL_RED;
+				internalformat =  GL_R32F;
+				type = GL_FLOAT;
+			}
+			else
+				os::Printer::log("ECF_R32F color format is not supported", ELL_ERROR);
 			break;
 		case ECF_G32R32F:
-		{
-#ifdef GL_ARB_texture_rg
-			filtering = GL_NEAREST;
-			colorformat = GL_RG;
-			type = GL_FLOAT;
-
-			internalformat =  GL_RG32F;
-#else
-			ColorFormat = ECF_A8R8G8B8;
-			internalformat =  GL_RGB8;
-#endif
-		}
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_rg))
+			{
+				filtering = GL_NEAREST;
+				colorformat = GL_RG;
+				internalformat =  GL_RG32F;
+				type = GL_FLOAT;
+			}
+			else
+				os::Printer::log("ECF_G32R32F color format is not supported", ELL_ERROR);
 			break;
 		case ECF_A32B32G32R32F:
-		{
-#ifdef GL_ARB_texture_float
-			filtering = GL_NEAREST;
-			colorformat = GL_RGBA;
-			type = GL_FLOAT;
-
-			internalformat =  GL_RGBA32F_ARB;
-#else
-			ColorFormat = ECF_A8R8G8B8;
-			internalformat =  GL_RGBA8;
-#endif
-		}
+			if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_ARB_texture_float))
+			{
+				filtering = GL_NEAREST;
+				colorformat = GL_RGBA;
+				internalformat =  GL_RGBA32F_ARB;
+				type = GL_FLOAT;
+			}
+			else
+				os::Printer::log("ECF_A32B32G32R32F color format is not supported", ELL_ERROR);
 			break;
 		default:
-		{
 			os::Printer::log("Unsupported texture format", ELL_ERROR);
-			internalformat =  GL_RGBA8;
-		}
+			break;
 	}
 #if defined(GL_ARB_framebuffer_sRGB) || defined(GL_EXT_framebuffer_sRGB)
 	if (Driver->Params.HandleSRGB)
@@ -293,7 +389,10 @@ void COpenGLTexture::getImageValues(IImage* image)
 	}
 	TextureSize=ImageSize.getOptimalSize(!Driver->queryFeature(EVDF_TEXTURE_NPOT));
 
-	ColorFormat = getBestColorFormat(image->getColorFormat());
+	if(image->getColorFormat() == ECF_DXT1 || image->getColorFormat() == ECF_DXT2 || image->getColorFormat() == ECF_DXT3 || image->getColorFormat() == ECF_DXT4 || image->getColorFormat() == ECF_DXT5)
+		ColorFormat = image->getColorFormat();
+	else
+		ColorFormat = getBestColorFormat(image->getColorFormat());
 }
 
 
@@ -315,7 +414,7 @@ void COpenGLTexture::uploadTexture(bool newTexture, void* mipmapData, u32 level)
 	// make sure we don't change the internal format of existing images
 	if (!newTexture)
 		InternalFormat=oldInternalFormat;
-        
+
     Driver->setActiveTexture(0, this);
 	Driver->getBridgeCalls()->setTexture(0, true);
 
@@ -325,76 +424,107 @@ void COpenGLTexture::uploadTexture(bool newTexture, void* mipmapData, u32 level)
 	// mipmap handling for main texture
 	if (!level && newTexture)
 	{
-#ifndef DISABLE_MIPMAPPING
-#ifdef GL_SGIS_generate_mipmap
 		// auto generate if possible and no mipmap data is given
-		if (HasMipMaps && !mipmapData && Driver->queryFeature(EVDF_MIP_MAP_AUTO_UPDATE))
+		if (!IsCompressed && HasMipMaps && !mipmapData && Driver->queryFeature(EVDF_MIP_MAP_AUTO_UPDATE))
 		{
-			if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_SPEED))
-				glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_FASTEST);
-			else if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_QUALITY))
-				glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
-			else
-				glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_DONT_CARE);
-
-			AutomaticMipmapUpdate=true;
-
 			if (!Driver->queryFeature(EVDF_FRAMEBUFFER_OBJECT))
 			{
+#ifdef GL_SGIS_generate_mipmap
+				if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_SPEED))
+					glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_FASTEST);
+				else if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_QUALITY))
+					glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
+				else
+					glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_DONT_CARE);
+
 				glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE );
 				MipmapLegacyMode=true;
+				AutomaticMipmapUpdate=true;
+#endif
 			}
 			else
+			{
+				if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_SPEED))
+					glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST);
+				else if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_QUALITY))
+					glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+				else
+					glHint(GL_GENERATE_MIPMAP_HINT, GL_DONT_CARE);
+
 				MipmapLegacyMode=false;
+				AutomaticMipmapUpdate=true;
+			}
+		}
+
+		// enable bilinear filter without mipmaps
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		StatesCache.BilinearFilter = true;
+		StatesCache.TrilinearFilter = false;
+		StatesCache.MipMapStatus = false;
+	}
+
+	// now get image data and upload to GPU
+	u32 compressedDataSize = 0;
+
+	void* source = image->lock();
+	if (newTexture)
+	{
+		if (IsCompressed)
+		{
+			if(ColorFormat == ECF_DXT1)
+				compressedDataSize = ((image->getDimension().Width + 3) / 4) * ((image->getDimension().Height + 3) / 4) * 8;
+			else if (ColorFormat == ECF_DXT2 || ColorFormat == ECF_DXT3 || ColorFormat == ECF_DXT4 || ColorFormat == ECF_DXT5)
+				compressedDataSize = ((image->getDimension().Width + 3) / 4) * ((image->getDimension().Height + 3) / 4) * 16;
+
+			Driver->extGlCompressedTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, image->getDimension().Width,
+				image->getDimension().Height, 0, compressedDataSize, source);
 		}
 		else
-#endif
+			glTexImage2D(GL_TEXTURE_2D, level, InternalFormat, image->getDimension().Width,
+				image->getDimension().Height, 0, PixelFormat, PixelType, source);
+	}
+	else
+	{
+		if (IsCompressed)
 		{
-			// Either generate manually due to missing capability
-			// or use predefined mipmap data
-			AutomaticMipmapUpdate=false;
-			regenerateMipMapLevels(mipmapData);
+			if(ColorFormat == ECF_DXT1)
+				compressedDataSize = ((image->getDimension().Width + 3) / 4) * ((image->getDimension().Height + 3) / 4) * 8;
+			else if (ColorFormat == ECF_DXT2 || ColorFormat == ECF_DXT3 || ColorFormat == ECF_DXT4 || ColorFormat == ECF_DXT5)
+				compressedDataSize = ((image->getDimension().Width + 3) / 4) * ((image->getDimension().Height + 3) / 4) * 16;
+
+			Driver->extGlCompressedTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, image->getDimension().Width,
+				image->getDimension().Height, PixelFormat, compressedDataSize, source);
 		}
+		else
+			glTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, image->getDimension().Width,
+				image->getDimension().Height, PixelFormat, PixelType, source);
+	}
+	image->unlock();
+
+	if (!level && newTexture)
+	{
+		if (IsCompressed && !mipmapData)
+		{
+			if (image->hasMipMaps())
+				mipmapData = static_cast<u8*>(image->lock())+compressedDataSize;
+			else
+				HasMipMaps = false;
+		}
+
+		regenerateMipMapLevels(mipmapData);
+
 		if (HasMipMaps) // might have changed in regenerateMipMapLevels
 		{
 			// enable bilinear mipmap filter
 			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
 			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            
+
             StatesCache.BilinearFilter = true;
             StatesCache.TrilinearFilter = false;
             StatesCache.MipMapStatus = true;
 		}
-		else
-#else
-			HasMipMaps=false;
-			os::Printer::log("Did not create OpenGL texture mip maps.", ELL_INFORMATION);
-#endif
-		{
-			// enable bilinear filter without mipmaps
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            
-            StatesCache.BilinearFilter = true;
-            StatesCache.TrilinearFilter = false;
-            StatesCache.MipMapStatus = false;
-		}
-	}
-
-	// now get image data and upload to GPU
-	void* source = image->lock();
-	if (newTexture)
-		glTexImage2D(GL_TEXTURE_2D, level, InternalFormat, image->getDimension().Width,
-			image->getDimension().Height, 0, PixelFormat, PixelType, source);
-	else
-		glTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, image->getDimension().Width,
-			image->getDimension().Height, PixelFormat, PixelType, source);
-	image->unlock();
-
-	if (!MipmapLegacyMode && AutomaticMipmapUpdate)
-	{
-		glEnable(GL_TEXTURE_2D);
-		Driver->extGlGenerateMipmap(GL_TEXTURE_2D);
 	}
 
 	if (Driver->testGLError())
@@ -405,6 +535,9 @@ void COpenGLTexture::uploadTexture(bool newTexture, void* mipmapData, u32 level)
 //! lock function
 void* COpenGLTexture::lock(E_TEXTURE_LOCK_MODE mode, u32 mipmapLevel)
 {
+	if (IsCompressed) // TO-DO
+		return 0;
+
 	// store info about which image is locked
 	IImage* image = (mipmapLevel==0)?Image:MipImage;
 	ReadOnlyLock |= (mode==ETLM_READ_ONLY);
@@ -510,6 +643,9 @@ void* COpenGLTexture::lock(E_TEXTURE_LOCK_MODE mode, u32 mipmapLevel)
 //! unlock function
 void COpenGLTexture::unlock()
 {
+	if (IsCompressed) // TO-DO
+		return;
+
 	// test if miplevel or main texture was locked
 	IImage* image = MipImage?MipImage:Image;
 	if (!image)
@@ -595,12 +731,37 @@ bool COpenGLTexture::hasMipMaps() const
 //! modifying the texture
 void COpenGLTexture::regenerateMipMapLevels(void* mipmapData)
 {
-	if (AutomaticMipmapUpdate || !HasMipMaps || !Image)
-		return;
-	if ((Image->getDimension().Width==1) && (Image->getDimension().Height==1))
+	// texture require mipmaps?
+	if (!HasMipMaps)
 		return;
 
+	// we don't use custom data for mipmaps.
+	if (!mipmapData)
+	{
+		// compressed textures require custom data for prepare mipmaps.
+		if (IsCompressed)
+			return;
+
+		// texture use legacy method for generate mipmaps?
+		if (AutomaticMipmapUpdate && MipmapLegacyMode)
+			return;
+
+		// hardware doesn't support generate mipmaps for certain texture but image data doesn't exist or is wrong.
+		if (!AutomaticMipmapUpdate && (!Image || (Image && ((Image->getDimension().Width==1) && (Image->getDimension().Height==1)))))
+			return;
+	}
+
+	// hardware moethods for generate mipmaps.
+	if (!mipmapData && AutomaticMipmapUpdate && !MipmapLegacyMode)
+	{
+		glEnable(GL_TEXTURE_2D);
+		Driver->extGlGenerateMipmap(GL_TEXTURE_2D);
+
+		return;
+	}
+
 	// Manually create mipmaps or use prepared version
+	u32 compressedDataSize = 0;
 	u32 width=Image->getDimension().Width;
 	u32 height=Image->getDimension().Height;
 	u32 i=0;
@@ -611,18 +772,38 @@ void COpenGLTexture::regenerateMipMapLevels(void* mipmapData)
 			width>>=1;
 		if (height>1)
 			height>>=1;
+
 		++i;
+
 		if (!target)
 			target = new u8[width*height*Image->getBytesPerPixel()];
+
 		// create scaled version if no mipdata available
 		if (!mipmapData)
 			Image->copyToScaling(target, width, height, Image->getColorFormat());
-		glTexImage2D(GL_TEXTURE_2D, i, InternalFormat, width, height,
-				0, PixelFormat, PixelType, target);
+
+		if (IsCompressed)
+		{
+			if(ColorFormat == ECF_DXT1)
+				compressedDataSize = ((width + 3) / 4) * ((height + 3) / 4) * 8;
+			else if (ColorFormat == ECF_DXT2 || ColorFormat == ECF_DXT3 || ColorFormat == ECF_DXT4 || ColorFormat == ECF_DXT5)
+				compressedDataSize = ((width + 3) / 4) * ((height + 3) / 4) * 16;
+
+			Driver->extGlCompressedTexImage2D(GL_TEXTURE_2D, i, InternalFormat, width,
+				height, 0, compressedDataSize, target);
+		}
+		else
+			glTexImage2D(GL_TEXTURE_2D, i, InternalFormat, width, height,
+					0, PixelFormat, PixelType, target);
+
 		// get next prepared mipmap data if available
 		if (mipmapData)
 		{
-			mipmapData = static_cast<u8*>(mipmapData)+width*height*Image->getBytesPerPixel();
+			if (IsCompressed)
+				mipmapData = static_cast<u8*>(mipmapData)+compressedDataSize;
+			else
+				mipmapData = static_cast<u8*>(mipmapData)+width*height*Image->getBytesPerPixel();
+
 			target = static_cast<u8*>(mipmapData);
 		}
 	}
@@ -648,6 +829,18 @@ void COpenGLTexture::setIsRenderTarget(bool isTarget)
 bool COpenGLTexture::isFrameBufferObject() const
 {
 	return false;
+}
+
+
+bool COpenGLTexture::isDepthTexture() const
+{
+	return IsDepthTexture;
+}
+
+
+bool COpenGLTexture::isRenderBuffer() const
+{
+	return IsRenderBuffer;
 }
 
 
@@ -680,71 +873,69 @@ COpenGLTexture::SStatesCache& COpenGLTexture::getStatesCache() const
 // helper function for render to texture
 static bool checkFBOStatus(COpenGLDriver* Driver);
 
-//! RTT ColorFrameBuffer constructor
+//! RTT FBO constructor
 COpenGLFBOTexture::COpenGLFBOTexture(const core::dimension2d<u32>& size,
 					const io::path& name, COpenGLDriver* driver,
 					ECOLOR_FORMAT format)
-	: COpenGLTexture(name, driver), DepthTexture(0), ColorFrameBuffer(0)
+	: COpenGLTexture(name, driver), BufferID(0), DepthTexture(0)
 {
-	#ifdef _DEBUG
-	setDebugName("COpenGLTexture_FBO");
-	#endif
-
-	ImageSize = size;
-	TextureSize = size;
+#ifdef _DEBUG
+	setDebugName("COpenGLFBOTexture");
+#endif
 
 	if (ECF_UNKNOWN == format)
 		format = getBestColorFormat(driver->getColorFormat());
 
+	IsDepthTexture = IImage::isDepthFormat(format);
+
+	ImageSize = size;
+	TextureSize = size;
 	ColorFormat = format;
 
-	GLint FilteringType;
+	GLint FilteringType = 0;
 	InternalFormat = getOpenGLFormatAndParametersFromColorFormat(format, FilteringType, PixelFormat, PixelType);
 
 	HasMipMaps = false;
 	IsRenderTarget = true;
 
-#ifdef GL_EXT_framebuffer_object
-	// generate frame buffer
-	Driver->extGlGenFramebuffers(1, &ColorFrameBuffer);
-	bindRTT();
-
 	// generate color texture
+
 	glGenTextures(1, &TextureName);
-    
+
     Driver->setActiveTexture(0, this);
 	Driver->getBridgeCalls()->setTexture(0, true);
-    
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, FilteringType);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    
-    if(FilteringType == GL_NEAREST)
+
+    if (FilteringType == GL_NEAREST)
         StatesCache.BilinearFilter = false;
     else
         StatesCache.BilinearFilter = true;
-        
+
     StatesCache.WrapU = ETC_CLAMP_TO_EDGE;
     StatesCache.WrapV = ETC_CLAMP_TO_EDGE;
-            
-	glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, ImageSize.Width,
-		ImageSize.Height, 0, PixelFormat, PixelType, 0);
-#ifdef _DEBUG
-	driver->testGLError();
-#endif
 
-	// attach color texture to frame buffer
-	Driver->extGlFramebufferTexture2D(GL_FRAMEBUFFER_EXT,
-						GL_COLOR_ATTACHMENT0_EXT,
-						GL_TEXTURE_2D,
-						TextureName,
-						0);
-#ifdef _DEBUG
-	checkFBOStatus(Driver);
-#endif
+	glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, ImageSize.Width, ImageSize.Height, 0, PixelFormat, PixelType, 0);
 
+	Driver->setActiveTexture(0, 0);
+	Driver->getBridgeCalls()->setTexture(0, true);
+
+#ifdef GL_EXT_framebuffer_object
+	// generate FBO
+
+	Driver->extGlGenFramebuffers(1, &BufferID);
+
+	if (BufferID != 0 && !IsDepthTexture)
+	{
+		Driver->extGlBindFramebuffer(GL_FRAMEBUFFER_EXT, BufferID);
+	
+		Driver->extGlFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, TextureName, 0);
+
+		Driver->extGlBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+	}
 #endif
-	unbindRTT();
 }
 
 
@@ -752,10 +943,17 @@ COpenGLFBOTexture::COpenGLFBOTexture(const core::dimension2d<u32>& size,
 COpenGLFBOTexture::~COpenGLFBOTexture()
 {
 	if (DepthTexture)
-		if (DepthTexture->drop())
+	{
+		bool remove = DepthTexture->isRenderBuffer();
+
+		if (DepthTexture->drop() && remove)
 			Driver->removeDepthTexture(DepthTexture);
-	if (ColorFrameBuffer)
-		Driver->extGlDeleteFramebuffers(1, &ColorFrameBuffer);
+	}
+
+#ifdef GL_EXT_framebuffer_object
+	if (BufferID)
+		Driver->extGlDeleteFramebuffers(1, &BufferID);
+#endif
 }
 
 
@@ -769,8 +967,9 @@ bool COpenGLFBOTexture::isFrameBufferObject() const
 void COpenGLFBOTexture::bindRTT()
 {
 #ifdef GL_EXT_framebuffer_object
-	if (ColorFrameBuffer != 0)
-		Driver->extGlBindFramebuffer(GL_FRAMEBUFFER_EXT, ColorFrameBuffer);
+	if (BufferID != 0)
+		Driver->extGlBindFramebuffer(GL_FRAMEBUFFER_EXT, BufferID);
+
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 #endif
 }
@@ -780,26 +979,100 @@ void COpenGLFBOTexture::bindRTT()
 void COpenGLFBOTexture::unbindRTT()
 {
 #ifdef GL_EXT_framebuffer_object
-	if (ColorFrameBuffer != 0)
+	if (BufferID != 0)
 		Driver->extGlBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 #endif
 }
 
 
-/* FBO Depth Textures */
+//! Get depth texture.
+ITexture* COpenGLFBOTexture::getDepthTexture() const
+{
+	return DepthTexture;
+}
 
-//! RTT DepthBuffer constructor
-COpenGLFBODepthTexture::COpenGLFBODepthTexture(
+
+//! Set depth texture.
+bool COpenGLFBOTexture::setDepthTexture(ITexture* depthTexture)
+{
+	if (DepthTexture == depthTexture || BufferID == 0)
+		return false;
+
+#ifdef GL_EXT_framebuffer_object
+	Driver->extGlBindFramebuffer(GL_FRAMEBUFFER_EXT, BufferID);
+
+	if (DepthTexture)
+	{
+		if (DepthTexture->isRenderBuffer())
+		{
+			Driver->extGlFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, 0);
+		}
+		else
+		{
+			Driver->extGlFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, 0, 0);
+
+			if (DepthTexture->getColorFormat() == ECF_D24S8)
+				Driver->extGlFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, 0, 0);
+		}
+		
+		if (DepthTexture->drop())
+			Driver->removeDepthTexture(DepthTexture);
+	}
+
+	COpenGLTexture* tex = static_cast<COpenGLTexture*>(depthTexture);
+
+	DepthTexture = (tex && tex->isDepthTexture()) ? tex : 0;
+
+	if (DepthTexture)
+	{
+		DepthTexture->grab();
+
+		if (DepthTexture->isRenderBuffer())
+		{
+			COpenGLRenderBuffer* renderBuffer = static_cast<COpenGLRenderBuffer*>(DepthTexture);
+
+			Driver->extGlFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, renderBuffer->getBufferID());
+		}
+		else
+		{
+			COpenGLFBOTexture* fboDepthTexture = static_cast<COpenGLFBOTexture*>(DepthTexture);
+
+			Driver->extGlFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, fboDepthTexture->getOpenGLTextureName(), 0);
+
+			if (DepthTexture->getColorFormat() == ECF_D24S8)
+				Driver->extGlFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_TEXTURE_2D, fboDepthTexture->getOpenGLTextureName(), 0);
+		}
+	}
+
+	Driver->extGlBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+#endif
+
+	if (!checkFBOStatus(Driver))
+	{
+		os::Printer::log("FBO incomplete");
+		return false;
+	}
+
+	return true;
+}
+
+
+/* Render Buffer */
+
+//! constructor
+COpenGLRenderBuffer::COpenGLRenderBuffer(
 		const core::dimension2d<u32>& size,
 		const io::path& name,
 		COpenGLDriver* driver,
 		bool useStencil)
-	: COpenGLTexture(name, driver), DepthRenderBuffer(0),
-	StencilRenderBuffer(0), UseStencil(useStencil)
+	: COpenGLTexture(name, driver), BufferID(0)
 {
 #ifdef _DEBUG
-	setDebugName("COpenGLTextureFBO_Depth");
+	setDebugName("COpenGLRenderBuffer");
 #endif
+
+	IsDepthTexture = true;
+	IsRenderBuffer = true;
 
 	ImageSize = size;
 	TextureSize = size;
@@ -808,119 +1081,42 @@ COpenGLFBODepthTexture::COpenGLFBODepthTexture(
 	PixelType = GL_UNSIGNED_BYTE;
 	HasMipMaps = false;
 
-	if (useStencil)
-	{
-		glGenTextures(1, &DepthRenderBuffer);
-		glBindTexture(GL_TEXTURE_2D, DepthRenderBuffer);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-#ifdef GL_EXT_packed_depth_stencil
-		if (Driver->queryOpenGLFeature(COpenGLExtensionHandler::IRR_EXT_packed_depth_stencil))
-		{
-			// generate packed depth stencil texture
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_STENCIL_EXT, ImageSize.Width,
-				ImageSize.Height, 0, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, 0);
-			StencilRenderBuffer = DepthRenderBuffer; // stencil is packed with depth
-		}
-		else // generate separate stencil and depth textures
-#endif
-		{
-			// generate depth texture
-			glTexImage2D(GL_TEXTURE_2D, 0, Driver->getZBufferBits(), ImageSize.Width,
-				ImageSize.Height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
-
-			// generate stencil texture
-			glGenTextures(1, &StencilRenderBuffer);
-			glBindTexture(GL_TEXTURE_2D, StencilRenderBuffer);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX, ImageSize.Width,
-				ImageSize.Height, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, 0);
-		}
-	}
 #ifdef GL_EXT_framebuffer_object
-	else
-	{
-		// generate depth buffer
-		Driver->extGlGenRenderbuffers(1, &DepthRenderBuffer);
-		Driver->extGlBindRenderbuffer(GL_RENDERBUFFER_EXT, DepthRenderBuffer);
-		Driver->extGlRenderbufferStorage(GL_RENDERBUFFER_EXT,
-				Driver->getZBufferBits(), ImageSize.Width,
-				ImageSize.Height);
-	}
+	// generate depth buffer
+	Driver->extGlGenRenderbuffers(1, &BufferID);
+	Driver->extGlBindRenderbuffer(GL_RENDERBUFFER_EXT, BufferID);
+	Driver->extGlRenderbufferStorage(GL_RENDERBUFFER_EXT, Driver->getZBufferBits(), ImageSize.Width, ImageSize.Height);
+	Driver->extGlBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
 #endif
 }
 
 
 //! destructor
-COpenGLFBODepthTexture::~COpenGLFBODepthTexture()
+COpenGLRenderBuffer::~COpenGLRenderBuffer()
 {
-	if (DepthRenderBuffer && UseStencil)
-		glDeleteTextures(1, &DepthRenderBuffer);
-	else
-		Driver->extGlDeleteRenderbuffers(1, &DepthRenderBuffer);
-	if (StencilRenderBuffer && StencilRenderBuffer != DepthRenderBuffer)
-		glDeleteTextures(1, &StencilRenderBuffer);
-}
-
-
-//combine depth texture and rtt
-bool COpenGLFBODepthTexture::attach(ITexture* renderTex)
-{
-	if (!renderTex)
-		return false;
-	video::COpenGLFBOTexture* rtt = static_cast<video::COpenGLFBOTexture*>(renderTex);
-	rtt->bindRTT();
 #ifdef GL_EXT_framebuffer_object
-	if (UseStencil)
-	{
-		// attach stencil texture to stencil buffer
-		Driver->extGlFramebufferTexture2D(GL_FRAMEBUFFER_EXT,
-						GL_STENCIL_ATTACHMENT_EXT,
-						GL_TEXTURE_2D,
-						StencilRenderBuffer,
-						0);
-
-		// attach depth texture to depth buffer
-		Driver->extGlFramebufferTexture2D(GL_FRAMEBUFFER_EXT,
-						GL_DEPTH_ATTACHMENT_EXT,
-						GL_TEXTURE_2D,
-						DepthRenderBuffer,
-						0);
-	}
-	else
-	{
-		// attach depth renderbuffer to depth buffer
-		Driver->extGlFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT,
-						GL_DEPTH_ATTACHMENT_EXT,
-						GL_RENDERBUFFER_EXT,
-						DepthRenderBuffer);
-	}
+	if (BufferID)
+		Driver->extGlDeleteRenderbuffers(1, &BufferID);
 #endif
-	// check the status
-	if (!checkFBOStatus(Driver))
-	{
-		os::Printer::log("FBO incomplete");
-		return false;
-	}
-	rtt->DepthTexture=this;
-	grab(); // grab the depth buffer, not the RTT
-	rtt->unbindRTT();
-	return true;
 }
 
 
 //! Bind Render Target Texture
-void COpenGLFBODepthTexture::bindRTT()
+void COpenGLRenderBuffer::bindRTT()
 {
 }
 
 
 //! Unbind Render Target Texture
-void COpenGLFBODepthTexture::unbindRTT()
+void COpenGLRenderBuffer::unbindRTT()
 {
+}
+
+
+
+GLuint COpenGLRenderBuffer::getBufferID() const
+{
+	return BufferID;
 }
 
 

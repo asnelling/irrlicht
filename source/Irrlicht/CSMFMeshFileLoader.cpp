@@ -7,6 +7,7 @@
 #ifdef _IRR_COMPILE_WITH_SMF_LOADER_
 
 #include "CSMFMeshFileLoader.h"
+#include "CMeshTextureLoader.h"
 #include "SAnimatedMesh.h"
 #include "CMeshBuffer.h"
 #include "IReadFile.h"
@@ -19,9 +20,9 @@ namespace irr
 namespace scene
 {
 
-CSMFMeshFileLoader::CSMFMeshFileLoader(video::IVideoDriver* driver)
-: Driver(driver)
+	CSMFMeshFileLoader::CSMFMeshFileLoader(irr::io::IFileSystem* fs, video::IVideoDriver* driver) : Driver(driver)
 {
+	TextureLoader = new CMeshTextureLoader( fs, driver );
 }
 
 //! Returns true if the file might be loaded by this class.
@@ -33,6 +34,12 @@ bool CSMFMeshFileLoader::isALoadableFileExtension(const io::path& filename) cons
 //! Creates/loads an animated mesh from the file.
 IAnimatedMesh* CSMFMeshFileLoader::createMesh(io::IReadFile* file)
 {
+	if ( !file )
+		return 0;
+
+	if ( getMeshTextureLoader() )
+		getMeshTextureLoader()->setMeshFile(file);
+
 	// create empty mesh
 	SMesh *mesh = new SMesh();
 
@@ -93,9 +100,12 @@ void CSMFMeshFileLoader::loadLimb(io::IReadFile* file, SMesh* mesh, const core::
 
 	for (const c8 **ext = extensions; !texture && *ext; ++ext)
 	{
-		texture = Driver->getTexture(textureName + *ext);
+		texture = getMeshTextureLoader() ? getMeshTextureLoader()->getTexture(textureName + *ext) : NULL;
 		if (texture)
+		{
 			textureName = textureName + *ext;
+			break;
+		}
 	}
 	// find the correct mesh buffer
 	u32 i;

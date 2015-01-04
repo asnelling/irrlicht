@@ -184,6 +184,107 @@ IMesh* CGeometryCreator::createHillPlaneMesh(
 	return mesh;
 }
 
+namespace
+{
+
+// Return the position on an exponential curve. Input from 0 to 1.
+float geopos(float pos)
+{
+	pos = core::clamp<float>(pos, 0, 1);
+	pos *= 5;
+
+	const float out = powf(2.5f, pos - 5);
+
+	return out;
+}
+
+}
+
+//! Create a geoplane.
+IMesh* CGeometryCreator::createGeoplaneMesh(f32 radius, u32 rows, u32 columns) const
+{
+	using namespace core;
+	using namespace video;
+
+	rows = clamp<u32>(rows, 3, 2048);
+	columns = clamp<u32>(columns, 3, 2048);
+
+	CMeshBuffer<video::S3DVertex>* buffer = new CMeshBuffer<video::S3DVertex>(Driver->getVertexDescriptor(0));
+	buffer->setHardwareMappingHint(scene::EHM_STATIC);
+
+	IIndexBuffer* ib = buffer->getIndexBuffer();
+	IVertexBuffer* vb = buffer->getVertexBuffer(0);
+
+	vb->reallocate((rows * columns) + 1);
+	ib->reallocate((((rows - 2) * columns * 2) + columns) * 3);
+
+	S3DVertex v(0, 0, 0, 0, 1, 0, SColor(255, 255, 255, 255), 0, 0);
+	const float anglestep = (2 * PI) / columns;
+
+	u32 i, j;
+	vb->addVertex(&v);
+	for (j = 1; j < rows; j++)
+	{
+		const float len = radius * geopos((float) j/(rows-1));
+
+		for (i = 0; i < columns; i++)
+		{
+			const float angle = anglestep * i;
+			v.Pos = vector3df(len * sinf(angle), 0, len * cosf(angle));
+
+			vb->addVertex(&v);
+		}
+	}
+
+	// Indices
+	// First the inner fan
+	for (i = 0; i < columns; i++)
+	{
+		ib->addIndex(0);
+		ib->addIndex(1 + i);
+
+		if (i == columns - 1)
+			ib->addIndex(1);
+		else
+			ib->addIndex(2 + i);
+	}
+
+	// Then the surrounding quads
+	for (j = 0; j < rows - 2; j++)
+	{
+		for (i = 0; i < columns; i++)
+		{
+			u32 start = ((j * columns) + i) + 1;
+			u32 next = start + 1;
+			u32 far = (((j + 1) * columns) + i) + 1;
+			u32 farnext = far + 1;
+
+			if (i == columns - 1)
+			{
+				next = ((j * columns)) + 1;
+				farnext = (((j + 1) * columns)) + 1;
+			}
+
+			ib->addIndex(start);
+			ib->addIndex(far);
+			ib->addIndex(next);
+
+			ib->addIndex(next);
+			ib->addIndex(far);
+			ib->addIndex(farnext);
+		}
+	}
+
+	// Done
+
+	SMesh* mesh = new SMesh();
+	buffer->recalculateBoundingBox();
+	mesh->addMeshBuffer(buffer);
+	buffer->drop();
+	mesh->recalculateBoundingBox();
+
+	return mesh;
+}
 
 IMesh* CGeometryCreator::createTerrainMesh(video::IImage* texture,
 		video::IImage* heightmap, const core::dimension2d<f32>& stretchSize,
