@@ -186,7 +186,7 @@ namespace irr
 					for (u32 i = 0; i < size; ++i)
 					{
 						core::aabbox3df box = renderBuffer->getBoundingBox();
-						instanceNodeArray[i]->getAbsoluteTransformation().transformBoxEx(box);
+						driver->setTransform(video::ETS_WORLD, instanceNodeArray[i]->getAbsoluteTransformation());
 						driver->draw3DBox(box, video::SColor(255, 255, 255, 255));
 					}
 				}
@@ -205,17 +205,19 @@ namespace irr
 			box.reset(0, 0, 0);
 
 			const u32 size = instanceNodeArray.size();
-			
+
 			//TODO add static instance scene nodes
-			renderBuffer->getVertexBuffer(1)->fill(size);
+			renderBuffer->getVertexBuffer(1)->clear();
+			renderBuffer->getVertexBuffer(1)->setDirty();
+			renderBuffer->getVertexBuffer(1)->set_used(size);
 
 			for (u32 i = 0; i < size; ++i)
 			{
 				core::aabbox3df instanceBox = renderBuffer->getBoundingBox();
 				instanceNodeArray[i]->getAbsoluteTransformation().transformBoxEx(instanceBox);
 
-				//if (!SceneManager->isCulled(instanceBox, (scene::E_CULLING_TYPE)getAutomaticCulling(), AbsoluteTransformation))
-					renderBuffer->getVertexBuffer(1)->setVertex(i, &instanceNodeArray[i]->getAbsolutePosition());
+				if (!SceneManager->isCulled(instanceNodeArray[i]))
+					renderBuffer->getVertexBuffer(1)->setVertex(i, &instanceNodeArray[i]->getAbsoluteTransformation());
 
 				box.addInternalPoint(instanceNodeArray[i]->getAbsolutePosition());
 			}
@@ -257,11 +259,6 @@ namespace irr
 			video::IVideoDriver* driver = SceneManager->getVideoDriver();
 			if (baseMesh)
 			{
-				//if (baseMesh->getMeshBufferCount() > 0)
-				//	driver->removeHardwareBuffer(baseMesh->getMeshBuffer(0));
-
-				//if (baseMesh->getMeshBufferCount() > 1)
-				//	driver->removeHardwareBuffer(baseMesh->getMeshBuffer(1));
 				baseMesh->drop();
 				baseMesh = NULL;
 			}
@@ -292,15 +289,18 @@ namespace irr
 
 					for (u32 i = 0; i < stdv->getAttributeCount(); ++i)
 					{
-						index->addAttribute(stdv->getAttribute(i)->getName(), stdv->getAttribute(i)->getElementCount(), stdv->getAttribute(i)->getSemantic(), stdv->getAttribute(i)->getType(), 0);
+						index->addAttribute(stdv->getAttribute(i)->getName(), stdv->getAttribute(i)->getElementCount(), stdv->getAttribute(i)->getSemantic(), stdv->getAttribute(i)->getType(), stdv->getAttribute(i)->getBufferID());
 					}
 
-					index->addAttribute("InstancingIndex1", 3, video::EVAS_TEXCOORD1, video::EVAT_FLOAT, 1);
+					index->addAttribute("InstancingMatrix1", 4, video::EVAS_TEXCOORD1, video::EVAT_FLOAT, 1);
+					index->addAttribute("InstancingMatrix2", 4, video::EVAS_TEXCOORD2, video::EVAT_FLOAT, 1);
+					index->addAttribute("InstancingMatrix3", 4, video::EVAS_TEXCOORD3, video::EVAT_FLOAT, 1);
+					index->addAttribute("InstancingMatrix4", 4, video::EVAS_TEXCOORD4, video::EVAT_FLOAT, 1);
 
 					index->setInstanceDataStepRate(video::EIDSR_PER_INSTANCE, 1);
 				}
 
-				IVertexBuffer* instanceBuffer = new CVertexBuffer<core::vector3df>();
+				IVertexBuffer* instanceBuffer = new CVertexBuffer<core::matrix4>();
 
 				renderBuffer->setVertexDescriptor(index);
 				renderBuffer->addVertexBuffer(instanceBuffer);
