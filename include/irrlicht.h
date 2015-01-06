@@ -148,6 +148,7 @@
 #include "IShadowVolumeSceneNode.h"
 #include "ISkinnedMesh.h"
 #include "ITerrainSceneNode.h"
+#include "IInstancedMeshSceneNode.h"
 #include "ITextSceneNode.h"
 #include "ITexture.h"
 #include "ITimer.h"

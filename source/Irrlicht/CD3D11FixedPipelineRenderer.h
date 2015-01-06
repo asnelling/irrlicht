@@ -254,9 +254,6 @@ public:
 		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
 		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
  		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
-
-	
 	}
 
 	//! Returns if the material is transparent. The scene management needs to know this
@@ -287,6 +284,9 @@ public:
 		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;		
 		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
 
+		D3D11_DEPTH_STENCIL_DESC& depth = static_cast<CD3D11Driver*>(Driver)->getDepthStencilDesc();
+
+		depth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	}
 
 	//! Returns if the material is transparent. The scene managment needs to know this
@@ -342,7 +342,9 @@ public:
 		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;	
 		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;			
 		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;	
-	;
+		D3D11_DEPTH_STENCIL_DESC& depth = static_cast<CD3D11Driver*>(Driver)->getDepthStencilDesc();
+
+		depth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	}
 
 	//! Returns if the material is transparent. The scene managment needs to know this
@@ -370,7 +372,11 @@ public:
 		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;	
 		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;	
 		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;			
-		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;	
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;		
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+
+		D3D11_DEPTH_STENCIL_DESC& depth = static_cast<CD3D11Driver*>(Driver)->getDepthStencilDesc();
+		depth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	}
 
 	//! Returns if the material is transparent. The scene managment needs to know this
@@ -384,7 +390,6 @@ public:
 class CD3D11MaterialRenderer_ONETEXTURE_BLEND : public CD3D11FixedPipelineRenderer
 {
 public:
-
 	CD3D11MaterialRenderer_ONETEXTURE_BLEND(ID3D11Device* device, IVideoDriver* driver, CD3D11CallBridge* bridgeCalls)
 		: CD3D11FixedPipelineRenderer(device, driver, bridgeCalls) {}
 

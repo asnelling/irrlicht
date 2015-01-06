@@ -124,6 +124,7 @@ namespace scene
 	class ITextSceneNode;
 	class ITriangleSelector;
 	class IVolumeLightSceneNode;
+	class IInstancedMeshSceneNode;
 
 	namespace quake3
 	{
@@ -490,6 +491,23 @@ namespace scene
 				const core::vector3df& rotation = core::vector3df(0,0,0),
 				const core::vector3df& scale = core::vector3df(1.0f, 1.0f, 1.0f),
 				bool alsoAddIfMeshPointerZero=false) = 0;
+
+		//! adds a scene node for rendering an instanced mesh model
+		/** \param mesh: Pointer to the loaded animated mesh to be displayed.
+		\param parent: Parent of the scene node. Can be NULL if no parent.
+		\param id: Id of the node. This id can be used to identify the scene node.
+		\param position: Position of the space relative to its parent where the
+		scene node will be placed.
+		\param rotation: Initital rotation of the scene node.
+		\param scale: Initial scale of the scene node.
+		\param alsoAddIfMeshPointerZero: Add the scene node even if a 0 pointer is passed.
+		\return Pointer to the created scene node.
+		This pointer should not be dropped. See IReferenceCounted::drop() for more information. */
+		virtual IInstancedMeshSceneNode* addInstancedMeshSceneNode(IMesh* mesh, ISceneNode* parent = 0, s32 id = -1,
+			const core::vector3df& position = core::vector3df(0, 0, 0),
+			const core::vector3df& rotation = core::vector3df(0, 0, 0),
+			const core::vector3df& scale = core::vector3df(1.0f, 1.0f, 1.0f),
+			bool alsoAddIfMeshPointerZero = false) = 0;
 
 		//! Adds a scene node for rendering a static mesh.
 		/** \param mesh: Pointer to the loaded static mesh to be displayed.
@@ -1657,6 +1675,8 @@ namespace scene
 		\return True if node is not visible in the current scene, else
 		false. */
 		virtual bool isCulled(const ISceneNode* node) const =0;
+
+		virtual bool isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, core::matrix4 absoluteTransformation) const = 0;
 
 	protected:
 

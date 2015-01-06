@@ -94,7 +94,7 @@ void CD3D9VertexDescriptor::rebuild()
 
 	for(u32 j = 0; j < count-1; ++j)
 	{
-		VertexElement[j].Stream = 0;
+		VertexElement[j].Stream = getAttribute(j)->getBufferID();
 		VertexElement[j].Offset = getAttribute(j)->getOffset();
 		VertexElement[j].Type = D3DDECLTYPE_UNUSED;
 		VertexElement[j].Method = D3DDECLMETHOD_DEFAULT;

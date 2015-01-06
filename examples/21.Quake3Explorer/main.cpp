@@ -1002,7 +1002,6 @@ void CQuake3EventHandler::dropMap ()
 {
 	IVideoDriver * driver = Game->Device->getVideoDriver();
 
-	driver->removeAllHardwareBuffers ();
 	driver->removeAllTextures ();
 
 	Player[0].shutdown ();

@@ -32,9 +32,7 @@ public:
 	CD3D11Texture(CD3D11Driver* driver, const core::dimension2d<u32>& size, const io::path& name,
 		const ECOLOR_FORMAT format = ECF_UNKNOWN, u32 arraySlices = 1, 
 		u32 sampleCount = 1, u32 sampleQuality = 0 );
-	//! Array constructor
-	/*CD3D11Texture(const core::array<ITexture*> *surfaces, CD3D11Driver* driver,
-		u32 flags, const io::path& name, E_TEXTURE_TYPE Type, u32 arraySlices, void* mipmapData);*/
+
 	//! destructor
 	virtual ~CD3D11Texture();
 
@@ -119,9 +117,6 @@ private:
 
 	//! copies the image to the texture
 	bool copyTexture(IImage* image);
-
-	//! copies the texture to the texture layer
-	bool CD3D11Texture::copyTexture(ITexture* image, int layer);
 
 	//! set Pitch based on the d3d format
 	void setPitch(DXGI_FORMAT d3dformat);

@@ -46,7 +46,6 @@ namespace scene
 
 		virtual ~CIndexBuffer()
 		{
-			Indices->clear();
 			delete Indices;
 		}
 
@@ -215,7 +214,6 @@ namespace scene
 
 			~CIndexList()
 			{
-				Data.clear();
 			}
 
 			virtual void clear()

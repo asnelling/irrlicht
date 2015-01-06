@@ -145,6 +145,9 @@ namespace scene
 
 		virtual void setDirty()
 		{
+			if (HardwareBuffer)
+				HardwareBuffer->requestUpdate();
+
 			++ChangedID;
 		}
 

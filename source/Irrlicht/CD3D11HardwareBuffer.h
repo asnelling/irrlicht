@@ -9,10 +9,6 @@
 #ifdef _IRR_COMPILE_WITH_DIRECT3D_11_
 
 #include "IHardwareBuffer.h"
-#include "IIndexBuffer.h"
-#include "IVertexBuffer.h"
-
-#include <d3d11.h>
 
 namespace irr
 {
@@ -23,25 +19,50 @@ class CD3D11Driver;
 
 class CD3D11HardwareBuffer : public IHardwareBuffer
 {
+	// Implementation of public methods
 public:
-	CD3D11HardwareBuffer(scene::IIndexBuffer* indexBuffer, CD3D11Driver* driver);
-	CD3D11HardwareBuffer(scene::IVertexBuffer* vertexBuffer, CD3D11Driver* driver);
+	CD3D11HardwareBuffer(CD3D11Driver* driver, E_HARDWARE_BUFFER_TYPE type, scene::E_HARDWARE_MAPPING mapping,
+									u32 size, u32 flags, const void* initialData = 0);
+
 	~CD3D11HardwareBuffer();
 
-	bool update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data) _IRR_OVERRIDE_;
+	//! Lock function.
+	virtual void* lock(bool readOnly = false);
 
-	ID3D11Buffer* getBuffer() const;
-	void removeFromArray(bool status);
+	//! Unlock function. Must be called after a lock() to the buffer.
+	virtual void unlock();
+
+	//! Copy data from system memory
+	virtual void copyFromMemory(const void* sysData, u32 offset, u32 length);
+
+	//! Copy data from another buffer
+	virtual void copyFromBuffer(IHardwareBuffer* buffer, u32 srcOffset, u32 descOffset, u32 length);
+
+	//! return DX 11 buffer
+	ID3D11Buffer* getBufferResource() const;
+
+	//! return unordered access view
+	ID3D11UnorderedAccessView* getUnorderedAccessView() const;
+
+	//! return shader resource view
+	ID3D11ShaderResourceView* getShaderResourceView() const;
+
+	bool update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data);
 
 private:
-	CD3D11Driver* Driver;
-	ID3D11DeviceContext* Context;
 	ID3D11Device* Device;
-
+	ID3D11DeviceContext* Context;
 	ID3D11Buffer* Buffer;
-	bool RemoveFromArray;
+	ID3D11UnorderedAccessView* UAView;
+	ID3D11ShaderResourceView* SRView;
 
-	void* LinkedBuffer;
+	CD3D11Driver* Driver;
+	CD3D11HardwareBuffer* TempStagingBuffer;
+
+	bool UseTempStagingBuffer;
+	D3D11_MAP LastMapDirection;
+
+	bool createInternalBuffer(const void* initialData);
 };
 
 }

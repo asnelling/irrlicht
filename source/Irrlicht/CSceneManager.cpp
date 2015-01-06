@@ -17,6 +17,7 @@
 #include "ISceneLoader.h"
 #include "EProfileIDs.h"
 #include "IProfiler.h"
+#include "IInstancedMeshSceneNode.h"
 
 #include "os.h"
 
@@ -142,6 +143,7 @@
 #include "CLightSceneNode.h"
 #include "CBillboardSceneNode.h"
 #include "CMeshSceneNode.h"
+#include "CInstancedMeshSceneNode.h"
 #include "CSkyBoxSceneNode.h"
 #include "CSkyDomeSceneNode.h"
 #include "CParticleSystemSceneNode.h"
@@ -661,6 +663,25 @@ IAnimatedMeshSceneNode* CSceneManager::addAnimatedMeshSceneNode(IAnimatedMesh* m
 
 	IAnimatedMeshSceneNode* node =
 		new CAnimatedMeshSceneNode(mesh, parent, this, id, position, rotation, scale);
+	node->drop();
+
+	return node;
+}
+
+
+//! adds a scene node for rendering an animated mesh model
+IInstancedMeshSceneNode* CSceneManager::addInstancedMeshSceneNode(IMesh* mesh, ISceneNode* parent, s32 id,
+	const core::vector3df& position, const core::vector3df& rotation,
+	const core::vector3df& scale, bool alsoAddIfMeshPointerZero)
+{
+	if (!alsoAddIfMeshPointerZero && !mesh)
+		return 0;
+
+	if (!parent)
+		parent = this;
+
+	IInstancedMeshSceneNode* node =
+		new CInstancedMeshSceneNode(mesh, parent, this, id, position, rotation, scale);
 	node->drop();
 
 	return node;
@@ -1232,6 +1253,74 @@ bool CSceneManager::isCulled(const ISceneNode* node) const
 	}
 
 	_IRR_IMPLEMENT_MANAGED_MARSHALLING_BUGFIX;
+	return result;
+}
+
+//! returns if node is culled
+bool CSceneManager::isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, core::matrix4 absoluteTransformation) const
+{
+	const ICameraSceneNode* cam = getActiveCamera();
+
+	if (!cam)
+		return false;
+
+	bool result = false;
+
+	// can be seen by a bounding box ?
+	if (!result && (type & scene::EAC_BOX))
+	{
+		absoluteTransformation.transformBoxEx(tbox);
+		result = !(tbox.intersectsWithBox(cam->getViewFrustum()->getBoundingBox()));
+	}
+
+	// can be seen by a bounding sphere
+	if (!result && (type & scene::EAC_FRUSTUM_SPHERE))
+	{
+		const float rad = tbox.getRadius();
+		const core::vector3df center = tbox.getCenter();
+
+		const float camrad = cam->getViewFrustum()->getBoundingRadius();
+		const core::vector3df camcenter = cam->getViewFrustum()->getBoundingCenter();
+
+		const float dist = (center - camcenter).getLengthSQ();
+		const float maxdist = (rad + camrad) * (rad + camrad);
+
+		result = dist > maxdist;
+	}
+
+	// can be seen by cam pyramid planes ?
+	if (!result && (type & scene::EAC_FRUSTUM_BOX))
+	{
+		SViewFrustum frust = *cam->getViewFrustum();
+
+		//transform the frustum to the node's current absolute transformation
+		core::matrix4 invTrans(absoluteTransformation, core::matrix4::EM4CONST_INVERSE);
+		//invTrans.makeInverse();
+		frust.transform(invTrans);
+
+		core::vector3df edges[8];
+		tbox.getEdges(edges);
+
+		for (s32 i = 0; i<scene::SViewFrustum::VF_PLANE_COUNT; ++i)
+		{
+			bool boxInFrustum = false;
+			for (u32 j = 0; j<8; ++j)
+			{
+				if (frust.planes[i].classifyPointRelation(edges[j]) != core::ISREL3D_FRONT)
+				{
+					boxInFrustum = true;
+					break;
+				}
+			}
+
+			if (!boxInFrustum)
+			{
+				result = true;
+				break;
+			}
+		}
+	}
+
 	return result;
 }
 

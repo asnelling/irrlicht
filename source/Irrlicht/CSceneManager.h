@@ -25,6 +25,7 @@ namespace scene
 {
 	class IMeshCache;
 	class IGeometryCreator;
+	class IInstancedMeshSceneNode;
 
 	/*!
 		The Scene Manager manages scene nodes, mesh recources, cameras and all the other stuff.
@@ -88,6 +89,13 @@ namespace scene
 			const core::vector3df& rotation = core::vector3df(0,0,0),
 			const core::vector3df& scale = core::vector3df(1.0f, 1.0f, 1.0f),
 			bool alsoAddIfMeshPointerZero=false) _IRR_OVERRIDE_;
+
+		//! adds a scene node for rendering an instanced mesh model
+		virtual IInstancedMeshSceneNode* addInstancedMeshSceneNode(IMesh* mesh, ISceneNode* parent = 0, s32 id = -1,
+			const core::vector3df& position = core::vector3df(0, 0, 0),
+			const core::vector3df& rotation = core::vector3df(0, 0, 0),
+			const core::vector3df& scale = core::vector3df(1.0f, 1.0f, 1.0f),
+			bool alsoAddIfMeshPointerZero = false);
 
 		//! adds a scene node for rendering a static mesh
 		//! the returned pointer must not be dropped.
@@ -509,6 +517,8 @@ namespace scene
 
 		//! returns if node is culled
 		virtual bool isCulled(const ISceneNode* node) const _IRR_OVERRIDE_;
+
+		virtual bool isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, core::matrix4 absoluteTransformation) const;
 
 	protected:
 
