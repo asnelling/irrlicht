@@ -20,7 +20,8 @@ CD3D11HardwareBuffer::CD3D11HardwareBuffer(CD3D11Driver* driver, E_HARDWARE_BUFF
 	scene::E_HARDWARE_MAPPING mapping, u32 size, u32 flags, const void* initialData)
 : IHardwareBuffer(mapping, flags, size, type, driver->getDriverType()),
 	Device(NULL), Context(NULL), Buffer(NULL), UAView(NULL), SRView(NULL), Driver(driver),
-	TempStagingBuffer(NULL), UseTempStagingBuffer(false), LastMapDirection((D3D11_MAP)0)
+	TempStagingBuffer(NULL), UseTempStagingBuffer(false), LastMapDirection((D3D11_MAP)0),
+	RemoveFromArray(true), LinkedBuffer(0)
 {
 #ifdef _DEBUG
 	setDebugName("CD3D11HardwareBuffer");
@@ -42,25 +43,150 @@ CD3D11HardwareBuffer::CD3D11HardwareBuffer(CD3D11Driver* driver, E_HARDWARE_BUFF
 	RequiredUpdate = false;
 }
 
+CD3D11HardwareBuffer::CD3D11HardwareBuffer(scene::IIndexBuffer* indexBuffer, CD3D11Driver* driver) :
+	IHardwareBuffer(scene::EHM_NEVER, 0, 0, EHBT_INDEX, EDT_DIRECT3D11), Device(NULL), Context(NULL),
+	Buffer(NULL), UAView(NULL), SRView(NULL), Driver(driver), TempStagingBuffer(NULL), UseTempStagingBuffer(false),
+	LastMapDirection((D3D11_MAP)0), RemoveFromArray(true), LinkedBuffer(0)
+{
+#ifdef _DEBUG
+	setDebugName("CD3D11HardwareBuffer");
+#endif
+
+	Device = Driver->getExposedVideoData().D3D11.D3DDev11;
+
+	if (Device)
+	{
+		Device->AddRef();
+		Device->GetImmediateContext(&Context);
+	}
+
+	if (indexBuffer)
+	{
+		Mapping = indexBuffer->getHardwareMappingHint();
+		Size = indexBuffer->getIndexSize()*indexBuffer->getIndexCount();
+
+		createInternalBuffer(indexBuffer->getIndices());
+
+		RequiredUpdate = false;
+
+		indexBuffer->setHardwareBuffer(this);
+		LinkedBuffer = indexBuffer;
+	}
+}
+
+CD3D11HardwareBuffer::CD3D11HardwareBuffer(scene::IVertexBuffer* vertexBuffer, CD3D11Driver* driver) :
+	IHardwareBuffer(scene::EHM_NEVER, 0, 0, EHBT_VERTEX, EDT_DIRECT3D11), Device(NULL), Context(NULL),
+	Buffer(NULL), UAView(NULL), SRView(NULL), Driver(driver), TempStagingBuffer(NULL), UseTempStagingBuffer(false),
+	LastMapDirection((D3D11_MAP)0), RemoveFromArray(true), LinkedBuffer(0)
+{
+#ifdef _DEBUG
+	setDebugName("CD3D11HardwareBuffer");
+#endif
+
+	Device = Driver->getExposedVideoData().D3D11.D3DDev11;
+
+	if (Device)
+	{
+		Device->AddRef();
+		Device->GetImmediateContext(&Context);
+	}
+
+	if (vertexBuffer)
+	{
+		Mapping = vertexBuffer->getHardwareMappingHint();
+		Size = vertexBuffer->getVertexSize()*vertexBuffer->getVertexCount();
+
+		createInternalBuffer(vertexBuffer->getVertices());
+
+		RequiredUpdate = false;
+
+		vertexBuffer->setHardwareBuffer(this);
+		LinkedBuffer = vertexBuffer;
+	}
+}
+
 CD3D11HardwareBuffer::~CD3D11HardwareBuffer()
 {
-	if(TempStagingBuffer)
+	if (RemoveFromArray)
+	{
+		for (u32 i = 0; i < Driver->HardwareBuffer.size(); ++i)
+		{
+			if (Driver->HardwareBuffer[i] == this)
+			{
+				Driver->HardwareBuffer[i] = 0;
+				break;
+			}
+		}
+	}
+
+	if (LinkedBuffer)
+	{
+		switch (Type)
+		{
+		case EHBT_INDEX:
+			((scene::IIndexBuffer*)LinkedBuffer)->setHardwareBuffer(0, true);
+			break;
+		case EHBT_VERTEX:
+			((scene::IVertexBuffer*)LinkedBuffer)->setHardwareBuffer(0, true);
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (TempStagingBuffer)
 		TempStagingBuffer->drop();
 	
-	if(SRView)
+	if (SRView)
 		SRView->Release();
 
-	if(UAView)
+	if (UAView)
 		UAView->Release();
 
-	if(Buffer)
+	if (Buffer)
 		Buffer->Release();
 
-	if(Context)
+	if (Context)
 		Context->Release();
 
-	if(Device)
+	if (Device)
 		Device->Release();
+}
+
+bool CD3D11HardwareBuffer::update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data)
+{
+	if (!Buffer || size > Size)
+	{
+		// Release buffer if need to expand
+		if (size > Size)
+		{
+			if (Buffer)
+				Buffer->Release();
+		}
+
+		Size = size;
+		Mapping = mapping;
+
+		createInternalBuffer(data);
+
+		if (!Buffer)
+			return false;
+	}
+	else // just update 
+	{
+		D3D11_BOX box;
+		box.left = 0;
+		box.top = 0;
+		box.front = 0;
+		box.right = size;
+		box.bottom = 1;
+		box.back = 1;
+		Context->UpdateSubresource(Buffer, 0, &box, data, 0, 0);
+	}
+
+	RequiredUpdate = false;
+
+	return true;
 }
 
 //! Lock function.
@@ -139,7 +265,7 @@ void CD3D11HardwareBuffer::copyFromBuffer(IHardwareBuffer* buffer, u32 srcOffset
 	if (srcOffset == 0 && destOffset == 0 && length == Size 
 		&& Size == buffer->size() )
 	{
-		Context->CopyResource( Buffer, srcBuffer->getBufferResource() );
+		Context->CopyResource( Buffer, srcBuffer->getBuffer() );
 	}
 	else	// else, copy subregion
 	{
@@ -152,14 +278,8 @@ void CD3D11HardwareBuffer::copyFromBuffer(IHardwareBuffer* buffer, u32 srcOffset
 		srcBox.back = 1;
 
 		Context->CopySubresourceRegion(Buffer, 0, (UINT)destOffset, 0, 0, 
-												srcBuffer->getBufferResource(), 0, &srcBox);
+												srcBuffer->getBuffer(), 0, &srcBox);
 	}
-}
-
-//! return DX 11 buffer
-ID3D11Buffer* CD3D11HardwareBuffer::getBufferResource() const
-{
-	return Buffer;
 }
 
 //! return unordered access view
@@ -301,40 +421,14 @@ bool CD3D11HardwareBuffer::createInternalBuffer(const void* initialData)
 	}
 }
 
-bool CD3D11HardwareBuffer::update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data)
+ID3D11Buffer* CD3D11HardwareBuffer::getBuffer() const
 {
-	if (!Buffer || size > Size)
-	{
-		// Release buffer if need to expand
-		if (size > Size)
-		{
-			if (Buffer)
-				Buffer->Release();
-		}
+	return Buffer;
+}
 
-		Size = size;
-		Mapping = mapping;
-
-		createInternalBuffer(data);
-
-		if (!Buffer)
-			return false;		
-	}
-	else // just update 
-	{
-		D3D11_BOX box;
-		box.left = 0;
-		box.top = 0;
-		box.front = 0;
-		box.right = size;
-		box.bottom = 1;
-		box.back = 1;
-		Context->UpdateSubresource(Buffer, 0, &box, data, 0, 0);
-	}
-
-	RequiredUpdate = false;
-
-	return true;
+void CD3D11HardwareBuffer::removeFromArray(bool status)
+{
+	RemoveFromArray = status;
 }
 
 }

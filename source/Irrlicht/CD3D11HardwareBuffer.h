@@ -22,24 +22,24 @@ class CD3D11HardwareBuffer : public IHardwareBuffer
 	// Implementation of public methods
 public:
 	CD3D11HardwareBuffer(CD3D11Driver* driver, E_HARDWARE_BUFFER_TYPE type, scene::E_HARDWARE_MAPPING mapping,
-									u32 size, u32 flags, const void* initialData = 0);
-
+		u32 size, u32 flags, const void* initialData = 0);
+	CD3D11HardwareBuffer(scene::IIndexBuffer* indexBuffer, CD3D11Driver* driver);
+	CD3D11HardwareBuffer(scene::IVertexBuffer* vertexBuffer, CD3D11Driver* driver);
 	~CD3D11HardwareBuffer();
 
+	bool update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data) _IRR_OVERRIDE_;
+
 	//! Lock function.
-	virtual void* lock(bool readOnly = false);
+	void* lock(bool readOnly = false);
 
 	//! Unlock function. Must be called after a lock() to the buffer.
-	virtual void unlock();
+	void unlock();
 
 	//! Copy data from system memory
-	virtual void copyFromMemory(const void* sysData, u32 offset, u32 length);
+	void copyFromMemory(const void* sysData, u32 offset, u32 length);
 
 	//! Copy data from another buffer
-	virtual void copyFromBuffer(IHardwareBuffer* buffer, u32 srcOffset, u32 descOffset, u32 length);
-
-	//! return DX 11 buffer
-	ID3D11Buffer* getBufferResource() const;
+	void copyFromBuffer(IHardwareBuffer* buffer, u32 srcOffset, u32 descOffset, u32 length);
 
 	//! return unordered access view
 	ID3D11UnorderedAccessView* getUnorderedAccessView() const;
@@ -47,9 +47,14 @@ public:
 	//! return shader resource view
 	ID3D11ShaderResourceView* getShaderResourceView() const;
 
-	bool update(const scene::E_HARDWARE_MAPPING mapping, const u32 size, const void* data);
+	//! return DX 11 buffer
+	ID3D11Buffer* getBuffer() const;
+
+	void removeFromArray(bool status);
 
 private:
+	bool createInternalBuffer(const void* initialData);
+
 	ID3D11Device* Device;
 	ID3D11DeviceContext* Context;
 	ID3D11Buffer* Buffer;
@@ -62,7 +67,9 @@ private:
 	bool UseTempStagingBuffer;
 	D3D11_MAP LastMapDirection;
 
-	bool createInternalBuffer(const void* initialData);
+	bool RemoveFromArray;
+
+	void* LinkedBuffer;
 };
 
 }

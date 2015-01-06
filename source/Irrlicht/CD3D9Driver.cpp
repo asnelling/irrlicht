@@ -1471,6 +1471,9 @@ const core::rect<s32>& CD3D9Driver::getViewPort() const
 
 IHardwareBuffer* CD3D9Driver::createHardwareBuffer(scene::IIndexBuffer* indexBuffer)
 {
+	if (!indexBuffer)
+		return 0;
+
 	CD3D9HardwareBuffer* hardwareBuffer = new CD3D9HardwareBuffer(indexBuffer, this);
 
 	bool extendArray = true;
@@ -1494,6 +1497,9 @@ IHardwareBuffer* CD3D9Driver::createHardwareBuffer(scene::IIndexBuffer* indexBuf
 
 IHardwareBuffer* CD3D9Driver::createHardwareBuffer(scene::IVertexBuffer* vertexBuffer)
 {
+	if (!vertexBuffer)
+		return 0;
+
 	CD3D9HardwareBuffer* hardwareBuffer = new CD3D9HardwareBuffer(vertexBuffer, this);
 
 	bool extendArray = true;

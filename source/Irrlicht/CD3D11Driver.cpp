@@ -103,6 +103,7 @@ CD3D11Driver::~CD3D11Driver()
 	deleteMaterialRenders();
 	deleteAllTextures();
 	removeAllOcclusionQueries();
+	removeAllHardwareBuffers();
 
 	if (BridgeCalls)
 		delete BridgeCalls;
@@ -802,6 +803,205 @@ void CD3D11Driver::setMaterial(const SMaterial& material)
 	}
 }
 
+void CD3D11Driver::drawMeshBuffer(const scene::IMeshBuffer* mb)
+{
+	if (!mb)
+		return;
+
+	//we lie to the user we are always using hardware buffers in dx11 it's much faster and avoid stalling the pipeline when writting to a buffer that needs to be used for rendering
+	for (u32 i = 0; i < mb->getVertexBufferCount(); ++i)
+	{
+		video::IHardwareBuffer* hwBuff = mb->getVertexBuffer(i)->getHardwareBuffer();
+
+		if (!hwBuff && mb->getVertexBuffer(i)->getVertexCount() > 0)
+		{
+			IHardwareBuffer* hw = createHardwareBuffer(mb->getVertexBuffer(i));
+			hw->drop();
+		}
+		else if (hwBuff)
+		{
+			if (hwBuff->isRequiredUpdate())
+				hwBuff->update(mb->getVertexBuffer(i)->getHardwareMappingHint(), mb->getVertexBuffer(i)->getVertexCount() * mb->getVertexBuffer(i)->getVertexSize(), mb->getVertexBuffer(i)->getVertices());
+		}
+	}
+
+	video::IHardwareBuffer* indBuff = mb->getIndexBuffer()->getHardwareBuffer();
+
+	if (!indBuff && (mb->getIndexBuffer()->getIndexCount() > 0))
+	{
+		IHardwareBuffer* hw = createHardwareBuffer(mb->getIndexBuffer());
+		hw->drop();
+	}
+	else if (indBuff)
+	{
+		if (indBuff->isRequiredUpdate())
+			indBuff->update(mb->getIndexBuffer()->getHardwareMappingHint(), mb->getIndexBuffer()->getIndexCount() * mb->getIndexBuffer()->getIndexSize(), mb->getIndexBuffer()->getIndices());
+	}
+
+	const scene::IVertexBuffer* vb = mb->getVertexBuffer();
+	const scene::IIndexBuffer* ib = mb->getIndexBuffer();
+
+	bool perInstanceBufferPresent = false;
+	u32 instanceVertexCount = 0;
+	u32 drawVertexCount = 0;
+
+	irr::core::array<ID3D11Buffer*> vbuffers;
+	irr::core::array<u32> strides;
+	irr::core::array<UINT> offsets;
+
+	for (u32 i = 0; i < mb->getVertexBufferCount(); ++i)
+	{
+		offsets.push_back(0);
+		strides.push_back(mb->getVertexBuffer(i)->getVertexSize());
+		if (mb->getVertexBuffer(i)->getHardwareBuffer())
+			vbuffers.push_back(((CD3D11HardwareBuffer*)mb->getVertexBuffer(i)->getHardwareBuffer())->getBuffer());
+		else
+			vbuffers.push_back(0);
+
+		if (mb->getVertexDescriptor()->getInstanceDataStepRate(i) == EIDSR_PER_INSTANCE)
+		{
+			instanceVertexCount = mb->getVertexBuffer(i)->getVertexCount();
+
+			if (!instanceVertexCount)
+				return;
+
+			perInstanceBufferPresent = true;
+		}
+		else if (mb->getVertexDescriptor()->getInstanceDataStepRate(i) == EIDSR_PER_VERTEX)
+		{
+			drawVertexCount = mb->getVertexBuffer(i)->getVertexCount();
+		}
+	}
+
+	Context->IASetVertexBuffers(0, mb->getVertexBufferCount(), vbuffers.const_pointer(), strides.const_pointer(), offsets.const_pointer());
+
+	// set index buffer
+	if (ib->getHardwareBuffer())
+		Context->IASetIndexBuffer(((CD3D11HardwareBuffer*)ib->getHardwareBuffer())->getBuffer(), mb->getIndexBuffer()->getType() == video::EIT_16BIT ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, 0);
+
+	// draw
+	draw2D3DVertexPrimitiveList(NULL, drawVertexCount, mb->getVertexDescriptor()->getVertexSize(0), NULL, mb->getPrimitiveCount(), ((E_VERTEX_TYPE)((CD3D11VertexDescriptor*)mb->getVertexDescriptor())->getID()), mb->getPrimitiveType(), ib->getType(), true, instanceVertexCount);
+
+	for (u32 i = 0; i < mb->getVertexBufferCount(); ++i)
+	{
+		offsets[i] = 0;
+		strides[i] = 0;
+		vbuffers[i] = NULL;
+	}
+
+	Context->IASetVertexBuffers(0, mb->getVertexBufferCount(), vbuffers.const_pointer(), strides.const_pointer(), offsets.const_pointer());
+	Context->IASetIndexBuffer(NULL, DXGI_FORMAT_R32_UINT, 0);
+}
+
+void CD3D11Driver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
+	const void* indices, u32 primitiveCount,
+	E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
+	E_INDEX_TYPE iType)
+{
+	if (!checkPrimitiveCount(primitiveCount))
+		return;
+
+	CNullDriver::draw2DVertexPrimitiveList(vertices, vertexCount, indices, primitiveCount, vType, pType, iType);
+
+	if (!vertexCount || !primitiveCount)
+		return;
+
+	// Bind textures and samplers
+	BridgeCalls->setShaderResources(SamplerDesc, CurrentTexture);
+
+	// Bind depth-stencil view
+	BridgeCalls->setDepthStencilState(DepthStencilDesc);
+
+	// Bind blend state
+	BridgeCalls->setBlendState(BlendDesc);
+
+	// Bind rasterizer state
+	BridgeCalls->setRasterizerState(RasterizerDesc);
+
+	// Bind input layout
+	BridgeCalls->setInputLayout(VertexDescriptor[vType], MaterialRenderers[Material.MaterialType].Renderer);
+
+	const u32 indexCount = getIndexCount(pType, primitiveCount);
+
+	// copy vertices to dynamic buffers, if needed
+	if (vertices || indices)
+		uploadVertexData(vertices, vertexCount, indices, indexCount, vType, iType);
+
+	BridgeCalls->setPrimitiveTopology(getTopology(pType));
+
+	// finally, draw
+	if (pType == scene::EPT_POINTS || pType == scene::EPT_POINT_SPRITES)
+		Context->Draw(vertexCount, 0);
+	else if (vertexCount == 0)
+		Context->DrawAuto();
+	else
+		Context->DrawIndexed(indexCount, 0, 0);
+}
+
+IHardwareBuffer* CD3D11Driver::createHardwareBuffer(scene::IIndexBuffer* indexBuffer)
+{
+	if (!indexBuffer)
+		return 0;
+
+	CD3D11HardwareBuffer* hardwareBuffer = new CD3D11HardwareBuffer(indexBuffer, this);
+
+	bool extendArray = true;
+
+	for (u32 i = 0; i < HardwareBuffer.size(); ++i)
+	{
+		if (!HardwareBuffer[i])
+		{
+			HardwareBuffer[i] = hardwareBuffer;
+			extendArray = false;
+			break;
+		}
+	}
+
+	if (extendArray)
+		HardwareBuffer.push_back(hardwareBuffer);
+
+	return hardwareBuffer;
+}
+
+IHardwareBuffer* CD3D11Driver::createHardwareBuffer(scene::IVertexBuffer* vertexBuffer)
+{
+	if (!vertexBuffer)
+		return 0;
+
+	CD3D11HardwareBuffer* hardwareBuffer = new CD3D11HardwareBuffer(vertexBuffer, this);
+
+	bool extendArray = true;
+
+	for (u32 i = 0; i < HardwareBuffer.size(); ++i)
+	{
+		if (!HardwareBuffer[i])
+		{
+			HardwareBuffer[i] = hardwareBuffer;
+			extendArray = false;
+			break;
+		}
+	}
+
+	if (extendArray)
+		HardwareBuffer.push_back(hardwareBuffer);
+
+	return hardwareBuffer;
+}
+
+void CD3D11Driver::removeAllHardwareBuffers()
+{
+	for (u32 i = 0; i < HardwareBuffer.size(); ++i)
+	{
+		if (HardwareBuffer[i])
+		{
+			HardwareBuffer[i]->removeFromArray(false);
+			delete HardwareBuffer[i];
+		}
+	}
+
+	HardwareBuffer.clear();
+}
+
 bool CD3D11Driver::setRenderTarget(video::ITexture* texture,
 			bool clearBackBuffer, bool clearZBuffer, SColor color)
 {
@@ -1024,120 +1224,6 @@ const core::rect<s32>& CD3D11Driver::getViewPort() const
 	return ViewPort;
 }
 
-IHardwareBuffer* CD3D11Driver::createHardwareBuffer(scene::IIndexBuffer* indexBuffer)
-{
-	if (!indexBuffer)
-		return nullptr;
-
-	CD3D11HardwareBuffer* hardwareBuffer = new CD3D11HardwareBuffer(this, EHBT_INDEX, indexBuffer->getHardwareMappingHint(), indexBuffer->getIndexCount() * indexBuffer->getIndexSize(), 0, indexBuffer->getIndices());
-
-	indexBuffer->setHardwareBuffer(hardwareBuffer);
-
-	return hardwareBuffer;
-}
-
-IHardwareBuffer* CD3D11Driver::createHardwareBuffer(scene::IVertexBuffer* vertexBuffer)
-{
-	if (!vertexBuffer)
-		return nullptr;
-
-	CD3D11HardwareBuffer* hardwareBuffer = new CD3D11HardwareBuffer(this, EHBT_VERTEX, vertexBuffer->getHardwareMappingHint(), vertexBuffer->getVertexCount() * vertexBuffer->getVertexSize(), 0, vertexBuffer->getVertices());
-
-	vertexBuffer->setHardwareBuffer(hardwareBuffer);
-
-	return hardwareBuffer;
-}
-
-void CD3D11Driver::drawMeshBuffer(const scene::IMeshBuffer* mb)
-{
-	if (!mb)
-		return;
-
-	//we lie to the user we are always using hardware buffers in dx11 it's much faster and avoid stalling the pipeline when writting to a buffer that needs to be used for rendering
-	for (u32 i = 0; i < mb->getVertexBufferCount(); ++i)
-	{
-		video::IHardwareBuffer* hwBuff = mb->getVertexBuffer(i)->getHardwareBuffer();
-
-		if (!hwBuff && mb->getVertexBuffer(i)->getVertexCount() > 0)
-		{
-			IHardwareBuffer* hw = createHardwareBuffer(mb->getVertexBuffer(i));
-			hw->drop();
-		}
-		else if (hwBuff)
-		{
-			if (hwBuff->isRequiredUpdate())
-				hwBuff->update(mb->getVertexBuffer(i)->getHardwareMappingHint(), mb->getVertexBuffer(i)->getVertexCount() * mb->getVertexBuffer(i)->getVertexSize(), mb->getVertexBuffer(i)->getVertices());
-		}
-	}
-
-	video::IHardwareBuffer* indBuff = mb->getIndexBuffer()->getHardwareBuffer();
-
-	if (!indBuff && (mb->getIndexBuffer()->getIndexCount() > 0))
-	{
-		IHardwareBuffer* hw = createHardwareBuffer(mb->getIndexBuffer());
-		hw->drop();
-	}
-	else if (indBuff)
-	{
-		if (indBuff->isRequiredUpdate())
-			indBuff->update(mb->getIndexBuffer()->getHardwareMappingHint(), mb->getIndexBuffer()->getIndexCount() * mb->getIndexBuffer()->getIndexSize(), mb->getIndexBuffer()->getIndices());
-	}
-
-	const scene::IVertexBuffer* vb = mb->getVertexBuffer();
-	const scene::IIndexBuffer* ib = mb->getIndexBuffer();
-
-	bool perInstanceBufferPresent = false;
-	u32 instanceVertexCount = 0;
-	u32 drawVertexCount = 0;
-
-	irr::core::array<ID3D11Buffer*> vbuffers;
-	irr::core::array<u32> strides;
-	irr::core::array<UINT> offsets;
-
-	for (u32 i = 0; i < mb->getVertexBufferCount(); ++i)
-	{
-		offsets.push_back(0);
-		strides.push_back(mb->getVertexBuffer(i)->getVertexSize());
-		if (mb->getVertexBuffer(i)->getHardwareBuffer())
-			vbuffers.push_back(((CD3D11HardwareBuffer*)mb->getVertexBuffer(i)->getHardwareBuffer())->getBufferResource());
-		else
-			vbuffers.push_back(0);
-
-		if (mb->getVertexDescriptor()->getInstanceDataStepRate(i) == EIDSR_PER_INSTANCE)
-		{
-			instanceVertexCount = mb->getVertexBuffer(i)->getVertexCount();
-
-			if (!instanceVertexCount)
-				return;
-
-			perInstanceBufferPresent = true;
-		}
-		else if (mb->getVertexDescriptor()->getInstanceDataStepRate(i) == EIDSR_PER_VERTEX)
-		{
-			drawVertexCount = mb->getVertexBuffer(i)->getVertexCount();
-		}
-	}
-
-	Context->IASetVertexBuffers(0, mb->getVertexBufferCount(), vbuffers.const_pointer(), strides.const_pointer(), offsets.const_pointer());
-
-	// set index buffer
-	if (ib->getHardwareBuffer())
-		Context->IASetIndexBuffer(((CD3D11HardwareBuffer*)ib->getHardwareBuffer())->getBufferResource(), mb->getIndexBuffer()->getType() == video::EIT_16BIT ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, 0);
-
-	// draw
-	draw2D3DVertexPrimitiveList(NULL, drawVertexCount, mb->getVertexDescriptor()->getVertexSize(0), NULL, mb->getPrimitiveCount(), ((E_VERTEX_TYPE)((CD3D11VertexDescriptor*)mb->getVertexDescriptor())->getID()), mb->getPrimitiveType(), ib->getType(), true, instanceVertexCount);
-
-	for (u32 i = 0; i < mb->getVertexBufferCount(); ++i)
-	{
-		offsets[i] = 0;
-		strides[i] = 0;
-		vbuffers[i] = NULL;
-	}
-
-	Context->IASetVertexBuffers(0, mb->getVertexBufferCount(), vbuffers.const_pointer(), strides.const_pointer(), offsets.const_pointer());
-	Context->IASetIndexBuffer(NULL, DXGI_FORMAT_R32_UINT, 0);
-}
-
 void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 				IHardwareBuffer* indices, E_VERTEX_TYPE vType, 
 				scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType, u32 numInstances)
@@ -1152,7 +1238,7 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 	UINT offset = 0;
 
 	// set vertex buffer
-	ID3D11Buffer* buffers[1] = { vertexBuffer->getBufferResource() };
+	ID3D11Buffer* buffers[1] = { vertexBuffer->getBuffer() };
 	Context->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
 
 	// Bind depth-stencil view
@@ -1179,7 +1265,7 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 		const u32 idxSize = getIndexSize(iType);
 		const u32 indexCount = indexBuffer->size() / idxSize;
 		
-		Context->IASetIndexBuffer( indexBuffer->getBufferResource(), idxType, 0 );
+		Context->IASetIndexBuffer( indexBuffer->getBuffer(), idxType, 0 );
 
 		if (numInstances > 0)
 			Context->DrawIndexedInstanced( indexCount, numInstances, 0, 0, 0 );
@@ -1199,51 +1285,6 @@ void CD3D11Driver::drawHardwareBuffer(IHardwareBuffer* vertices,
 	Context->IASetVertexBuffers( 0, 1, buffers, &stride, &offset );
 	Context->IASetIndexBuffer( 0, DXGI_FORMAT_R32_UINT, 0 );
 	Context->SOSetTargets( 1, buffers, &offset );
-}
-
-void CD3D11Driver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
-											 const void* indices, u32 primitiveCount,
-											 E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
-											 E_INDEX_TYPE iType)
-{
-	if (!checkPrimitiveCount(primitiveCount))
-		return;
-
-	CNullDriver::draw2DVertexPrimitiveList(vertices, vertexCount, indices, primitiveCount, vType, pType, iType);
-
-	if (!vertexCount || !primitiveCount)
-		return;	
-	
-	// Bind textures and samplers
-	BridgeCalls->setShaderResources(SamplerDesc, CurrentTexture);
-
-	// Bind depth-stencil view
-	BridgeCalls->setDepthStencilState(DepthStencilDesc);
-
-	// Bind blend state
-	BridgeCalls->setBlendState(BlendDesc);
-
-	// Bind rasterizer state
-	BridgeCalls->setRasterizerState(RasterizerDesc);
-
-	// Bind input layout
-	BridgeCalls->setInputLayout(VertexDescriptor[vType], MaterialRenderers[Material.MaterialType].Renderer);
-
-	const u32 indexCount = getIndexCount(pType, primitiveCount);
-
-	// copy vertices to dynamic buffers, if needed
-	if(vertices || indices)	
-		uploadVertexData(vertices, vertexCount, indices, indexCount, vType, iType);
-
-	BridgeCalls->setPrimitiveTopology(getTopology(pType));
-
-	// finally, draw
-	if (pType == scene::EPT_POINTS || pType == scene::EPT_POINT_SPRITES)
-		Context->Draw( vertexCount, 0 );
-	else if (vertexCount == 0)
-		Context->DrawAuto();
-	else
-		Context->DrawIndexed(indexCount, 0, 0 );
 }
 
 void CD3D11Driver::draw2D3DVertexPrimitiveList(const void* vertices, u32 vertexCount, u32 pVertexSize,
@@ -3385,7 +3426,7 @@ bool CD3D11Driver::setStreamOutputBuffer(IHardwareBuffer* buffer)
 	}
 
 	// Set stream output buffer
-	buffers = static_cast<CD3D11HardwareBuffer*>(buffer)->getBufferResource();
+	buffers = static_cast<CD3D11HardwareBuffer*>(buffer)->getBuffer();
 	Context->SOSetTargets(1, &buffers, &offset);
 
 	return true;

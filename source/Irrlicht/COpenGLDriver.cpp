@@ -1319,6 +1319,9 @@ void COpenGLDriver::setTransform(E_TRANSFORMATION_STATE state, const core::matri
 
 IHardwareBuffer* COpenGLDriver::createHardwareBuffer(scene::IIndexBuffer* indexBuffer)
 {
+	if (!indexBuffer)
+		return 0;
+
 	COpenGLHardwareBuffer* hardwareBuffer = new COpenGLHardwareBuffer(indexBuffer, this);
 
 	bool extendArray = true;
@@ -1342,6 +1345,9 @@ IHardwareBuffer* COpenGLDriver::createHardwareBuffer(scene::IIndexBuffer* indexB
 
 IHardwareBuffer* COpenGLDriver::createHardwareBuffer(scene::IVertexBuffer* vertexBuffer)
 {
+	if (!vertexBuffer)
+		return 0;
+
 	COpenGLHardwareBuffer* hardwareBuffer = new COpenGLHardwareBuffer(vertexBuffer, this);
 
 	bool extendArray = true;

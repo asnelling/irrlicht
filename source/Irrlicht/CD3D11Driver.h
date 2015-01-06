@@ -51,7 +51,7 @@ namespace video
 	class CD3D11Driver : public CNullDriver, IMaterialRendererServices
 	{
 	public:
-
+		friend class CD3D11HardwareBuffer;
 		friend class CD3D11Texture;
 
 		//! constructor
@@ -78,6 +78,17 @@ namespace video
 
 		//! sets a material
 		virtual void setMaterial(const SMaterial& material);
+
+		virtual void drawMeshBuffer(const scene::IMeshBuffer* mb) _IRR_OVERRIDE_;
+
+		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount, const void* indices,
+			u32 primitiveCount, E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType) _IRR_OVERRIDE_;
+
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer) _IRR_OVERRIDE_;
+
+		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer) _IRR_OVERRIDE_;
+
+		void removeAllHardwareBuffers();
 
 				//! Create occlusion query.
 		/** Use node for identification and mesh for occlusion test. */
@@ -128,12 +139,6 @@ namespace video
 				IHardwareBuffer* indices, E_VERTEX_TYPE vType=EVT_STANDARD,
 				scene::E_PRIMITIVE_TYPE pType=scene::EPT_TRIANGLES,
 				E_INDEX_TYPE iType=EIT_16BIT, u32 numInstances = 0);
-
-		//! draws a vertex primitive list in 2d
-		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
-				const void* indices, u32 primitiveCount,
-				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType,
-				E_INDEX_TYPE iType);
 
 		//! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 		virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
@@ -344,10 +349,6 @@ namespace video
 		D3D11_DEPTH_STENCIL_DESC& getDepthStencilDesc() { return DepthStencilDesc; }
 		D3D11_SAMPLER_DESC* getSamplerDescs() { return SamplerDesc; }
 
-		virtual IHardwareBuffer* createHardwareBuffer(scene::IIndexBuffer* indexBuffer);
-
-		virtual IHardwareBuffer* createHardwareBuffer(scene::IVertexBuffer* vertexBuffer);
-
 		//! Check multisample quality levels
 		virtual u32 queryMultisampleLevels(ECOLOR_FORMAT format, u32 numSamples) const;
 
@@ -435,6 +436,8 @@ namespace video
 		SColorf AmbientLight;
 		u32 MaxActiveLights;
 
+		core::array<CD3D11HardwareBuffer*> HardwareBuffer;
+
 		core::stringc VendorName;
 		u16 VendorID;
 
@@ -467,8 +470,6 @@ namespace video
 		virtual s32 addShaderMaterial(const c8* vertexShaderProgram, const c8* pixelShaderProgram, IShaderConstantSetCallBack* callback, E_MATERIAL_TYPE baseMaterial, s32 userData);
 
 		void createMaterialRenderers();
-
-		virtual void drawMeshBuffer(const scene::IMeshBuffer* mb);
 
 		void draw2D3DVertexPrimitiveList(const void* vertices, u32 vertexCount, u32 pVertexSize, 
 			const void* indices, u32 primitiveCount, E_VERTEX_TYPE vType, 
