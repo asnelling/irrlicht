@@ -744,7 +744,7 @@ namespace video
 
 		// Client state calls.
 
-		void setClientState(bool vertex, bool normal, bool color, bool texCoord0);
+		void setClientState(bool vertex, bool normal, bool color);
 
 		// Color Mask.
 
@@ -803,7 +803,6 @@ namespace video
 		bool ClientStateVertex;
 		bool ClientStateNormal;
 		bool ClientStateColor;
-		bool ClientStateTexCoord0;
 
 		bool (*ColorMask)[4];
 

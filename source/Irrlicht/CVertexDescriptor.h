@@ -92,7 +92,7 @@ namespace video
 		core::array<E_INSTANCE_DATA_STEP_RATE> InstanceDataStepRate;
 		core::array<CVertexAttribute*> Attribute;
 
-		s32 AttributePointer[(u32)EVAS_CUSTOM+1];
+		s32 AttributePointer[(u32)EVAS_COUNT];
 	};
 
 }
