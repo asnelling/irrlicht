@@ -77,11 +77,11 @@ core::array<D3D11_INPUT_ELEMENT_DESC>& CD3D11VertexDescriptor::getInputLayoutDes
 
 	for(u32 i = 0; i < size; ++i)
 	{
-		desc.SemanticName = getSemanticName(Attribute[i].getSemantic());
+		desc.SemanticName = getSemanticName(Attribute[i]->getSemantic());
 		//desc.SemanticName = Attribute[i].getName().c_str();
 
 		u32 index = 0;
-		switch (Attribute[i].getSemantic())
+		switch (Attribute[i]->getSemantic())
 		{
 		case EVAS_TEXCOORD0:
 		case EVAS_TEXCOORD1:
@@ -94,11 +94,11 @@ core::array<D3D11_INPUT_ELEMENT_DESC>& CD3D11VertexDescriptor::getInputLayoutDes
 			index = SemanticIndex[EVAS_TEXCOORD0];
 			break;
 		default:
-			index = SemanticIndex[Attribute[i].getSemantic()];
+			index = SemanticIndex[Attribute[i]->getSemantic()];
 		}
 
 		desc.SemanticIndex = index;
-		desc.Format = getFormat(Attribute[i].getType(), Attribute[i].getElementCount());
+		desc.Format = getFormat(Attribute[i]->getType(), Attribute[i]->getElementCount());
 		desc.InputSlot = 0;
 		desc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
  		desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
@@ -106,7 +106,7 @@ core::array<D3D11_INPUT_ELEMENT_DESC>& CD3D11VertexDescriptor::getInputLayoutDes
 
 		InputLayoutDesc.push_back(desc);
 
-		switch (Attribute[i].getSemantic())
+		switch (Attribute[i]->getSemantic())
 		{
 		case EVAS_TEXCOORD0:
 		case EVAS_TEXCOORD1:
@@ -119,7 +119,7 @@ core::array<D3D11_INPUT_ELEMENT_DESC>& CD3D11VertexDescriptor::getInputLayoutDes
 			++SemanticIndex[EVAS_TEXCOORD0];
 			break;
 		default:
-			++SemanticIndex[Attribute[i].getSemantic()];
+			++SemanticIndex[Attribute[i]->getSemantic()];
 		}
 		
 	}
@@ -127,7 +127,7 @@ core::array<D3D11_INPUT_ELEMENT_DESC>& CD3D11VertexDescriptor::getInputLayoutDes
 	return InputLayoutDesc;
 }
 
-LPCSTR CD3D11VertexDescriptor::getSemanticName(E_VERTEX_ATTRIBUTE_SEMANTIC semantic) const
+c8* CD3D11VertexDescriptor::getSemanticName(E_VERTEX_ATTRIBUTE_SEMANTIC semantic) const
 {
 	switch (semantic)
 	{

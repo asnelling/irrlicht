@@ -124,12 +124,12 @@ struct SD3D11_DEPTH_STENCIL_DESC : public D3D11_DEPTH_STENCIL_DESC
 
 	inline void reset()
 	{
-		DepthEnable = true;
-		DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		DepthEnable = TRUE;
+		DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 		DepthFunc = D3D11_COMPARISON_LESS;
-		StencilEnable = false;
+		StencilEnable = FALSE;
 		StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
-		StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+		StencilWriteMask = 0x00;
 		FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 		FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
 		FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
@@ -200,7 +200,7 @@ public:
 	void setDepthStencilState(const SD3D11_DEPTH_STENCIL_DESC& depthStencilDesc);
 	void setRasterizerState(const SD3D11_RASTERIZER_DESC& rasterizerDesc);
 
-	void setShaderResources(SD3D11_SAMPLER_DESC SamplerDesc[MATERIAL_MAX_TEXTURES], ITexture* shaderViews[MATERIAL_MAX_TEXTURES]);
+	void setShaderResources(SD3D11_SAMPLER_DESC samplerDesc[MATERIAL_MAX_TEXTURES], ITexture* currentTextures[MATERIAL_MAX_TEXTURES]);
 	void setPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY top);
 	void setInputLayout(IVertexDescriptor* vtxDescriptor, IMaterialRenderer* r);
 

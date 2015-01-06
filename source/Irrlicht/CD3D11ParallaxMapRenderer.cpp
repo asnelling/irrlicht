@@ -182,18 +182,18 @@ CD3D11ParallaxMapRenderer::CD3D11ParallaxMapRenderer(
 	}
 	else
 	{
-		if(driver->queryFeature(EVDF_VERTEX_SHADER_5_0))
+		//if(driver->queryFeature(EVDF_VERTEX_SHADER_5_0))
 		{	
 			if(!init(PARALLAX_MAP_SHADER, "VS", EVST_VS_5_0,
 				PARALLAX_MAP_SHADER, "PS", EPST_PS_5_0))
 				return;
 		}
-		else
+		/*else
 		{
 			if(!init(PARALLAX_MAP_SHADER, "VS", EVST_VS_4_1,
 				PARALLAX_MAP_SHADER, "PS", EPST_PS_4_1))
 				return;
-		}	
+		}*/
 
 		cbPerFrameId = getConstantBufferID("cbPerFrame", EST_VERTEX_SHADER);
 	}
@@ -222,11 +222,7 @@ bool CD3D11ParallaxMapRenderer::OnRender(IMaterialRendererServices* service, E_V
 //! Returns the render capability of the material.
 s32 CD3D11ParallaxMapRenderer::getRenderCapability() const
 {
-	if (Driver->queryFeature(video::EVDF_PIXEL_SHADER_4_0) &&
-		Driver->queryFeature(video::EVDF_VERTEX_SHADER_4_0))
-		return 0;
-
-	return 1;
+	return 0;
 }
 
 void CD3D11ParallaxMapRenderer::OnSetConstants( IMaterialRendererServices* services, s32 userData )

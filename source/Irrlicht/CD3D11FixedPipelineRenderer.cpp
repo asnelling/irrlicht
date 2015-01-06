@@ -691,7 +691,7 @@ CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, 
 	}
 	else
 	{
-		if(driver->queryFeature(EVDF_VERTEX_SHADER_5_0))
+//		if(driver->queryFeature(EVDF_VERTEX_SHADER_5_0))
 		{	
 			if(!init(FIXED_FUNCTION_SHADER, "standardVS", EVST_VS_5_0,
 				FIXED_FUNCTION_SHADER, "standardPS", EPST_PS_5_0))
@@ -717,7 +717,7 @@ CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, 
 			psTangentsShader = shaders[EST_PIXEL_SHADER];
 			tangentsBuffer = buffer;
 		}
-		else
+		/*else
 		{
 			if(!init(FIXED_FUNCTION_SHADER, "standardVS", EVST_VS_4_1,
 				FIXED_FUNCTION_SHADER, "standardPS", EPST_PS_4_1))
@@ -742,7 +742,7 @@ CD3D11FixedPipelineRenderer::CD3D11FixedPipelineRenderer( ID3D11Device* device, 
 			vsTangentsShader = shaders[EST_VERTEX_SHADER];
 			psTangentsShader = shaders[EST_PIXEL_SHADER];
 			tangentsBuffer = buffer;
-		}
+		}*/
 
 		cbPerFrameId = getConstantBufferID("cbPerFrame", EST_VERTEX_SHADER);
 		cbPerTechniqueId = getConstantBufferID("cbPerTechnique", EST_VERTEX_SHADER);

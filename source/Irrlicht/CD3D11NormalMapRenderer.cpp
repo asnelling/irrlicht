@@ -159,18 +159,18 @@ CD3D11NormalMapRenderer::CD3D11NormalMapRenderer(ID3D11Device* device, video::IV
 	}
 	else
 	{
-		if(driver->queryFeature(EVDF_VERTEX_SHADER_5_0))
+		//if(driver->queryFeature(EVDF_VERTEX_SHADER_5_0))
 		{	
 			if(!init(NORMAL_MAP_SHADER, "VS", EVST_VS_5_0,
 				NORMAL_MAP_SHADER, "PS", EPST_PS_5_0))
 				return;
 		}
-		else
+		/*else
 		{
 			if(!init(NORMAL_MAP_SHADER, "VS", EVST_VS_4_1,
 				NORMAL_MAP_SHADER, "PS", EPST_PS_4_1))
 				return;
-		}
+		}*/
 
 		cbPerFrameId = getConstantBufferID("cbPerFrame", EST_VERTEX_SHADER);
 	}
@@ -199,11 +199,7 @@ bool CD3D11NormalMapRenderer::OnRender(IMaterialRendererServices* service, E_VER
 //! Returns the render capability of the material.
 s32 CD3D11NormalMapRenderer::getRenderCapability() const
 {
-	if (Driver->queryFeature(video::EVDF_PIXEL_SHADER_4_0) &&
-		Driver->queryFeature(video::EVDF_VERTEX_SHADER_4_0))
-		return 0;
-
-	return 1;
+	return 0;
 }
 
 void CD3D11NormalMapRenderer::OnSetConstants( IMaterialRendererServices* services, s32 userData )

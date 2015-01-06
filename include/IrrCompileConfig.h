@@ -178,7 +178,7 @@ If not defined, Windows Multimedia library is used, which offers also broad supp
 #define _IRR_COMPILE_WITH_DIRECT3D_9_
 //! Only define _IRR_COMPILE_WITH_DIRECT3D_11_ if you have an appropriate DXSDK
 //! Download: http://msdn.microsoft.com/en-us/windows/desktop/hh852363.aspx
-// #define _IRR_COMPILE_WITH_DIRECT3D_11_
+#define _IRR_COMPILE_WITH_DIRECT3D_11_
 
 #ifdef NO_IRR_COMPILE_WITH_DIRECT3D_8_
 #undef _IRR_COMPILE_WITH_DIRECT3D_8_
