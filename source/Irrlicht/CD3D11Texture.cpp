@@ -26,18 +26,21 @@ CD3D11Texture::CD3D11Texture(CD3D11Driver* driver, const core::dimension2d<u32>&
 						   : ITexture(name), Texture(0), TextureBuffer(0), 
 						   Device(0), Context(0), Driver(driver),
 						   RTView(0), SRView(0),
-						   TextureDimension(D3D11_RESOURCE_DIMENSION_TEXTURE2D), TextureSize(size), ImageSize(size), Pitch(0), 
+						   TextureDimension(D3D11_RESOURCE_DIMENSION_TEXTURE2D), 
 						   MipLevelLocked(0), NumberOfMipLevels(0), ArraySliceLocked(0), NumberOfArraySlices(arraySlices),
-						   SampleCount(sampleCount), SampleQuality(sampleQuality), ColorFormat(ECF_UNKNOWN), 
+						   SampleCount(sampleCount), SampleQuality(sampleQuality), 
 						   LastMapDirection((D3D11_MAP)0), DepthSurface(0),
-						   HasMipMaps(false), HardwareMipMaps(false), IsRenderTarget(true)
+						   HardwareMipMaps(false)
 
 {
 #ifdef _DEBUG
 	setDebugName("CD3D11Texture");
 #endif
 
-	HasMipMaps = Driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
+	DriverType = EDT_DIRECT3D11;
+	OriginalSize = size;
+	Size = size;
+	IsRenderTarget = true;
 
 	Device = driver->getExposedVideoData().D3D11.D3DDev11;
 	if (Device)
@@ -56,15 +59,16 @@ CD3D11Texture::CD3D11Texture(IImage* image, CD3D11Driver* driver,
 			   : ITexture(name), Texture(0), TextureBuffer(0),
 			   Device(0), Context(0), Driver(driver),   
 			   RTView(0), SRView(0), 
-			   TextureDimension(D3D11_RESOURCE_DIMENSION_TEXTURE2D), TextureSize(0,0), ImageSize(0,0), Pitch(0),
+			   TextureDimension(D3D11_RESOURCE_DIMENSION_TEXTURE2D),
 			   LastMapDirection((D3D11_MAP)0), DepthSurface(0), MipLevelLocked(0), NumberOfMipLevels(0), 
-			   ArraySliceLocked(0), NumberOfArraySlices(arraySlices), SampleCount(1), SampleQuality(0), ColorFormat(ECF_UNKNOWN),
-			   HasMipMaps(false), HardwareMipMaps(false), IsRenderTarget(false)
+			   ArraySliceLocked(0), NumberOfArraySlices(arraySlices), SampleCount(1), SampleQuality(0),
+			   HardwareMipMaps(false)
 {
 #ifdef _DEBUG
 	setDebugName("CD3D11Texture");
 #endif
 
+	DriverType = EDT_DIRECT3D11;
 	HasMipMaps = Driver->getTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS);
 
 	Device = driver->getExposedVideoData().D3D11.D3DDev11;
@@ -217,41 +221,6 @@ void CD3D11Texture::unlock()
 	}
 }
 
-//! Returns original size of the texture.
-const core::dimension2d<u32>& CD3D11Texture::getOriginalSize() const
-{
-	return ImageSize;
-}
-
-//! Returns (=size) of the texture.
-const core::dimension2d<u32>& CD3D11Texture::getSize() const
-{
-	return TextureSize;
-}
-
-//! returns driver type of texture (=the driver, who created the texture)
-E_DRIVER_TYPE CD3D11Texture::getDriverType() const
-{
-	return EDT_DIRECT3D11;
-}
-
-//! returns color format of texture
-ECOLOR_FORMAT CD3D11Texture::getColorFormat() const
-{
-	return ColorFormat;
-}
-
-u32 CD3D11Texture::getPitch() const
-{
-	return Pitch;
-}
-
-//! returns if texture has mipmap levels
-bool CD3D11Texture::hasMipMaps() const
-{
-	return HasMipMaps;
-}
-
 u32 CD3D11Texture::getNumberOfArraySlices() const
 {
 	return NumberOfArraySlices;
@@ -265,12 +234,6 @@ void CD3D11Texture::regenerateMipMapLevels(void* mipmapData)
 		Context->GenerateMips( SRView );
 }
 
-//! returns if it is a render target
-bool CD3D11Texture::isRenderTarget() const
-{
-	return IsRenderTarget;
-}
-
 void CD3D11Texture::createRenderTarget(const ECOLOR_FORMAT format)
 {
 	HRESULT hr = S_OK;
@@ -278,10 +241,11 @@ void CD3D11Texture::createRenderTarget(const ECOLOR_FORMAT format)
 	// are texture size restrictions there ?
 	if(!Driver->queryFeature(EVDF_TEXTURE_NPOT))
 	{
-		if (TextureSize != ImageSize)
+		if (Size != OriginalSize)
 			os::Printer::log("RenderTarget size has to be a power of two", ELL_INFORMATION);
 	}
-	TextureSize = TextureSize.getOptimalSize(!Driver->queryFeature(EVDF_TEXTURE_NPOT), !Driver->queryFeature(EVDF_TEXTURE_NSQUARE), true, Driver->getMaxTextureSize().Width);
+
+	Size = Size.getOptimalSize(!Driver->queryFeature(EVDF_TEXTURE_NPOT), !Driver->queryFeature(EVDF_TEXTURE_NSQUARE), true, Driver->getMaxTextureSize().Width);
 
 	DXGI_FORMAT d3dformat = Driver->getD3DColorFormat();
 
@@ -303,6 +267,18 @@ void CD3D11Texture::createRenderTarget(const ECOLOR_FORMAT format)
 	else
 	{
 		d3dformat = Driver->getD3DFormatFromColorFormat(ColorFormat);
+	}
+
+	switch (ColorFormat)
+	{
+	case ECF_A8R8G8B8:
+	case ECF_A1R5G5B5:
+	case ECF_A16B16G16R16F:
+	case ECF_A32B32G32R32F:
+		HasAlpha = true;
+		break;
+	default:
+		break;
 	}
 
 	// creating texture
@@ -343,8 +319,8 @@ void CD3D11Texture::createRenderTarget(const ECOLOR_FORMAT format)
 	}
 	
 	// Texture size
-	desc.Width = TextureSize.Width;
-	desc.Height = TextureSize.Height;
+	desc.Width = Size.Width;
+	desc.Height = Size.Height;
 
 	// create texture
 	hr = Device->CreateTexture2D( &desc, NULL, &Texture );
@@ -358,8 +334,8 @@ void CD3D11Texture::createRenderTarget(const ECOLOR_FORMAT format)
 	// Get texture description to update some fields
 	Texture->GetDesc( &desc );
 	NumberOfMipLevels = desc.MipLevels;
-	TextureSize.Width = desc.Width;
-	TextureSize.Height = desc.Height;
+	Size.Width = desc.Width;
+	Size.Height = desc.Height;
 
 	// create views
 	createViews();
@@ -369,9 +345,9 @@ void CD3D11Texture::createRenderTarget(const ECOLOR_FORMAT format)
 bool CD3D11Texture::createTexture(u32 flags, IImage* image)
 {
 	HRESULT hr = S_OK;
-	ImageSize = image->getDimension();
+	OriginalSize = image->getDimension();
 
-	core::dimension2d<u32> optSize = ImageSize.getOptimalSize(!Driver->queryFeature(EVDF_TEXTURE_NPOT), 
+	core::dimension2d<u32> optSize = OriginalSize.getOptimalSize(!Driver->queryFeature(EVDF_TEXTURE_NPOT),
 															  !Driver->queryFeature(EVDF_TEXTURE_NSQUARE), 
 															  true,
 															  Driver->getMaxTextureSize().Width);
@@ -489,13 +465,31 @@ bool CD3D11Texture::createTexture(u32 flags, IImage* image)
 
 	// get color format
 	ColorFormat = Driver->getColorFormatFromD3DFormat(format);
+
+	switch (ColorFormat)
+	{
+	case ECF_A8R8G8B8:
+	case ECF_A1R5G5B5:
+	case ECF_DXT1:
+	case ECF_DXT2:
+	case ECF_DXT3:
+	case ECF_DXT4:
+	case ECF_DXT5:
+	case ECF_A16B16G16R16F:
+	case ECF_A32B32G32R32F:
+		HasAlpha = true;
+		break;
+	default:
+		break;
+	}
+
 	setPitch(format);
 
 	// Get texture description to update number of mipmaps
 	Texture->GetDesc( &desc );
 	NumberOfMipLevels = desc.MipLevels;
-	TextureSize.Width = desc.Width;
-	TextureSize.Height = desc.Height;
+	Size.Width = desc.Width;
+	Size.Height = desc.Height;
 
 	// create views to bound texture to pipeline
 	return createViews();
@@ -506,7 +500,7 @@ bool CD3D11Texture::copyTexture(IImage* image)
 {
 	void* ptr = lock();
 	if (ptr)
-		image->copyToScaling(ptr, TextureSize.Width, TextureSize.Height, ColorFormat, Pitch);							  
+		image->copyToScaling(ptr, Size.Width, Size.Height, ColorFormat, Pitch);
 	unlock();
 						
 	return true;
@@ -514,7 +508,7 @@ bool CD3D11Texture::copyTexture(IImage* image)
 
 void CD3D11Texture::setPitch(DXGI_FORMAT d3dformat)
 {
-	Pitch = Driver->getBitsPerPixel(d3dformat) * TextureSize.Width;
+	Pitch = Driver->getBitsPerPixel(d3dformat) * Size.Width;
 }
 
 bool CD3D11Texture::createTextureBuffer()
