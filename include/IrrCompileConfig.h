@@ -716,6 +716,27 @@ precision will be lower but speed higher. currently X86 only
 	#endif
 #endif
 
+//! Enable SSE optimisation for f32 matrices and f32 vectors.
+// #define _IRR_SSE
+#ifdef NO_IRR_SSE
+#undef _IRR_SSE
+#endif
+
+//! Align macros required for SSE.
+#ifdef _IRR_SSE
+	#ifdef _IRR_WINDOWS_API_
+		#if defined(__MINGW32__) || (defined (_MSC_VER) && _MSC_VER < 1300)
+			#define _IRR_ALIGN16(x) x
+		#else
+			#define _IRR_ALIGN16(x) __declspec(align(16)) x
+		#endif
+	#else
+		#define _IRR_ALIGN16(x) x __attribute__ ((aligned(16)))
+	#endif
+#else
+	#define _IRR_ALIGN16(x) x
+#endif
+
 // Some cleanup and standard stuff
 
 #ifdef _IRR_WINDOWS_API_

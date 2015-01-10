@@ -111,11 +111,19 @@ namespace irr
 			\return Whether the materials are read-only. */
 			virtual bool isReadOnlyMaterials() const;
 
+			virtual void updateInstances();
+
+			virtual bool isStatic() const;
+
+			virtual void setStatic(bool staticInstances = true);
+
 		protected:
 			core::aabbox3d<f32> box;
 
 			//IMeshBuffer* renderBuffer;
 			IMesh* baseMesh;
+
+			bool staticInstances;
 
 			core::array<ISceneNode*> instanceNodeArray;
 

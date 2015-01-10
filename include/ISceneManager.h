@@ -1676,7 +1676,7 @@ namespace scene
 		false. */
 		virtual bool isCulled(const ISceneNode* node) const =0;
 
-		virtual bool isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, core::matrix4 absoluteTransformation) const = 0;
+		virtual bool isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, const core::matrix4& absoluteTransformation) const = 0;
 
 	protected:
 

@@ -16,7 +16,8 @@ namespace irr
 		//! constructor
 		CInstancedMeshSceneNode::CInstancedMeshSceneNode(IMesh* mesh, ISceneNode* parent, ISceneManager* mgr, s32 id,
 			const core::vector3df& position, const core::vector3df& rotation, const core::vector3df& scale)
-			: IInstancedMeshSceneNode(parent, mgr, id, position, rotation, scale), baseMesh(NULL), readOnlyMaterial(false)
+			: IInstancedMeshSceneNode(parent, mgr, id, position, rotation, scale),
+			baseMesh(NULL), readOnlyMaterial(false), staticInstances(false)
 		{
 #ifdef _DEBUG
 			setDebugName("CInstancedMeshSceneNode");
@@ -63,6 +64,8 @@ namespace irr
 			empty->setPosition(position);
 			empty->setScale(scale);
 			empty->setRotation(rotation);
+
+			empty->updateAbsolutePosition();
 
 			instanceNodeArray.push_back(empty);
 			return empty;
@@ -197,6 +200,18 @@ namespace irr
 		{
 			ISceneNode::OnAnimate(timeMs);
 
+			if (!isStatic())
+				updateInstances();
+		}
+
+		//! returns the axis aligned bounding box of this node
+		const core::aabbox3d<f32>& CInstancedMeshSceneNode::getBoundingBox() const
+		{
+			return box;
+		}
+
+		void CInstancedMeshSceneNode::updateInstances()
+		{
 			if (!baseMesh || baseMesh->getMeshBuffer(0)->getVertexBufferCount() != 2)
 				return;
 
@@ -206,7 +221,6 @@ namespace irr
 
 			const u32 size = instanceNodeArray.size();
 
-			//TODO add static instance scene nodes
 			renderBuffer->getVertexBuffer(1)->clear();
 			renderBuffer->getVertexBuffer(1)->setDirty();
 			renderBuffer->getVertexBuffer(1)->set_used(size);
@@ -225,12 +239,15 @@ namespace irr
 			renderBuffer->getVertexBuffer(1)->setDirty();
 		}
 
-		//! returns the axis aligned bounding box of this node
-		const core::aabbox3d<f32>& CInstancedMeshSceneNode::getBoundingBox() const
+		bool CInstancedMeshSceneNode::isStatic() const
 		{
-			return box;
+			return staticInstances;
 		}
 
+		void CInstancedMeshSceneNode::setStatic(bool staticInstances)
+		{
+			this->staticInstances = staticInstances;
+		}
 
 		//! returns the material based on the zero based index i. To get the amount
 		//! of materials used by this scene node, use getMaterialCount().

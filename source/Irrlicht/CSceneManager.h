@@ -518,7 +518,8 @@ namespace scene
 		//! returns if node is culled
 		virtual bool isCulled(const ISceneNode* node) const _IRR_OVERRIDE_;
 
-		virtual bool isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, core::matrix4 absoluteTransformation) const;
+		//! returns if this is culled
+		virtual bool isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, const core::matrix4& absoluteTransformation) const;
 
 	protected:
 

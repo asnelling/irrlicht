@@ -1257,7 +1257,7 @@ bool CSceneManager::isCulled(const ISceneNode* node) const
 }
 
 //! returns if node is culled
-bool CSceneManager::isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, core::matrix4 absoluteTransformation) const
+bool CSceneManager::isCulled(core::aabbox3d<f32> tbox, scene::E_CULLING_TYPE type, const core::matrix4& absoluteTransformation) const
 {
 	const ICameraSceneNode* cam = getActiveCamera();
 
