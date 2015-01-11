@@ -1122,6 +1122,7 @@ bool CD3D11Driver::setRenderTarget(const core::array<video::IRenderTarget>& targ
 
 	ID3D11RenderTargetView* RTViews[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
 
+	ZeroMemory(&RTViews, sizeof(ID3D11RenderTargetView*)*D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
 	// parse clear color
 	SColorf fCol( color );
 	// swizzle clear color is texture is passed
@@ -3268,6 +3269,7 @@ void CD3D11Driver::reset()
 	disableTextures();
 
 	removeAllOcclusionQueries();
+	removeAllHardwareBuffers();
 
 	setFog(FogColor, FogType, FogStart, FogEnd, FogDensity, PixelFog, RangeFog);
 	setAmbientLight(AmbientLight);
