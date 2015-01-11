@@ -377,6 +377,8 @@ void CParticleSystemSceneNode::render()
 		idx +=4;
 	}
 
+	Buffer->getVertexBuffer()->setDirty();
+
 	// render all
 	core::matrix4 mat;
 	if (!ParticlesAreGlobal)
@@ -618,6 +620,8 @@ void CParticleSystemSceneNode::reallocateBuffers()
 			Buffer->getIndexBuffer()->setIndex(5+i, 2+oldvertices);
 			oldvertices += 4;
 		}
+
+		Buffer->getIndexBuffer()->setDirty();
 	}
 }
 

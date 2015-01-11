@@ -129,6 +129,8 @@ void CBillboardSceneNode::render()
 	Vertices[2].Pos = pos - topHorizontal - vertical;
 	Vertices[3].Pos = pos - horizontal + vertical;
 
+	MeshBuffer->getVertexBuffer(0)->setDirty();
+
 	// draw
 
 	if (DebugDataVisible & scene::EDS_BBOX)
