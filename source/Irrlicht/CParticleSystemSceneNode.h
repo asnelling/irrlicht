@@ -222,7 +222,10 @@ private:
 	u32 LastEmitTime;
 	core::matrix4 LastAbsoluteTransformation;
 
-	CMeshBuffer<video::S3DVertex>* Buffer;
+	CMeshBuffer<video::S3DVertex>* MeshBuffer;
+	IVertexBuffer* VertexBuffer;
+	IIndexBuffer* IndexBuffer;
+	
 
 // TODO: That was obviously planned by someone at some point and sounds like a good idea.
 // But seems it was never implemented.
