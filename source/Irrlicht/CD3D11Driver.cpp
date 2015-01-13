@@ -520,7 +520,7 @@ bool CD3D11Driver::initDriver(HWND hwnd, bool pureSoftware)
 	image->drop();
 	
 	// Set render targets
-	setRenderTarget(0, true, true);
+	setRenderTarget(0, true, true, SColor(0, 0, 0, 0), 0);
 
 	// set fog mode
 	setFog(FogColor, EFT_FOG_EXP, FogStart, FogEnd, FogDensity, PixelFog, RangeFog);
@@ -1002,8 +1002,8 @@ void CD3D11Driver::removeAllHardwareBuffers()
 	HardwareBuffer.clear();
 }
 
-bool CD3D11Driver::setRenderTarget(video::ITexture* texture,
-			bool clearBackBuffer, bool clearZBuffer, SColor color)
+bool CD3D11Driver::setRenderTarget(video::ITexture* texture, bool clearBackBuffer,
+	bool clearZBuffer, SColor color, video::ITexture* depthStencil)
 {
 	// check for right driver type
 	if(texture && texture->getDriverType() != EDT_DIRECT3D11)
@@ -1065,14 +1065,14 @@ bool CD3D11Driver::setRenderTarget(video::ITexture* texture,
 }
 
 bool CD3D11Driver::setRenderTarget(const core::array<video::IRenderTarget>& targets,
-			bool clearBackBuffer, bool clearZBuffer, SColor color)
+	bool clearBackBuffer, bool clearZBuffer, SColor color, video::ITexture* depthStencil)
 {
 	u32 i;
 	// If no targets, set default render target
 	if (!targets.size())
 	{		
 		// set default render target
-		return setRenderTarget(NULL, clearBackBuffer, clearZBuffer, color);
+		return setRenderTarget(NULL, clearBackBuffer, clearZBuffer, color, depthStencil);
 	}
 
 	// max number of render targets is 8 for DX11 feature level
@@ -2487,34 +2487,38 @@ DXGI_FORMAT CD3D11Driver::getD3DFormatFromColorFormat(ECOLOR_FORMAT format) cons
 	{
 	case ECF_A1R5G5B5:
 		return DXGI_FORMAT_B5G5R5A1_UNORM;
-
 	case ECF_R5G6B5:
 		return DXGI_FORMAT_B5G6R5_UNORM;
-
 	case ECF_R8G8B8:
 		return DXGI_FORMAT_R8G8B8A8_UNORM;
-
 	case ECF_A8R8G8B8:
 		return DXGI_FORMAT_R8G8B8A8_UNORM;
-
 	case ECF_R16F:
 		return DXGI_FORMAT_R16_FLOAT;
-
 	case ECF_G16R16F:
 		return DXGI_FORMAT_R16G16_FLOAT;
-
 	case ECF_A16B16G16R16F:
 		return DXGI_FORMAT_R16G16B16A16_FLOAT;
-
 	case ECF_R32F:
 		return DXGI_FORMAT_R32_FLOAT;
-
 	case ECF_G32R32F:
 		return DXGI_FORMAT_R32G32_FLOAT;
-
 	case ECF_A32B32G32R32F:
 		return DXGI_FORMAT_R32G32B32A32_FLOAT;
-
+	case ECF_D16:
+		return DXGI_FORMAT_D16_UNORM;
+	case ECF_D32:
+		return DXGI_FORMAT_D32_FLOAT;
+	case ECF_D24S8:
+		return DXGI_FORMAT_D24_UNORM_S8_UINT;
+	case ECF_R8:
+		return DXGI_FORMAT_R8_UNORM;
+	case ECF_R8G8:
+		return DXGI_FORMAT_UNKNOWN;
+	case ECF_R16:
+		return DXGI_FORMAT_R16_UNORM;
+	case ECF_R16G16:
+		return DXGI_FORMAT_R16G16_UNORM;
 	default:	
 		return DXGI_FORMAT_UNKNOWN;
 	}
