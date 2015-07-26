@@ -366,6 +366,8 @@ bool CD3D9HardwareBuffer::updateIndexBuffer(const scene::E_HARDWARE_MAPPING mapp
 		IndexBuffer->Unlock();
 	}
 
+	RequiredUpdate = false;
+
 	return true;
 }
 
