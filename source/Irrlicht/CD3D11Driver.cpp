@@ -3460,11 +3460,11 @@ bool CD3D11Driver::disableTextures(u32 fromStage)
 
 IVertexDescriptor* CD3D11Driver::addVertexDescriptor(const core::stringc& pName)
 {
-	for(u32 i = 0; i < VertexDescriptor.size(); ++i)
-		if(pName == VertexDescriptor[i]->getName())
+	for (u32 i = 0; i < VertexDescriptor.size(); ++i)
+		if (pName == VertexDescriptor[i]->getName())
 			return VertexDescriptor[i];
 
-	CVertexDescriptor* vertexDescriptor = new CD3D11VertexDescriptor(Device, pName, VertexDescriptor.size(), MaterialRenderers.size());
+	IVertexDescriptor* vertexDescriptor = new CD3D11VertexDescriptor(Device, pName, VertexDescriptor.size());
 	VertexDescriptor.push_back(vertexDescriptor);
 
 	return vertexDescriptor;

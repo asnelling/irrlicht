@@ -181,8 +181,8 @@ int main()
 	switch (driverType)
 	{
 	case video::EDT_OPENGL:
-		newMaterialType = service->addHighLevelShaderMaterialFromFiles("media/shaders/instancing.vert", "", video::EVST_VS_2_0,
-			"media/shaders/instancing.frag", "", video::EPST_PS_2_0, callback, video::EMT_SOLID);
+		newMaterialType = service->addHighLevelShaderMaterialFromFiles("../../media/shaders/instancing.vert", "", video::EVST_VS_2_0,
+			"../../media/shaders/instancing.frag", "", video::EPST_PS_2_0, callback, video::EMT_SOLID);
 		break;
 	case video::EDT_DIRECT3D9:
 	case video::EDT_DIRECT3D11:
