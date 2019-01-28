@@ -122,7 +122,7 @@ int main()
 	const io::path mediaPath = getExampleMediaPath();
 
 	// add irrlicht logo
-	env->addImage(driver->getTexture(mediaPath + "irrlichtlogo2.png"),
+	env->addImage(driver->getTexture(mediaPath + "irrlichtlogo3.png"),
 		core::position2d<s32>(10,10));
 
 	//set other font
@@ -130,8 +130,11 @@ int main()
 
 	// add some help text
 	env->addStaticText(
-		L"Press 'W' to change wireframe mode\nPress 'D' to toggle detail map\nPress 'S' to toggle skybox/skydome",
-		core::rect<s32>(10,421,250,475), true, true, 0, -1, true);
+		L"Press 'W' to change wireframe mode\n"
+		L"Press 'D' to toggle detail map\n"
+		L"Press 'S' to toggle skybox/skydome\n"
+		L"Press 'X' to toggle debug information",
+		core::rect<s32>(10,400,250,475), true, true, 0, -1, true);
 
 	// add camera
 	scene::ICameraSceneNode* camera =

@@ -52,7 +52,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 
 	DriverAttributes->setAttribute("MaxTextures", 2);
 	DriverAttributes->setAttribute("MaxIndices", 1<<16);
-	DriverAttributes->setAttribute("MaxTextureSize", SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE);
+	DriverAttributes->setAttribute("MaxTextureSize", SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE ? SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE : 1<<20);
 	DriverAttributes->setAttribute("MaxLights", 1024 ); //glsl::gl_MaxLights);
 	DriverAttributes->setAttribute("MaxTextureLODBias", 16.f);
 	DriverAttributes->setAttribute("Version", 50);
@@ -790,8 +790,8 @@ inline f32 CBurningVideoDriver::texelarea ( const s4DVertex *v, int tex ) const
 */
 inline f32 CBurningVideoDriver::screenarea2 ( const s4DVertex **v ) const
 {
-	return	fabs(( (( v[1] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) * ( (v[2] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) ) -
-			( (( v[1] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) * ( (v[2] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) ));
+	return	( (( v[1] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) * ( (v[2] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) ) -
+			( (( v[1] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) * ( (v[2] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) );
 }
 
 /*!
@@ -812,8 +812,8 @@ inline void CBurningVideoDriver::select_polygon_mipmap ( s4DVertex *v, u32 vIn, 
 {
 	f32 f[2];
 
-	f[0] = (f32) texSize.Width - 0.25f;
-	f[1] = (f32) texSize.Height - 0.25f;
+	f[0] = (f32) texSize.Width - SOFTWARE_DRIVER_2_TEXTURE_GUARD_BAND;
+	f[1] = (f32) texSize.Height - SOFTWARE_DRIVER_2_TEXTURE_GUARD_BAND;
 
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
 	for ( u32 g = 0; g != vIn; g += 2 )
@@ -834,8 +834,8 @@ inline void CBurningVideoDriver::select_polygon_mipmap2 ( s4DVertex **v, u32 tex
 {
 	f32 f[2];
 
-	f[0] = (f32) texSize.Width - 0.25f;
-	f[1] = (f32) texSize.Height - 0.25f;
+	f[0] = (f32) texSize.Width - SOFTWARE_DRIVER_2_TEXTURE_GUARD_BAND;
+	f[1] = (f32) texSize.Height - SOFTWARE_DRIVER_2_TEXTURE_GUARD_BAND;
 
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
 	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * ( v[0] + 1 )->Pos.w * f[0];

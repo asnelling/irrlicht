@@ -1339,6 +1339,9 @@
     <ClInclude Include="CWGLManager.h">
       <Filter>Irrlicht\video\OpenGL Context</Filter>
     </ClInclude>
+    <ClInclude Include="CBlit.h">
+      <Filter>Irrlicht\video\Null</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\changes.txt">

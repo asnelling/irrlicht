@@ -1244,6 +1244,7 @@
     <ClInclude Include="..\..\include\IGUITreeView.h" />
     <ClInclude Include="..\..\include\IGUIWindow.h" />
     <ClInclude Include="CB3DMeshWriter.h" />
+    <ClInclude Include="CBlit.h" />
     <ClInclude Include="CD3D9RenderTarget.h" />
     <ClInclude Include="CDefaultSceneNodeAnimatorFactory.h" />
     <ClInclude Include="CDefaultSceneNodeFactory.h" />
