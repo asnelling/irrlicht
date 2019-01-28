@@ -579,7 +579,7 @@ void CDemo::createLoadingScreen()
 	const io::path mediaPath = getExampleMediaPath();
 
 	// irrlicht logo
-	device->getGUIEnvironment()->addImage(device->getVideoDriver()->getTexture(mediaPath + "irrlichtlogo2.png"),
+	device->getGUIEnvironment()->addImage(device->getVideoDriver()->getTexture(mediaPath + "irrlichtlogo3.png"),
 		core::position2d<s32>(5,5));
 
 	// loading text

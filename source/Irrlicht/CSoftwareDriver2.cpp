@@ -55,7 +55,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	DriverAttributes->setAttribute("MaxTextureSize", SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE);
 	DriverAttributes->setAttribute("MaxLights", 1024 ); //glsl::gl_MaxLights);
 	DriverAttributes->setAttribute("MaxTextureLODBias", 16.f);
-	DriverAttributes->setAttribute("Version", 49);
+	DriverAttributes->setAttribute("Version", 50);
 
 	// create triangle renderers
 
@@ -790,8 +790,8 @@ inline f32 CBurningVideoDriver::texelarea ( const s4DVertex *v, int tex ) const
 */
 inline f32 CBurningVideoDriver::screenarea2 ( const s4DVertex **v ) const
 {
-	return	( (( v[1] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) * ( (v[2] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) ) -
-			( (( v[1] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) * ( (v[2] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) );
+	return	fabs(( (( v[1] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) * ( (v[2] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) ) -
+			( (( v[1] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) * ( (v[2] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) ));
 }
 
 /*!
@@ -2177,13 +2177,13 @@ void CBurningVideoDriver::draw3DLine(const core::vector3df& start,
 const wchar_t* CBurningVideoDriver::getName() const
 {
 #ifdef BURNINGVIDEO_RENDERER_BEAUTIFUL
-	return L"Burning's Video 0.49 beautiful";
+	return L"Burning's Video 0.50 beautiful";
 #elif defined ( BURNINGVIDEO_RENDERER_ULTRA_FAST )
-	return L"Burning's Video 0.49 ultra fast";
+	return L"Burning's Video 0.50 ultra fast";
 #elif defined ( BURNINGVIDEO_RENDERER_FAST )
-	return L"Burning's Video 0.49 fast";
+	return L"Burning's Video 0.50 fast";
 #else
-	return L"Burning's Video 0.49";
+	return L"Burning's Video 0.50";
 #endif
 }
 
