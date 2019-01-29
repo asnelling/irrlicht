@@ -91,7 +91,7 @@ bool CD3D9HLSLMaterialRenderer::createHLSLVertexShader(const char* vertexShaderP
 	// compile without debug info
 	HRESULT h = stubD3DXCompileShader(
 		vertexShaderProgram,
-		strlen(vertexShaderProgram),
+		(UINT)strlen(vertexShaderProgram),
 		0, // macros
 		0, // no includes
 		shaderEntryPointName,
