@@ -479,7 +479,16 @@ unsigned linear_to_srgb_8bit(const float v)
 	return y;
 }
 
-static inline int clipTest ( AbsRectangle &o, const core::rect<s32>* a, const AbsRectangle& b)
+// 2D Region half open [x0;x1[
+struct absrect2
+{
+	s32 x0;
+	s32 y0;
+	s32 x1;
+	s32 y1;
+};
+
+static inline int clipTest ( absrect2 &o, const core::rect<s32>* a, const absrect2& b)
 {
 	if ( a == 0 )
 	{
@@ -504,14 +513,14 @@ static inline int clipTest ( AbsRectangle &o, const core::rect<s32>* a, const Ab
 //! stretches srcRect src to dstRect dst, applying a sliding window box filter in linear color space (sRGB->linear->sRGB)
 void Resample_subSampling(video::IImage* dst,const core::rect<s32>* dstRect,const video::IImage* src,const core::rect<s32>* srcRect)
 {
-	const AbsRectangle dst_clip = {0,0,dst->getDimension().Width,dst->getDimension().Height};
-	AbsRectangle dc;
+	const absrect2 dst_clip = {0,0,dst->getDimension().Width,dst->getDimension().Height};
+	absrect2 dc;
 	if (clipTest(dc,dstRect,dst_clip)) return;
 	const video::ECOLOR_FORMAT dstFormat = dst->getColorFormat();
 	u8* dstData= (u8*)dst->getData();
 
-	const AbsRectangle src_clip = {0,0,src->getDimension().Width,src->getDimension().Height};
-	AbsRectangle sc;
+	const absrect2 src_clip = {0,0,src->getDimension().Width,src->getDimension().Height};
+	absrect2 sc;
 	if (clipTest(sc,srcRect,src_clip)) return;
 	const video::ECOLOR_FORMAT srcFormat = src->getColorFormat();
 	const u8* srcData= (u8*)src->getData();

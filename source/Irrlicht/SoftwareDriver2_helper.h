@@ -1055,7 +1055,7 @@ REALINLINE void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tF
 
 #endif
 
-// some 2D Defines
+// 2D Region closed [x0;x1]
 struct AbsRectangle
 {
 	s32 x0;

@@ -157,7 +157,7 @@ static int ClipLine(const AbsRectangle &clipping,
 
 /*
 */
-inline void GetClip(AbsRectangle &clipping, video::IImage * t)
+inline void GetClip(AbsRectangle &clipping, const video::IImage * t)
 {
 	clipping.x0 = 0;
 	clipping.y0 = 0;
