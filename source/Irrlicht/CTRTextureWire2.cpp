@@ -28,14 +28,14 @@
 #define SUBTEXEL
 #define INVERSE_W
 
-#define USE_ZBUFFER
+//#define USE_ZBUFFER
 #define IPOL_W
-#define CMP_W
-#define WRITE_W
+//#define CMP_W
+//#define WRITE_W
 
 
-//#define IPOL_C0
-#define IPOL_T0
+#define IPOL_C0
+//#define IPOL_T0
 //#define IPOL_T1
 
 // apply global override
@@ -45,6 +45,10 @@
 
 #ifndef SOFTWARE_DRIVER_2_SUBTEXEL
 	#undef SUBTEXEL
+#endif
+
+#ifndef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+	#undef IPOL_C0
 #endif
 
 #if !defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) && defined ( USE_ZBUFFER )
@@ -83,9 +87,9 @@ public:
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c );
 	virtual void drawLine ( const s4DVertex *a,const s4DVertex *b);
 
+protected:
+	virtual void scanline_bilinear ();
 
-
-private:
 	void renderAlphaLine ( const s4DVertex *a,const s4DVertex *b ) const;
 	void renderLine ( const s4DVertex *a,const s4DVertex *b ) const;
 
@@ -100,14 +104,6 @@ CTRTextureWire2::CTRTextureWire2(CBurningVideoDriver* driver)
 	#endif
 }
 
-
-// swap integer with xor
-static inline void swap_xor ( s32 &a, s32 &b )
-{
-	a ^= b;
-	b ^= a;
-	a ^= b;
-}
 
 
 /*!
@@ -141,16 +137,6 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 	int xInc1 = 4;
 	int yInc1 = pitch1;
 
-	tVideoSample color;
-
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
-	tFixPoint r0, g0, b0;
-	getSample_color ( r0, g0, b0, a->Color[0] );
-	color = fix_to_color ( r0, g0, b0 );
-#else
-	color = (tVideoSample) 0xFFFFFFFF;
-#endif
-
 	if ( dx < 0 )
 	{
 		xInc0 = - ( 1 << VIDEO_SAMPLE_GRANULARITY);
@@ -160,9 +146,11 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 
 	if ( dy > dx )
 	{
-		swap_xor ( dx, dy );
-		swap_xor ( xInc0, yInc0 );
-		swap_xor ( xInc1, yInc1 );
+		//swap
+		register s32 t;
+		t = dx;dx=dy;dy=t;
+		t = xInc0;xInc0=yInc0;yInc0=t;
+		t = xInc1;xInc1=yInc1;yInc1=t;
 	}
 
 	if ( 0 == dx )
@@ -176,15 +164,38 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 	c = dx << 1;
 	m = dy << 1;
 
+	// slopes
+	const f32 invDeltaX = core::reciprocal_approxim ( (f32)dx );
+
 #ifdef IPOL_Z
-	f32 slopeZ = (b->Pos.z - a->Pos.z) / f32(dx);
+	f32 slopeZ = (b->Pos.z - a->Pos.z) * invDeltaX;
 	f32 dataZ = a->Pos.z;
 #endif
 
 #ifdef IPOL_W
-	fp24 slopeW = (b->Pos.w - a->Pos.w) / f32( dx );
+	fp24 slopeW = (b->Pos.w - a->Pos.w) * invDeltaX;
 	fp24 dataW = a->Pos.w;
 #endif
+
+#ifdef INVERSE_W
+	f32 inversew;
+#endif
+
+	tVideoSample color;
+#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+	tFixPoint r0, g0, b0;
+#ifdef IPOL_C0
+	sVec4 slopeC;
+	sVec4 C;
+	slopeC = (b->Color[0] - a->Color[0]) * invDeltaX;
+	C = a->Color[0];
+#endif
+	getSample_color ( r0, g0, b0, a->Color[0] );
+	color = fix_to_color ( r0, g0, b0 );
+#else
+	color = (tVideoSample) 0xFFFFFFFF;
+#endif
+
 
 	run = dx;
 	while ( run )
@@ -203,15 +214,20 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 			*z = dataW;
 #endif
 
-		*dst = color;
+#ifdef IPOL_C0
+			inversew = reciprocal_zero ( dataW );
+			getSample_color ( r0, g0, b0, C * inversew );
+			color = fix_to_color ( r0, g0, b0 );
+#endif
+			*dst = color;
 
 		}
 
 		dst = (tVideoSample*) ( (u8*) dst + xInc0 );	// x += xInc
-#ifdef IPOL_Z
+#ifdef CMP_Z
 		z = (fp24*) ( (u8*) z + xInc1 );
 #endif
-#ifdef IPOL_W
+#ifdef CMP_W
 		z = (fp24*) ( (u8*) z + xInc1 );
 #endif
 
@@ -219,10 +235,10 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 		if ( d > dx )
 		{
 			dst = (tVideoSample*) ( (u8*) dst + yInc0 );	// y += yInc
-#ifdef IPOL_Z
+#ifdef CMP_Z
 			z = (fp24*) ( (u8*) z + yInc1 );
 #endif
-#ifdef IPOL_W
+#ifdef CMP_W
 			z = (fp24*) ( (u8*) z + yInc1 );
 #endif
 
@@ -235,9 +251,17 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 #ifdef IPOL_W
 		dataW += slopeW;
 #endif
+#ifdef IPOL_C0
+		C += slopeC;
+#endif
+
 
 	}
 
+}
+
+void CTRTextureWire2::scanline_bilinear()
+{
 }
 
 void CTRTextureWire2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
@@ -258,14 +282,12 @@ void CTRTextureWire2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const
 
 void CTRTextureWire2::drawLine ( const s4DVertex *a,const s4DVertex *b)
 {
-
 	// query access to TexMaps
 
 	// sort on height, y
 	if ( a->Pos.y > b->Pos.y ) swapVertexPointer(&a, &b);
 
 	renderLine ( a, b );
-
 }
 
 

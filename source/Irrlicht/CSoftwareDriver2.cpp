@@ -66,6 +66,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	//BurningShader[ETR_FLAT] = createTRFlat2(DepthBuffer);
 	//BurningShader[ETR_FLAT_WIRE] = createTRFlatWire2(DepthBuffer);
 	BurningShader[ETR_GOURAUD] = createTriangleRendererGouraud2(this);
+	BurningShader[ETR_GOURAUD_NOZ] = createTriangleRendererGouraudNoZ2(this);
 	BurningShader[ETR_GOURAUD_ALPHA] = createTriangleRendererGouraudAlpha2(this );
 	BurningShader[ETR_GOURAUD_ALPHA_NOZ] = createTRGouraudAlphaNoZ2(this );
 	//BurningShader[ETR_GOURAUD_WIRE] = createTriangleRendererGouraudWire2(DepthBuffer);
@@ -271,12 +272,16 @@ void CBurningVideoDriver::setCurrentShader()
 
 	if ( !texture0 )
 	{
-		shader = ETR_GOURAUD;
+		shader = zMaterialTest ? ETR_GOURAUD : ETR_GOURAUD_NOZ;
 	}
 
 	if ( Material.org.Wireframe )
 	{
-		shader = ETR_TEXTURE_GOURAUD_WIRE;
+		IBurningShader* candidate = BurningShader[shader];
+		if ( !candidate || (candidate && !candidate->canWireFrame()))
+		{
+			shader = ETR_TEXTURE_GOURAUD_WIRE;
+		}
 	}
 
 	//shader = ETR_REFERENCE;
@@ -288,6 +293,7 @@ void CBurningVideoDriver::setCurrentShader()
 		CurrentShader->setZCompareFunc ( Material.org.ZBuffer );
 		CurrentShader->setRenderTarget(RenderTargetSurface, ViewPort);
 		CurrentShader->setMaterial ( Material );
+		CurrentShader->pushEdgeTest( Material.org.Wireframe,0 );
 
 		switch ( shader )
 		{
@@ -2129,8 +2135,14 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 void CBurningVideoDriver::draw3DLine(const core::vector3df& start,
 	const core::vector3df& end, SColor color)
 {
-	Transformation [ ETS_CURRENT].transformVect ( &CurrentOut.data[0].Pos.x, start );
-	Transformation [ ETS_CURRENT].transformVect ( &CurrentOut.data[2].Pos.x, end );
+	s4DVertex *v = CurrentOut.data;
+	Transformation [ ETS_CURRENT].transformVect ( &v[0].Pos.x, start );
+	Transformation [ ETS_CURRENT].transformVect ( &v[2].Pos.x, end );
+
+#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+	v[0].Color[0].setA8R8G8B8 ( color.color );
+	v[2].Color[0].setA8R8G8B8 ( color.color );
+#endif
 
 	u32 g;
 	u32 vOut;
@@ -2138,38 +2150,45 @@ void CBurningVideoDriver::draw3DLine(const core::vector3df& start,
 	// no clipping flags
 	for ( g = 0; g != CurrentOut.ElementSize; ++g )
 	{
-		CurrentOut.data[g].flag = 0;
-		Temp.data[g].flag = 0;
+		v[g].flag = VERTEX4D_FORMAT_COLOR_1 | 0;
+		Temp.data[g].flag = VERTEX4D_FORMAT_COLOR_1 | 0;
 	}
 
 	// vertices count per line
-	vOut = clipToFrustum ( CurrentOut.data, Temp.data, 2 );
+	vOut = clipToFrustum ( v, Temp.data, 2 );
 	if ( vOut < 2 )
 		return;
 
 	vOut <<= 1;
 
-	IBurningShader * line;
-	line = BurningShader [ ETR_TEXTURE_GOURAUD_WIRE ];
-	line->setRenderTarget(RenderTargetSurface, ViewPort);
-
 	// to DC Space, project homogenous vertex
-	ndc_2_dc_and_project ( CurrentOut.data + 1, CurrentOut.data, vOut );
+	ndc_2_dc_and_project ( v + 1, v, vOut );
 
 	// unproject vertex color
+#if 0
 #ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
 	for ( g = 0; g != vOut; g+= 2 )
 	{
-		CurrentOut.data[ g + 1].Color[0].setA8R8G8B8 ( color.color );
+		v[ g + 1].Color[0].setA8R8G8B8 ( color.color );
 	}
 #endif
+#endif
 
+	IBurningShader * shader = 0;
+	if ( CurrentShader && CurrentShader->canWireFrame() ) shader = CurrentShader;
+	else shader = BurningShader [ ETR_TEXTURE_GOURAUD_WIRE ];
+	shader = BurningShader [ ETR_TEXTURE_GOURAUD_WIRE ];
+
+	shader->pushEdgeTest(1,1);
+	shader->setRenderTarget(RenderTargetSurface, ViewPort);
 
 	for ( g = 0; g <= vOut - 4; g += 2 )
 	{
-		// rasterize
-		line->drawLine ( CurrentOut.data + 1, CurrentOut.data + g + 3 );
+		shader->drawLine ( v + 1 + g, v + 1 + g + 2 );
 	}
+
+	shader->popEdgeTest();
+
 }
 
 

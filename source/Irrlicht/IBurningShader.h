@@ -115,6 +115,7 @@ namespace video
 		ETR_TEXTURE_GOURAUD_DETAIL_MAP,
 		ETR_TEXTURE_GOURAUD_LIGHTMAP_ADD,
 
+		ETR_GOURAUD_NOZ,
 		ETR_GOURAUD_ALPHA,
 		ETR_GOURAUD_ALPHA_NOZ,
 
@@ -147,12 +148,20 @@ namespace video
 		//! sets the Texture
 		virtual void setTextureParam( u32 stage, video::CSoftwareTexture2* texture, s32 lodLevel);
 		virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) = 0;
-		virtual void drawLine ( const s4DVertex *a,const s4DVertex *b) {};
+		virtual void drawLine ( const s4DVertex *a,const s4DVertex *b);
 
 		virtual void setParam ( u32 index, f32 value) {};
 		virtual void setZCompareFunc ( u32 func) {};
 
 		virtual void setMaterial ( const SBurningShaderMaterial &material ) {};
+
+		void pushEdgeTest(int wireFrame,int save)
+		{
+			if ( save ) EdgeTestPass_stack = EdgeTestPass;
+			EdgeTestPass = wireFrame ? edge_test_left : edge_test_pass;
+		}
+		void popEdgeTest() { EdgeTestPass = EdgeTestPass_stack; }
+		virtual bool canWireFrame () { return false; }
 
 	protected:
 
@@ -166,6 +175,11 @@ namespace video
 		sInternalTexture IT[ BURNING_MATERIAL_MAX_TEXTURES ];
 
 		static const tFixPointu dithermask[ 4 * 4];
+
+		//draw degenerate triangle as line (left edge) drawTriangle -> holes,drawLine dda/bresenham
+		int EdgeTestPass; //edge_test_flag
+		int EdgeTestPass_stack;
+
 	};
 
 
@@ -181,6 +195,7 @@ namespace video
 
 	IBurningShader* createTriangleRendererTextureGouraudWire2(CBurningVideoDriver* driver);
 	IBurningShader* createTriangleRendererGouraud2(CBurningVideoDriver* driver);
+	IBurningShader* createTriangleRendererGouraudNoZ2(CBurningVideoDriver* driver);
 	IBurningShader* createTriangleRendererGouraudAlpha2(CBurningVideoDriver* driver);
 	IBurningShader* createTRGouraudAlphaNoZ2(CBurningVideoDriver* driver);
 	IBurningShader* createTriangleRendererGouraudWire2(CBurningVideoDriver* driver);

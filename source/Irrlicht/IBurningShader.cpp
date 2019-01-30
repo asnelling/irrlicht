@@ -28,6 +28,9 @@ namespace video
 		setDebugName("IBurningShader");
 		#endif
 
+		EdgeTestPass = edge_test_pass;
+		EdgeTestPass_stack = edge_test_pass;
+
 		for ( u32 i = 0; i != BURNING_MATERIAL_MAX_TEXTURES; ++i )
 		{
 			IT[i].Texture = 0;
@@ -110,6 +113,30 @@ namespace video
 			it->textureXMask = s32_to_fixPoint ( dim.Width - 1 ) & FIX_POINT_UNSIGNED_MASK;
 			it->textureYMask = s32_to_fixPoint ( dim.Height - 1 ) & FIX_POINT_UNSIGNED_MASK;
 		}
+	}
+
+	//emulate a line with degenerate triangle and special shader mode (not perfect...)
+	void IBurningShader::drawLine ( const s4DVertex *a,const s4DVertex *b)
+	{
+		sVec2 d;
+		d.x = b->Pos.x - a->Pos.x;	d.x *= d.x;
+		d.y = b->Pos.y - a->Pos.y;	d.y *= d.y;
+		//if ( d.x * d.y < 0.001f ) return;
+
+		if ( a->Pos.x > b->Pos.x ) swapVertexPointer(&a, &b);
+
+		s4DVertex c = *a;
+
+		f32 w = (f32)RenderTarget->getDimension().Width-1;
+		f32 h = (f32)RenderTarget->getDimension().Height-1;
+
+		if ( d.x < 5.f ) { c.Pos.x = b->Pos.x + d.y; if ( c.Pos.x > w ) c.Pos.x = w; }
+		else c.Pos.x = b->Pos.x;
+		if ( d.y < 2.f ) { c.Pos.y = b->Pos.y + 4.f; if ( c.Pos.y > h ) c.Pos.y = h; EdgeTestPass |= edge_test_first_line; }
+
+		drawTriangle ( a,b,&c );
+		EdgeTestPass &= ~edge_test_first_line;
+
 	}
 
 
