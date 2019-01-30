@@ -32,7 +32,7 @@ bool testWithDriver(video::E_DRIVER_TYPE driverType)
 	Buffer.Material.BackfaceCulling = false;
 	Buffer.Material.MaterialType = video::EMT_TRANSPARENT_VERTEX_ALPHA;
 
-	device->getRandomizer()->reset();
+	device->getRandomizer()->reset(100); //
 	const u32 points=256;
 	Buffer.Vertices.reallocate(points);
 	for (u32 i=0; i<points; ++i)

@@ -46,10 +46,13 @@ int main(int argumentCount, char * arguments[])
 	// Use an STL vector so that we don't rely on Irrlicht.
 	std::vector<STestDefinition> tests;
 
-#if 0
+#if 1
 	// To interactively debug a test, move it (temporarily) in here and enable the define to only run this test
 	// Otherwise debugging is slightly tricky as each test runs in it's own process.
-	TEST(textureFeatures);
+	//TEST(textureFeatures);
+	//TEST(drawVertexPrimitive);
+	//TEST(terrainSceneNode);
+	TEST(twodmaterial);
 #else
 	TEST(disambiguateTextures); // Normally you should run this first, since it validates the working directory.
 	// Now the simple tests without device
@@ -133,7 +136,7 @@ int main(int argumentCount, char * arguments[])
 	TEST(line2DTest);
 #endif
 
-	unsigned int numberOfTests = tests.size();
+	unsigned int numberOfTests = (unsigned)tests.size();
 	unsigned int testToRun = 0;
 	unsigned int fails = 0;
 
@@ -162,7 +165,7 @@ int main(int argumentCount, char * arguments[])
 		{
 			numberOfTests = testToRun + abs(atoi(arguments[2]));
 			if (numberOfTests>=tests.size())
-				numberOfTests=tests.size();
+				numberOfTests=(unsigned)tests.size();
 		}
 	}
 
