@@ -1620,17 +1620,18 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			l.pos.y = dl.Position.Y;
 			l.pos.z = dl.Position.Z;
 			l.pos.w = 1.f;
-/*
-			l.radius = (1.f / dl.Attenuation.Y) * (1.f / dl.Attenuation.Y);
+
+#if 0
+			l.radius = reciprocal_zero(dl.Attenuation.Y); l.radius *= l.radius;
 			l.constantAttenuation = dl.Attenuation.X;
 			l.linearAttenuation = dl.Attenuation.Y;
 			l.quadraticAttenuation = dl.Attenuation.Z;
-*/
+#else
 			l.radius = dl.Radius * dl.Radius;
 			l.constantAttenuation = dl.Attenuation.X;
-			l.linearAttenuation = 1.f / dl.Radius;
+			l.linearAttenuation = reciprocal_zero(dl.Radius);
 			l.quadraticAttenuation = dl.Attenuation.Z;
-
+#endif
 			break;
 		default:
 			break;
@@ -1821,7 +1822,7 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				attenuation = light.constantAttenuation + ( 1.f - ( len * light.linearAttenuation ) );
 
 				// diffuse component
-				diffuse.mulAdd ( light.DiffuseColor, 3.f * dot * attenuation );
+				diffuse.mulAdd ( light.DiffuseColor, 1.f * dot * attenuation );
 
 				if ( !(LightSpace.Flags & SPECULAR) )
 					continue;

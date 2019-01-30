@@ -383,6 +383,7 @@ int main(int argc, char* argv[])
 	Just a usual render loop with event handling. The custom mesh is
 	a usual part of the scene graph which gets rendered by drawAll.
 	*/
+	int action[5]={0,0,0,0,0};
 	while(device->run())
 	{
 		if(!device->isWindowActive())
@@ -391,30 +392,51 @@ int main(int argc, char* argv[])
 			continue;
 		}
 
-		if(receiver.IsKeyDown(irr::KEY_KEY_W))
+		//simple onpressed & debounce. must hold as long than 1 frametime
+		if(!receiver.IsKeyDown(irr::KEY_KEY_W)) action[0] = 0;
+		else if ( !action[0] )
 		{
 			meshnode->setMaterialFlag(video::EMF_WIREFRAME, !meshnode->getMaterial(0).Wireframe);
+			action[0] = 1;
 		}
-		else if(receiver.IsKeyDown(irr::KEY_KEY_1))
+
+		if(!receiver.IsKeyDown(irr::KEY_KEY_1)) action[1] = 0;
+		else if (!action[1])
 		{
 			hm.generate(eggbox);
 			mesh.init(hm, 50.f, grey, driver);
+			action[1] = 1;
 		}
-		else if(receiver.IsKeyDown(irr::KEY_KEY_2))
+
+		if(!receiver.IsKeyDown(irr::KEY_KEY_2)) action[2] = 0;
+		else if (!action[2])
 		{
 			hm.generate(moresine);
 			mesh.init(hm, 50.f, yellow, driver);
+			action[2] = 1;
 		}
-		else if(receiver.IsKeyDown(irr::KEY_KEY_3))
+
+		if(!receiver.IsKeyDown(irr::KEY_KEY_3)) action[3] = 0;
+		else if (!action[3])
 		{
 			hm.generate(justexp);
 			mesh.init(hm, 50.f, yellow, driver);
+			action[3] = 1;
 		}
+
+		if(!receiver.IsKeyDown(irr::KEY_KEY_L)) action[4] = 0;
+		else if (!action[4])
+		{
+			meshnode->setMaterialFlag(video::EMF_LIGHTING, !meshnode->getMaterial(0).Lighting);
+			action[4] = 1;
+		}
+
 
 		driver->beginScene(video::ECBF_COLOR | video::ECBF_DEPTH, SColor(0xff000000));
 		smgr->drawAll();
 		driver->endScene();
 	}
+
 
 	device->drop();
 
