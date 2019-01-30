@@ -2407,7 +2407,8 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 
 core::dimension2du CBurningVideoDriver::getMaxTextureSize() const
 {
-	return core::dimension2du(SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE, SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE);
+	return core::dimension2du(SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE ? SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE : 1 << 20,
+		SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE ? SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE : 1 << 20);
 }
 
 bool CBurningVideoDriver::queryTextureFormat(ECOLOR_FORMAT format) const
@@ -2422,7 +2423,7 @@ bool CBurningVideoDriver::queryTextureFormat(ECOLOR_FORMAT format) const
 #endif // _IRR_COMPILE_WITH_BURNINGSVIDEO_
 
 
-#if defined(_IRR_WINDOWS_) && defined(_IRR_COMPILE_WITH_BURNINGSVIDEO_)
+#if defined(_IRR_WINDOWS_) && defined(_IRR_COMPILE_WITH_BURNINGSVIDEO_) && 0
 	#include <windows.h>
 
 struct dreadglobal
