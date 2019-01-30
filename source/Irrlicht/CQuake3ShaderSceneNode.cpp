@@ -21,6 +21,9 @@ namespace irr
 namespace scene
 {
 
+// null check necessary
+#define reciprocal_zero(x) ((x) != 0.f ? 1.f / (x):0.f)
+
 // who, if not you..
 using namespace quake3;
 
@@ -540,7 +543,7 @@ IShadowVolumeSceneNode* CQuake3ShaderSceneNode::addShadowVolumeSceneNode(
 */
 void CQuake3ShaderSceneNode::deformvertexes_wave( f32 dt, SModifierFunction &function )
 {
-	function.wave = core::reciprocal( function.wave );
+	function.wave = reciprocal_zero( function.wave );
 
 	const f32 phase = function.phase;
 
@@ -593,7 +596,7 @@ void CQuake3ShaderSceneNode::deformvertexes_wave( f32 dt, SModifierFunction &fun
 */
 void CQuake3ShaderSceneNode::deformvertexes_move( f32 dt, SModifierFunction &function )
 {
-	function.wave = core::reciprocal( function.wave );
+	function.wave = reciprocal_zero( function.wave );
 	const f32 f = function.evaluate( dt );
 
 	const u32 vsize = Original->Vertices.size();
@@ -703,7 +706,7 @@ void CQuake3ShaderSceneNode::deformvertexes_normal( f32 dt, SModifierFunction &f
 void CQuake3ShaderSceneNode::deformvertexes_bulge( f32 dt, SModifierFunction &function )
 {
 	function.func = SINUS;
-	function.wave = core::reciprocal( function.bulgewidth );
+	function.wave = reciprocal_zero( function.bulgewidth );
 
 	dt *= function.bulgespeed * 0.1f;
 	const f32 phase = function.phase;
@@ -966,7 +969,7 @@ void CQuake3ShaderSceneNode::vertextransform_tcgen( f32 dt, SModifierFunction &f
 		case TURBULENCE:
 			//tcgen turb
 		{
-			function.wave = core::reciprocal( function.phase );
+			function.wave = reciprocal_zero( function.phase );
 
 			const f32 phase = function.phase;
 
@@ -1222,7 +1225,7 @@ void CQuake3ShaderSceneNode::animate( u32 stage,core::matrix4 &texture )
 				{
 					case STRETCH:
 						//tcMod stretch <func> <base> <amplitude> <phase> <frequency>
-						f[0] = core::reciprocal( function.evaluate(TimeAbs) );
+						f[0] = reciprocal_zero( function.evaluate(TimeAbs) );
 						m2.setTextureScaleCenter( f[0], f[0] );
 						break;
 					case TURBULENCE:

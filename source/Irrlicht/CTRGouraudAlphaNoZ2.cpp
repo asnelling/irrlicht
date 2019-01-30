@@ -224,7 +224,7 @@ void CTRGouraudAlphaNoZ2::scanline_bilinear ()
 
 #ifdef IPOL_C0
 #ifdef IPOL_W
-			inversew = core::reciprocal ( line.w[0] );
+			inversew = reciprocal_zero ( line.w[0] );
 
 			getSample_color ( a0, r0, g0, b0, line.c[0][0] * inversew );
 #else
@@ -275,9 +275,9 @@ void CTRGouraudAlphaNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,c
 	const f32 ba = b->Pos.y - a->Pos.y;
 	const f32 cb = c->Pos.y - b->Pos.y;
 	// calculate delta y of the edges
-	scan.invDeltaY[0] = core::reciprocal( ca );
-	scan.invDeltaY[1] = core::reciprocal( ba );
-	scan.invDeltaY[2] = core::reciprocal( cb );
+	scan.invDeltaY[0] = reciprocal_zero( ca );
+	scan.invDeltaY[1] = reciprocal_zero( ba );
+	scan.invDeltaY[2] = reciprocal_zero( cb );
 
 	if ( F32_LOWER_EQUAL_0 ( scan.invDeltaY[0] ) )
 		return;

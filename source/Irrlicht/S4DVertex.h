@@ -16,6 +16,18 @@ namespace irr
 namespace video
 {
 
+// null check necessary (burningvideo only)
+#define reciprocal_zero(x) ((x) != 0.f ? 1.f / (x):0.f)
+
+enum edge_test_flag
+{
+	edge_test_pass = 1,
+	edge_test_left = 0,
+	edge_test_first_line = 2
+};
+//if any edge test flag is set result=1 else 0. ( pass height test for degenerate triangle )
+#define reciprocal_edge(x) ((x) != 0.f ? 1.f / (x):(~EdgeTestPass)&1)
+
 struct sVec2
 {
 	f32 x;
@@ -191,7 +203,7 @@ struct sVec4
 
 	void project_xyz ()
 	{
-		w = core::reciprocal ( w );
+		w = reciprocal_zero ( w );
 		x *= w;
 		y *= w;
 		z *= w;
@@ -227,7 +239,7 @@ struct sVec4
 
 	void mulReciprocal ( f32 s )
 	{
-		const f32 i = core::reciprocal ( s );
+		const f32 i = reciprocal_zero ( s );
 		x = (f32) ( x * i );
 		y = (f32) ( y * i );
 		z = (f32) ( z * i );

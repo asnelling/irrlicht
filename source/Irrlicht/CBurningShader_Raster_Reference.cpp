@@ -698,7 +698,7 @@ REALINLINE void CBurningShader_Raster_Reference::scanline2()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero ( line.x[1] - line.x[0] );
 	const f32 subPixel = ( (f32) pShader.xStart ) - line.x[0];
 
 	// store slopes in endpoint, and correct first pixel
@@ -763,7 +763,7 @@ REALINLINE void CBurningShader_Raster_Reference::scanline ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero ( line.x[1] - line.x[0] );
 
 	// search z-buffer for first not occulled pixel
 	pShader.z = (fp24*) ( (u8*) DepthBuffer->lock() + ( line.y * DepthBuffer->getPitch() ) + ( pShader.xStart << VIDEO_SAMPLE_GRANULARITY ) );
@@ -859,9 +859,9 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 
 
 	// calculate delta y of the edges
-	scan.invDeltaY[0] = core::reciprocal ( c->Pos.y - a->Pos.y );
-	scan.invDeltaY[1] = core::reciprocal ( b->Pos.y - a->Pos.y );
-	scan.invDeltaY[2] = core::reciprocal ( c->Pos.y - b->Pos.y );
+	scan.invDeltaY[0] = reciprocal_zero ( c->Pos.y - a->Pos.y );
+	scan.invDeltaY[1] = reciprocal_zero ( b->Pos.y - a->Pos.y );
+	scan.invDeltaY[2] = reciprocal_zero ( c->Pos.y - b->Pos.y );
 
 	if ( F32_LOWER_EQUAL_0 ( scan.invDeltaY[0] )  )
 		return;

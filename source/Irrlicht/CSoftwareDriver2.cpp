@@ -700,7 +700,7 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,s4DVerte
 		dest[g].flag = source[g].flag | VERTEX4D_PROJECTED;
 
 		const f32 w = source[g].Pos.w;
-		const f32 iw = core::reciprocal ( w );
+		const f32 iw = reciprocal_zero ( w );
 
 		// to device coordinates
 		dest[g].Pos.x = iw * ( source[g].Pos.x * Transformation [ ETS_CLIPSCALE ][ 0] + w * Transformation [ ETS_CLIPSCALE ][12] );
@@ -739,7 +739,7 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( const s4DVertex **v, co
 
 		// project homogenous vertex, store 1/w
 		const f32 w = a->Pos.w;
-		const f32 iw = core::reciprocal ( w );
+		const f32 iw = reciprocal_zero ( w );
 
 		// to device coordinates
 		const f32 * p = Transformation [ ETS_CLIPSCALE ].pointer();
@@ -1488,7 +1488,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 				continue;
 
 			// select mipmap
-			dc_area = core::reciprocal ( dc_area );
+			dc_area = reciprocal_zero ( dc_area );
 			for ( m = 0; m != vSize[VertexCache.vType].TexSize; ++m )
 			{
 				if ( 0 == (tex = MAT_TEXTURE ( m )) )
@@ -1537,7 +1537,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 			continue;
 
 		// select mipmap
-		dc_area = core::reciprocal ( dc_area );
+		dc_area = reciprocal_zero ( dc_area );
 		for ( m = 0; m != vSize[VertexCache.vType].TexSize; ++m )
 		{
 			if ( 0 == (tex = MAT_TEXTURE ( m )) )
