@@ -513,13 +513,13 @@ static inline int clipTest ( absrect2 &o, const core::rect<s32>* a, const absrec
 //! stretches srcRect src to dstRect dst, applying a sliding window box filter in linear color space (sRGB->linear->sRGB)
 void Resample_subSampling(video::IImage* dst,const core::rect<s32>* dstRect,const video::IImage* src,const core::rect<s32>* srcRect)
 {
-	const absrect2 dst_clip = {0,0,dst->getDimension().Width,dst->getDimension().Height};
+	const absrect2 dst_clip = {0,0,(s32)dst->getDimension().Width,(s32)dst->getDimension().Height};
 	absrect2 dc;
 	if (clipTest(dc,dstRect,dst_clip)) return;
 	const video::ECOLOR_FORMAT dstFormat = dst->getColorFormat();
 	u8* dstData= (u8*)dst->getData();
 
-	const absrect2 src_clip = {0,0,src->getDimension().Width,src->getDimension().Height};
+	const absrect2 src_clip = {0,0,(s32)src->getDimension().Width,(s32)src->getDimension().Height};
 	absrect2 sc;
 	if (clipTest(sc,srcRect,src_clip)) return;
 	const video::ECOLOR_FORMAT srcFormat = src->getColorFormat();

@@ -193,7 +193,7 @@ bool CD3D9HLSLMaterialRenderer::createHLSLPixelShader(const char* pixelShaderPro
 	// compile without debug info
 	HRESULT h = stubD3DXCompileShader(
 		pixelShaderProgram,
-		strlen(pixelShaderProgram),
+		(UINT)strlen(pixelShaderProgram),
 		0, // macros
 		0, // no includes
 		shaderEntryPointName,

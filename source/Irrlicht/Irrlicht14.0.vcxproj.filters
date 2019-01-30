@@ -1339,6 +1339,9 @@
     <ClInclude Include="CWGLManager.h">
       <Filter>Irrlicht\video\OpenGL Context</Filter>
     </ClInclude>
+    <ClInclude Include="CBlit.h">
+      <Filter>Irrlicht\video\Null</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\changes.txt">
@@ -2275,6 +2278,9 @@
     </ClCompile>
     <ClCompile Include="CWGLManager.cpp">
       <Filter>Irrlicht\video\OpenGL Context</Filter>
+    </ClCompile>
+    <ClCompile Include="CTRGouraudNoZ2.cpp">
+      <Filter>Irrlicht\video\Burning Video</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
