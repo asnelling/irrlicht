@@ -151,17 +151,18 @@ REALINLINE void memcpy32_small ( void * dest, const void *source, u32 bytesize )
 }
 
 
+typedef union {	float f; u32 u; struct { unsigned int frac:23; unsigned exp:8; unsigned int sign:1; } fields; } ieee754;
+
 
 // integer log2 of a float ieee 754. TODO: non ieee floating point
 static inline s32 s32_log2_f32( f32 f)
 {
-	u32 x = IR ( f );
-	return ((x & 0x7F800000) >> 23) - 127;
+	ieee754 _log2; _log2.f = f; return _log2.fields.exp - 127; //u32 x = IR ( f ); return ((x & 0x7F800000) >> 23) - 127;
 }
 
-static inline s32 s32_log2_s32(u32 x)
+static inline s32 s32_log2_s32(u32 in)
 {
-	return s32_log2_f32( (f32) x);
+	ieee754 _log2; _log2.f = (f32) in; return _log2.fields.exp - 127; //return s32_log2_f32( (f32) x);
 }
 
 static inline s32 s32_abs(s32 x)
