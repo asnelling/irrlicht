@@ -70,9 +70,19 @@ namespace video
 		u32 Flags;
 	};
 
+	enum eCullFlag
+	{
+		CULL_FRONT = 1,
+		CULL_BACK = 2,
+		CULL_INVISIBLE = 4,
+		CULL_FRONT_AND_BACK = 8,
+	};
+
 	struct SBurningShaderMaterial
 	{
 		SMaterial org;
+
+		u32 Culling; //eCullFlag
 
 		sVec3 AmbientColor;
 		sVec3 DiffuseColor;

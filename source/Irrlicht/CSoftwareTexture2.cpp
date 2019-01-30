@@ -79,9 +79,10 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 
 	}
 
+	MipMapLOD = 0;
 	Size = MipMap[MipMapLOD]->getDimension();
 	Pitch = MipMap[MipMapLOD]->getPitch();
-	OrigImageDataSizeInPixels = (f32) 0.2f * MipMap[0]->getImageDataSizeInPixels();
+	OrigImageDataSizeInPixels = (f32) 0.5f * MipMap[0]->getImageDataSizeInPixels();
 
 	regenerateMipMapLevels(image->getMipMapsData());
 }
@@ -93,7 +94,10 @@ CSoftwareTexture2::~CSoftwareTexture2()
 	for ( s32 i = 0; i!= SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i )
 	{
 		if ( MipMap[i] )
+		{
 			MipMap[i]->drop();
+			MipMap[i] = 0;
+		}
 	}
 }
 
@@ -111,7 +115,10 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 	for ( i = 1; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i )
 	{
 		if ( MipMap[i] )
+		{
 			MipMap[i]->drop();
+			MipMap[i] = 0;
+		}
 	}
 
 	core::dimension2d<u32> newSize;
@@ -156,7 +163,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 			MipMap[i] = new CImage(BURNINGSHADER_COLOR_FORMAT, newSize);
 
 			//MipMap[i]->fill ( 0 );
-			//MipMap[0]->copyToScalingBoxFilter( MipMap[i], 0, false );
+			//MipMap[i-1]->copyToScalingBoxFilter( MipMap[i], 0, false );
 			Resample_subSampling(MipMap[i],0,MipMap[i-1],0);
 		}
 	}
@@ -178,7 +185,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 	Size = MipMap[MipMapLOD]->getDimension();
 	Pitch = MipMap[MipMapLOD]->getPitch();
 
-	OrigImageDataSizeInPixels = (f32) 0.2f * MipMap[0]->getImageDataSizeInPixels();
+	OrigImageDataSizeInPixels = (f32) 0.5f * MipMap[0]->getImageDataSizeInPixels();
 
 }
 

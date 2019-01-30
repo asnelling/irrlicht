@@ -35,6 +35,9 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	setDebugName("CBurningVideoDriver");
 	#endif
 
+	MipMapLOD_bias2 = 0.2f;
+	AreaMinDrawSize = 0.01f;
+
 	// create backbuffer
 	BackBuffer = new CImage(BURNINGSHADER_COLOR_FORMAT, params.WindowSize);
 	if (BackBuffer)
@@ -1480,10 +1483,8 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 		if ( ( face[0]->flag & face[1]->flag & face[2]->flag & VERTEX4D_CLIPMASK ) == VERTEX4D_INSIDE )
 		{
 			dc_area = screenarea2 ( face );
-			if ( Material.org.BackfaceCulling && F32_LOWER_EQUAL_0( dc_area ) )
-				continue;
-			else
-			if ( Material.org.FrontfaceCulling && F32_GREATER_EQUAL_0( dc_area ) )
+			u32 sign = dc_area < -AreaMinDrawSize ? CULL_BACK: dc_area > AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
+			if ( Material.Culling & sign ) 
 				continue;
 
 			// select mipmap
@@ -1531,9 +1532,8 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 
 		// check 2d backface culling on first
 		dc_area = screenarea ( CurrentOut.data );
-		if ( Material.org.BackfaceCulling && F32_LOWER_EQUAL_0 ( dc_area ) )
-			continue;
-		else if ( Material.org.FrontfaceCulling && F32_GREATER_EQUAL_0( dc_area ) )
+		u32 sign = dc_area < -AreaMinDrawSize ? CULL_BACK: dc_area > AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
+		if ( Material.Culling & sign ) 
 			continue;
 
 		// select mipmap
@@ -1662,6 +1662,7 @@ u32 CBurningVideoDriver::getMaximalDynamicLightAmount() const
 void CBurningVideoDriver::setMaterial(const SMaterial& material)
 {
 	Material.org = material;
+	Material.Culling = CULL_INVISIBLE | (material.BackfaceCulling ? CULL_BACK : 0) | (material.FrontfaceCulling ? CULL_FRONT : 0);
 
 #ifdef SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM
 	for (u32 i = 0; i < 2; ++i)
@@ -2298,6 +2299,8 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 	{
 		Material.org.BackfaceCulling = true;
 		Material.org.FrontfaceCulling = false;
+		Material.Culling = CULL_BACK | CULL_INVISIBLE;
+
 		shader->setParam ( 0, 0 );
 		shader->setParam ( 1, 1 );
 		shader->setParam ( 2, 0 );
@@ -2307,6 +2310,8 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 
 		Material.org.BackfaceCulling = false;
 		Material.org.FrontfaceCulling = true;
+		Material.Culling = CULL_FRONT | CULL_INVISIBLE;
+
 		shader->setParam ( 0, 0 );
 		shader->setParam ( 1, 2 );
 		shader->setParam ( 2, 0 );
@@ -2318,6 +2323,8 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 	{
 		Material.org.BackfaceCulling = true;
 		Material.org.FrontfaceCulling = false;
+		Material.Culling = CULL_BACK | CULL_INVISIBLE;
+
 		shader->setParam ( 0, 0 );
 		shader->setParam ( 1, 0 );
 		shader->setParam ( 2, 1 );
@@ -2326,6 +2333,8 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 
 		Material.org.BackfaceCulling = false;
 		Material.org.FrontfaceCulling = true;
+		Material.Culling = CULL_FRONT | CULL_INVISIBLE;
+
 		shader->setParam ( 0, 0 );
 		shader->setParam ( 1, 0 );
 		shader->setParam ( 2, 2 );
