@@ -55,6 +55,8 @@ namespace video
 
 	struct SBurningShaderLightSpace
 	{
+		SBurningShaderLightSpace() {}
+		virtual ~SBurningShaderLightSpace() {}
 		void reset ()
 		{
 			Light.set_used ( 0 );
@@ -67,7 +69,7 @@ namespace video
 		sVec4 campos;
 		sVec4 vertex;
 		sVec4 normal;
-		u32 Flags;
+		u32 Flags; // eLightFlags
 	};
 
 	enum eCullFlag

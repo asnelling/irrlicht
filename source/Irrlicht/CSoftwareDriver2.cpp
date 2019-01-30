@@ -988,9 +988,9 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			// texgen
 			if ( TransformationFlag [ ETS_TEXTURE_0 + t ] & (ETF_TEXGEN_CAMERA_NORMAL|ETF_TEXGEN_CAMERA_REFLECTION) )
 			{
-				n.x = LightSpace.campos.x - LightSpace.vertex.x;
-				n.y = LightSpace.campos.x - LightSpace.vertex.y;
-				n.z = LightSpace.campos.x - LightSpace.vertex.z;
+				n.x = -LightSpace.campos.x - LightSpace.vertex.x;
+				n.y = -LightSpace.campos.y - LightSpace.vertex.y;
+				n.z = -LightSpace.campos.z - LightSpace.vertex.z;
 				n.normalize_xyz();
 				n.x += LightSpace.normal.x;
 				n.y += LightSpace.normal.y;
@@ -1688,6 +1688,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	core::setbit_cond ( LightSpace.Flags, Material.org.Shininess != 0.f, SPECULAR );
 	core::setbit_cond ( LightSpace.Flags, Material.org.FogEnable, FOG );
 	core::setbit_cond ( LightSpace.Flags, Material.org.NormalizeNormals, NORMALIZE );
+	if (LightSpace.Flags & SPECULAR ) LightSpace.Flags |= NORMALIZE;
 #endif
 
 	setCurrentShader();
@@ -1711,9 +1712,9 @@ void CBurningVideoDriver::getCameraPosWorldSpace ()
 		object space location of the camera.
 	*/
 
-	LightSpace.campos.x = M[12];
-	LightSpace.campos.y = M[13];
-	LightSpace.campos.z = M[14];
+	LightSpace.campos.x = -M[12];
+	LightSpace.campos.y = -M[13];
+	LightSpace.campos.z = -M[14];
 	LightSpace.campos.w = 1.f;
 }
 
@@ -1792,7 +1793,6 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 
 		// accumulate ambient
 		ambient.add ( light.AmbientColor );
-
 		switch ( light.Type )
 		{
 			case video::ELT_SPOT:
@@ -1811,18 +1811,20 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 
 				len = core::reciprocal_squareroot ( len );
 
+				attenuation = light.constantAttenuation + ( 1.f - ( len * light.linearAttenuation ) );
+				attenuation *= 1.1f;
+
 				// build diffuse reflection
 
 				//angle between normal and light vector
 				vp.mul ( len );
 				dot = LightSpace.normal.dot_xyz ( vp );
-				if ( dot < 0.f )
-					continue;
 
-				attenuation = light.constantAttenuation + ( 1.f - ( len * light.linearAttenuation ) );
-
-				// diffuse component
-				diffuse.mulAdd ( light.DiffuseColor, 1.f * dot * attenuation );
+				if ( dot > 0.f )
+				{
+					// diffuse component
+					diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
+				}
 
 				if ( !(LightSpace.Flags & SPECULAR) )
 					continue;
@@ -1836,24 +1838,25 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				lightHalf += vp;
 				lightHalf.normalize_xyz();
 
-				// specular
+				// specular (not really right...)
 				dot = LightSpace.normal.dot_xyz ( lightHalf );
-				if ( dot < 0.f )
-					continue;
-
-				//specular += light.SpecularColor * ( powf ( Material.org.Shininess ,dot ) * attenuation );
-				specular.mulAdd ( light.SpecularColor, dot * attenuation );
+				if ( dot > 0.f )
+				{
+					//specular += light.SpecularColor * ( powf ( Material.org.Shininess ,dot ) * attenuation );
+					//specular.mulAdd ( light.SpecularColor, dot * attenuation );
+					f32 srgb = dot*4.5f; //powf ( dot,Material.org.Shininess );
+					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
+				}
 				break;
 
 			case video::ELT_DIRECTIONAL:
 
 				//angle between normal and light vector
 				dot = LightSpace.normal.dot_xyz ( light.pos );
-				if ( dot < 0.f )
-					continue;
 
 				// diffuse component
-				diffuse.mulAdd ( light.DiffuseColor, dot );
+				if ( dot > 0.f )
+					diffuse.mulAdd ( light.DiffuseColor, dot );
 				break;
 			default:
 				break;
@@ -1864,8 +1867,14 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 	// sum up lights
 	dColor.mulAdd (ambient, Material.AmbientColor );
 	dColor.mulAdd (diffuse, Material.DiffuseColor);
-	dColor.mulAdd (specular, Material.SpecularColor);
 
+	sVec3 c;
+	c.setR8G8B8(vertexargb);
+	dColor.r *= c.r;
+	dColor.g *= c.g;
+	dColor.b *= c.b;
+
+	dColor.mulAdd (specular, Material.SpecularColor);
 	dColor.saturate ( dest->Color[0], vertexargb );
 }
 
@@ -2454,16 +2463,16 @@ IVideoDriver* createBurningVideoDriver(const irr::SIrrlichtCreationParameters& p
 {
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 
-	#ifdef _IRR_WINDOWS_
-	b.sync = CreateEventA ( 0, 0, 0, "burnevent0" );
-	b.params = &params;
-	b.io = io;
-	b.presenter = presenter;
-	b.dread = CreateThread ( 0, 0, dreadFun, 0, 0, &b.dreadid );
-	WaitForSingleObject ( b.sync, INFINITE );
-	return b.driver;
+	#if defined(_IRR_WINDOWS_) && 0
+		b.sync = CreateEventA ( 0, 0, 0, "burnevent0" );
+		b.params = &params;
+		b.io = io;
+		b.presenter = presenter;
+		b.dread = CreateThread ( 0, 0, dreadFun, 0, 0, &b.dreadid );
+		WaitForSingleObject ( b.sync, INFINITE );
+		return b.driver;
 	#else
-	return new CBurningVideoDriver(params, io, presenter);
+		return new CBurningVideoDriver(params, io, presenter);
 	#endif
 
 	#else
