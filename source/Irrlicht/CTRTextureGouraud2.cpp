@@ -84,6 +84,7 @@ public:
 
 	//! draws an indexed triangle list
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c );
+	virtual bool canWireFrame () { return true; }
 
 
 private:
@@ -207,6 +208,9 @@ void CTRTextureGouraud2::scanline_bilinear ()
 
 	for ( s32 i = 0; i <= dx; ++i )
 	{
+		//if test active only first pixel
+		if ( (0 == EdgeTestPass) & i ) break;
+
 #ifdef CMP_Z
 		if ( line.z[0] < z[i] )
 #endif
@@ -450,6 +454,8 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 
 			// render a scanline
 			scanline_bilinear ();
+			if ( EdgeTestPass & edge_test_first_line ) break;
+
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];
@@ -610,6 +616,8 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 
 			// render a scanline
 			scanline_bilinear ( );
+			if ( EdgeTestPass & edge_test_first_line ) break;
+
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];

@@ -46,13 +46,14 @@ int main(int argumentCount, char * arguments[])
 	// Use an STL vector so that we don't rely on Irrlicht.
 	std::vector<STestDefinition> tests;
 
-#if 1
+#if 0
 	// To interactively debug a test, move it (temporarily) in here and enable the define to only run this test
 	// Otherwise debugging is slightly tricky as each test runs in it's own process.
 	//TEST(textureFeatures);
 	//TEST(drawVertexPrimitive);
 	//TEST(terrainSceneNode);
-	TEST(twodmaterial);
+	//TEST(twodmaterial);
+	//TEST(billboards);
 #else
 	TEST(disambiguateTextures); // Normally you should run this first, since it validates the working directory.
 	// Now the simple tests without device
@@ -126,8 +127,8 @@ int main(int argumentCount, char * arguments[])
 	TEST(projectionMatrix);
 	// large scenes/long rendering
 	// shadows are slow
-//	TEST(orthoCam);
-//	TEST(stencilShadow);
+	TEST(orthoCam);
+	TEST(stencilShadow);
 	// q3 maps are slow
 	TEST(planeMatrix);
 	TEST(terrainSceneNode);

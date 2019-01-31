@@ -130,13 +130,26 @@ namespace video
 		f32 w = (f32)RenderTarget->getDimension().Width-1;
 		f32 h = (f32)RenderTarget->getDimension().Height-1;
 
-		if ( d.x < 5.f ) { c.Pos.x = b->Pos.x + d.y; if ( c.Pos.x > w ) c.Pos.x = w; }
+		if ( d.x < 2.f ) { c.Pos.x = b->Pos.x + 1.f + d.y; if ( c.Pos.x > w ) c.Pos.x = w; }
 		else c.Pos.x = b->Pos.x;
-		if ( d.y < 2.f ) { c.Pos.y = b->Pos.y + 4.f; if ( c.Pos.y > h ) c.Pos.y = h; EdgeTestPass |= edge_test_first_line; }
+		if ( d.y < 2.f ) { c.Pos.y = b->Pos.y + 1.f; if ( c.Pos.y > h ) c.Pos.y = h; EdgeTestPass |= edge_test_first_line; }
 
 		drawTriangle ( a,b,&c );
 		EdgeTestPass &= ~edge_test_first_line;
 
+	}
+
+	void IBurningShader::drawWireFrameTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+	{
+		if ( EdgeTestPass & edge_test_pass )
+		{
+			drawTriangle(a,b,c);
+			return;
+		}
+
+		drawLine ( a, b );
+		drawLine ( b, c );
+		drawLine ( a, c );
 	}
 
 

@@ -152,6 +152,8 @@ namespace video
 		virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) = 0;
 		virtual void drawLine ( const s4DVertex *a,const s4DVertex *b);
 
+		void drawWireFrameTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c );
+
 		virtual void setParam ( u32 index, f32 value) {};
 		virtual void setZCompareFunc ( u32 func) {};
 

@@ -1509,7 +1509,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 			}
 
 			// rasterize
-			CurrentShader->drawTriangle ( face[0] + 1, face[1] + 1, face[2] + 1 );
+			CurrentShader->drawWireFrameTriangle ( face[0] + 1, face[1] + 1, face[2] + 1 );
 			continue;
 		}
 
@@ -1562,7 +1562,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 		for ( g = 0; g <= vOut - 6; g += 2 )
 		{
 			// rasterize
-			CurrentShader->drawTriangle ( CurrentOut.data + 0 + 1,
+			CurrentShader->drawWireFrameTriangle ( CurrentOut.data + 0 + 1,
 							CurrentOut.data + g + 3,
 							CurrentOut.data + g + 5);
 		}
@@ -2109,7 +2109,7 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 
 		if ( test == VERTEX4D_INSIDE )
 		{
-			render->drawTriangle ( face[0] + 1, face[1] + 1, face[2] + 1 );
+			render->drawWireFrameTriangle ( face[0] + 1, face[1] + 1, face[2] + 1 );
 			continue;
 		}
 		// Todo: all vertices are clipped in 2d..
@@ -2131,7 +2131,7 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 		for ( g = 0; g <= vOut - 6; g += 2 )
 		{
 			// rasterize
-			render->drawTriangle ( CurrentOut.data + 1, &CurrentOut.data[g + 3], &CurrentOut.data[g + 5] );
+			render->drawWireFrameTriangle ( CurrentOut.data + 1, &CurrentOut.data[g + 3], &CurrentOut.data[g + 5] );
 		}
 
 	}

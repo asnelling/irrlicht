@@ -86,6 +86,7 @@ public:
 	//! draws an indexed triangle list
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c );
 	virtual void drawLine ( const s4DVertex *a,const s4DVertex *b);
+	virtual bool canWireFrame () { return true; }
 
 protected:
 	virtual void scanline_bilinear ();
@@ -266,8 +267,6 @@ void CTRTextureWire2::scanline_bilinear()
 
 void CTRTextureWire2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
 {
-	sScanLineData line;
-
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);
 	if ( F32_A_GREATER_B ( b->Pos.y , c->Pos.y ) ) swapVertexPointer(&b, &c);
