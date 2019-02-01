@@ -84,7 +84,7 @@ CStencilBuffer::CStencilBuffer(const core::dimension2d<u32>& size)
 : Buffer(0), Size(0,0)
 {
 	#ifdef _DEBUG
-	setDebugName("CDepthBuffer");
+	setDebugName("CStencilBuffer");
 	#endif
 
 	setSize(size);

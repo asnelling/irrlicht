@@ -9,6 +9,7 @@
 #include "SoftwareDriver2_helper.h"
 #include "CSoftwareTexture2.h"
 #include "CSoftwareDriver2.h"
+#include "CBlit.h"
 #include "os.h"
 
 namespace irr
@@ -75,7 +76,7 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 		if (!isCompressed)
 		{
 			//image->copyToScalingBoxFilter ( MipMap[0],0, false );
-			Resample_subSampling(MipMap[0],0,image,0);
+			Resample_subSampling(BLITTER_TEXTURE,MipMap[0],0,image,0);
 		}
 
 	}
@@ -165,7 +166,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 
 			//MipMap[i]->fill ( 0 );
 			//MipMap[i-1]->copyToScalingBoxFilter( MipMap[i], 0, false );
-			Resample_subSampling(MipMap[i],0,MipMap[i-1],0);
+			Resample_subSampling(BLITTER_TEXTURE,MipMap[i],0,MipMap[i-1],0);
 		}
 	}
 

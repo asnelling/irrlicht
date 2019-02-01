@@ -494,9 +494,6 @@ protected:
 	core::irrAllocator<u8> Allocator;
 };
 
-//! stretches srcRect src to dstRect dst, applying a sliding window box filter in linear color space (sRGB->linear->sRGB)
-void Resample_subSampling(video::IImage* dst,const core::rect<s32>* dstRect,const video::IImage* src,const core::rect<s32>* srcRect);
-
 
 } // end namespace video
 } // end namespace irr

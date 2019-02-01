@@ -9,6 +9,8 @@
 
 namespace irr
 {
+namespace video
+{
 
 	struct SBlitJob
 	{
@@ -471,20 +473,23 @@ static void executeBlit_TextureCopy_x_to_x( const SBlitJob * job )
 	const u32 h = job->height;
 	if (job->stretch)
 	{
+		//assume 32bit.. 
 		const u32 *src = static_cast<const u32*>(job->src);
 		u32 *dst = static_cast<u32*>(job->dst);
+
 		const float wscale = 1.f/job->x_stretch;
 		const float hscale = 1.f/job->y_stretch;
 
-		for ( u32 dy = 0; dy < h; ++dy )
+		float src_x = 0.f;
+		float src_y = 0.f;
+		for ( u32 dy = 0; dy < h; ++dy,src_y += hscale )
 		{
-			const u32 src_y = (u32)(dy*hscale);
-			src = (u32*) ( (u8*) (job->src) + job->srcPitch*src_y );
+			src = (u32*) ( (u8*) (job->src) + job->srcPitch*((int) src_y) );
 
-			for ( u32 dx = 0; dx < w; ++dx )
+			src_x = 0.f;
+			for ( u32 dx = 0; dx < w; ++dx,src_x += wscale )
 			{
-				const u32 src_x = (u32)(dx*wscale);
-				dst[dx] = src[src_x];
+				dst[dx] = src[(int)src_x];
 			}
 			dst = (u32*) ( (u8*) (dst) + job->dstPitch );
 		}
@@ -900,17 +905,43 @@ static void executeBlit_TextureBlendColor_16_to_16( const SBlitJob * job )
 */
 static void executeBlit_TextureBlendColor_32_to_32( const SBlitJob * job )
 {
-	u32 *src = (u32*) job->src;
+	const u32 w = job->width;
+	const u32 h = job->height;
+	const u32 *src = (u32*) job->src;
 	u32 *dst = (u32*) job->dst;
 
-	for ( s32 dy = 0; dy != job->height; ++dy )
+	if (job->stretch)
 	{
-		for ( s32 dx = 0; dx != job->width; ++dx )
+		const float wscale = 1.f/job->x_stretch;
+		const float hscale = 1.f/job->y_stretch;
+
+		float src_x = 0.f;
+		float src_y = 0.f;
+		for ( u32 dy = 0; dy < h; ++dy,src_y += hscale )
 		{
-			dst[dx] = PixelBlend32( dst[dx], PixelMul32_2( src[dx], job->argb ) );
+			const u32 src_y = (u32)(dy*hscale);
+			src = (u32*) ( (u8*) (job->src) + job->srcPitch*((int) src_y) );
+
+			src_x = 0.f;
+			for ( u32 dx = 0; dx < w; ++dx,src_x += wscale )
+			{
+				dst[dx] = PixelBlend32( dst[dx], PixelMul32_2( src[(int)src_x], job->argb ) );
+			}
+			dst = (u32*) ( (u8*) (dst) + job->dstPitch );
 		}
-		src = (u32*) ( (u8*) (src) + job->srcPitch );
-		dst = (u32*) ( (u8*) (dst) + job->dstPitch );
+
+	}
+	else
+	{
+		for ( u32 dy = 0; dy != h; ++dy )
+		{
+			for ( u32 dx = 0; dx != w; ++dx )
+			{
+				dst[dx] = PixelBlend32( dst[dx], PixelMul32_2( src[dx], job->argb ) );
+			}
+			src = (u32*) ( (u8*) (src) + job->srcPitch );
+			dst = (u32*) ( (u8*) (dst) + job->dstPitch );
+		}
 	}
 }
 
@@ -1137,6 +1168,10 @@ static void executeBlit_TextureCombineColor_32_to_32( const SBlitJob * job )
 	}
 }
 
+
+typedef void (*tExecuteBlit) ( const SBlitJob * job );
+
+
 // Blitter Operation
 enum eBlitter
 {
@@ -1149,7 +1184,8 @@ enum eBlitter
 	BLITTER_TEXTURE_COMBINE_ALPHA,
 };
 
-typedef void (*tExecuteBlit) ( const SBlitJob * job );
+//! stretches srcRect src to dstRect dst, applying a sliding window box filter in linear color space (sRGB->linear->sRGB)
+void Resample_subSampling(eBlitter op,video::IImage* dst,const core::rect<s32>* dstRect,const video::IImage* src,const core::rect<s32>* srcRect);
 
 
 /*!
@@ -1191,7 +1227,7 @@ static const blitterTable blitTable[] =
 };
 
 
-static inline tExecuteBlit getBlitter2( eBlitter operation,const video::IImage * dest,const video::IImage * source )
+static inline tExecuteBlit getBlitter( eBlitter operation,const video::IImage * dest,const video::IImage * source )
 {
 	video::ECOLOR_FORMAT sourceFormat = (video::ECOLOR_FORMAT) ( source ? source->getColorFormat() : -1 );
 	video::ECOLOR_FORMAT destFormat = (video::ECOLOR_FORMAT) ( dest ? dest->getColorFormat() : -1 );
@@ -1217,7 +1253,7 @@ static inline tExecuteBlit getBlitter2( eBlitter operation,const video::IImage *
 
 // bounce clipping to texture
 inline void setClip ( AbsRectangle &out, const core::rect<s32> *clip,
-					const video::IImage * tex, s32 passnative )
+					const video::IImage * tex,const core::dimension2d<u32>* tex_org, s32 passnative )
 {
 	if ( clip && 0 == tex && passnative )
 	{
@@ -1230,6 +1266,15 @@ inline void setClip ( AbsRectangle &out, const core::rect<s32> *clip,
 
 	const s32 w = tex ? tex->getDimension().Width : 0;
 	const s32 h = tex ? tex->getDimension().Height : 0;
+	//driver could have changed texture size.
+	if ( clip && tex_org && (w != tex_org->Width || h != tex_org->Height) )
+	{
+		out.x0 = core::s32_clamp ( (clip->UpperLeftCorner.X*w)/tex_org->Width, 0, w );
+		out.x1 = core::s32_clamp ( (clip->LowerRightCorner.X*w)/tex_org->Width, out.x0, w );
+		out.y0 = core::s32_clamp ( (clip->UpperLeftCorner.Y*h)/tex_org->Height, 0, h );
+		out.y1 = core::s32_clamp ( (clip->LowerRightCorner.Y*h)/tex_org->Height, out.y0, h );
+	}
+	else
 	if ( clip )
 	{
 		out.x0 = core::s32_clamp ( clip->UpperLeftCorner.X, 0, w );
@@ -1251,18 +1296,12 @@ inline void setClip ( AbsRectangle &out, const core::rect<s32> *clip,
 	a generic 2D Blitter
 */
 static s32 Blit(eBlitter operation,
-		video::IImage * dest,
-		const core::rect<s32> *destClipping,
-		const core::position2d<s32> *destPos,
-		video::IImage * const source,
-		const core::rect<s32> *sourceClipping,
+		video::IImage* dest,const core::rect<s32>* destClipping,const core::position2d<s32>* destPos,
+		const video::IImage* source,const core::rect<s32>* sourceClipping,const core::dimension2d<u32>* src_originalSize,
 		u32 argb)
 {
-	tExecuteBlit blitter = getBlitter2( operation, dest, source );
-	if ( 0 == blitter )
-	{
-		return 0;
-	}
+	tExecuteBlit blitter = getBlitter( operation, dest, source );
+	if ( 0 == blitter ) return 0;
 
 	// Clipping
 	AbsRectangle sourceClip;
@@ -1271,8 +1310,8 @@ static s32 Blit(eBlitter operation,
 
 	SBlitJob job;
 
-	setClip ( sourceClip, sourceClipping, source, 1 );
-	setClip ( destClip, destClipping, dest, 0 );
+	setClip ( sourceClip, sourceClipping, source, src_originalSize,1 );
+	setClip ( destClip, destClipping, dest, 0, 0 );
 
 	v.x0 = destPos ? destPos->X : 0;
 	v.y0 = destPos ? destPos->Y : 0;
@@ -1314,31 +1353,34 @@ static s32 Blit(eBlitter operation,
 }
 
 static s32 StretchBlit(eBlitter operation,
-		video::IImage* dest, const core::rect<s32> *destRect,
-		const core::rect<s32> *srcRect, video::IImage* const source,
+		video::IImage* dest, const core::rect<s32>* destClipping,const core::rect<s32> *destRect,
+		const video::IImage* source, const core::rect<s32> *srcRect, const core::dimension2d<u32>* src_originalSize,
 		u32 argb)
 {
-	tExecuteBlit blitter = getBlitter2( operation, dest, source );
-	if ( 0 == blitter )
-	{
-		return 0;
-	}
+	tExecuteBlit blitter = getBlitter( operation, dest, source );
+	if ( 0 == blitter ) return 0;
 
 	SBlitJob job;
 
 	// Clipping
-	setClip ( job.Source, srcRect, source, 1 );
-	setClip ( job.Dest, destRect, dest, 0 );
+	setClip ( job.Source, srcRect, source, src_originalSize,1 );
+	setClip ( job.Dest, destRect, dest, 0, 0 );
 
 	job.width = job.Dest.x1-job.Dest.x0;
 	job.height = job.Dest.y1-job.Dest.y0;
 
 	job.argb = argb;
 
-	// use original dest size, despite any clipping
-	job.x_stretch = (float)destRect->getWidth() / (float)(job.Source.x1-job.Source.x0);
-	job.y_stretch = (float)destRect->getHeight() / (float)(job.Source.y1-job.Source.y0);
-	job.stretch = (job.x_stretch != 1.f) || (job.y_stretch != 1.f);
+	//scale gui needs destRect/srcRect. direct call assumes stretching.
+	//still confused to match this with openGL.. pass unit test
+	int dst_w = destRect->getWidth();
+	int dst_h = destRect->getHeight();
+	int src_w = destClipping ? srcRect->getWidth() : job.Source.x1-job.Source.x0;
+	int src_h = destClipping ? srcRect->getHeight() : job.Source.y1-job.Source.y0;
+
+	job.stretch = dst_w != src_w || dst_h != src_h;
+	job.x_stretch = src_w ? (float)dst_w / (float)src_w : 1.f;
+	job.y_stretch = src_h ? (float)dst_h / (float)src_h : 1.f;
 
 	if ( source )
 	{
@@ -1367,7 +1409,7 @@ static s32 StretchBlit(eBlitter operation,
 static void drawRectangle(video::IImage* img, const core::rect<s32>& rect, const video::SColor &color)
 {
 	Blit(color.getAlpha() == 0xFF ? BLITTER_COLOR : BLITTER_COLOR_ALPHA,
-			img, 0, &rect.UpperLeftCorner, 0, &rect, color.color);
+			img, 0, &rect.UpperLeftCorner, 0, &rect, 0, color.color);
 }
 
 
@@ -1412,7 +1454,8 @@ static void drawLine(video::IImage* img, const core::position2d<s32>& from,
 }
 
 
-}
+} // end namespace video
+} // end namespace irr
 
 #endif
 

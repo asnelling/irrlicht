@@ -31,7 +31,7 @@ namespace video
 		bool LightIsOn;
 
 		E_LIGHT_TYPE Type;
-		f32 radius;
+		f32 radius_square;
 		f32 linearAttenuation;
 		f32 constantAttenuation;
 		f32 quadraticAttenuation;

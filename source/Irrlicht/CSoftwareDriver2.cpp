@@ -1627,7 +1627,7 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			l.linearAttenuation = dl.Attenuation.Y;
 			l.quadraticAttenuation = dl.Attenuation.Z;
 #else
-			l.radius = dl.Radius * dl.Radius;
+			l.radius_square = dl.Radius * dl.Radius;
 			l.constantAttenuation = dl.Attenuation.X;
 			l.linearAttenuation = reciprocal_zero(dl.Radius);
 			l.quadraticAttenuation = dl.Attenuation.Z;
@@ -1806,7 +1806,7 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				//vp.z = light.pos_objectspace.z - LightSpace.vertex.x;
 
 				len = vp.get_length_xyz_square();
-				if ( light.radius < len )
+				if ( light.radius_square < len )
 					continue;
 
 				len = core::reciprocal_squareroot ( len );
@@ -1887,36 +1887,22 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 					 const core::rect<s32>* clipRect, SColor color,
 					 bool useAlphaChannelOfTexture)
 {
-	if (texture)
-	{
-		if (texture->getDriverType() != EDT_BURNINGSVIDEO)
-		{
-			os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);
-			return;
-		}
+	if (!texture) return;
 
-#if 0
-		// 2d methods don't use viewPort
-		core::position2di dest = destPos;
-		core::recti clip=ViewPort;
-		if (ViewPort.getSize().Width != ScreenSize.Width)
-		{
-			dest.X=ViewPort.UpperLeftCorner.X+core::round32(destPos.X*ViewPort.getWidth()/(f32)ScreenSize.Width);
-			dest.Y=ViewPort.UpperLeftCorner.Y+core::round32(destPos.Y*ViewPort.getHeight()/(f32)ScreenSize.Height);
-			if (clipRect)
-			{
-				clip.constrainTo(*clipRect);
-			}
-			clipRect = &clip;
-		}
-#endif
-		if (useAlphaChannelOfTexture)
-			((CSoftwareTexture2*)texture)->getImage()->copyToWithAlpha(
-			RenderTargetSurface, destPos, sourceRect, color, clipRect);
-		else
-			((CSoftwareTexture2*)texture)->getImage()->copyTo(
-				RenderTargetSurface, destPos, sourceRect, clipRect);
+	CImage* img = ((CSoftwareTexture2*)texture)->getImage();
+	eBlitter op = useAlphaChannelOfTexture ? (color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
+	if (texture->getOriginalSize() == texture->getSize() )
+	{
+		Blit(op, RenderTargetSurface, clipRect, &destPos, img, &sourceRect,&texture->getOriginalSize(),color.color);
 	}
+	else
+	{
+		core::rect<s32> destRect(destPos,sourceRect.getSize());
+		SColor c[4] = { color,color,color,color };
+		//StretchBlit(op,RenderTargetSurface, 0,&destRect, img,&sourceRect,&texture->getOriginalSize(),color.color);
+		draw2DImage(texture,destRect,sourceRect,0,c,useAlphaChannelOfTexture);
+	}
+
 }
 
 
@@ -1925,20 +1911,30 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 		const core::rect<s32>& sourceRect, const core::rect<s32>* clipRect,
 		const video::SColor* const colors, bool useAlphaChannelOfTexture)
 {
-	if (texture)
-	{
-		if (texture->getDriverType() != EDT_BURNINGSVIDEO)
-		{
-			os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);
-			return;
-		}
+	if (!texture) return;
 
-	if (useAlphaChannelOfTexture)
-		StretchBlit(BLITTER_TEXTURE_ALPHA_BLEND, RenderTargetSurface, &destRect, &sourceRect,
-			    ((CSoftwareTexture2*)texture)->getImage(), (colors ? colors[0].color : 0));
+	if ( OverrideMaterial2DEnabled ) {}
+
+	CImage* img = ((CSoftwareTexture2*)texture)->getImage();
+	u32 argb = (colors ? colors[0].color : 0xFFFFFFFF);
+	eBlitter op = useAlphaChannelOfTexture ? (argb == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
+	if ( op == BLITTER_TEXTURE )
+	{
+		core::rect<s32> src(sourceRect);
+		const core::dimension2d<u32>& o = texture->getOriginalSize();
+		const core::dimension2d<u32>& w = texture->getSize();
+		if ( o != w)
+		{
+			src.UpperLeftCorner.X = (sourceRect.UpperLeftCorner.X*w.Width)/o.Width;
+			src.UpperLeftCorner.Y = (sourceRect.UpperLeftCorner.Y*w.Height)/o.Height;
+			src.LowerRightCorner.X = (sourceRect.LowerRightCorner.X*w.Width)/o.Width;
+			src.LowerRightCorner.Y = (sourceRect.LowerRightCorner.Y*w.Height)/o.Height;
+		}
+		Resample_subSampling(op,RenderTargetSurface,&destRect,img,&src);
+	}
 	else
-		StretchBlit(BLITTER_TEXTURE, RenderTargetSurface, &destRect, &sourceRect,
-			    ((CSoftwareTexture2*)texture)->getImage(), (colors ? colors[0].color : 0));
+	{
+		StretchBlit(op,RenderTargetSurface, clipRect,&destRect, img,&sourceRect,&texture->getOriginalSize(),argb);
 	}
 }
 
@@ -2033,7 +2029,7 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
 	const core::rect<s32>* clip)
 {
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if defined(SOFTWARE_DRIVER_2_USE_VERTEX_COLOR) && defined(BURNINGVIDEO_RENDERER_BEAUTIFUL)
 
 	core::rect<s32> pos = position;
 
@@ -2220,7 +2216,7 @@ const wchar_t* CBurningVideoDriver::getName() const
 //! Returns the graphics card vendor name.
 core::stringc CBurningVideoDriver::getVendorInfo()
 {
-	return "Burning's Video: Ing. Thomas Alten (c) 2006-2015";
+	return "Burning's Video: Ing. Thomas Alten (c) 2006-2019";
 }
 
 
@@ -2387,6 +2383,12 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 	u32 *stencil;
 	u32* const stencilBase=(u32*) StencilBuffer->lock();
 
+#if defined(SOFTWARE_DRIVER_2_32BIT)
+#else
+	const u16 alpha = extractAlpha( leftUpEdge.color ) >> 3;
+	const u32 src = video::A8R8G8B8toA1R5G5B5( leftUpEdge.color );
+
+#endif
 	for ( u32 y = 0; y < h; ++y )
 	{
 		dst = (tVideoSample*)RenderTargetSurface->getData() + ( y * w );
@@ -2396,7 +2398,11 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 		{
 			if ( stencil[x] > 1 )
 			{
+#if defined(SOFTWARE_DRIVER_2_32BIT)
 				dst[x] = PixelBlend32 ( dst[x], leftUpEdge.color );
+#else
+				dst[x] = PixelBlend16( dst[x], src, alpha );
+#endif
 			}
 		}
 	}

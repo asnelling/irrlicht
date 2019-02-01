@@ -131,7 +131,7 @@ void CImage::copyTo(IImage* target, const core::position2d<s32>& pos)
 		return;
 	}
 
-	Blit(BLITTER_TEXTURE, target, 0, &pos, this, 0, 0);
+	Blit(BLITTER_TEXTURE, target, 0, &pos, this, 0, 0, 0);
 }
 
 
@@ -144,7 +144,7 @@ void CImage::copyTo(IImage* target, const core::position2d<s32>& pos, const core
 		return;
 	}
 
-	Blit(BLITTER_TEXTURE, target, clipRect, &pos, this, &sourceRect, 0);
+	Blit(BLITTER_TEXTURE, target, clipRect, &pos, this, &sourceRect, 0, 0);
 }
 
 
@@ -159,13 +159,13 @@ void CImage::copyToWithAlpha(IImage* target, const core::position2d<s32>& pos, c
 
 	if ( combineAlpha )
 	{
-		Blit(BLITTER_TEXTURE_COMBINE_ALPHA, target, clipRect, &pos, this, &sourceRect, color.color);
+		Blit(BLITTER_TEXTURE_COMBINE_ALPHA, target, clipRect, &pos, this, &sourceRect, 0, color.color);
 	}
 	else
 	{
 		// color blend only necessary on not full spectrum aka. color.color != 0xFFFFFFFF
 		Blit(color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND,
-				target, clipRect, &pos, this, &sourceRect, color.color);
+				target, clipRect, &pos, this, &sourceRect, 0, color.color);
 	}
 }
 
@@ -511,7 +511,7 @@ static inline int clipTest ( absrect2 &o, const core::rect<s32>* a, const absrec
 }
 
 //! stretches srcRect src to dstRect dst, applying a sliding window box filter in linear color space (sRGB->linear->sRGB)
-void Resample_subSampling(video::IImage* dst,const core::rect<s32>* dstRect,const video::IImage* src,const core::rect<s32>* srcRect)
+void Resample_subSampling(eBlitter op,video::IImage* dst,const core::rect<s32>* dstRect,const video::IImage* src,const core::rect<s32>* srcRect)
 {
 	const absrect2 dst_clip = {0,0,(s32)dst->getDimension().Width,(s32)dst->getDimension().Height};
 	absrect2 dc;
@@ -594,6 +594,12 @@ void Resample_subSampling(video::IImage* dst,const core::rect<s32>* dstRect,cons
 					sum[3] += ((sbgra>>24)&0xFF)*ws;
 
 				}
+			}
+			switch(op)
+			{
+				case BLITTER_TEXTURE_ALPHA_BLEND:
+				case BLITTER_TEXTURE_ALPHA_COLOR_BLEND:
+					break;
 			}
 			sbgra = linear_to_srgb_8bit(sum[0])       |
 					linear_to_srgb_8bit(sum[1]) <<  8 |
