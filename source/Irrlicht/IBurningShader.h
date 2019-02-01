@@ -31,7 +31,6 @@ namespace video
 		bool LightIsOn;
 
 		E_LIGHT_TYPE Type;
-		f32 radius_square;
 		f32 linearAttenuation;
 		f32 constantAttenuation;
 		f32 quadraticAttenuation;
@@ -53,6 +52,7 @@ namespace video
 		VERTEXTRANSFORM	= 0x20,
 	};
 
+	//currently in world space
 	struct SBurningShaderLightSpace
 	{
 		SBurningShaderLightSpace() {}

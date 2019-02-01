@@ -924,7 +924,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			Transformation[ETS_WORLD].rotateVect ( &LightSpace.normal.x, base->Normal );
 
 			// vertex in light space
-			if ( LightSpace.Flags & ( POINTLIGHT | FOG | SPECULAR | VERTEXTRANSFORM) )
+			//if ( LightSpace.Flags & ( POINTLIGHT | FOG | SPECULAR | VERTEXTRANSFORM) )
 				Transformation[ETS_WORLD].transformVect ( &LightSpace.vertex.x, base->Pos );
 		}
 
@@ -988,9 +988,9 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			// texgen
 			if ( TransformationFlag [ ETS_TEXTURE_0 + t ] & (ETF_TEXGEN_CAMERA_NORMAL|ETF_TEXGEN_CAMERA_REFLECTION) )
 			{
-				n.x = -LightSpace.campos.x - LightSpace.vertex.x;
-				n.y = -LightSpace.campos.y - LightSpace.vertex.y;
-				n.z = -LightSpace.campos.z - LightSpace.vertex.z;
+				n.x = LightSpace.campos.x - LightSpace.vertex.x;
+				n.y = LightSpace.campos.y - LightSpace.vertex.y;
+				n.z = LightSpace.campos.z - LightSpace.vertex.z;
 				n.normalize_xyz();
 				n.x += LightSpace.normal.x;
 				n.y += LightSpace.normal.y;
@@ -1621,17 +1621,9 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			l.pos.z = dl.Position.Z;
 			l.pos.w = 1.f;
 
-#if 0
-			l.radius = reciprocal_zero(dl.Attenuation.Y); l.radius *= l.radius;
-			l.constantAttenuation = dl.Attenuation.X;
+			l.constantAttenuation = 0.001f + dl.Attenuation.X;
 			l.linearAttenuation = dl.Attenuation.Y;
 			l.quadraticAttenuation = dl.Attenuation.Z;
-#else
-			l.radius_square = dl.Radius * dl.Radius;
-			l.constantAttenuation = dl.Attenuation.X;
-			l.linearAttenuation = reciprocal_zero(dl.Radius);
-			l.quadraticAttenuation = dl.Attenuation.Z;
-#endif
 			break;
 		default:
 			break;
@@ -1706,15 +1698,9 @@ void CBurningVideoDriver::getCameraPosWorldSpace ()
 
 	const f32 *M = Transformation[ETS_VIEW_INVERSE].pointer ();
 
-	/*	The  viewpoint is at (0., 0., 0.) in eye space.
-		Turning this into a vector [0 0 0 1] and multiply it by
-		the inverse of the view matrix, the resulting vector is the
-		object space location of the camera.
-	*/
-
-	LightSpace.campos.x = -M[12];
-	LightSpace.campos.y = -M[13];
-	LightSpace.campos.z = -M[14];
+	LightSpace.campos.x = M[12];
+	LightSpace.campos.y = M[13];
+	LightSpace.campos.z = M[14];
 	LightSpace.campos.w = 1.f;
 }
 
@@ -1779,11 +1765,12 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 
 	u32 i;
 	f32 dot;
-	f32 len;
+	f32 distance;
 	f32 attenuation;
 	sVec4 vp;			// unit vector vertex to light
-	sVec4 lightHalf;	// blinn-phong reflection
-
+	//sVec4 lightHalf;	// blinn-phong reflection
+	sVec4 R; // normalize(-reflect(L,N))
+	sVec4 E; // normalize(-v); // Eye Coordinates (0,0,0) here campos
 	for ( i = 0; i!= LightSpace.Light.size (); ++i )
 	{
 		const SBurningShaderLight &light = LightSpace.Light[i];
@@ -1801,23 +1788,15 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				vp.x = light.pos.x - LightSpace.vertex.x;
 				vp.y = light.pos.y - LightSpace.vertex.y;
 				vp.z = light.pos.z - LightSpace.vertex.z;
-				//vp.x = light.pos_objectspace.x - LightSpace.vertex.x;
-				//vp.y = light.pos_objectspace.y - LightSpace.vertex.x;
-				//vp.z = light.pos_objectspace.z - LightSpace.vertex.x;
 
-				len = vp.get_length_xyz_square();
-				if ( light.radius_square < len )
-					continue;
-
-				len = core::reciprocal_squareroot ( len );
-
-				attenuation = light.constantAttenuation + ( 1.f - ( len * light.linearAttenuation ) );
-				attenuation *= 1.1f;
+				distance = vp.get_length_xyz();
+				attenuation = 1.f / (light.constantAttenuation + light.linearAttenuation * distance
+  								+light.quadraticAttenuation * (distance * distance));
 
 				// build diffuse reflection
 
 				//angle between normal and light vector
-				vp.mul ( len );
+				vp.mul ( reciprocal_zero( distance ) );
 				dot = LightSpace.normal.dot_xyz ( vp );
 
 				if ( dot > 0.f )
@@ -1829,22 +1808,18 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				if ( !(LightSpace.Flags & SPECULAR) )
 					continue;
 
-				// build specular
-				// surface to view
-				lightHalf.x = LightSpace.campos.x - LightSpace.vertex.x;
-				lightHalf.y = LightSpace.campos.y - LightSpace.vertex.y;
-				lightHalf.z = LightSpace.campos.z - LightSpace.vertex.z;
-				lightHalf.normalize_xyz();
-				lightHalf += vp;
-				lightHalf.normalize_xyz();
+				R.x = -(vp.x - 2.f * dot * LightSpace.normal.x);
+				R.y = -(vp.y - 2.f * dot * LightSpace.normal.y);
+				R.z = -(vp.z - 2.f * dot * LightSpace.normal.z);
+				R.normalize_xyz();
 
-				// specular (not really right...)
-				dot = LightSpace.normal.dot_xyz ( lightHalf );
-				if ( dot > 0.f )
+				E.x = LightSpace.campos.x - LightSpace.vertex.x;
+				E.y = LightSpace.campos.y - LightSpace.vertex.y;
+				E.z = LightSpace.campos.z - LightSpace.vertex.z;
+				E.normalize_xyz();
+				if ( (dot = R.dot_xyz(E)) > 0.f)
 				{
-					//specular += light.SpecularColor * ( powf ( Material.org.Shininess ,dot ) * attenuation );
-					//specular.mulAdd ( light.SpecularColor, dot * attenuation );
-					f32 srgb = dot*4.5f; //powf ( dot,Material.org.Shininess );
+					f32 srgb = powf ( dot,0.1f* Material.org.Shininess );
 					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
 				}
 				break;
@@ -2396,7 +2371,7 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 
 		for ( u32 x = 0; x < w; ++x )
 		{
-			if ( stencil[x] > 1 )
+			if ( stencil[x] > 0 )
 			{
 #if defined(SOFTWARE_DRIVER_2_32BIT)
 				dst[x] = PixelBlend32 ( dst[x], leftUpEdge.color );
