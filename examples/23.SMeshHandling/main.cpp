@@ -384,6 +384,8 @@ int main(int argc, char* argv[])
 	a usual part of the scene graph which gets rendered by drawAll.
 	*/
 	int action[5]={0,0,0,0,0};
+	int lastFPS = -1;
+
 	while(device->run())
 	{
 		if(!device->isWindowActive())
@@ -435,6 +437,19 @@ int main(int argc, char* argv[])
 		driver->beginScene(video::ECBF_COLOR | video::ECBF_DEPTH, SColor(0xff000000));
 		smgr->drawAll();
 		driver->endScene();
+
+		// display frames per second in window title
+		int fps = driver->getFPS();
+		if (lastFPS != fps)
+		{
+			core::stringw str = L"Irrlicht Engine - Custum Mesh example";
+			str += " FPS:";
+			str += fps;
+
+			device->setWindowCaption(str.c_str());
+			lastFPS = fps;
+		}
+
 	}
 
 

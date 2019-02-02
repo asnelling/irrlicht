@@ -1838,20 +1838,19 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				vp.z = light.pos.z - LightSpace.vertex.z;
 
 				distance = vp.get_length_xyz();
-				attenuation = 1.f / (light.constantAttenuation + light.linearAttenuation * distance
-  								+light.quadraticAttenuation * (distance * distance));
 
 				// build diffuse reflection
 
 				//angle between normal and light vector
 				vp.mul ( reciprocal_zero( distance ) );
 				dot = LightSpace.normal.dot_xyz ( vp );
+				if ( dot < 0.f ) continue;
 
-				if ( dot > 0.f )
-				{
-					// diffuse component
-					diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
-				}
+				attenuation = 1.f / (light.constantAttenuation + light.linearAttenuation * distance
+  								+light.quadraticAttenuation * (distance * distance));
+
+				// diffuse component
+				diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
 
 				if ( !(LightSpace.Flags & SPECULAR) )
 					continue;
@@ -1865,6 +1864,7 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				E.y = LightSpace.campos.y - LightSpace.vertex.y;
 				E.z = LightSpace.campos.z - LightSpace.vertex.z;
 				E.normalize_xyz();
+
 				if ( (dot = R.dot_xyz(E)) > 0.f)
 				{
 					f32 srgb = powf ( dot,0.1f* Material.org.Shininess );
@@ -1889,19 +1889,18 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 					continue;
 
 
+				// build diffuse reflection
+				//angle between normal and light vector
+				dot = LightSpace.normal.dot_xyz ( vp );
+				if ( dot < 0.f ) continue;
+
 				attenuation = 1.f / (light.constantAttenuation + light.linearAttenuation * distance
   								+light.quadraticAttenuation * (distance * distance));
 				attenuation *= powf (-spotDot,light.spotExponent);
 
-				// build diffuse reflection
-				//angle between normal and light vector
-				dot = LightSpace.normal.dot_xyz ( vp );
-
-				if ( dot > 0.f )
-				{
-					// diffuse component
-					diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
-				}
+				
+				// diffuse component
+				diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
 
 				if ( !(LightSpace.Flags & SPECULAR) )
 					continue;
@@ -1915,7 +1914,6 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				E.y = LightSpace.campos.y - LightSpace.vertex.y;
 				E.z = LightSpace.campos.z - LightSpace.vertex.z;
 				E.normalize_xyz();
-
 
 				if ( (dot = R.dot_xyz(E)) > 0.f)
 				{
