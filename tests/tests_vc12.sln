@@ -13,6 +13,8 @@ Global
 		Debug|x64 = Debug|x64
 		Release - Fast FPU|Win32 = Release - Fast FPU|Win32
 		Release - Fast FPU|x64 = Release - Fast FPU|x64
+		Release_v110|Win32 = Release_v110|Win32
+		Release_v110|x64 = Release_v110|x64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
 		SDL-Debug|Win32 = SDL-Debug|Win32
@@ -37,6 +39,10 @@ Global
 		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release - Fast FPU|Win32.Build.0 = Release - Fast FPU|Win32
 		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release - Fast FPU|x64.ActiveCfg = Release - Fast FPU|x64
 		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release - Fast FPU|x64.Build.0 = Release - Fast FPU|x64
+		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release_v110|Win32.ActiveCfg = Release_v110|Win32
+		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release_v110|Win32.Build.0 = Release_v110|Win32
+		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release_v110|x64.ActiveCfg = Release_v110|x64
+		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release_v110|x64.Build.0 = Release_v110|x64
 		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release|Win32.ActiveCfg = Release|Win32
 		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release|Win32.Build.0 = Release|Win32
 		{E08E042A-6C45-411B-92BE-3CC31331019F}.Release|x64.ActiveCfg = Release|x64
@@ -69,6 +75,10 @@ Global
 		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release - Fast FPU|Win32.Build.0 = Release|Win32
 		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release - Fast FPU|x64.ActiveCfg = Release|x64
 		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release - Fast FPU|x64.Build.0 = Release|x64
+		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release_v110|Win32.ActiveCfg = Release_v110|Win32
+		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release_v110|Win32.Build.0 = Release_v110|Win32
+		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release_v110|x64.ActiveCfg = Release_v110|x64
+		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release_v110|x64.Build.0 = Release_v110|x64
 		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release|Win32.ActiveCfg = Release|Win32
 		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release|Win32.Build.0 = Release|Win32
 		{2A1DE18B-F678-4A94-A996-E848E20B2983}.Release|x64.ActiveCfg = Release|x64

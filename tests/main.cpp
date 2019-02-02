@@ -55,7 +55,11 @@ int main(int argumentCount, char * arguments[])
 	//TEST(twodmaterial);
 	//TEST(billboards);
 	//TEST(testGeometryCreator);
-	TEST(lights);
+	//TEST(lights);
+	//TEST(burningsVideo);
+	//TEST(flyCircleAnimator);
+	//TEST(orthoCam);
+	//TEST(planeMatrix);
 #else
 	TEST(disambiguateTextures); // Normally you should run this first, since it validates the working directory.
 	// Now the simple tests without device

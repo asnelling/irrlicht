@@ -10,7 +10,7 @@ namespace
 // Test billboard sizing
 bool billboardSize(video::E_DRIVER_TYPE type)
 {
-	if (type != video::EDT_BURNINGSVIDEO ) return true;
+	//if (type != video::EDT_BURNINGSVIDEO ) return true;
 	// Use EDT_BURNINGSVIDEO since it is not dependent on (e.g.) OpenGL driver versions.
 	IrrlichtDevice *device = createDevice(type, core::dimension2d<u32>(160, 120), 32);
 	assert_log(device);
