@@ -104,7 +104,6 @@ protected:
 	void reset();
 	bool hasSecondTextureCoordinates(video::E_VERTEX_TYPE type) const;
 	void writeUv(const irr::core::vector2df& vec);
-	void writeVector(const irr::core::vector2df& vec);
 	void writeVector(const irr::core::vector3df& vec);
 	void writeColor(const irr::video::SColorf& colorf, bool writeAlpha=true);
 	inline irr::core::stringc toString(const irr::video::ECOLOR_FORMAT format) const;
@@ -157,23 +156,16 @@ protected:
 
 	struct SComponentGlobalStartPos
 	{
-		SComponentGlobalStartPos() : PosStartIndex(-1), PosLastIndex(-1),
-				NormalStartIndex(-1), NormalLastIndex(-1),
-				TCoord0StartIndex(-1), TCoord0LastIndex(-1),
-				TCoord1StartIndex(-1), TCoord1LastIndex(-1)
+		SComponentGlobalStartPos() : PosStartIndex(0),
+				NormalStartIndex(0),
+				TCoord0StartIndex(0),
+				TCoord1StartIndex(0)
 		{ }
 
-		s32 PosStartIndex;
-		s32 PosLastIndex;
-
-		s32 NormalStartIndex;
-		s32 NormalLastIndex;
-
-		s32 TCoord0StartIndex;
-		s32 TCoord0LastIndex;
-
-		s32 TCoord1StartIndex;
-		s32 TCoord1LastIndex;
+		u32 PosStartIndex;
+		u32 NormalStartIndex;
+		u32 TCoord0StartIndex;
+		u32 TCoord1StartIndex;
 	};
 
 	io::IFileSystem* FileSystem;
@@ -266,6 +258,8 @@ protected:
 		irr::core::stringc Name;
 	};
 	irr::core::array< MaterialName > MaterialNameCache;
+
+	irr::core::stringc WriteBuffer;	// use for writing short strings to avoid regular memory allocations
 };
 
 
