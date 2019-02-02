@@ -55,7 +55,7 @@ public:
 	{
 	}
 
-	//! Returns the size of the largest mipmap.
+	//! compare the area drawn with the area of the texture
 	f32 getLODFactor( const f32 texArea ) const
 	{
 		return OrigImageDataSizeInPixels * texArea;

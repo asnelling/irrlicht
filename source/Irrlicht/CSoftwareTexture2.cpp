@@ -81,10 +81,12 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 
 	}
 
+	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.5f;
+
+	//select mimap 0
 	MipMapLOD = 0;
 	Size = MipMap[MipMapLOD]->getDimension();
 	Pitch = MipMap[MipMapLOD]->getPitch();
-	OrigImageDataSizeInPixels = (f32) 0.5f * MipMap[0]->getImageDataSizeInPixels();
 
 	regenerateMipMapLevels(image->getMipMapsData());
 }
@@ -170,24 +172,24 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 		}
 	}
 
-/*
+
 	//visualize mipmap
-	for (i=1; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
+	for (i=1; 0 && i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
 	{
 		static u32 color[] = { 0x80bf7f00,0x800040bf,0x80bf00bf,0x8000bf00,0x800080bf,0x80bf4000,0x8040bf00,0x807f00bf,0x80bf0000,0x8000bfbf,0x804000bf,0x807fbf00,0x8000bf7f,0x80bf0040,0x80bfbf00,0x800000bf };
 		if ( MipMap[i] )
 		{
 			core::rect<s32> p (MipMap[i]->getDimension());
-			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, color[i]);
+			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, 0,color[i]);
 		}
 	}
-*/
+
+
+	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.5f;
 
 	//reset current MipMap
 	Size = MipMap[MipMapLOD]->getDimension();
 	Pitch = MipMap[MipMapLOD]->getPitch();
-
-	OrigImageDataSizeInPixels = (f32) 0.5f * MipMap[0]->getImageDataSizeInPixels();
 
 }
 
