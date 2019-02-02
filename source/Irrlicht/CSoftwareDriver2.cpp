@@ -1605,16 +1605,27 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 	l.DiffuseColor.setColorf ( dl.DiffuseColor );
 	l.SpecularColor.setColorf ( dl.SpecularColor );
 
+	core::vector3df nDirection = dl.Direction;
+	nDirection.normalize();
+
 	switch ( dl.Type )
 	{
-		case video::ELT_DIRECTIONAL:
-			l.pos.x = -dl.Direction.X;
-			l.pos.y = -dl.Direction.Y;
-			l.pos.z = -dl.Direction.Z;
-			l.pos.w = 1.f;
+		case ELT_DIRECTIONAL:
+			l.dir.x = -nDirection.X;
+			l.dir.y = -nDirection.Y;
+			l.dir.z = -nDirection.Z;
+			l.dir.w = 0.f;
+
+			l.constantAttenuation = 0.001f;
+			l.linearAttenuation = 0.f;
+			l.quadraticAttenuation = 0.f;
+
+			l.spotCosCutoff = -1.f;
+			l.spotCosInnerCutoff = 1.f;
+			l.spotExponent = 0.f;
+
 			break;
 		case ELT_POINT:
-		case ELT_SPOT:
 			LightSpace.Flags |= POINTLIGHT;
 			l.pos.x = dl.Position.X;
 			l.pos.y = dl.Position.Y;
@@ -1624,6 +1635,31 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			l.constantAttenuation = 0.001f + dl.Attenuation.X;
 			l.linearAttenuation = dl.Attenuation.Y;
 			l.quadraticAttenuation = dl.Attenuation.Z;
+
+			l.spotCosCutoff = -1.f;
+			l.spotCosInnerCutoff = 1.f;
+			l.spotExponent = 0.f;
+			break;
+
+		case ELT_SPOT:
+			LightSpace.Flags |= SPOTLIGHT;
+			l.pos.x = dl.Position.X;
+			l.pos.y = dl.Position.Y;
+			l.pos.z = dl.Position.Z;
+			l.pos.w = 1.f;
+
+			l.dir.x = nDirection.X;
+			l.dir.y = nDirection.Y;
+			l.dir.z = nDirection.Z;
+			l.dir.w = 0.0f;
+
+			l.constantAttenuation = 0.001f + dl.Attenuation.X;
+			l.linearAttenuation = dl.Attenuation.Y;
+			l.quadraticAttenuation = dl.Attenuation.Z;
+
+			l.spotCosCutoff = cosf(dl.OuterCone * 2.0f * core::DEGTORAD);
+			l.spotCosInnerCutoff = cosf(dl.InnerCone * 2.0f * core::DEGTORAD);
+			l.spotExponent = dl.Falloff * 6.f; //todo
 			break;
 		default:
 			break;
@@ -1769,8 +1805,11 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 	f32 attenuation;
 	sVec4 vp;			// unit vector vertex to light
 	//sVec4 lightHalf;	// blinn-phong reflection
-	sVec4 R; // normalize(-reflect(L,N))
-	sVec4 E; // normalize(-v); // Eye Coordinates (0,0,0) here campos
+	sVec4 R; // normalize(-reflect(L,Lightspace.normal))
+	sVec4 E; // normalize(-v); // Eye Coordinates(0,0,0) = LightSpace.campos
+
+	f32 spotDot;			// cos of angle between spotlight and point on surface
+
 	for ( i = 0; i!= LightSpace.Light.size (); ++i )
 	{
 		const SBurningShaderLight &light = LightSpace.Light[i];
@@ -1782,8 +1821,17 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 		ambient.add ( light.AmbientColor );
 		switch ( light.Type )
 		{
-			case video::ELT_SPOT:
-			case video::ELT_POINT:
+			case ELT_DIRECTIONAL:
+
+				//angle between normal and light vector
+				dot = LightSpace.normal.dot_xyz ( light.dir );
+
+				// diffuse component
+				if ( dot > 0.f )
+					diffuse.mulAdd ( light.DiffuseColor, dot );
+				break;
+
+			case ELT_POINT:
 				// surface to light
 				vp.x = light.pos.x - LightSpace.vertex.x;
 				vp.y = light.pos.y - LightSpace.vertex.y;
@@ -1824,15 +1872,58 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				}
 				break;
 
-			case video::ELT_DIRECTIONAL:
+			case ELT_SPOT:
+				// surface to light
+				vp.x = light.pos.x - LightSpace.vertex.x;
+				vp.y = light.pos.y - LightSpace.vertex.y;
+				vp.z = light.pos.z - LightSpace.vertex.z;
 
+				distance = vp.get_length_xyz();
+
+				//normalize
+				vp.mul ( reciprocal_zero( distance ) );
+
+				// point on surface inside cone of illumination
+				spotDot = light.dir.dot_xyz(vp);
+				if (spotDot > light.spotCosCutoff)
+					continue;
+
+
+				attenuation = 1.f / (light.constantAttenuation + light.linearAttenuation * distance
+  								+light.quadraticAttenuation * (distance * distance));
+				attenuation *= powf (-spotDot,light.spotExponent);
+
+				// build diffuse reflection
 				//angle between normal and light vector
-				dot = LightSpace.normal.dot_xyz ( light.pos );
+				dot = LightSpace.normal.dot_xyz ( vp );
 
-				// diffuse component
 				if ( dot > 0.f )
-					diffuse.mulAdd ( light.DiffuseColor, dot );
+				{
+					// diffuse component
+					diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
+				}
+
+				if ( !(LightSpace.Flags & SPECULAR) )
+					continue;
+
+				R.x = -(vp.x - 2.f * dot * LightSpace.normal.x);
+				R.y = -(vp.y - 2.f * dot * LightSpace.normal.y);
+				R.z = -(vp.z - 2.f * dot * LightSpace.normal.z);
+				R.normalize_xyz();
+
+				E.x = LightSpace.campos.x - LightSpace.vertex.x;
+				E.y = LightSpace.campos.y - LightSpace.vertex.y;
+				E.z = LightSpace.campos.z - LightSpace.vertex.z;
+				E.normalize_xyz();
+
+
+				if ( (dot = R.dot_xyz(E)) > 0.f)
+				{
+					f32 srgb = powf ( dot,0.1f* Material.org.Shininess );
+					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
+				}
 				break;
+
 			default:
 				break;
 		}

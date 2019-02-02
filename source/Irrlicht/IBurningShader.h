@@ -36,6 +36,11 @@ namespace video
 		f32 quadraticAttenuation;
 		sVec4 pos;
 
+		sVec4 dir;
+		f32 spotCosCutoff;
+		f32 spotCosInnerCutoff;
+		f32 spotExponent;
+
 		sVec3 AmbientColor;
 		sVec3 DiffuseColor;
 		sVec3 SpecularColor;
@@ -46,10 +51,11 @@ namespace video
 	{
 		ENABLED		= 0x01,
 		POINTLIGHT	= 0x02,
-		SPECULAR	= 0x04,
-		FOG			= 0x08,
-		NORMALIZE	= 0x10,
-		VERTEXTRANSFORM	= 0x20,
+		SPOTLIGHT	= 0x04,
+		SPECULAR	= 0x08,
+		FOG			= 0x10,
+		NORMALIZE	= 0x20,
+		VERTEXTRANSFORM	= 0x40,
 	};
 
 	//currently in world space
@@ -69,6 +75,7 @@ namespace video
 		sVec4 campos;
 		sVec4 vertex;
 		sVec4 normal;
+
 		u32 Flags; // eLightFlags
 	};
 
