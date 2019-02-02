@@ -54,6 +54,8 @@ int main(int argumentCount, char * arguments[])
 	//TEST(terrainSceneNode);
 	//TEST(twodmaterial);
 	//TEST(billboards);
+	//TEST(testGeometryCreator);
+	TEST(lights);
 #else
 	TEST(disambiguateTextures); // Normally you should run this first, since it validates the working directory.
 	// Now the simple tests without device

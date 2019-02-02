@@ -9,9 +9,9 @@ using namespace scene;
 using namespace video;
 
 /** Tests that the geometry creator does what it says it does. */
-bool testGeometryCreator(void)
+bool testGeometryCreator_run(video::E_DRIVER_TYPE type)
 {
-	IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO,
+	IrrlichtDevice *device = createDevice(type,
 					core::dimension2du(160,120), 32);
 	if (!device)
 		return false;
@@ -116,6 +116,7 @@ bool testGeometryCreator(void)
 
 	// This screenshot shows some mipmap problems, but this seems to be
 	// no fault of the mesh
+	//mhmmm.. opengl/directd9 show same behavior like burning (color fringe/lines around patches).
 	result = takeScreenshotAndCompareAgainstReference(driver, "-testTerrainMesh.png", 99.989f);
 
 	device->closeDevice();
@@ -125,3 +126,9 @@ bool testGeometryCreator(void)
 	return result;
 }
 
+bool testGeometryCreator(void)
+{
+	bool result = true;
+	TestWithAllDrivers(testGeometryCreator_run);
+	return result;
+}
