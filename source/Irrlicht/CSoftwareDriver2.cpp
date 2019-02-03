@@ -614,13 +614,20 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 
 	bDotPlane = b->Pos.dotProduct ( plane );
 
+/*
 	for( u32 i = 1; i < inCount + 1; ++i)
 	{
-		// i really have problem
+#if 0
+		a = source + (i%inCount)*2;
+#else
 		const s32 condition = i - inCount;
 		const s32 index = (( ( condition >> 31 ) & ( i ^ condition ) ) ^ condition ) << 1;
-
-		a = &source[ index ];
+		a = source + index;
+#endif
+*/
+	for( u32 i = 0; i < inCount; ++i)
+	{
+		a = source + (i == inCount-1 ? 0 : (i+1)*2);
 
 		// current point inside
 		if ( a->Pos.dotProduct ( plane ) <= 0.f )
@@ -1689,7 +1696,7 @@ void CBurningVideoDriver::deleteAllDynamicLights()
 //! returns the maximal amount of dynamic lights the device can handle
 u32 CBurningVideoDriver::getMaximalDynamicLightAmount() const
 {
-	return 8;
+	return 8; //no limit 8 only for convenience
 }
 
 

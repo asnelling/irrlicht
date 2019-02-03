@@ -172,17 +172,17 @@ struct sVec4
 	}
 
 
-	f32 dotProduct(const sVec4& other) const
+	REALINLINE f32 dotProduct(const sVec4& other) const
 	{
 		return x*other.x + y*other.y + z*other.z + w*other.w;
 	}
 
-	f32 dot_xyz( const sVec4& other) const
+	REALINLINE f32 dot_xyz( const sVec4& other) const
 	{
 		return x*other.x + y*other.y + z*other.z;
 	}
 
-	f32 get_length_xyz_square () const
+	REALINLINE f32 get_length_xyz_square () const
 	{
 		return x * x + y * y + z * z;
 	}
