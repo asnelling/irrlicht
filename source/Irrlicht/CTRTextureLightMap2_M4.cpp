@@ -125,6 +125,8 @@ REALINLINE void CTRTextureLightMap2_M4::scanline_bilinear2_mag ()
 	if ( dx < 0 )
 		return;
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
+
 	// slopes
 	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
 
@@ -267,6 +269,8 @@ REALINLINE void CTRTextureLightMap2_M4::scanline_bilinear2_min ()
 	if ( dx < 0 )
 		return;
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
+
 	// slopes
 	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
 
@@ -315,6 +319,7 @@ REALINLINE void CTRTextureLightMap2_M4::scanline_bilinear2_min ()
 	line.z[0] = a;
 	line.z[1] = b;
 #endif
+
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 	a = (f32) i + subPixel;

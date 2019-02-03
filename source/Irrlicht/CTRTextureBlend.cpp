@@ -301,6 +301,7 @@ void CTRTextureBlend::fragment_dst_color_src_alpha ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -485,6 +486,7 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -665,6 +667,7 @@ void CTRTextureBlend::fragment_one_one_minus_src_alpha()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -676,8 +679,9 @@ void CTRTextureBlend::fragment_one_one_minus_src_alpha()
 
 	tFixPoint a0,r0, g0, b0;
 	tFixPoint	 r1, g1, b1;
+#ifdef IPOL_C0
 	tFixPoint	 r2, g2, b2;
-
+#endif
 	s32 i;
 
 	switch ( ZCompare )
@@ -862,6 +866,7 @@ void CTRTextureBlend::fragment_one_minus_dst_alpha_one ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -873,8 +878,9 @@ void CTRTextureBlend::fragment_one_minus_dst_alpha_one ()
 
 	tFixPoint r0, g0, b0;
 	tFixPoint a1, r1, g1, b1;
+#ifdef IPOL_C0
 	tFixPoint r2, g2, b2;
-
+#endif
 	s32 i;
 
 	switch ( ZCompare )
@@ -1058,6 +1064,7 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -1069,8 +1076,9 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 
 	tFixPoint a0, r0, g0, b0;
 	tFixPoint r1, g1, b1;
+#ifdef IPOL_C0
 	tFixPoint r2, g2, b2;
-
+#endif
 	s32 i;
 
 	switch ( ZCompare )
@@ -1285,6 +1293,7 @@ void CTRTextureBlend::fragment_dst_color_one_minus_dst_alpha ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -1296,8 +1305,9 @@ void CTRTextureBlend::fragment_dst_color_one_minus_dst_alpha ()
 
 	tFixPoint r0, g0, b0;
 	tFixPoint a1, r1, g1, b1;
+#ifdef IPOL_C0
 	tFixPoint r2, g2, b2;
-
+#endif
 	s32 i;
 
 	switch ( ZCompare )
@@ -1481,6 +1491,7 @@ void CTRTextureBlend::fragment_dst_color_zero ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -1492,8 +1503,9 @@ void CTRTextureBlend::fragment_dst_color_zero ()
 
 	tFixPoint r0, g0, b0;
 	tFixPoint r1, g1, b1;
+#ifdef IPOL_C0
 	tFixPoint r2, g2, b2;
-
+#endif
 	s32 i;
 
 	switch ( ZCompare )
@@ -1675,6 +1687,7 @@ void CTRTextureBlend::fragment_dst_color_one ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -1686,8 +1699,9 @@ void CTRTextureBlend::fragment_dst_color_one ()
 
 	tFixPoint r0, g0, b0;
 	tFixPoint r1, g1, b1;
+#ifdef IPOL_C0
 	tFixPoint r2, g2, b2;
-
+#endif
 	s32 i;
 
 	switch ( ZCompare )
@@ -1872,6 +1886,7 @@ void CTRTextureBlend::fragment_zero_one_minus_scr_color ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -1883,8 +1898,9 @@ void CTRTextureBlend::fragment_zero_one_minus_scr_color ()
 
 	tFixPoint r0, g0, b0;
 	tFixPoint r1, g1, b1;
+#ifdef IPOL_C0
 	tFixPoint r2, g2, b2;
-
+#endif
 	s32 i;
 
 	switch ( ZCompare )

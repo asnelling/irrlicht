@@ -157,6 +157,7 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 	if ( 0 == dx )
 		return;
 
+	SOFTWARE_DRIVER_2_CLIPCHECK_WIRE;
 	dst = (tVideoSample*) ( (u8*) (tVideoSample*)RenderTarget->getData() + ( aposy * pitch0 ) + (aposx << VIDEO_SAMPLE_GRANULARITY ) );
 #ifdef USE_ZBUFFER
 	z = (fp24*) ( (u8*) (fp24*) DepthBuffer->lock() + ( aposy * pitch1 ) + (aposx << 2 ) );

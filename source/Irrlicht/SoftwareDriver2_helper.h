@@ -139,9 +139,9 @@ inline void memset16(void * dest, const u16 value, u32 bytesize)
 	use biased loop counter
 	--> 0 byte copy is forbidden
 */
-REALINLINE void memcpy32_small ( void * dest, const void *source, u32 bytesize )
+REALINLINE void memcpy32_small ( void * dest, const void *source, const size_t bytesize )
 {
-	u32 c = bytesize >> 2;
+	register size_t c = bytesize >> 2;
 
 	do
 	{

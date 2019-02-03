@@ -188,6 +188,7 @@ void CTRGouraudAlpha2::scanline_bilinear ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER

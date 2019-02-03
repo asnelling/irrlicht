@@ -81,7 +81,7 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 
 	}
 
-	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.5f;
+	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.4f;
 
 	//select mimap 0
 	MipMapLOD = 0;
@@ -185,7 +185,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 	}
 
 
-	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.5f;
+	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.4f;
 
 	//reset current MipMap
 	Size = MipMap[MipMapLOD]->getDimension();

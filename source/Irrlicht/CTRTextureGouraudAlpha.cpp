@@ -200,6 +200,7 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -284,6 +285,8 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 			z[i] = line.w[0];
 #endif
 
+#ifdef IPOL_C0
+
 #ifdef INVERSE_W
 			getSample_color ( r2, g2, b2, line.c[0][0], inversew );
 #else
@@ -303,12 +306,6 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 			dst[i] = fix4_to_color ( a0, r2, g2, b2 );
 
 /*
-			dst[i] = PixelBlend32 ( dst[i],
-									fix_to_color ( r0,g0, b0 ),
-									fixPointu_to_u32 ( a0 )
-								);
-*/
-/*
 			getSample_color ( r2, g2, b2, line.c[0][0], inversew * COLOR_MAX );
 			color_to_fix ( r1, g1, b1, dst[i] );
 
@@ -317,7 +314,12 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 			b2 = b0 + imulFix ( a0, b1 - b0 );
 			dst[i] = fix_to_color ( r2, g2, b2 );
 */
-
+#else
+			dst[i] = PixelBlend32 ( dst[i],
+									fix_to_color ( r0,g0, b0 ),
+									fixPointu_to_u32 ( a0 )
+								);
+#endif
 		}
 #endif
 

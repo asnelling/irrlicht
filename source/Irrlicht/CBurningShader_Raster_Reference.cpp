@@ -721,6 +721,7 @@ REALINLINE void CBurningShader_Raster_Reference::scanline2()
 		line.t[i][0] += line.t[i][1] * subPixel;
 	}
 
+	SOFTWARE_DRIVER_2_CLIPCHECK_REF;
 	pShader.dst = (tVideoSample*) ( (u8*) RenderTarget->getData() + ( line.y * RenderTarget->getPitch() ) + ( pShader.xStart << VIDEO_SAMPLE_GRANULARITY ) );
 	pShader.z = (fp24*) ( (u8*) DepthBuffer->lock() + ( line.y * DepthBuffer->getPitch() ) + ( pShader.xStart << VIDEO_SAMPLE_GRANULARITY ) );
 

@@ -227,6 +227,7 @@ void CTRStencilShadow::fragment_zfail_decr ()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	//dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
@@ -384,6 +385,7 @@ void CTRStencilShadow::fragment_zfail_incr()
 #endif
 #endif
 
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 	//dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER

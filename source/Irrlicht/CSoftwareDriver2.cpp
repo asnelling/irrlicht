@@ -68,7 +68,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	BurningShader[ETR_GOURAUD] = createTriangleRendererGouraud2(this);
 	BurningShader[ETR_GOURAUD_NOZ] = createTriangleRendererGouraudNoZ2(this);
 	BurningShader[ETR_GOURAUD_ALPHA] = createTriangleRendererGouraudAlpha2(this );
-	BurningShader[ETR_GOURAUD_ALPHA_NOZ] = createTRGouraudAlphaNoZ2(this );
+	BurningShader[ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT] = createTRGouraudAlphaNoZ2(this ); // 2D
 	//BurningShader[ETR_GOURAUD_WIRE] = createTriangleRendererGouraudWire2(DepthBuffer);
 	//BurningShader[ETR_TEXTURE_FLAT] = createTriangleRendererTextureFlat2(DepthBuffer);
 	//BurningShader[ETR_TEXTURE_FLAT_WIRE] = createTriangleRendererTextureFlatWire2(DepthBuffer);
@@ -475,6 +475,35 @@ void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
 
 
 
+// used to scale <-1,-1><1,1> to viewport
+void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
+{
+	//guard band to stay in screen bounds.(empirical). get holes left side otherwise or out of screen
+	//TODO: match openGL or D3D. currently 2 pixel smaller than opengl
+	//assumption pixel center, top-left rule and rounding error projection deny exact match without additional clipping
+	//matches D3D with vertex,Opengl with texel center.. mhmm 
+
+	f32* m = out.pointer();
+
+	m[0]  = (viewport.getWidth()  - 0.1f ) *  0.5f;
+	m[1]  = 0.f;
+	m[2]  = 0.f;
+	m[3]  = 0.f;
+	m[4]  = 0.f;
+	m[5]  = (viewport.getHeight() - 0.1f ) * -0.5f;
+	m[6]  = 0.f;
+	m[7]  = 0.f;
+	m[8]  = 0.f;
+	m[9]  = 0.f;
+	m[10] = 1.f;
+	m[11] = 0.f;
+	m[12] = -0.25f + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
+	m[13] = 0.f + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
+	m[14] = 0.f;
+	m[15] = 1.f;
+
+}
+
 //! sets a viewport
 void CBurningVideoDriver::setViewPort(const core::rect<s32>& area)
 {
@@ -483,7 +512,8 @@ void CBurningVideoDriver::setViewPort(const core::rect<s32>& area)
 	core::rect<s32> rendert(0,0,RenderTargetSize.Width,RenderTargetSize.Height);
 	ViewPort.clipAgainst(rendert);
 
-	Transformation [ ETS_CLIPSCALE ].buildNDCToDCMatrix ( ViewPort, 1 );
+	//Transformation [ ETS_CLIPSCALE ].buildNDCToDCMatrix ( ViewPort, 1.f );
+	buildNDCToDCMatrix( Transformation [ ETS_CLIPSCALE ],ViewPort);
 
 	if (CurrentShader)
 		CurrentShader->setRenderTarget(RenderTargetSurface, ViewPort);
@@ -643,7 +673,7 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 
 			// copy current to out
 			//*out = *a;
-			irr::memcpy32_small ( out, a, SIZEOF_SVERTEX * 2 );
+			memcpy32_small ( out, a, SIZEOF_SVERTEX * 2 );
 			b = out;
 
 			out += 2;
@@ -705,6 +735,8 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,s4DVerte
 {
 	u32 g;
 
+	const f32* dc = Transformation [ ETS_CLIPSCALE ].pointer();
+
 	for ( g = 0; g != vIn; g += 2 )
 	{
 		if ( (dest[g].flag & VERTEX4D_PROJECTED ) == VERTEX4D_PROJECTED )
@@ -716,8 +748,8 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,s4DVerte
 		const f32 iw = reciprocal_zero ( w );
 
 		// to device coordinates
-		dest[g].Pos.x = iw * ( source[g].Pos.x * Transformation [ ETS_CLIPSCALE ][ 0] + w * Transformation [ ETS_CLIPSCALE ][12] );
-		dest[g].Pos.y = iw * ( source[g].Pos.y * Transformation [ ETS_CLIPSCALE ][ 5] + w * Transformation [ ETS_CLIPSCALE ][13] );
+		dest[g].Pos.x = iw * ( source[g].Pos.x * dc[ 0] + w * dc[12] );
+		dest[g].Pos.y = iw * ( source[g].Pos.y * dc[ 5] + w * dc[13] );
 
 #ifndef SOFTWARE_DRIVER_2_USE_WBUFFER
 		dest[g].Pos.z = iw * source[g].Pos.z;
@@ -741,6 +773,8 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( const s4DVertex **v, co
 {
 	u32 g;
 
+	const f32* dc = Transformation [ ETS_CLIPSCALE ].pointer();
+
 	for ( g = 0; g != size; g += 1 )
 	{
 		s4DVertex * a = (s4DVertex*) v[g];
@@ -755,9 +789,8 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( const s4DVertex **v, co
 		const f32 iw = reciprocal_zero ( w );
 
 		// to device coordinates
-		const f32 * p = Transformation [ ETS_CLIPSCALE ].pointer();
-		a[1].Pos.x = iw * ( a->Pos.x * p[ 0] + w * p[12] );
-		a[1].Pos.y = iw * ( a->Pos.y * p[ 5] + w * p[13] );
+		a[1].Pos.x = iw * ( a->Pos.x * dc[ 0] + w * dc[12] );
+		a[1].Pos.y = iw * ( a->Pos.y * dc[ 5] + w * dc[13] );
 
 #ifndef SOFTWARE_DRIVER_2_USE_WBUFFER
 		a[1].Pos.z = a->Pos.z * iw;
@@ -960,16 +993,12 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 
 	// Texture Transform
 #if !defined ( SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM )
-	irr::memcpy32_small ( &dest->Tex[0],&base->TCoords,
-					vSize[VertexCache.vType].TexSize << 3 //  * ( sizeof ( f32 ) * 2 )
-				);
+	memcpy32_small ( &dest->Tex[0],&base->TCoords,vSize[VertexCache.vType].TexSize << 3 /* * ( sizeof ( f32 ) * 2 ) */ );
 #else
 
 	if ( 0 == (LightSpace.Flags & VERTEXTRANSFORM) )
 	{
-		irr::memcpy32_small ( &dest->Tex[0],&base->TCoords,
-						vSize[VertexCache.vType].TexSize << 3 //  * ( sizeof ( f32 ) * 2 )
-					);
+		memcpy32_small ( &dest->Tex[0],&base->TCoords,vSize[VertexCache.vType].TexSize << 3 /*  * ( sizeof ( f32 ) * 2 ) */);
 	}
 	else
 	{
@@ -1019,8 +1048,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			}
 			else
 			{
-				irr::memcpy32_small ( &srcT,(&base->TCoords) + t,
-					sizeof ( f32 ) * 2 );
+				memcpy32_small ( &srcT,(&base->TCoords) + t,sizeof ( f32 ) * 2 );
 			}
 
 			switch ( Material.org.TextureLayer[t].TextureWrapU )
@@ -1521,9 +1549,9 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 		}
 
 		// else if not complete inside clipping necessary
-		irr::memcpy32_small ( ( (u8*) CurrentOut.data + ( 0 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[0], SIZEOF_SVERTEX * 2 );
-		irr::memcpy32_small ( ( (u8*) CurrentOut.data + ( 1 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[1], SIZEOF_SVERTEX * 2 );
-		irr::memcpy32_small ( ( (u8*) CurrentOut.data + ( 2 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[2], SIZEOF_SVERTEX * 2 );
+		memcpy32_small ( ( (u8*) CurrentOut.data + ( 0 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[0], SIZEOF_SVERTEX * 2 );
+		memcpy32_small ( ( (u8*) CurrentOut.data + ( 1 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[1], SIZEOF_SVERTEX * 2 );
+		memcpy32_small ( ( (u8*) CurrentOut.data + ( 2 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[2], SIZEOF_SVERTEX * 2 );
 
 		const u32 flag = CurrentOut.data->flag & VERTEX4D_FORMAT_MASK;
 
@@ -1769,7 +1797,6 @@ void CBurningVideoDriver::getLightPosObjectSpace ()
 }
 
 
-#ifdef SOFTWARE_DRIVER_2_LIGHTING
 
 //! Sets the fog mode.
 void CBurningVideoDriver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
@@ -1778,6 +1805,8 @@ void CBurningVideoDriver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 	CNullDriver::setFog(color, fogType, start, end, density, pixelFog, rangeFog);
 	LightSpace.FogColor.setA8R8G8B8 ( color.color );
 }
+
+#if defined(SOFTWARE_DRIVER_2_LIGHTING) && defined(SOFTWARE_DRIVER_2_USE_VERTEX_COLOR)
 
 /*!
 	applies lighting model
@@ -1951,6 +1980,104 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 
 #endif
 
+//setup a quad
+#if defined SOFTWARE_DRIVER_2_2D_AS_3D
+
+//! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
+void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
+					 const core::rect<s32>& sourceRect,
+					 const core::rect<s32>* clipRect, SColor color,
+					 bool useAlphaChannelOfTexture)
+{
+	if (!texture)
+		return;
+
+	if (!sourceRect.isValid())
+		return;
+
+	// clip these coordinates
+	core::rect<s32> targetRect(destPos, sourceRect.getSize());
+	if (clipRect)
+	{
+		targetRect.clipAgainst(*clipRect);
+		if ( targetRect.getWidth() < 0 || targetRect.getHeight() < 0 )
+			return;
+	}
+
+	const core::dimension2d<u32>& renderTargetSize = getCurrentRenderTargetSize();
+	targetRect.clipAgainst( core::rect<s32>(0,0, (s32)renderTargetSize.Width, (s32)renderTargetSize.Height) );
+	if ( targetRect.getWidth() < 0 || targetRect.getHeight() < 0 )
+			return;
+
+	// ok, we've clipped everything.
+	// now draw it.
+	const core::dimension2d<s32> sourceSize(targetRect.getSize());
+	const core::position2d<s32> sourcePos(sourceRect.UpperLeftCorner + (targetRect.UpperLeftCorner-destPos));
+
+	const core::dimension2d<u32>& tex_orgsize = texture->getOriginalSize();
+	const f32 invW = 1.f / static_cast<f32>(tex_orgsize.Width);
+	const f32 invH = 1.f / static_cast<f32>(tex_orgsize.Height);
+	const core::rect<f32> tcoords(
+		sourcePos.X * invW,
+		sourcePos.Y * invH,
+		(sourcePos.X + sourceSize.Width) * invW,
+		(sourcePos.Y + sourceSize.Height) * invH);
+
+#if 0
+	disableTextures(1);
+	if (!CacheHandler->getTextureCache().set(0, texture))
+		return;
+	setRenderStates2DMode(color.getAlpha()<255, true, useAlphaChannelOfTexture);
+
+	Quad2DVertices[0].Color = color;
+	Quad2DVertices[1].Color = color;
+	Quad2DVertices[2].Color = color;
+	Quad2DVertices[3].Color = color;
+
+	Quad2DVertices[0].Pos = core::vector3df((f32)targetRect.UpperLeftCorner.X, (f32)targetRect.UpperLeftCorner.Y, 0.0f);
+	Quad2DVertices[1].Pos = core::vector3df((f32)targetRect.LowerRightCorner.X, (f32)targetRect.UpperLeftCorner.Y, 0.0f);
+	Quad2DVertices[2].Pos = core::vector3df((f32)targetRect.LowerRightCorner.X, (f32)targetRect.LowerRightCorner.Y, 0.0f);
+	Quad2DVertices[3].Pos = core::vector3df((f32)targetRect.UpperLeftCorner.X, (f32)targetRect.LowerRightCorner.Y, 0.0f);
+
+	Quad2DVertices[0].TCoords = core::vector2df(tcoords.UpperLeftCorner.X, tcoords.UpperLeftCorner.Y);
+	Quad2DVertices[1].TCoords = core::vector2df(tcoords.LowerRightCorner.X, tcoords.UpperLeftCorner.Y);
+	Quad2DVertices[2].TCoords = core::vector2df(tcoords.LowerRightCorner.X, tcoords.LowerRightCorner.Y);
+	Quad2DVertices[3].TCoords = core::vector2df(tcoords.UpperLeftCorner.X, tcoords.LowerRightCorner.Y);
+
+	if (!FeatureAvailable[IRR_ARB_vertex_array_bgra] && !FeatureAvailable[IRR_EXT_vertex_array_bgra])
+		getColorBuffer(Quad2DVertices, 4, EVT_STANDARD);
+
+	CacheHandler->setClientState(true, false, true, true);
+
+	glTexCoordPointer(2, GL_FLOAT, sizeof(S3DVertex), &(static_cast<const S3DVertex*>(Quad2DVertices))[0].TCoords);
+	glVertexPointer(2, GL_FLOAT, sizeof(S3DVertex), &(static_cast<const S3DVertex*>(Quad2DVertices))[0].Pos);
+
+#ifdef GL_BGRA
+	const GLint colorSize = (FeatureAvailable[IRR_ARB_vertex_array_bgra] || FeatureAvailable[IRR_EXT_vertex_array_bgra]) ? GL_BGRA : 4;
+#else
+	const GLint colorSize = 4;
+#endif
+	if (FeatureAvailable[IRR_ARB_vertex_array_bgra] || FeatureAvailable[IRR_EXT_vertex_array_bgra])
+		glColorPointer(colorSize, GL_UNSIGNED_BYTE, sizeof(S3DVertex), &(static_cast<const S3DVertex*>(Quad2DVertices))[0].Color);
+	else
+	{
+		_IRR_DEBUG_BREAK_IF(ColorBuffer.size() == 0);
+		glColorPointer(colorSize, GL_UNSIGNED_BYTE, 0, &ColorBuffer[0]);
+	}
+
+	glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_SHORT, Quad2DIndices);
+#endif
+}
+
+//! Draws a part of the texture into the rectangle.
+void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::rect<s32>& destRect,
+		const core::rect<s32>& sourceRect, const core::rect<s32>* clipRect,
+		const video::SColor* const colors, bool useAlphaChannelOfTexture)
+{
+}
+
+
+#else // SOFTWARE_DRIVER_2_2D_AS_3D
 
 //! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
@@ -2008,6 +2135,112 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 		StretchBlit(op,RenderTargetSurface, clipRect,&destRect, img,&sourceRect,&texture->getOriginalSize(),argb);
 	}
 }
+
+#endif // SOFTWARE_DRIVER_2_2D_AS_3D
+
+//!Draws an 2d rectangle with a gradient.
+void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
+	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
+	const core::rect<s32>* clip)
+{
+#if defined SOFTWARE_DRIVER_2_2D_AS_3D || 1
+	core::rect<s32> pos = position;
+	if (clip) pos.clipAgainst(*clip);
+	if (!pos.isValid()) return;
+
+	const core::dimension2d<s32> renderTargetSize ( ViewPort.getSize() );
+
+	const s32 xPlus = -(renderTargetSize.Width>>1);
+	const f32 xFact = 1.0f / (renderTargetSize.Width>>1);
+
+	const s32 yPlus = renderTargetSize.Height-(renderTargetSize.Height>>1);
+	const f32 yFact = 1.0f / (renderTargetSize.Height>>1);
+
+	// fill VertexCache direct
+	VertexCache.vertexCount = 4;
+
+	VertexCache.info[0].index = 0;
+	VertexCache.info[1].index = 1;
+	VertexCache.info[2].index = 2;
+	VertexCache.info[3].index = 3;
+
+	s4DVertex* v = &VertexCache.mem.data [ 0 ];
+
+	v[0].Pos.set ( (pos.UpperLeftCorner.X+xPlus)  * xFact, (yPlus-pos.UpperLeftCorner.Y)  * yFact, 0.f, 1.f );
+	v[2].Pos.set ( (pos.LowerRightCorner.X+xPlus) * xFact, (yPlus-pos.UpperLeftCorner.Y)  * yFact, 0.f, 1.f );
+	v[4].Pos.set ( (pos.LowerRightCorner.X+xPlus) * xFact, (yPlus-pos.LowerRightCorner.Y) * yFact, 0.f ,1.f );
+	v[6].Pos.set ( (pos.UpperLeftCorner.X+xPlus)  * xFact, (yPlus-pos.LowerRightCorner.Y) * yFact, 0.f, 1.f );
+
+#if defined(SOFTWARE_DRIVER_2_USE_VERTEX_COLOR)
+	v[0].Color[0].setA8R8G8B8 ( colorLeftUp.color );
+	v[2].Color[0].setA8R8G8B8 ( colorRightUp.color );
+	v[4].Color[0].setA8R8G8B8 ( colorRightDown.color );
+	v[6].Color[0].setA8R8G8B8 ( colorLeftDown.color );
+#endif
+
+	s32 i;
+
+	for ( i = 0; i < 8; i += 2 )
+	{
+		v[i + 0].flag = clipToFrustumTest ( v + i );
+		v[i + 1].flag = 0;
+		if ( (v[i].flag & VERTEX4D_INSIDE ) == VERTEX4D_INSIDE )
+		{
+			ndc_2_dc_and_project ( v + i + 1, v + i, 2 );
+		}
+	}
+
+
+	IBurningShader * render = BurningShader [ ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT ];
+	render->setRenderTarget(RenderTargetSurface, ViewPort);
+
+	static const s16 indexList[6] = {0,1,2,0,2,3};
+
+	s4DVertex * face[3];
+
+	for ( i = 0; i < 6; i += 3 )
+	{
+		face[0] = VertexCache_getVertex ( indexList [ i + 0 ] );
+		face[1] = VertexCache_getVertex ( indexList [ i + 1 ] );
+		face[2] = VertexCache_getVertex ( indexList [ i + 2 ] );
+
+		// test clipping
+		u32 test = face[0]->flag & face[1]->flag & face[2]->flag & VERTEX4D_INSIDE;
+
+		if ( test == VERTEX4D_INSIDE )
+		{
+			render->drawWireFrameTriangle ( face[0] + 1, face[1] + 1, face[2] + 1 );
+			continue;
+		}
+		// Todo: all vertices are clipped in 2d..
+		// is this true ?
+		u32 vOut = 6;
+		memcpy32_small ( CurrentOut.data + 0, face[0], sizeof ( s4DVertex ) * 2 );
+		memcpy32_small ( CurrentOut.data + 2, face[1], sizeof ( s4DVertex ) * 2 );
+		memcpy32_small ( CurrentOut.data + 4, face[2], sizeof ( s4DVertex ) * 2 );
+
+		vOut = clipToFrustum ( CurrentOut.data, Temp.data, 3 );
+		if ( vOut < 3 )
+			continue;
+
+		vOut <<= 1;
+		// to DC Space, project homogenous vertex
+		ndc_2_dc_and_project ( CurrentOut.data + 1, CurrentOut.data, vOut );
+
+		// re-tesselate ( triangle-fan, 0-1-2,0-2-3.. )
+		for ( u32 g = 0; g <= vOut - 6; g += 2 )
+		{
+			// rasterize
+			render->drawWireFrameTriangle ( CurrentOut.data + 1, &CurrentOut.data[g + 3], &CurrentOut.data[g + 5] );
+		}
+
+	}
+
+#else
+	draw2DRectangle ( colorLeftUp, position, clip );
+#endif // SOFTWARE_DRIVER_2_2D_AS_3D
+}
+
 
 //! Draws a 2d line.
 void CBurningVideoDriver::draw2DLine(const core::position2d<s32>& start,
@@ -2095,117 +2328,6 @@ const core::dimension2d<u32>& CBurningVideoDriver::getCurrentRenderTargetSize() 
 }
 
 
-//!Draws an 2d rectangle with a gradient.
-void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
-	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
-	const core::rect<s32>* clip)
-{
-#if defined(SOFTWARE_DRIVER_2_USE_VERTEX_COLOR) && defined(BURNINGVIDEO_RENDERER_BEAUTIFUL)
-
-	core::rect<s32> pos = position;
-
-	if (clip)
-		pos.clipAgainst(*clip);
-
-	if (!pos.isValid())
-		return;
-
-	const core::dimension2d<s32> renderTargetSize ( ViewPort.getSize() );
-
-	const s32 xPlus = -(renderTargetSize.Width>>1);
-	const f32 xFact = 1.0f / (renderTargetSize.Width>>1);
-
-	const s32 yPlus = renderTargetSize.Height-(renderTargetSize.Height>>1);
-	const f32 yFact = 1.0f / (renderTargetSize.Height>>1);
-
-	// fill VertexCache direct
-	s4DVertex *v;
-
-	VertexCache.vertexCount = 4;
-
-	VertexCache.info[0].index = 0;
-	VertexCache.info[1].index = 1;
-	VertexCache.info[2].index = 2;
-	VertexCache.info[3].index = 3;
-
-	v = &VertexCache.mem.data [ 0 ];
-
-	v[0].Pos.set ( (f32)(pos.UpperLeftCorner.X+xPlus) * xFact, (f32)(yPlus-pos.UpperLeftCorner.Y) * yFact, 0.f, 1.f );
-	v[0].Color[0].setA8R8G8B8 ( colorLeftUp.color );
-
-	v[2].Pos.set ( (f32)(pos.LowerRightCorner.X+xPlus) * xFact, (f32)(yPlus- pos.UpperLeftCorner.Y) * yFact, 0.f, 1.f );
-	v[2].Color[0].setA8R8G8B8 ( colorRightUp.color );
-
-	v[4].Pos.set ( (f32)(pos.LowerRightCorner.X+xPlus) * xFact, (f32)(yPlus-pos.LowerRightCorner.Y) * yFact, 0.f ,1.f );
-	v[4].Color[0].setA8R8G8B8 ( colorRightDown.color );
-
-	v[6].Pos.set ( (f32)(pos.UpperLeftCorner.X+xPlus) * xFact, (f32)(yPlus-pos.LowerRightCorner.Y) * yFact, 0.f, 1.f );
-	v[6].Color[0].setA8R8G8B8 ( colorLeftDown.color );
-
-	s32 i;
-	u32 g;
-
-	for ( i = 0; i!= 8; i += 2 )
-	{
-		v[i + 0].flag = clipToFrustumTest ( v + i );
-		v[i + 1].flag = 0;
-		if ( (v[i].flag & VERTEX4D_INSIDE ) == VERTEX4D_INSIDE )
-		{
-			ndc_2_dc_and_project ( v + i + 1, v + i, 2 );
-		}
-	}
-
-
-	IBurningShader * render;
-
-	render = BurningShader [ ETR_GOURAUD_ALPHA_NOZ ];
-	render->setRenderTarget(RenderTargetSurface, ViewPort);
-
-	static const s16 indexList[6] = {0,1,2,0,2,3};
-
-	s4DVertex * face[3];
-
-	for ( i = 0; i!= 6; i += 3 )
-	{
-		face[0] = VertexCache_getVertex ( indexList [ i + 0 ] );
-		face[1] = VertexCache_getVertex ( indexList [ i + 1 ] );
-		face[2] = VertexCache_getVertex ( indexList [ i + 2 ] );
-
-		// test clipping
-		u32 test = face[0]->flag & face[1]->flag & face[2]->flag & VERTEX4D_INSIDE;
-
-		if ( test == VERTEX4D_INSIDE )
-		{
-			render->drawWireFrameTriangle ( face[0] + 1, face[1] + 1, face[2] + 1 );
-			continue;
-		}
-		// Todo: all vertices are clipped in 2d..
-		// is this true ?
-		u32 vOut = 6;
-		memcpy ( CurrentOut.data + 0, face[0], sizeof ( s4DVertex ) * 2 );
-		memcpy ( CurrentOut.data + 2, face[1], sizeof ( s4DVertex ) * 2 );
-		memcpy ( CurrentOut.data + 4, face[2], sizeof ( s4DVertex ) * 2 );
-
-		vOut = clipToFrustum ( CurrentOut.data, Temp.data, 3 );
-		if ( vOut < 3 )
-			continue;
-
-		vOut <<= 1;
-		// to DC Space, project homogenous vertex
-		ndc_2_dc_and_project ( CurrentOut.data + 1, CurrentOut.data, vOut );
-
-		// re-tesselate ( triangle-fan, 0-1-2,0-2-3.. )
-		for ( g = 0; g <= vOut - 6; g += 2 )
-		{
-			// rasterize
-			render->drawWireFrameTriangle ( CurrentOut.data + 1, &CurrentOut.data[g + 3], &CurrentOut.data[g + 5] );
-		}
-
-	}
-#else
-	draw2DRectangle ( colorLeftUp, position, clip );
-#endif
-}
 
 
 //! Draws a 3d line.
