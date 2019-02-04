@@ -81,7 +81,7 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 
 	}
 
-	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.4f;
+	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.25f;
 
 	//select mimap 0
 	MipMapLOD = 0;
@@ -136,6 +136,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 		origSize.Width = core::s32_max(1, origSize.Width >> 1);
 		origSize.Height = core::s32_max(1, origSize.Height >> 1);
 
+		//deactivated until TA knows how to handle this
 		if (0 && data)
 		{
 			if (OriginalFormat != BURNINGSHADER_COLOR_FORMAT)
@@ -185,7 +186,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 	}
 
 
-	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.4f;
+	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.25f;
 
 	//reset current MipMap
 	Size = MipMap[MipMapLOD]->getDimension();

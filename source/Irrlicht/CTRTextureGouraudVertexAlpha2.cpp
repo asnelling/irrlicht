@@ -192,18 +192,12 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 
 	f32 inversew = FIX_POINT_F32_MUL;
 
-//#define __TEST_THIS
-
-#ifdef __TEST_THIS
-
-#else
 	tFixPoint tx0;
 	tFixPoint ty0;
 
 	tFixPoint r0, g0, b0;
 	tFixPoint r1, g1, b1;
 	tFixPoint r2, g2, b2;
-#endif
 
 
 #ifdef IPOL_C0
@@ -221,18 +215,6 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 #endif
 
 		{
-#ifdef __TEST_THIS
-
-			inversew = fix_inverse32 ( line.w[0] );
-
-			dst[i] = PixelAdd32 (
-						dst[i],
-					getTexel_plain ( &IT[0],	tofix ( line.t[0][0].x,inversew),
-												tofix ( line.t[0][0].y,inversew) )
-												  );
-
-#else
-
 #ifdef INVERSE_W
 			inversew = fix_inverse32 ( line.w[0] );
 #endif
@@ -240,7 +222,7 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 			ty0 = tofix ( line.t[0][0].y,inversew);
 
 #ifdef IPOL_C0
-			a3 = tofix ( line.c[0][0].y,inversew );
+			a3 = tofix ( line.c[0][0].x,inversew );
 #endif
 
 			getSample_texture ( r0, g0, b0, &IT[0], tx0, ty0 );
@@ -264,7 +246,7 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 #ifdef WRITE_W
 			z[i] = line.w[0];
 #endif
-#endif
+
 		}
 
 #ifdef IPOL_Z

@@ -93,6 +93,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	BurningShader[ETR_STENCIL_SHADOW] = createTRStencilShadow ( this );
 	BurningShader[ETR_TEXTURE_BLEND] = createTRTextureBlend( this );
 
+	BurningShader[ETR_TRANSPARENT_REFLECTION_2_LAYER] = createTriangleRendererTexture_transparent_reflection_2_layer(this);
 	BurningShader[ETR_REFERENCE] = createTriangleRendererReference ( this );
 
 
@@ -112,7 +113,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	addMaterialRenderer ( smr ); // EMT_LIGHTMAP_LIGHTING_M2,
 	addMaterialRenderer ( smr ); // EMT_LIGHTMAP_LIGHTING_M4,
 	addMaterialRenderer ( smr ); // EMT_DETAIL_MAP,
-	addMaterialRenderer ( umr ); // EMT_SPHERE_MAP,
+	addMaterialRenderer ( smr ); // EMT_SPHERE_MAP,
 	addMaterialRenderer ( smr ); // EMT_REFLECTION_2_LAYER,
 	addMaterialRenderer ( tmr ); // EMT_TRANSPARENT_ADD_COLOR,
 	addMaterialRenderer ( tmr ); // EMT_TRANSPARENT_ALPHA_CHANNEL,
@@ -120,7 +121,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	addMaterialRenderer ( tmr ); // EMT_TRANSPARENT_VERTEX_ALPHA,
 	addMaterialRenderer ( smr ); // EMT_TRANSPARENT_REFLECTION_2_LAYER,
 	addMaterialRenderer ( smr ); // EMT_NORMAL_MAP_SOLID,
-	addMaterialRenderer ( umr ); // EMT_NORMAL_MAP_TRANSPARENT_ADD_COLOR,
+	addMaterialRenderer ( tmr ); // EMT_NORMAL_MAP_TRANSPARENT_ADD_COLOR,
 	addMaterialRenderer ( tmr ); // EMT_NORMAL_MAP_TRANSPARENT_VERTEX_ALPHA,
 	addMaterialRenderer ( smr ); // EMT_PARALLAX_MAP_SOLID,
 	addMaterialRenderer ( tmr ); // EMT_PARALLAX_MAP_TRANSPARENT_ADD_COLOR,
@@ -220,12 +221,14 @@ void CBurningVideoDriver::setCurrentShader()
 
 		case EMT_LIGHTMAP:
 		case EMT_LIGHTMAP_LIGHTING:
-			shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M1;
+			if ( texture1 )
+				shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M1;
 			break;
 
 		case EMT_LIGHTMAP_M2:
 		case EMT_LIGHTMAP_LIGHTING_M2:
-			shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M2;
+			if ( texture1 )
+				shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M2;
 			break;
 
 		case EMT_LIGHTMAP_LIGHTING_M4:
@@ -252,9 +255,21 @@ void CBurningVideoDriver::setCurrentShader()
 			LightSpace.Flags |= VERTEXTRANSFORM;
 			break;
 		case EMT_REFLECTION_2_LAYER:
-			shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M1;
-			TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
-			LightSpace.Flags |= VERTEXTRANSFORM;
+			if ( texture1 )
+			{
+				shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M1;
+				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
+				LightSpace.Flags |= VERTEXTRANSFORM;
+			}
+			break;
+
+		case EMT_TRANSPARENT_REFLECTION_2_LAYER:
+			if ( texture1 )
+			{
+				shader = ETR_TRANSPARENT_REFLECTION_2_LAYER;
+				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
+				LightSpace.Flags |= VERTEXTRANSFORM;
+			}
 			break;
 
 		case EMT_NORMAL_MAP_TRANSPARENT_VERTEX_ALPHA:
@@ -479,9 +494,8 @@ void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
 void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 {
 	//guard band to stay in screen bounds.(empirical). get holes left side otherwise or out of screen
-	//TODO: match openGL or D3D. currently 2 pixel smaller than opengl
+	//TODO: match openGL or D3D.
 	//assumption pixel center, top-left rule and rounding error projection deny exact match without additional clipping
-	//matches D3D with vertex,Opengl with texel center.. mhmm 
 
 	f32* m = out.pointer();
 
@@ -498,7 +512,7 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 	m[10] = 1.f;
 	m[11] = 0.f;
 	m[12] = -0.25f + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
-	m[13] = 0.f + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
+	m[13] = -0.25f + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
 	m[14] = 0.f;
 	m[15] = 1.f;
 
@@ -1410,10 +1424,17 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 	VertexCache.indicesIndex = 0;
 	VertexCache.indicesRun = 0;
 
-	if ( Material.org.MaterialType == video::EMT_REFLECTION_2_LAYER )
-		VertexCache.vType = 3;
-	else
-		VertexCache.vType = vType;
+	switch(Material.org.MaterialType)
+	{
+		case EMT_REFLECTION_2_LAYER:
+		case EMT_TRANSPARENT_REFLECTION_2_LAYER:
+			VertexCache.vType = 3;
+			break;
+		default:
+			VertexCache.vType = vType;
+			break;
+	}
+		
 	VertexCache.pType = pType;
 
 	switch ( iType )

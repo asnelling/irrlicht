@@ -136,6 +136,7 @@ namespace video
 		ETR_STENCIL_SHADOW,
 
 		ETR_TEXTURE_BLEND,
+		ETR_TRANSPARENT_REFLECTION_2_LAYER,
 		ETR_REFERENCE,
 		ETR_INVALID,
 
@@ -228,7 +229,7 @@ namespace video
 	IBurningShader* createTRStencilShadow(CBurningVideoDriver* driver);
 
 	IBurningShader* createTriangleRendererReference(CBurningVideoDriver* driver);
-
+	IBurningShader* createTriangleRendererTexture_transparent_reflection_2_layer(CBurningVideoDriver* driver);
 
 
 } // end namespace video

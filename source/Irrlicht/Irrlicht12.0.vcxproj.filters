@@ -2282,6 +2282,9 @@
     <ClCompile Include="CTRGouraudNoZ2.cpp">
       <Filter>Irrlicht\video\Burning Video</Filter>
     </ClCompile>
+    <ClCompile Include="CTR_transparent_reflection_2_layer.cpp">
+      <Filter>Irrlicht\video\Burning Video</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Irrlicht.rc" />
