@@ -15,9 +15,9 @@ using namespace io;
 using namespace gui;
 
 //! Tests IVideoDriver::writeImageToFile() using IWriteFile
-bool writeImageToFile(void)
+bool writeImageToFile_drawPixel(video::E_DRIVER_TYPE driverType)
 {
-	IrrlichtDevice *device = createDevice( EDT_BURNINGSVIDEO, dimension2d<u32>(160, 120), 32);
+	IrrlichtDevice *device = createDevice( driverType, dimension2d<u32>(160, 120), 32);
 	if (!device)
 		return true; // Treat a failure to create a driver as benign; this saves a lot of #ifdefs
 
@@ -53,6 +53,10 @@ bool writeImageToFile(void)
 	const char * referenceFilename = 0;
 	video::ECOLOR_FORMAT format;
 
+	stringc driverName = shortDriverName(driver);
+	stringc memFilename;
+	stringc refFilename;
+
 	irr::video::IImage * screenshot = driver->createScreenShot(video::ECF_R8G8B8);
 	if (!screenshot)
 	{
@@ -80,11 +84,17 @@ bool writeImageToFile(void)
 	}
 
 	buffer = new c8[BUFFER_SIZE];
-	writtenFilename = "results/Burning's Video-writeImageToFile.png";
+
+	//writtenFilename = "results/Burning's Video-writeImageToFile.png";
+	memFilename = "media/";
+	memFilename += driverName;
+	memFilename += "-drawPixel_writetest.png";
+	writtenFilename = memFilename.c_str();
+
 	memoryFile = device->getFileSystem()->createMemoryWriteFile(buffer, BUFFER_SIZE, writtenFilename, false);
 	if (!driver->writeImageToFile(screenshot, memoryFile))
 	{
-		logTestString("Failed to write png to memory file\n");
+		logTestString("Failed to write png to memory file. %s\n",writtenFilename);
 		assert_log(false);
 		goto cleanup;
 	}
@@ -92,7 +102,7 @@ bool writeImageToFile(void)
 	writtenFile = device->getFileSystem()->createAndWriteFile(memoryFile->getFileName());
 	if (!writtenFile)
 	{
-		logTestString("Can't open %s for writing.\n", writtenFilename);
+		logTestString("Can't open %s for writing. %s\n", writtenFilename);
 		assert_log(false);
 		goto cleanup;
 	}
@@ -107,11 +117,29 @@ bool writeImageToFile(void)
 	writtenFile->drop();
 	writtenFile = 0;
 
-	referenceFilename = "media/Burning's Video-drawPixel.png";
+	//referenceFilename = "media/Burning's Video-drawPixel.png";
+	refFilename = "media/";
+	refFilename += driverName;
+	refFilename += "-drawPixel.png";
+	referenceFilename = refFilename.c_str();
 
 	if (  fuzzyCompareImages(driver,writtenFilename, referenceFilename)   < 99.9)
 	{
-		logTestString("File written from memory is not the same as the reference file. %s:%d\n" ,  __FILE__, __LINE__);
+		logTestString("File written from memory is not the same as the reference file.%s %s:%d\n",
+			driverName.c_str(),  __FILE__, __LINE__);
+
+		//copy drawPixel_writetest as drawPixel to results
+		memFilename = "results/";
+		memFilename += driverName;
+		memFilename += "-drawPixel.png";
+		writtenFile = device->getFileSystem()->createAndWriteFile(memFilename.c_str());
+		if ( writtenFile )
+		{
+			writtenFile->write(buffer, (size_t)memoryFile->getPos());
+			writtenFile->drop();
+			writtenFile = 0;
+		}
+
 //		assert_log(false);
 		goto cleanup;
 	}
@@ -135,3 +163,9 @@ cleanup:
 	return result;
 }
 
+bool writeImageToFile()
+{
+	bool result = true;
+	TestWithAllDrivers(writeImageToFile_drawPixel);
+	return result;
+}
