@@ -81,16 +81,12 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 
 	}
 
-	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.25f;
-
 	//select mimap 0
 	MipMapLOD = 0;
-	Size = MipMap[MipMapLOD]->getDimension();
-	Pitch = MipMap[MipMapLOD]->getPitch();
+	calcDerivative();
 
 	regenerateMipMapLevels(image->getMipMapsData());
 }
-
 
 //! destructor
 CSoftwareTexture2::~CSoftwareTexture2()
@@ -104,6 +100,32 @@ CSoftwareTexture2::~CSoftwareTexture2()
 		}
 	}
 }
+
+void CSoftwareTexture2::calcDerivative()
+{
+	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.25f;
+
+	//reset current MipMap
+	Size = MipMap[MipMapLOD]->getDimension();
+	Pitch = MipMap[MipMapLOD]->getPitch();
+
+	//preCalc mipmap texel center boundaries
+	for ( s32 i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i )
+	{
+		CSoftwareTexture2_Bound& b = TexBound[i];
+		if ( MipMap[i] )
+		{
+			const core::dimension2du& dim = MipMap[i]->getDimension();
+			b.cx = 0.f;
+			b.cy = 0.f;
+			b.w = dim.Width-0.5f;
+			b.h = dim.Height-0.5f;
+		}
+	}
+
+}
+
+
 
 
 //! Regenerates the mip map levels of the texture. Useful after locking and
@@ -185,12 +207,8 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 		}
 	}
 
+	calcDerivative();
 
-	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.25f;
-
-	//reset current MipMap
-	Size = MipMap[MipMapLOD]->getDimension();
-	Pitch = MipMap[MipMapLOD]->getPitch();
 
 }
 

@@ -19,6 +19,26 @@ namespace video
 // null check necessary (burningvideo only)
 #define reciprocal_zero(x) ((x) != 0.f ? 1.f / (x):0.f)
 
+//Check coordinates are in render target/window space
+#define SOFTWARE_DRIVER_2_DO_CLIPCHECK
+#if defined SOFTWARE_DRIVER_2_DO_CLIPCHECK
+	#define SOFTWARE_DRIVER_2_CLIPCHECK      if( xStart < 0 || xStart + dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
+	#define SOFTWARE_DRIVER_2_CLIPCHECK_REF  if( pShader.xStart < 0 || pShader.xStart + pShader.dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
+	#define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE if( aposx < 0 || aposx >= (s32)RenderTarget->getDimension().Width || aposy < 0 || aposy >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
+
+	inline f32 reciprocal_zero_no(const f32 x)
+	{
+		if ( fabs(x) <= 0.0001f ) __debugbreak();
+		return 1.f / x;
+	}
+#else
+	#define SOFTWARE_DRIVER_2_CLIPCHECK
+	#define SOFTWARE_DRIVER_2_CLIPCHECK_REF
+	#define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE
+
+	#define reciprocal_zero_no(x) 1.f/x
+#endif
+
 enum edge_test_flag
 {
 	edge_test_pass = 1,
@@ -27,6 +47,7 @@ enum edge_test_flag
 };
 //if any edge test flag is set result=1 else 0. ( pass height test for degenerate triangle )
 #define reciprocal_edge(x) ((x) != 0.f ? 1.f / (x):(~EdgeTestPass)&1)
+
 
 struct sVec2
 {

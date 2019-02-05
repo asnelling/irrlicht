@@ -217,7 +217,7 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 #endif
 
 #ifdef IPOL_C0
-			inversew = reciprocal_zero ( dataW );
+			inversew = reciprocal_zero_no ( dataW );
 			getSample_color ( r0, g0, b0, C * inversew );
 			color = fix_to_color ( r0, g0, b0 );
 #endif

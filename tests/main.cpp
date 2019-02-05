@@ -46,7 +46,7 @@ int main(int argumentCount, char * arguments[])
 	// Use an STL vector so that we don't rely on Irrlicht.
 	std::vector<STestDefinition> tests;
 
-#if 1
+#if 0
 	// To interactively debug a test, move it (temporarily) in here and enable the define to only run this test
 	// Otherwise debugging is slightly tricky as each test runs in it's own process.
 	//TEST(textureFeatures);
@@ -54,7 +54,7 @@ int main(int argumentCount, char * arguments[])
 	//TEST(terrainSceneNode);
 	//TEST(twodmaterial);
 	//TEST(billboards);
-	//TEST(testGeometryCreator);
+	TEST(testGeometryCreator);
 	//TEST(lights);
 	//TEST(burningsVideo);
 	//TEST(flyCircleAnimator);
@@ -64,7 +64,7 @@ int main(int argumentCount, char * arguments[])
 	//TEST(b3dAnimation);
 	//TEST(writeImageToFile);
 	//TEST(meshTransform);
-	TEST(transparentMaterials);
+	//TEST(transparentMaterials);
 #else
 	TEST(disambiguateTextures); // Normally you should run this first, since it validates the working directory.
 	// Now the simple tests without device

@@ -236,7 +236,7 @@ namespace video
 					const void* indices, u32 indexCount,
 					E_VERTEX_TYPE vType,scene::E_PRIMITIVE_TYPE pType,
 					E_INDEX_TYPE iType);
-		void VertexCache_get ( const s4DVertex ** face );
+		void VertexCache_get ( s4DVertex ** face );
 		void VertexCache_getbypass ( s4DVertex ** face );
 
 		void VertexCache_fill ( const u32 sourceIndex,const u32 destIndex );
@@ -264,14 +264,15 @@ namespace video
 
 		void ndc_2_dc_and_project ( s4DVertex *dest,s4DVertex *source, u32 vIn ) const;
 		f32 screenarea ( const s4DVertex *v0 ) const;
-		void select_polygon_mipmap ( s4DVertex *source, u32 vIn, u32 tex, const core::dimension2du& texSize ) const;
+		void select_polygon_mipmap ( s4DVertex *source, u32 vIn, u32 tex, const CSoftwareTexture2_Bound& b ) const;
 		f32 texelarea ( const s4DVertex *v0, int tex ) const;
 
 
-		void ndc_2_dc_and_project2 ( const s4DVertex **v, const u32 size ) const;
-		f32 screenarea2 ( const s4DVertex **v ) const;
-		f32 texelarea2 ( const s4DVertex **v, int tex ) const;
-		void select_polygon_mipmap2 ( s4DVertex **source, u32 tex, const core::dimension2du& texSize ) const;
+		//const is misleading. **v is const that true, but not *v..
+		void ndc_2_dc_and_project2 ( s4DVertex* v[], const u32 size ) const;
+		f32 screenarea2 ( s4DVertex* const v[] ) const;
+		f32 texelarea2 ( s4DVertex* const v[], int tex ) const;
+		void select_polygon_mipmap2 ( s4DVertex* source[], u32 tex, const CSoftwareTexture2_Bound& b ) const;
 
 
 		SBurningShaderLightSpace LightSpace;

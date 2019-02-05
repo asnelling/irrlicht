@@ -21,6 +21,14 @@ class CBurningVideoDriver;
 /*!
 	interface for a Video Driver dependent Texture.
 */
+struct CSoftwareTexture2_Bound
+{
+	f32 w;  // width - 0.5f;
+	f32 h;  // height- 0.5f;
+	f32 cx; // texelcenter x 1.f/width*0.5f
+	f32 cy; // texelcenter y 1.f/height*0.5f
+};
+
 class CSoftwareTexture2 : public ITexture
 {
 public:
@@ -62,7 +70,7 @@ public:
 		//return MipMap[0]->getImageDataSizeInPixels () * texArea;
 	}
 
-	//! returns unoptimized surface
+	//! returns unoptimized surface (misleading name)
 	virtual CImage* getImage() const
 	{
 		return MipMap[0];
@@ -74,9 +82,16 @@ public:
 		return MipMap[MipMapLOD];
 	}
 
+	//precalculated dimx-1/dimx*0.5f
+	const CSoftwareTexture2_Bound& getTexBound() const
+	{
+		return TexBound[MipMapLOD];
+	}
+
 	virtual void regenerateMipMapLevels(void* data = 0, u32 layer = 0) _IRR_OVERRIDE_;
 
 private:
+	void calcDerivative();
 	f32 OrigImageDataSizeInPixels;
 
 	CImage * MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
@@ -84,6 +99,9 @@ private:
 	u32 MipMapLOD;
 	u32 Flags;
 	ECOLOR_FORMAT OriginalFormat;
+
+	CSoftwareTexture2_Bound TexBound[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
+
 };
 
 /*!

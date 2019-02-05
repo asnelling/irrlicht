@@ -10,19 +10,6 @@
 // Generic Render Flags for burning's video rasterizer
 // defined now in irrlicht compile config
 
-#define SOFTWARE_DRIVER_2_TEXTURE_GUARD_BAND 0.5f
-
-//Check coordinates are in render target/windpow space
-//#define SOFTWARE_DRIVER_2_DO_CLIPCHECK
-#if defined SOFTWARE_DRIVER_2_DO_CLIPCHECK
-	#define SOFTWARE_DRIVER_2_CLIPCHECK      _IRR_DEBUG_BREAK_IF( xStart < 0 || xStart + dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height )
-	#define SOFTWARE_DRIVER_2_CLIPCHECK_REF  _IRR_DEBUG_BREAK_IF( pShader.xStart < 0 || pShader.xStart + pShader.dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height )
-	#define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE _IRR_DEBUG_BREAK_IF( aposx < 0 || aposx >= (s32)RenderTarget->getDimension().Width || aposy < 0 || aposy >= (s32) RenderTarget->getDimension().Height )
-#else
-	#define SOFTWARE_DRIVER_2_CLIPCHECK
-	#define SOFTWARE_DRIVER_2_CLIPCHECK_REF
-	#define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE
-#endif
 
 #ifdef BURNINGVIDEO_RENDERER_BEAUTIFUL
 	#define SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT

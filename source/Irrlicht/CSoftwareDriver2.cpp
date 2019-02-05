@@ -489,6 +489,7 @@ void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
 }
 
 
+//--------- Transform from NDC to DC, transform TexCoo ----------------------------------------------
 
 // used to scale <-1,-1><1,1> to viewport
 void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
@@ -499,24 +500,78 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 
 	f32* m = out.pointer();
 
-	m[0]  = (viewport.getWidth()  - 0.1f ) *  0.5f;
+	f32 w = (f32)viewport.getWidth();
+	f32 h = (f32)viewport.getHeight();
+
+	m[0]  = w *  0.5f;
 	m[1]  = 0.f;
 	m[2]  = 0.f;
 	m[3]  = 0.f;
 	m[4]  = 0.f;
-	m[5]  = (viewport.getHeight() - 0.1f ) * -0.5f;
+	m[5]  = h * -0.5f;
 	m[6]  = 0.f;
 	m[7]  = 0.f;
 	m[8]  = 0.f;
 	m[9]  = 0.f;
 	m[10] = 1.f;
 	m[11] = 0.f;
-	m[12] = -0.25f + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
-	m[13] = -0.25f + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
+	m[12] = (w * 0.5f ) - 0.5f;
+	m[13] = (h * 0.5f ) - 0.25f; //hackish to force one line down...
 	m[14] = 0.f;
 	m[15] = 1.f;
 
 }
+
+/*!
+	texcoo in current mipmap dimension (CurrentOut.data)
+*/
+inline void CBurningVideoDriver::select_polygon_mipmap ( s4DVertex *v, u32 vIn, u32 tex, const CSoftwareTexture2_Bound& b ) const
+{
+#ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
+	for ( u32 g = 0; g != vIn; g += 2 )
+	{
+		(v + g + 1 )->Tex[tex].x	= (v + g + 0)->Tex[tex].x * ( v + g + 1 )->Pos.w * b.w + b.cx;
+		(v + g + 1 )->Tex[tex].y	= (v + g + 0)->Tex[tex].y * ( v + g + 1 )->Pos.w * b.h + b.cy;
+	}
+#else
+	for ( u32 g = 0; g != vIn; g += 2 )
+	{
+		(v + g + 1 )->Tex[tex].x	= (v + g + 0)->Tex[tex].x * b.w;
+		(v + g + 1 )->Tex[tex].y	= (v + g + 0)->Tex[tex].y * b.h;
+	}
+#endif
+
+}
+
+/*!
+	texcoo in current mipmap dimension (face, already clipped)
+*/
+inline void CBurningVideoDriver::select_polygon_mipmap2 ( s4DVertex* v[], u32 tex, const CSoftwareTexture2_Bound& b ) const
+{
+#ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
+	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * ( v[0] + 1 )->Pos.w * b.w + b.cx;
+	(v[0] + 1 )->Tex[tex].y	= v[0]->Tex[tex].y * ( v[0] + 1 )->Pos.w * b.h + b.cy;
+
+	(v[1] + 1 )->Tex[tex].x	= v[1]->Tex[tex].x * ( v[1] + 1 )->Pos.w * b.w + b.cx;
+	(v[1] + 1 )->Tex[tex].y	= v[1]->Tex[tex].y * ( v[1] + 1 )->Pos.w * b.h + b.cy;
+
+	(v[2] + 1 )->Tex[tex].x	= v[2]->Tex[tex].x * ( v[2] + 1 )->Pos.w * b.w + b.cx;
+	(v[2] + 1 )->Tex[tex].y	= v[2]->Tex[tex].y * ( v[2] + 1 )->Pos.w * b.h + b.cy;
+
+#else
+	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * b.w;
+	(v[0] + 1 )->Tex[tex].y	= v[0]->Tex[tex].y * b.h;
+
+	(v[1] + 1 )->Tex[tex].x	= v[1]->Tex[tex].x * b.w;
+	(v[1] + 1 )->Tex[tex].y	= v[1]->Tex[tex].y * b.h;
+
+	(v[2] + 1 )->Tex[tex].x	= v[2]->Tex[tex].x * b.w;
+	(v[2] + 1 )->Tex[tex].y	= v[2]->Tex[tex].y * b.h;
+#endif
+
+}
+
+//--------- Transform from NCD to DC ----------------------------------------------
 
 //! sets a viewport
 void CBurningVideoDriver::setViewPort(const core::rect<s32>& area)
@@ -783,7 +838,7 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,s4DVerte
 }
 
 
-inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( const s4DVertex **v, const u32 size ) const
+inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( s4DVertex **v, const u32 size ) const
 {
 	u32 g;
 
@@ -851,7 +906,7 @@ inline f32 CBurningVideoDriver::texelarea ( const s4DVertex *v, int tex ) const
 /*!
 	crossproduct in projected 2D
 */
-inline f32 CBurningVideoDriver::screenarea2 ( const s4DVertex **v ) const
+inline f32 CBurningVideoDriver::screenarea2 ( s4DVertex* const v[] ) const
 {
 	return	( (( v[1] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) * ( (v[2] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) ) -
 			( (( v[1] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) * ( (v[2] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) );
@@ -859,7 +914,7 @@ inline f32 CBurningVideoDriver::screenarea2 ( const s4DVertex **v ) const
 
 /*!
 */
-inline f32 CBurningVideoDriver::texelarea2 ( const s4DVertex **v, s32 tex ) const
+inline f32 CBurningVideoDriver::texelarea2 ( s4DVertex* const v[], s32 tex ) const
 {
 	f32 z;
 	z =		( (v[1]->Tex[tex].x - v[0]->Tex[tex].x ) * (v[2]->Tex[tex].y - v[0]->Tex[tex].y ) )
@@ -869,58 +924,6 @@ inline f32 CBurningVideoDriver::texelarea2 ( const s4DVertex **v, s32 tex ) cons
 }
 
 
-/*!
-*/
-inline void CBurningVideoDriver::select_polygon_mipmap ( s4DVertex *v, u32 vIn, u32 tex, const core::dimension2du& texSize ) const
-{
-	f32 f[2];
-
-	f[0] = (f32) texSize.Width - SOFTWARE_DRIVER_2_TEXTURE_GUARD_BAND;
-	f[1] = (f32) texSize.Height - SOFTWARE_DRIVER_2_TEXTURE_GUARD_BAND;
-
-#ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
-	for ( u32 g = 0; g != vIn; g += 2 )
-	{
-		(v + g + 1 )->Tex[tex].x	= (v + g + 0)->Tex[tex].x * ( v + g + 1 )->Pos.w * f[0];
-		(v + g + 1 )->Tex[tex].y	= (v + g + 0)->Tex[tex].y * ( v + g + 1 )->Pos.w * f[1];
-	}
-#else
-	for ( u32 g = 0; g != vIn; g += 2 )
-	{
-		(v + g + 1 )->Tex[tex].x	= (v + g + 0)->Tex[tex].x * f[0];
-		(v + g + 1 )->Tex[tex].y	= (v + g + 0)->Tex[tex].y * f[1];
-	}
-#endif
-}
-
-inline void CBurningVideoDriver::select_polygon_mipmap2 ( s4DVertex **v, u32 tex, const core::dimension2du& texSize ) const
-{
-	f32 f[2];
-
-	f[0] = (f32) texSize.Width - SOFTWARE_DRIVER_2_TEXTURE_GUARD_BAND;
-	f[1] = (f32) texSize.Height - SOFTWARE_DRIVER_2_TEXTURE_GUARD_BAND;
-
-#ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
-	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * ( v[0] + 1 )->Pos.w * f[0];
-	(v[0] + 1 )->Tex[tex].y	= v[0]->Tex[tex].y * ( v[0] + 1 )->Pos.w * f[1];
-
-	(v[1] + 1 )->Tex[tex].x	= v[1]->Tex[tex].x * ( v[1] + 1 )->Pos.w * f[0];
-	(v[1] + 1 )->Tex[tex].y	= v[1]->Tex[tex].y * ( v[1] + 1 )->Pos.w * f[1];
-
-	(v[2] + 1 )->Tex[tex].x	= v[2]->Tex[tex].x * ( v[2] + 1 )->Pos.w * f[0];
-	(v[2] + 1 )->Tex[tex].y	= v[2]->Tex[tex].y * ( v[2] + 1 )->Pos.w * f[1];
-
-#else
-	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * f[0];
-	(v[0] + 1 )->Tex[tex].y	= v[0]->Tex[tex].y * f[1];
-
-	(v[1] + 1 )->Tex[tex].x	= v[1]->Tex[tex].x * f[0];
-	(v[1] + 1 )->Tex[tex].y	= v[1]->Tex[tex].y * f[1];
-
-	(v[2] + 1 )->Tex[tex].x	= v[2]->Tex[tex].x * f[0];
-	(v[2] + 1 )->Tex[tex].y	= v[2]->Tex[tex].y * f[1];
-#endif
-}
 
 // Vertex Cache
 const SVSize CBurningVideoDriver::vSize[] =
@@ -1224,7 +1227,7 @@ clipandproject:
 	// to DC Space, project homogenous vertex
 	if ( (dest[0].flag & VERTEX4D_CLIPMASK ) == VERTEX4D_INSIDE )
 	{
-		ndc_2_dc_and_project2 ( (const s4DVertex**) &dest, 1 );
+		ndc_2_dc_and_project2 ( (s4DVertex**) &dest, 1 );
 	}
 
 	//return dest;
@@ -1250,7 +1253,7 @@ REALINLINE s4DVertex * CBurningVideoDriver::VertexCache_getVertex ( const u32 so
 	fill blockwise on the next 16(Cache_Size) unique vertices in indexlist
 	merge the next 16 vertices with the current
 */
-REALINLINE void CBurningVideoDriver::VertexCache_get(const s4DVertex ** face)
+REALINLINE void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
 {
 	SCacheInfo info[VERTEXCACHE_ELEMENT];
 
@@ -1522,7 +1525,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 
 	VertexCache_reset ( vertices, vertexCount, indexList, primitiveCount, vType, pType, iType );
 
-	const s4DVertex * face[3];
+	s4DVertex* face[3];
 
 	f32 dc_area;
 	s32 lodLevel;
@@ -1561,7 +1564,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 
 				lodLevel = s32_log2_f32 ( texelarea2 ( face, m ) * dc_area  );
 				CurrentShader->setTextureParam(m, tex, lodLevel );
-				select_polygon_mipmap2 ( (s4DVertex**) face, m, tex->getSize() );
+				select_polygon_mipmap2 ( face, m, tex->getTexBound() );
 			}
 
 			// rasterize
@@ -1610,7 +1613,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 
 			lodLevel = s32_log2_f32 ( texelarea ( CurrentOut.data, m ) * dc_area );
 			CurrentShader->setTextureParam(m, tex, lodLevel );
-			select_polygon_mipmap ( CurrentOut.data, vOut, m, tex->getSize() );
+			select_polygon_mipmap ( CurrentOut.data, vOut, m, tex->getTexBound() );
 		}
 
 

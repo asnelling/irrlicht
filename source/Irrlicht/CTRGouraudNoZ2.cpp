@@ -214,7 +214,7 @@ void CTRGouraudNoZ2::scanline_bilinear ()
 		{
 #ifdef IPOL_C0
 #ifdef INVERSE_W
-			inversew = reciprocal_zero ( line.w[0] );
+			inversew = reciprocal_zero_no ( line.w[0] );
 			getSample_color ( r0, g0, b0, line.c[0][0] * inversew );
 #else
 			getSample_color ( r0, g0, b0, line.c[0][0] );
