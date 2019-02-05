@@ -316,7 +316,7 @@ void CNullDriver::deleteAllTextures()
 	SharedDepthTextures.clear();
 }
 
-bool CNullDriver::beginScene(u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
+bool CNullDriver::beginScene(u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
 {
 	core::clearFPUException();
 	PrimitivesDrawn = 0;
@@ -744,12 +744,12 @@ ITexture* CNullDriver::createDeviceDependentTextureCubemap(const io::path& name,
 	return new SDummyTexture(name, ETT_CUBEMAP);
 }
 
-bool CNullDriver::setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil)
+bool CNullDriver::setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil)
 {
 	return false;
 }
 
-bool CNullDriver::setRenderTarget(ITexture* texture, u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil)
+bool CNullDriver::setRenderTarget(ITexture* texture, u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil)
 {
 	if (texture)
 	{
@@ -2645,7 +2645,7 @@ ITexture* CNullDriver::addRenderTargetTextureCubemap(const irr::u32 sideLen,
 	return 0;
 }
 
-void CNullDriver::clearBuffers(u16 flag, SColor color, f32 depth, u8 stencil)
+void CNullDriver::clearBuffers(u32 flag, SColor color, f32 depth, u32 stencil)
 {
 }
 

@@ -166,14 +166,14 @@ namespace video
 		rectangle of the area to be presented. Set to null to present
 		everything. Note: not implemented in all devices.
 		\return False if failed. */
-		virtual bool beginScene(u16 clearFlag=(u16)(ECBF_COLOR|ECBF_DEPTH), SColor clearColor = SColor(255,0,0,0), f32 clearDepth = 1.f, u8 clearStencil = 0,
+		virtual bool beginScene(u32 clearFlag=(u32)(ECBF_COLOR|ECBF_DEPTH), SColor clearColor = SColor(255,0,0,0), f32 clearDepth = 1.f, u32 clearStencil = 0,
 			const SExposedVideoData& videoData=SExposedVideoData(), core::rect<s32>* sourceRect = 0) = 0;
 
 		//! Alternative beginScene implementation. Can't clear stencil buffer, but otherwise identical to other beginScene
 		bool beginScene(bool backBuffer, bool zBuffer, SColor color = SColor(255,0,0,0),
 			const SExposedVideoData& videoData = SExposedVideoData(), core::rect<s32>* sourceRect = 0)
 		{
-			u16 flag = 0;
+			u32 flag = 0;
 
 			if (backBuffer)
 				flag |= ECBF_COLOR;
@@ -536,8 +536,8 @@ namespace video
 		\param clearDepth The clear value for the depth buffer.
 		\param clearStencil The clear value for the stencil buffer.
 		\return True if successful and false if not. */
-		virtual bool setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor = SColor(255,0,0,0),
-			f32 clearDepth = 1.f, u8 clearStencil = 0) = 0;
+		virtual bool setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor = SColor(255,0,0,0),
+			f32 clearDepth = 1.f, u32 clearStencil = 0) = 0;
 
 		//! Sets a new render target.
 		/** This will only work if the driver supports the
@@ -568,15 +568,15 @@ namespace video
 		\param clearDepth The clear value for the depth buffer.
 		\param clearStencil The clear value for the stencil buffer.
 		\return True if successful and false if not. */
-		virtual bool setRenderTarget(ITexture* texture, u16 clearFlag=ECBF_COLOR|ECBF_DEPTH, SColor clearColor = SColor(255,0,0,0),
-			f32 clearDepth = 1.f, u8 clearStencil = 0) = 0;
+		virtual bool setRenderTarget(ITexture* texture, u32 clearFlag=ECBF_COLOR|ECBF_DEPTH, SColor clearColor = SColor(255,0,0,0),
+			f32 clearDepth = 1.f, u32 clearStencil = 0) = 0;
 
 		//! Sets a new render target.
 		//! Prefer to use the setRenderTarget function taking flags as parameter as this one can't clear the stencil buffer.
 		//! It's still offered for backward compatibility.
 		bool setRenderTarget(ITexture* texture, bool clearBackBuffer, bool clearZBuffer, SColor color = SColor(255,0,0,0))
 		{
-			u16 flag = 0;
+			u32 flag = 0;
 
 			if (clearBackBuffer)
 				flag |= ECBF_COLOR;
@@ -1390,12 +1390,12 @@ namespace video
 		virtual scene::IMeshManipulator* getMeshManipulator() =0;
 
 		//! Clear the color, depth and/or stencil buffers.
-		virtual void clearBuffers(u16 flag, SColor color = SColor(255,0,0,0), f32 depth = 1.f, u8 stencil = 0) = 0;
+		virtual void clearBuffers(u32 flag, SColor color = SColor(255,0,0,0), f32 depth = 1.f, u32 stencil = 0) = 0;
 
 		//! Clear the color, depth and/or stencil buffers.
 		_IRR_DEPRECATED_ void clearBuffers(bool backBuffer, bool depthBuffer, bool stencilBuffer, SColor color)
 		{
-			u16 flag = 0;
+			u32 flag = 0;
 
 			if (backBuffer)
 				flag |= ECBF_COLOR;

@@ -227,7 +227,7 @@ void CSoftwareDriver::setMaterial(const SMaterial& material)
 	}
 }
 
-bool CSoftwareDriver::beginScene(u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
+bool CSoftwareDriver::beginScene(u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
 {
 	CNullDriver::beginScene(clearFlag, clearColor, clearDepth, clearStencil, videoData, sourceRect);
 	WindowId=videoData.D3D9.HWnd;
@@ -252,7 +252,7 @@ ITexture* CSoftwareDriver::createDeviceDependentTexture(const io::path& name, II
 	return texture;
 }
 
-bool CSoftwareDriver::setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil)
+bool CSoftwareDriver::setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil)
 {
 	if (target && target->getDriverType() != EDT_SOFTWARE)
 	{
@@ -903,7 +903,7 @@ ITexture* CSoftwareDriver::addRenderTargetTexture(const core::dimension2d<u32>& 
 	return tex;
 }
 
-void CSoftwareDriver::clearBuffers(u16 flag, SColor color, f32 depth, u8 stencil)
+void CSoftwareDriver::clearBuffers(u32 flag, SColor color, f32 depth, u32 stencil)
 {
 	if ((flag & ECBF_COLOR) && RenderTargetSurface)
 		RenderTargetSurface->fill(color);

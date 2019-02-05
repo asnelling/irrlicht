@@ -497,7 +497,7 @@ bool CD3D9Driver::initDriver(HWND hwnd, bool pureSoftware)
 	return true;
 }
 
-bool CD3D9Driver::beginScene(u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
+bool CD3D9Driver::beginScene(u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
 {
 	CNullDriver::beginScene(clearFlag, clearColor, clearDepth, clearStencil, videoData, sourceRect);
 	WindowId = (HWND)videoData.D3D9.HWnd;
@@ -757,7 +757,7 @@ ITexture* CD3D9Driver::createDeviceDependentTextureCubemap(const io::path& name,
 	return texture;
 }
 
-bool CD3D9Driver::setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil)
+bool CD3D9Driver::setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil)
 {
 	if (target && target->getDriverType() != EDT_DIRECT3D9)
 	{
@@ -3284,7 +3284,7 @@ ITexture* CD3D9Driver::addRenderTargetTextureCubemap(const irr::u32 sideLen,
 	return tex;
 }
 
-void CD3D9Driver::clearBuffers(u16 flag, SColor color, f32 depth, u8 stencil)
+void CD3D9Driver::clearBuffers(u32 flag, SColor color, f32 depth, u32 stencil)
 {
 	DWORD internalFlag = 0;
 
