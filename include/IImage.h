@@ -28,7 +28,7 @@ public:
 
 	//! constructor
 	IImage(ECOLOR_FORMAT format, const core::dimension2d<u32>& size, bool deleteMemory) :
-		Format(format), Size(size), Data(0), MipMapsData(0), BytesPerPixel(0), Pitch(0), DeleteMemory(deleteMemory), DeleteMipMapsMemory(false)
+		Format(format), Format_sRGB(1),Size(size), Data(0), MipMapsData(0), BytesPerPixel(0), Pitch(0), DeleteMemory(deleteMemory), DeleteMipMapsMemory(false)
 	{
 		BytesPerPixel = getBitsPerPixelFromFormat(Format) / 8;
 		Pitch = BytesPerPixel * Size.Width;
@@ -48,6 +48,15 @@ public:
 	ECOLOR_FORMAT getColorFormat() const
 	{
 		return Format;
+	}
+	//! Texture is linear/sRGB (should be part of ColorFormat: default yes)
+	int get_sRGB() const
+	{
+		return Format_sRGB;
+	}
+	void set_sRGB(int val)
+	{
+		Format_sRGB = val;
 	}
 
 	//! Returns width and height of image data.
@@ -480,6 +489,7 @@ public:
 
 protected:
 	ECOLOR_FORMAT Format;
+	int Format_sRGB;
 	core::dimension2d<u32> Size;
 
 	u8* Data;

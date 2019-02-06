@@ -105,9 +105,9 @@ void CDemo::run()
 
 			createParticleImpacts();
 
-			u16 clearFlag = video::ECBF_DEPTH;
+			u32 clearFlag = video::ECBF_DEPTH;
 
-			if (timeForThisScene != -1)
+			if (1 || timeForThisScene != -1)
 				clearFlag |= video::ECBF_COLOR;
 
 			driver->beginScene(clearFlag, backColor);

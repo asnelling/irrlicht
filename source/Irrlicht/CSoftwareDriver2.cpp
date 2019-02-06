@@ -4,7 +4,7 @@
 
 #include "IrrCompileConfig.h"
 #include "CSoftwareDriver2.h"
-
+#include <Windows.h>
 #ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 
 #include "SoftwareDriver2_helper.h"
@@ -55,6 +55,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 
 	DriverAttributes->setAttribute("MaxTextures", 2);
 	DriverAttributes->setAttribute("MaxIndices", 1<<16);
+	DriverAttributes->setAttribute("MaxTextures", BURNING_MATERIAL_MAX_TEXTURES);
 	DriverAttributes->setAttribute("MaxTextureSize", SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE ? SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE : 1<<20);
 	DriverAttributes->setAttribute("MaxLights", 1024 ); //glsl::gl_MaxLights);
 	DriverAttributes->setAttribute("MaxTextureLODBias", 16.f);
@@ -497,6 +498,8 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 	//guard band to stay in screen bounds.(empirical). get holes left side otherwise or out of screen
 	//TODO: match openGL or D3D.
 	//assumption pixel center, top-left rule and rounding error projection deny exact match without additional clipping
+	//or triangle render scanline doesn't step on correct texel center
+	//or sampler is not on texel center
 
 	f32* m = out.pointer();
 
@@ -522,6 +525,62 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 
 }
 
+struct tweakBurning
+{
+	tweakBurning()
+	{
+		current = 1;
+		step = 0.0001f;
+		tex_w_add = 0.f;
+		tex_h_add = 0.f;
+		tex_cx_add = 0.f;
+		tex_cy_add = 0.f;
+	}
+	int current;
+	union
+	{
+		struct{
+		f32 step;
+		f32 tex_w_add;
+		f32 tex_cx_add;
+		f32 tex_h_add;
+		f32 tex_cy_add;
+		};
+		f32 val[8];
+	};
+	static const char* const name[8];
+	void postEventFromUser(const SEvent& e);
+};
+
+const char* const tweakBurning::name[8]={"step","tex_w_add","tex_cx_add","tex_h_add","tex_cy_add",0};
+void tweakBurning::postEventFromUser(const SEvent& e)
+{
+	int show = 0;
+	if ( e.EventType == EET_KEY_INPUT_EVENT )
+	{
+		switch ( e.KeyInput.Key)
+		{
+			case KEY_KEY_1: if (!e.KeyInput.PressedDown) {current -= 1; if (current < 0 ) current = 4; show = 1;} break;
+			case KEY_KEY_2: if (!e.KeyInput.PressedDown) {current += 1; if (current > 4 ) current = 0; show = 1;} break;
+			case KEY_KEY_3: val[current] -= e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
+			case KEY_KEY_4: val[current] += e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
+		}
+	}
+	if ( show )
+	{
+		if ( step == 0.f ) step = 0.0001f;
+		char buf[256];
+		sprintf(buf,"%s %f\n",name[current],val[current]);
+		OutputDebugStringA(buf);
+	}
+}
+tweakBurning Tweak;
+
+void CBurningVideoDriver::postEventFromUser(void* sevent)
+{
+	Tweak.postEventFromUser(*(const SEvent*) sevent);
+}
+
 /*!
 	texcoo in current mipmap dimension (CurrentOut.data)
 */
@@ -530,8 +589,8 @@ inline void CBurningVideoDriver::select_polygon_mipmap ( s4DVertex *v, u32 vIn, 
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
 	for ( u32 g = 0; g != vIn; g += 2 )
 	{
-		(v + g + 1 )->Tex[tex].x	= (v + g + 0)->Tex[tex].x * ( v + g + 1 )->Pos.w * b.w + b.cx;
-		(v + g + 1 )->Tex[tex].y	= (v + g + 0)->Tex[tex].y * ( v + g + 1 )->Pos.w * b.h + b.cy;
+		(v + g + 1 )->Tex[tex].x	= (v + g + 0)->Tex[tex].x * ( v + g + 1 )->Pos.w * (b.w+Tweak.tex_w_add) + (b.cx+Tweak.tex_cx_add);
+		(v + g + 1 )->Tex[tex].y	= (v + g + 0)->Tex[tex].y * ( v + g + 1 )->Pos.w * (b.h+Tweak.tex_h_add) + (b.cy+Tweak.tex_cy_add);
 	}
 #else
 	for ( u32 g = 0; g != vIn; g += 2 )
@@ -549,14 +608,14 @@ inline void CBurningVideoDriver::select_polygon_mipmap ( s4DVertex *v, u32 vIn, 
 inline void CBurningVideoDriver::select_polygon_mipmap2 ( s4DVertex* v[], u32 tex, const CSoftwareTexture2_Bound& b ) const
 {
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
-	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * ( v[0] + 1 )->Pos.w * b.w + b.cx;
-	(v[0] + 1 )->Tex[tex].y	= v[0]->Tex[tex].y * ( v[0] + 1 )->Pos.w * b.h + b.cy;
+	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * ( v[0] + 1 )->Pos.w * (b.w+Tweak.tex_w_add) + (b.cx+Tweak.tex_cx_add);
+	(v[0] + 1 )->Tex[tex].y	= v[0]->Tex[tex].y * ( v[0] + 1 )->Pos.w * (b.h+Tweak.tex_h_add) + (b.cy+Tweak.tex_cy_add);
 
-	(v[1] + 1 )->Tex[tex].x	= v[1]->Tex[tex].x * ( v[1] + 1 )->Pos.w * b.w + b.cx;
-	(v[1] + 1 )->Tex[tex].y	= v[1]->Tex[tex].y * ( v[1] + 1 )->Pos.w * b.h + b.cy;
+	(v[1] + 1 )->Tex[tex].x	= v[1]->Tex[tex].x * ( v[1] + 1 )->Pos.w * (b.w+Tweak.tex_w_add) + (b.cx+Tweak.tex_cx_add);
+	(v[1] + 1 )->Tex[tex].y	= v[1]->Tex[tex].y * ( v[1] + 1 )->Pos.w * (b.h+Tweak.tex_h_add) + (b.cy+Tweak.tex_cy_add);
 
-	(v[2] + 1 )->Tex[tex].x	= v[2]->Tex[tex].x * ( v[2] + 1 )->Pos.w * b.w + b.cx;
-	(v[2] + 1 )->Tex[tex].y	= v[2]->Tex[tex].y * ( v[2] + 1 )->Pos.w * b.h + b.cy;
+	(v[2] + 1 )->Tex[tex].x	= v[2]->Tex[tex].x * ( v[2] + 1 )->Pos.w * (b.w+Tweak.tex_w_add) + (b.cx+Tweak.tex_cx_add);
+	(v[2] + 1 )->Tex[tex].y	= v[2]->Tex[tex].y * ( v[2] + 1 )->Pos.w * (b.h+Tweak.tex_h_add) + (b.cy+Tweak.tex_cy_add);
 
 #else
 	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * b.w;
@@ -916,11 +975,15 @@ inline f32 CBurningVideoDriver::screenarea2 ( s4DVertex* const v[] ) const
 */
 inline f32 CBurningVideoDriver::texelarea2 ( s4DVertex* const v[], s32 tex ) const
 {
-	f32 z;
-	z =		( (v[1]->Tex[tex].x - v[0]->Tex[tex].x ) * (v[2]->Tex[tex].y - v[0]->Tex[tex].y ) )
+	sVec2 a(v[1]->Tex[tex].x - v[0]->Tex[tex].x,v[1]->Tex[tex].y - v[0]->Tex[tex].y);
+	sVec2 b(v[2]->Tex[tex].x - v[0]->Tex[tex].x,v[2]->Tex[tex].y - v[0]->Tex[tex].y);
+	f32 area = a.x * b.y - b.x * a.y;
+/*
+	f32 area;
+	area =	( (v[1]->Tex[tex].x - v[0]->Tex[tex].x ) * (v[2]->Tex[tex].y - v[0]->Tex[tex].y ) )
 		 -	( (v[2]->Tex[tex].x - v[0]->Tex[tex].x ) * (v[1]->Tex[tex].y - v[0]->Tex[tex].y ) );
-
-	return MAT_TEXTURE ( tex )->getLODFactor ( z );
+*/
+	return MAT_TEXTURE ( tex )->getLODFactor ( area );
 }
 
 
@@ -1534,6 +1597,15 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	u32 m;
 	video::CSoftwareTexture2* tex;
 
+/*
+	const c8* texName = "";
+	if ( vSize[VertexCache.vType].TexSize )
+	{
+		texName = MAT_TEXTURE(0)->getName().getPath().c_str();
+	}
+	if (strcmp(texName,"e7dimfloor.jpg"))
+		return;
+*/
 	for ( i = 0; i < (u32) primitiveCount; ++i )
 	{
 		VertexCache_get(face);
@@ -1562,7 +1634,16 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 					continue;
 				}
 
-				lodLevel = s32_log2_f32 ( texelarea2 ( face, m ) * dc_area  );
+				f32 texArea = texelarea2 ( face, m ); 
+				lodLevel = s32_log2_f32 ( texArea * dc_area  );
+
+/*
+				{
+					char buf[256];
+					sprintf ( buf,"level:%d %s tex:%f dc:%f\n",lodLevel,texName,texArea,dc_area);
+					//OutputDebugString(buf);
+				}
+*/
 				CurrentShader->setTextureParam(m, tex, lodLevel );
 				select_polygon_mipmap2 ( face, m, tex->getTexBound() );
 			}
@@ -2425,6 +2506,8 @@ const wchar_t* CBurningVideoDriver::getName() const
 	return L"Burning's Video 0.50 ultra fast";
 #elif defined ( BURNINGVIDEO_RENDERER_FAST )
 	return L"Burning's Video 0.50 fast";
+#elif defined ( BURNINGVIDEO_RENDERER_CE )
+	return L"Burning's Video 0.50 CE";
 #else
 	return L"Burning's Video 0.50";
 #endif
@@ -2501,8 +2584,12 @@ IImage* CBurningVideoDriver::createScreenShot(video::ECOLOR_FORMAT format, video
 
 ITexture* CBurningVideoDriver::createDeviceDependentTexture(const io::path& name, IImage* image)
 {
-	CSoftwareTexture2* texture = new CSoftwareTexture2(image, name, (getTextureCreationFlag(ETCF_CREATE_MIP_MAPS) ? CSoftwareTexture2::GEN_MIPMAP : 0) |
-		(getTextureCreationFlag(ETCF_ALLOW_NON_POWER_2) ? 0 : CSoftwareTexture2::NP2_SIZE));
+	CSoftwareTexture2* texture = new CSoftwareTexture2(image, name,
+		(getTextureCreationFlag(ETCF_CREATE_MIP_MAPS) ? CSoftwareTexture2::GEN_MIPMAP : 0) |
+		(getTextureCreationFlag(ETCF_ALLOW_NON_POWER_2) ? 0 : CSoftwareTexture2::NP2_SIZE) |
+		(getTextureCreationFlag(ETCF_IMAGE_IS_LINEAR) ? CSoftwareTexture2::IMAGE_IS_LINEAR : 0) |
+		(getTextureCreationFlag(ETCF_TEXTURE_IS_LINEAR) ? CSoftwareTexture2::TEXTURE_IS_LINEAR : 0)
+		);
 
 	return texture;
 }

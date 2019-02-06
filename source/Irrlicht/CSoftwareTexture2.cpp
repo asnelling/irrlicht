@@ -40,6 +40,8 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	OriginalSize = image->getDimension();
 	OriginalFormat = image->getColorFormat();
 
+	if ( Flags & IMAGE_IS_LINEAR ) image->set_sRGB(0);
+
 	bool isCompressed = IImage::isCompressedFormat(OriginalFormat);
 	if (isCompressed)
 	{
@@ -56,7 +58,8 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	if (OriginalSize == optSize)
 	{
 		MipMap[0] = new CImage(BURNINGSHADER_COLOR_FORMAT, image->getDimension());
-
+		MipMap[0]->set_sRGB( (Flags & TEXTURE_IS_LINEAR ) ? 0 : image->get_sRGB()  );
+		
 		if (!isCompressed)
 			image->copyTo(MipMap[0]);
 	}
@@ -72,7 +75,7 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 
 		os::Printer::log ( buf, ELL_WARNING );
 		MipMap[0] = new CImage(BURNINGSHADER_COLOR_FORMAT, optSize);
-
+		MipMap[0]->set_sRGB( (Flags & TEXTURE_IS_LINEAR ) ? 0 : image->get_sRGB()  );
 		if (!isCompressed)
 		{
 			//image->copyToScalingBoxFilter ( MipMap[0],0, false );
@@ -88,10 +91,11 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	regenerateMipMapLevels(image->getMipMapsData());
 }
 
+
 //! destructor
 CSoftwareTexture2::~CSoftwareTexture2()
 {
-	for ( s32 i = 0; i!= SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i )
+	for ( s32 i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i )
 	{
 		if ( MipMap[i] )
 		{
@@ -100,31 +104,6 @@ CSoftwareTexture2::~CSoftwareTexture2()
 		}
 	}
 }
-
-void CSoftwareTexture2::calcDerivative()
-{
-	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.25f;
-
-	//reset current MipMap
-	Size = MipMap[MipMapLOD]->getDimension();
-	Pitch = MipMap[MipMapLOD]->getPitch();
-
-	//preCalc mipmap texel center boundaries
-	for ( s32 i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i )
-	{
-		CSoftwareTexture2_Bound& b = TexBound[i];
-		if ( MipMap[i] )
-		{
-			const core::dimension2du& dim = MipMap[i]->getDimension();
-			b.cx = 0.f;
-			b.cy = 0.f;
-			b.w = dim.Width-0.5f;
-			b.h = dim.Height-0.5f;
-		}
-	}
-
-}
-
 
 
 
@@ -148,18 +127,23 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 	}
 
 	core::dimension2d<u32> newSize;
-	core::dimension2d<u32> origSize = Size;
+	//core::dimension2d<u32> origSize = Size;
 
 	for (i=1; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
 	{
-		newSize = MipMap[i-1]->getDimension();
-		newSize.Width = core::s32_max ( 1, newSize.Width >> SOFTWARE_DRIVER_2_MIPMAPPING_SCALE );
-		newSize.Height = core::s32_max ( 1, newSize.Height >> SOFTWARE_DRIVER_2_MIPMAPPING_SCALE );
+		const core::dimension2du& upperDim = MipMap[i-1]->getDimension();
+		//isotropic
+		newSize.Width = core::s32_max ( 1, upperDim.Width >> SOFTWARE_DRIVER_2_MIPMAPPING_SCALE );
+		newSize.Height = core::s32_max ( 1, upperDim.Height >> SOFTWARE_DRIVER_2_MIPMAPPING_SCALE );
+		if ( upperDim == newSize )
+			break;
+
+		//deactivated until TA knows how to handle this
+#if 0
 		origSize.Width = core::s32_max(1, origSize.Width >> 1);
 		origSize.Height = core::s32_max(1, origSize.Height >> 1);
 
-		//deactivated until TA knows how to handle this
-		if (0 && data)
+		if (data)
 		{
 			if (OriginalFormat != BURNINGSHADER_COLOR_FORMAT)
 			{
@@ -186,9 +170,10 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 			data = (u8*)data +origSize.getArea()*IImage::getBitsPerPixelFromFormat(OriginalFormat)/8;
 		}
 		else
+#endif
 		{
 			MipMap[i] = new CImage(BURNINGSHADER_COLOR_FORMAT, newSize);
-
+			MipMap[i]->set_sRGB(MipMap[i-1]->get_sRGB());
 			//MipMap[i]->fill ( 0 );
 			//MipMap[i-1]->copyToScalingBoxFilter( MipMap[i], 0, false );
 			Resample_subSampling(BLITTER_TEXTURE,MipMap[i],0,MipMap[i-1],0);
@@ -197,20 +182,47 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 
 
 	//visualize mipmap
-	for (i=1; 0 && i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
+	for (i=0; 0 && i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
 	{
-		static u32 color[] = { 0x80bf7f00,0x800040bf,0x80bf00bf,0x8000bf00,0x800080bf,0x80bf4000,0x8040bf00,0x807f00bf,0x80bf0000,0x8000bfbf,0x804000bf,0x807fbf00,0x8000bf7f,0x80bf0040,0x80bfbf00,0x800000bf };
+		static u32 color[] = { 0x30bf7f00,0x3040bf00,0x30bf00bf,0x3000bf00,0x300080bf,0x30bf4000,0x300040bf,0x307f00bf,0x30bf0000,0x3000bfbf,0x304000bf,0x307fbf00,0x8000bf7f,0x80bf0040,0x80bfbf00,0x800000bf };
+
 		if ( MipMap[i] )
 		{
 			core::rect<s32> p (MipMap[i]->getDimension());
-			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, 0,color[i]);
+			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, 0,(color[i] & 0x00FFFFFF ) | 0x22000000);
 		}
 	}
 
 	calcDerivative();
+}
 
+void CSoftwareTexture2::calcDerivative()
+{
+	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.5f;
+
+	//reset current MipMap
+	Size = MipMap[MipMapLOD]->getDimension();
+	Pitch = MipMap[MipMapLOD]->getPitch();
+
+	//preCalc mipmap texel center boundaries
+	for ( s32 i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i )
+	{
+		CSoftwareTexture2_Bound& b = TexBound[i];
+		if ( MipMap[i] )
+		{
+			const core::dimension2du& dim = MipMap[i]->getDimension();
+			f32 u = 1.f / dim.Width;
+			f32 v = 1.f / dim.Height;
+
+			b.cx = -0.000100f; //u*0.005f;
+			b.cy = -0.000400f; //v*0.005f;
+			b.w = dim.Width -0.5f;
+			b.h = dim.Height-0.5f;
+		}
+	}
 
 }
+
 
 
 /* Software Render Target 2 */

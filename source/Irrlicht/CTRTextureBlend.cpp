@@ -248,7 +248,7 @@ void CTRTextureBlend::fragment_dst_color_src_alpha ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -433,7 +433,7 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -614,7 +614,7 @@ void CTRTextureBlend::fragment_one_one_minus_src_alpha()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -813,7 +813,7 @@ void CTRTextureBlend::fragment_one_minus_dst_alpha_one ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -1011,7 +1011,7 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -1240,7 +1240,7 @@ void CTRTextureBlend::fragment_dst_color_one_minus_dst_alpha ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -1438,7 +1438,7 @@ void CTRTextureBlend::fragment_dst_color_zero ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -1634,7 +1634,7 @@ void CTRTextureBlend::fragment_dst_color_one ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -1833,7 +1833,7 @@ void CTRTextureBlend::fragment_zero_one_minus_scr_color ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];

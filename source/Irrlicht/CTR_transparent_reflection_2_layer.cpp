@@ -193,13 +193,13 @@ void CTR_transparent_reflection_2_layer::scanline_bilinear (  )
 	f32 inversew = FIX_POINT_F32_MUL;
 
 	tFixPoint r0, g0, b0;
-	tFixPoint r1, g1, b1;
-	tFixPoint r2, g2, b2;
 	tFixPoint r3, g3, b3;
 
 
 #ifdef IPOL_C0
 	tFixPoint a3;
+	tFixPoint r1, g1, b1;
+	tFixPoint r2, g2, b2;
 #endif
 
 
@@ -227,12 +227,16 @@ void CTR_transparent_reflection_2_layer::scanline_bilinear (  )
 			g0 = imulFix_tex1(g0,g3);
 			b0 = imulFix_tex1(b0,b3);
 
+#ifdef IPOL_C0
 			color_to_fix ( r1, g1, b1, dst[i] );
 
 			r2 = r1 + imulFix ( a3, r0 - r1 );
 			g2 = g1 + imulFix ( a3, g0 - g1 );
 			b2 = b1 + imulFix ( a3, b0 - b1 );
 			dst[i] = fix_to_color ( r2, g2, b2 );
+#else
+			dst[i] = fix_to_color ( r0, g0, b0 );
+#endif
 
 #ifdef WRITE_Z
 			z[i] = line.z[0];

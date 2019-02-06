@@ -135,7 +135,7 @@ void CTRNormalMap::scanline_bilinear ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC[MATERIAL_MAX_COLORS];
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];

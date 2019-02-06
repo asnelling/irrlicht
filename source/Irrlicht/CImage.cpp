@@ -511,19 +511,23 @@ static inline int clipTest ( absrect2 &o, const core::rect<s32>* a, const absrec
 }
 
 //! stretches srcRect src to dstRect dst, applying a sliding window box filter in linear color space (sRGB->linear->sRGB)
-void Resample_subSampling(eBlitter op,video::IImage* dst,const core::rect<s32>* dstRect,const video::IImage* src,const core::rect<s32>* srcRect)
+void Resample_subSampling(eBlitter op,video::IImage* dst,const core::rect<s32>* dstRect,
+						  const video::IImage* src,const core::rect<s32>* srcRect)
 {
 	const absrect2 dst_clip = {0,0,(s32)dst->getDimension().Width,(s32)dst->getDimension().Height};
 	absrect2 dc;
 	if (clipTest(dc,dstRect,dst_clip)) return;
 	const video::ECOLOR_FORMAT dstFormat = dst->getColorFormat();
-	u8* dstData= (u8*)dst->getData();
+	const int dst_sRGB = dst->get_sRGB();
+	u8* dstData = (u8*)dst->getData();
 
 	const absrect2 src_clip = {0,0,(s32)src->getDimension().Width,(s32)src->getDimension().Height};
 	absrect2 sc;
 	if (clipTest(sc,srcRect,src_clip)) return;
 	const video::ECOLOR_FORMAT srcFormat = src->getColorFormat();
-	const u8* srcData= (u8*)src->getData();
+	const u8* srcData = (u8*)src->getData();
+	const int src_sRGB = src->get_sRGB();
+
 
 	float scale[2];
 	scale[0] = (float)(sc.x1-sc.x0) / (float)(dc.x1-dc.x0);
@@ -588,10 +592,20 @@ void Resample_subSampling(eBlitter op,video::IImage* dst,const core::rect<s32>* 
 					} break;
 					default: break;
 					}
-					sum[0] += srgb_8bit_to_linear_float[(sbgra    )&0xFF] * ws;
-					sum[1] += srgb_8bit_to_linear_float[(sbgra>>8 )&0xFF] * ws;
-					sum[2] += srgb_8bit_to_linear_float[(sbgra>>16)&0xFF] * ws;
-					sum[3] += ((sbgra>>24)&0xFF)*ws;
+					if ( src_sRGB )
+					{
+						sum[0] += srgb_8bit_to_linear_float[(sbgra    )&0xFF] * ws;
+						sum[1] += srgb_8bit_to_linear_float[(sbgra>>8 )&0xFF] * ws;
+						sum[2] += srgb_8bit_to_linear_float[(sbgra>>16)&0xFF] * ws;
+						sum[3] += ((sbgra>>24)&0xFF) * ws;
+					}
+					else
+					{
+						sum[0] += ((sbgra    )&0xFF) * ws;
+						sum[1] += ((sbgra>>8 )&0xFF) * ws;
+						sum[2] += ((sbgra>>16)&0xFF) * ws;
+						sum[3] += ((sbgra>>24)&0xFF) * ws;
+					}
 
 				}
 			}
@@ -601,10 +615,20 @@ void Resample_subSampling(eBlitter op,video::IImage* dst,const core::rect<s32>* 
 				case BLITTER_TEXTURE_ALPHA_COLOR_BLEND:
 					break;
 			}
-			sbgra = linear_to_srgb_8bit(sum[0])       |
-					linear_to_srgb_8bit(sum[1]) <<  8 |
-					linear_to_srgb_8bit(sum[2]) << 16 |
-					(u32) (sum[3]) << 24;
+			if ( dst_sRGB )
+			{
+				sbgra = linear_to_srgb_8bit(sum[0])       |
+						linear_to_srgb_8bit(sum[1]) <<  8 |
+						linear_to_srgb_8bit(sum[2]) << 16 |
+						(u32) (sum[3]) << 24;
+			}
+			else
+			{
+				sbgra = (u32) (sum[0])       |
+						(u32) (sum[1]) <<  8 |
+						(u32) (sum[2]) << 16 |
+						(u32) (sum[3]) << 24;
+			}
 			switch(dstFormat)
 			{
 				case video::ECF_A8R8G8B8: *(u32*)(dstData+(dy*dst_clip.x1)*4 + (dx*4)) = sbgra; break;

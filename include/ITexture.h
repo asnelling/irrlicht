@@ -73,6 +73,10 @@ enum E_TEXTURE_CREATION_FLAG
 	*/
 	ETCF_ALLOW_MEMORY_COPY = 0x00000080,
 
+	//Allow sRGB/linear conversion
+	ETCF_IMAGE_IS_LINEAR    = 0x00000100,
+	ETCF_TEXTURE_IS_LINEAR  = 0x00000200,
+
 	/** This flag is never used, it only forces the compiler to compile
 	these enumeration values to 32 bit. */
 	ETCF_FORCE_32_BIT_DO_NOT_USE = 0x7fffffff

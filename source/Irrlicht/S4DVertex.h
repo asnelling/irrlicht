@@ -21,7 +21,7 @@ namespace video
 
 //Check coordinates are in render target/window space
 #define SOFTWARE_DRIVER_2_DO_CLIPCHECK
-#if defined SOFTWARE_DRIVER_2_DO_CLIPCHECK
+#if defined (SOFTWARE_DRIVER_2_DO_CLIPCHECK) && defined(_WIN32)
 	#define SOFTWARE_DRIVER_2_CLIPCHECK      if( xStart < 0 || xStart + dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
 	#define SOFTWARE_DRIVER_2_CLIPCHECK_REF  if( pShader.xStart < 0 || pShader.xStart + pShader.dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
 	#define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE if( aposx < 0 || aposx >= (s32)RenderTarget->getDimension().Width || aposy < 0 || aposy >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
@@ -453,9 +453,9 @@ enum e4DVertexFlag
 
 };
 
-const u32 MATERIAL_MAX_COLORS = 1;
-const u32 BURNING_MATERIAL_MAX_TEXTURES = 2;
-const u32 BURNING_MATERIAL_MAX_TANGENT = 1;
+#define BURNING_MATERIAL_MAX_COLORS 1
+#define BURNING_MATERIAL_MAX_TEXTURES 2
+#define BURNING_MATERIAL_MAX_TANGENT 1
 
 // dummy Vertex. used for calculation vertex memory size
 struct s4DVertex_proxy
@@ -465,7 +465,7 @@ struct s4DVertex_proxy
 	sVec2 Tex[BURNING_MATERIAL_MAX_TEXTURES];
 
 #ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
-	sVec4 Color[MATERIAL_MAX_COLORS];
+	sVec4 Color[BURNING_MATERIAL_MAX_COLORS];
 #endif
 
 	sVec3 LightTangent[BURNING_MATERIAL_MAX_TANGENT];
@@ -486,7 +486,7 @@ struct s4DVertex
 	sVec2 Tex[ BURNING_MATERIAL_MAX_TEXTURES ];
 
 #ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
-	sVec4 Color[ MATERIAL_MAX_COLORS ];
+	sVec4 Color[ BURNING_MATERIAL_MAX_COLORS ];
 #endif
 
 	sVec3 LightTangent[BURNING_MATERIAL_MAX_TANGENT];
@@ -628,8 +628,8 @@ struct sScanConvertData
 	f32 slopeZ[2];		// z slope along edges
 #endif
 
-	sVec4 c[MATERIAL_MAX_COLORS][2];			// color
-	sVec4 slopeC[MATERIAL_MAX_COLORS][2];	// color slope along edges
+	sVec4 c[BURNING_MATERIAL_MAX_COLORS][2];			// color
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS][2];	// color slope along edges
 
 	sVec2 t[BURNING_MATERIAL_MAX_TEXTURES][2];		// texture
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES][2];	// texture slope along edges
@@ -651,7 +651,7 @@ struct sScanLineData
 #endif
 
 #ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
-	sVec4 c[MATERIAL_MAX_COLORS][2];			// color start, color end of scanline
+	sVec4 c[BURNING_MATERIAL_MAX_COLORS][2];			// color start, color end of scanline
 #endif
 
 	sVec2 t[BURNING_MATERIAL_MAX_TEXTURES][2];		// texture start, texture end of scanline

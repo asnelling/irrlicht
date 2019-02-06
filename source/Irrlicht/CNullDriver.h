@@ -685,6 +685,9 @@ namespace video
 				const c8* name=0);
 
 		virtual bool checkDriverReset() _IRR_OVERRIDE_ {return false;}
+
+		virtual void postEventFromUser(void* sevent)  _IRR_OVERRIDE_ {}
+
 	protected:
 
 		//! deletes all textures

@@ -36,21 +36,32 @@ public:
 	//! constructor
 	enum eTex2Flags
 	{
-		GEN_MIPMAP	= 1,
-		IS_RENDERTARGET	= 2,
-		NP2_SIZE	= 4,
+		GEN_MIPMAP	     = 1,
+		IS_RENDERTARGET  = 2,
+		NP2_SIZE	     = 4,
+		IMAGE_IS_LINEAR	 = 8,
+		TEXTURE_IS_LINEAR = 16,
 	};
-	CSoftwareTexture2(IImage* surface, const io::path& name, u32 flags);
+	CSoftwareTexture2(IImage* surface, const io::path& name, u32 flags /*eTex2Flags*/);
 
 	//! destructor
 	virtual ~CSoftwareTexture2();
+
+	s32 getMipmapLevel(s32 newLevel ) const
+	{
+		if ( newLevel < 0 ) newLevel = 0;
+		else if ( newLevel >= SOFTWARE_DRIVER_2_MIPMAPPING_MAX ) newLevel = SOFTWARE_DRIVER_2_MIPMAPPING_MAX - 1;
+
+		while ( newLevel > 0 && MipMap[newLevel] == 0 ) newLevel -= 1;
+		return newLevel;
+	}
 
 	//! lock function
 	virtual void* lock(E_TEXTURE_LOCK_MODE mode, u32 mipmapLevel, u32 layer, E_TEXTURE_LOCK_FLAGS lockFlags = ETLF_FLIP_Y_UP_RTT) _IRR_OVERRIDE_
 	{
 		if (Flags & GEN_MIPMAP)
 		{
-			MipMapLOD = mipmapLevel;
+			MipMapLOD = mipmapLevel; //getMipmapLevel
 			Size = MipMap[MipMapLOD]->getDimension();
 			Pitch = MipMap[MipMapLOD]->getPitch();
 		}
@@ -94,10 +105,10 @@ private:
 	void calcDerivative();
 	f32 OrigImageDataSizeInPixels;
 
-	CImage * MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
+	CImage* MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
 
 	u32 MipMapLOD;
-	u32 Flags;
+	u32 Flags; //eTex2Flags
 	ECOLOR_FORMAT OriginalFormat;
 
 	CSoftwareTexture2_Bound TexBound[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];

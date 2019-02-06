@@ -197,9 +197,8 @@ void CTRTextureGouraud2::scanline_bilinear ()
 	tFixPoint tx0;
 	tFixPoint ty0;
 
-	tFixPoint r0, g0, b0;
-
 #ifdef IPOL_C0
+	tFixPoint r0, g0, b0;
 	tFixPoint r1, g1, b1;
 #endif
 

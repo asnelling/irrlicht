@@ -167,6 +167,8 @@ namespace video
 		IDepthBuffer * getDepthBuffer () { return DepthBuffer; }
 		IStencilBuffer * getStencilBuffer () { return StencilBuffer; }
 
+		virtual void postEventFromUser(void* sevent)  _IRR_OVERRIDE_;
+
 	protected:
 
 		//! sets a render target
@@ -250,12 +252,12 @@ namespace video
 
 
 #ifdef SOFTWARE_DRIVER_2_LIGHTING
-
 		void lightVertex ( s4DVertex *dest, u32 vertexargb );
+#endif
+
 		//! Sets the fog mode.
 		virtual void setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 			f32 end, f32 density, bool pixelFog, bool rangeFog) _IRR_OVERRIDE_;
-#endif
 
 
 		// holds transformed, clipped vertices
