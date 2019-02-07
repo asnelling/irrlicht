@@ -53,9 +53,6 @@ namespace scene
 		void createShadowVolume(const core::vector3df& pos, bool isDirectional=false);
 		u32 createEdgesAndCaps(const core::vector3df& light, SShadowVolume* svp, core::aabbox3d<f32>* bb);
 
-		//! Generates adjacency information based on mesh indices.
-		void calculateAdjacency();
-
 		core::aabbox3d<f32> Box;
 
 		// a shadow volume for every light
@@ -66,8 +63,15 @@ namespace scene
 
 		core::array<core::vector3df> Vertices;
 		core::array<u16> Indices;
-		core::array<u16> Adjacency;
 		core::array<u16> Edges;
+
+//#define IRR_USE_ADJACENCY
+
+#ifdef IRR_USE_ADJACENCY
+		core::array<u16> Adjacency;
+		//! Generates adjacency information based on mesh indices.
+		void calculateAdjacency();
+#endif
 		// tells if face is front facing
 		core::array<bool> FaceData;
 

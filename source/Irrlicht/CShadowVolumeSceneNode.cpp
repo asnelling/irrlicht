@@ -97,8 +97,7 @@ void CShadowVolumeSceneNode::createShadowVolume(const core::vector3df& light, bo
 }
 
 
-#define IRR_USE_ADJACENCY
-#define IRR_USE_REVERSE_EXTRUDED
+//#define IRR_USE_REVERSE_EXTRUDED
 
 u32 CShadowVolumeSceneNode::createEdgesAndCaps(const core::vector3df& light,
 					SShadowVolume* svp, core::aabbox3d<f32>* bb)
@@ -111,17 +110,20 @@ u32 CShadowVolumeSceneNode::createEdgesAndCaps(const core::vector3df& light,
 	else
 		bb->reset(0,0,0);
 
+	core::vector3df lightN = light;
+	lightN.normalize();
+
 	// Check every face if it is front or back facing the light.
 	for (u32 i=0; i<faceCount; ++i)
 	{
-		const core::vector3df v0 = Vertices[Indices[3*i+0]];
-		const core::vector3df v1 = Vertices[Indices[3*i+1]];
-		const core::vector3df v2 = Vertices[Indices[3*i+2]];
+		const core::vector3df& v0 = Vertices[Indices[3*i+0]];
+		const core::vector3df& v1 = Vertices[Indices[3*i+1]];
+		const core::vector3df& v2 = Vertices[Indices[3*i+2]];
 
 #ifdef IRR_USE_REVERSE_EXTRUDED
-		FaceData[i]=core::triangle3df(v0,v1,v2).isFrontFacing(light);
+		FaceData[i]=core::triangle3df(v0,v1,v2).isFrontFacing(lightN);
 #else
-		FaceData[i]=core::triangle3df(v2,v1,v0).isFrontFacing(light);
+		FaceData[i]=core::triangle3df(v2,v1,v0).isFrontFacing(lightN);
 #endif
 
 		if (UseZFailMethod && FaceData[i])
@@ -160,10 +162,11 @@ u32 CShadowVolumeSceneNode::createEdgesAndCaps(const core::vector3df& light,
 			const u16 wFace1 = Indices[3*i+1];
 			const u16 wFace2 = Indices[3*i+2];
 
+#ifdef IRR_USE_ADJACENCY
 			const u16 adj0 = Adjacency[3*i+0];
 			const u16 adj1 = Adjacency[3*i+1];
 			const u16 adj2 = Adjacency[3*i+2];
-
+#endif
 			// add edges if face is adjacent to back-facing face
 			// or if no adjacent face was found
 #ifdef IRR_USE_ADJACENCY
@@ -278,8 +281,10 @@ void CShadowVolumeSceneNode::updateShadowVolumes()
 	}
 
 	// recalculate adjacency if necessary
+#ifdef IRR_USE_ADJACENCY
 	if (oldVertexCount != VertexCount || oldIndexCount != IndexCount)
 		calculateAdjacency();
+#endif
 
 	core::matrix4 mat = Parent->getAbsoluteTransformation();
 	mat.makeInverse();
@@ -373,6 +378,7 @@ const core::aabbox3d<f32>& CShadowVolumeSceneNode::getBoundingBox() const
 }
 
 
+#ifdef IRR_USE_ADJACENCY
 //! Generates adjacency information based on mesh indices.
 void CShadowVolumeSceneNode::calculateAdjacency()
 {
@@ -420,7 +426,7 @@ void CShadowVolumeSceneNode::calculateAdjacency()
 		}
 	}
 }
-
+#endif
 
 } // end namespace scene
 } // end namespace irr
