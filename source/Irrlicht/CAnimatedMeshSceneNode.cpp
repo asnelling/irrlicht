@@ -252,8 +252,8 @@ void CAnimatedMeshSceneNode::OnAnimate(u32 timeMs)
 	{
 		scene::IMesh * mesh = getMeshForCurrentFrame();
 
-		if (mesh)
-			Box = mesh->getBoundingBox();
+		if (mesh) Box = mesh->getBoundingBox();
+		if (Shadow ) Shadow->extendBoundingBox(Box);
 	}
 	LastTimeMs = timeMs;
 
@@ -277,9 +277,10 @@ void CAnimatedMeshSceneNode::render()
 
 	scene::IMesh* m = getMeshForCurrentFrame();
 
+	//TA: why is get World Bounding Box called on every render path? 
 	if(m)
 	{
-		Box = m->getBoundingBox();
+		//Box = m->getBoundingBox();
 	}
 	else
 	{

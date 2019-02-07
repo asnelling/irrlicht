@@ -32,6 +32,7 @@ namespace scene
 		//! Updates the shadow volumes for current light positions.
 		/** Called each render cycle from Animated Mesh SceneNode render method. */
 		virtual void updateShadowVolumes() _IRR_OVERRIDE_;
+		virtual void extendBoundingBox(core::aabbox3d<f32>& dst) _IRR_OVERRIDE_;
 
 		//! pre render method
 		virtual void OnRegisterSceneNode() _IRR_OVERRIDE_;

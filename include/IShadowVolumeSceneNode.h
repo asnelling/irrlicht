@@ -29,6 +29,8 @@ namespace scene
 
 		//! Updates the shadow volumes for current light positions.
 		virtual void updateShadowVolumes() = 0;
+		//! Query the current bounding box
+		virtual void extendBoundingBox(core::aabbox3d<f32>& dst) = 0;
 	};
 
 } // end namespace scene

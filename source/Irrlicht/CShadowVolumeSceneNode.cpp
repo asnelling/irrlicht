@@ -215,6 +215,13 @@ void CShadowVolumeSceneNode::setShadowMesh(const IMesh* mesh)
 	}
 }
 
+void CShadowVolumeSceneNode::extendBoundingBox(core::aabbox3d<f32>& dst)
+{
+	for ( u32 i = 0; i < ShadowBBox.size(); ++i )
+	{
+		dst.addInternalBox(ShadowBBox[i]);
+	}
+}
 
 void CShadowVolumeSceneNode::updateShadowVolumes()
 {
