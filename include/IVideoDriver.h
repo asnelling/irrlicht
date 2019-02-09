@@ -748,9 +748,17 @@ namespace video
 		Some drivers support line thickness set in the material.
 		\param start Start of the 3d line.
 		\param end End of the 3d line.
-		\param color Color of the line. */
+		\param color_start Start Color of the line.
+		\param color_end End Color of the line. */
 		virtual void draw3DLine(const core::vector3df& start,
-			const core::vector3df& end, SColor color = SColor(255,255,255,255)) =0;
+			const core::vector3df& end,SColor color_start,SColor color_end) =0;
+
+		//! Draws a 3d line. single color white,compatible with < 1.9 version
+		void draw3DLine(const core::vector3df& start,
+			const core::vector3df& end,SColor color = SColor(255,255,255,255))
+		{
+			draw3DLine(start,end,color,color);
+		}
 
 		//! Draws a 3d triangle.
 		/** This method calls drawVertexPrimitiveList for some triangles.

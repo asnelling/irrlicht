@@ -95,7 +95,7 @@ namespace video
 
 		//! Draws a 3d line.
 		virtual void draw3DLine(const core::vector3df& start,
-			const core::vector3df& end, SColor color = SColor(255,255,255,255)) _IRR_OVERRIDE_;
+			const core::vector3df& end, SColor color_start,SColor color_end) _IRR_OVERRIDE_;
 
 		//! draw an 2d rectangle
 		virtual void draw2DRectangle(SColor color, const core::rect<s32>& pos,

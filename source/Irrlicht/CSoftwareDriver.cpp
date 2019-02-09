@@ -709,7 +709,7 @@ void CSoftwareDriver::drawClippedIndexedTriangleListT(const VERTEXTYPE* vertices
 
 //! Draws a 3d line.
 void CSoftwareDriver::draw3DLine(const core::vector3df& start,
-				const core::vector3df& end, SColor color)
+				const core::vector3df& end, SColor color_start,SColor color_end)
 {
 	core::vector3df vect = start.crossProduct(end);
 	vect.normalize();
@@ -717,10 +717,10 @@ void CSoftwareDriver::draw3DLine(const core::vector3df& start,
 
 	S3DVertex vtx[4];
 
-	vtx[0].Color = color;
-	vtx[1].Color = color;
-	vtx[2].Color = color;
-	vtx[3].Color = color;
+	vtx[0].Color = color_start;
+	vtx[1].Color = color_end;
+	vtx[2].Color = color_start;
+	vtx[3].Color = color_end;
 
 	vtx[0].Pos = start;
 	vtx[1].Pos = end;

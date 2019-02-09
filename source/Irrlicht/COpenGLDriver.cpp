@@ -2102,11 +2102,11 @@ void COpenGLDriver::setRenderStates3DMode()
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 		// switch back the matrices
-		CacheHandler->setMatrixMode(GL_MODELVIEW);
-		glLoadMatrixf((Matrices[ETS_VIEW] * Matrices[ETS_WORLD]).pointer());
-
 		CacheHandler->setMatrixMode(GL_PROJECTION);
 		glLoadMatrixf(Matrices[ETS_PROJECTION].pointer());
+
+		CacheHandler->setMatrixMode(GL_MODELVIEW);
+		glLoadMatrixf((Matrices[ETS_VIEW] * Matrices[ETS_WORLD]).pointer());
 
 		ResetRenderStates = true;
 #ifdef GL_EXT_clip_volume_hint
@@ -3544,12 +3544,12 @@ void COpenGLDriver::draw3DBox( const core::aabbox3d<f32>& box, SColor color )
 
 //! Draws a 3d line.
 void COpenGLDriver::draw3DLine(const core::vector3df& start,
-				const core::vector3df& end, SColor color)
+				const core::vector3df& end, SColor color_start,SColor color_end)
 {
 	setRenderStates3DMode();
 
-	Quad2DVertices[0].Color = color;
-	Quad2DVertices[1].Color = color;
+	Quad2DVertices[0].Color = color_start;
+	Quad2DVertices[1].Color = color_end;
 
 	Quad2DVertices[0].Pos = core::vector3df((f32)start.X, (f32)start.Y, (f32)start.Z);
 	Quad2DVertices[1].Pos = core::vector3df((f32)end.X, (f32)end.Y, (f32)end.Z);

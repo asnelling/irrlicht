@@ -61,7 +61,13 @@ namespace video
 
 		//! Draws a 3d line.
 		virtual void draw3DLine(const core::vector3df& start,
-			const core::vector3df& end, SColor color = SColor(255,255,255,255)) _IRR_OVERRIDE_;
+			const core::vector3df& end, SColor color_start,SColor color_end) _IRR_OVERRIDE_;
+
+		//! Draws a 3d line. single color white,compatible with < 1.9 version
+		void draw3DLine(const core::vector3df& start,const core::vector3df& end,SColor color = SColor(255,255,255,255))
+		{
+			draw3DLine(start,end,color,color);
+		}
 
 		//! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 		virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,

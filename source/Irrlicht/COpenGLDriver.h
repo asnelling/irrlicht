@@ -205,8 +205,7 @@ namespace video
 
 		//! Draws a 3d line.
 		virtual void draw3DLine(const core::vector3df& start,
-					const core::vector3df& end,
-					SColor color = SColor(255,255,255,255)) _IRR_OVERRIDE_;
+					const core::vector3df& end,SColor color_start,SColor color_end) _IRR_OVERRIDE_;
 
 		//! \return Returns the name of the video driver. Example: In case of the Direct3D8
 		//! driver, it would return "Direct3D8.1".

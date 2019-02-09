@@ -130,7 +130,13 @@ namespace video
 
 		//! Draws a 3d line.
 		virtual void draw3DLine(const core::vector3df& start,
-			const core::vector3df& end, SColor color = SColor(255,255,255,255)) _IRR_OVERRIDE_;
+			const core::vector3df& end, SColor color_start,SColor color_end) _IRR_OVERRIDE_;
+
+		//! Draws a 3d line. single color white,compatible with < 1.9 version
+		void draw3DLine(const core::vector3df& start,const core::vector3df& end,SColor color = SColor(255,255,255,255))
+		{
+			draw3DLine(start,end,color,color);
+		}
 
 		//! Draws a 3d triangle.
 		virtual void draw3DTriangle(const core::triangle3df& triangle,

@@ -2807,13 +2807,13 @@ void CD3D9Driver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 
 //! Draws a 3d line.
 void CD3D9Driver::draw3DLine(const core::vector3df& start,
-	const core::vector3df& end, SColor color)
+	const core::vector3df& end, SColor color_start,SColor color_end)
 {
 	setVertexShader(EVT_STANDARD);
 	setRenderStates3DMode();
 	video::S3DVertex v[2];
-	v[0].Color = color;
-	v[1].Color = color;
+	v[0].Color = color_start;
+	v[1].Color = color_end;
 	v[0].Pos = start;
 	v[1].Pos = end;
 

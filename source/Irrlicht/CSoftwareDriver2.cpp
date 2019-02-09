@@ -2437,15 +2437,15 @@ const core::dimension2d<u32>& CBurningVideoDriver::getCurrentRenderTargetSize() 
 
 //! Draws a 3d line.
 void CBurningVideoDriver::draw3DLine(const core::vector3df& start,
-	const core::vector3df& end, SColor color)
+	const core::vector3df& end, SColor color_start,SColor color_end)
 {
 	s4DVertex *v = CurrentOut.data;
 	Transformation [ ETS_CURRENT].transformVect ( &v[0].Pos.x, start );
 	Transformation [ ETS_CURRENT].transformVect ( &v[2].Pos.x, end );
 
 #ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
-	v[0].Color[0].setA8R8G8B8 ( color.color );
-	v[2].Color[0].setA8R8G8B8 ( color.color );
+	v[0].Color[0].setA8R8G8B8 ( color_start.color );
+	v[2].Color[0].setA8R8G8B8 ( color_end.color );
 #endif
 
 	u32 g;

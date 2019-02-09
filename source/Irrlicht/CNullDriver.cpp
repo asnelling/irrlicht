@@ -820,7 +820,7 @@ void CNullDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCoun
 
 //! Draws a 3d line.
 void CNullDriver::draw3DLine(const core::vector3df& start,
-				const core::vector3df& end, SColor color)
+				const core::vector3df& end, SColor color_start,SColor color_end)
 {
 }
 
