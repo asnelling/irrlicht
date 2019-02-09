@@ -146,6 +146,12 @@ namespace video
 		virtual void draw3DBox(const core::aabbox3d<f32>& box,
 			SColor color = SColor(255,255,255,255)) _IRR_OVERRIDE_;
 
+		//! Draws 3d axis aligned circles
+		virtual void draw3DCircle(const core::vector3df& center,const core::vector3df& radius,
+			int rings,int stripes,int segments,
+			SColor colorRing,SColor colorStripe,SColor colorRing180 //x,y,z
+			);
+
 		//! draws an 2d image
 		virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos) _IRR_OVERRIDE_;
 

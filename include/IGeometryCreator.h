@@ -177,6 +177,17 @@ public:
 			const video::SColor tailColor = 0xffffffff,
 			const f32 lpDistance = 8.f,
 			const core::vector3df& lightDim = core::vector3df(1.f,1.2f,1.f)) const =0;
+
+	//! Create a 3d axis aligned sphere mesh (lines,no quads)
+	/**
+		wire sphere as lines per slice(rings) and stack(stripes)
+		[same IVideoDriver::draw3DCircle]
+	*/
+	virtual IMesh* createRingSphereMesh(const core::vector3df& center,const core::vector3df& radius,
+		int rings,int stripes,int segments,
+		const video::SColor colorRing,const video::SColor colorStripe,const video::SColor colorRing180 //x,y,z
+		) const = 0;
+
 };
 
 

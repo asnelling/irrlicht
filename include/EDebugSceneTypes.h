@@ -37,6 +37,12 @@ namespace scene
 		//! EDS_BBOX | EDS_BBOX_BUFFERS
 		EDS_BBOX_ALL = EDS_BBOX | EDS_BBOX_BUFFERS,
 
+		//! Show Bounding Wire Sphere with radius Box.getRadius (outer sphere)
+		EDS_BSPHERE = 64,
+
+		//! Show Bounding Ellipsoid with radius Box.getExtent/2 (inner sphere)
+		EDS_BELLIPSOID = 128,
+
 		//! Show all debug infos
 		EDS_FULL = 0xffffffff
 	};

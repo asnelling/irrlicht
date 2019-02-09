@@ -277,10 +277,10 @@ void CAnimatedMeshSceneNode::render()
 
 	scene::IMesh* m = getMeshForCurrentFrame();
 
-	//TA: why is get World Bounding Box called on every render path? 
+	//TA: why is get World Bounding Box called on every render path? dependencies from skinned mesh?
 	if(m)
 	{
-		//Box = m->getBoundingBox();
+		Box = m->getBoundingBox();
 	}
 	else
 	{
@@ -468,6 +468,15 @@ void CAnimatedMeshSceneNode::render()
 				driver->drawMeshBuffer(mb);
 			}
 		}
+
+		//show bounding sphere outside
+		if (DebugDataVisible & scene::EDS_BSPHERE)
+			driver->draw3DCircle(Box.getCenter(),core::vector3df(Box.getRadius()),8,8,32,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF);
+
+		//show bounding ellipsoid inside
+		if (DebugDataVisible & scene::EDS_BELLIPSOID)
+			driver->draw3DCircle(Box.getCenter(),Box.getExtent() / 2,2,1,32,0xFFEB1010,0xFF10EB10,0xFF1010EB);
+
 	}
 }
 

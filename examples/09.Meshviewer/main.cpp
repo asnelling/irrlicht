@@ -62,6 +62,8 @@ enum
 	GUI_ID_DEBUG_WIRE_OVERLAY,
 	GUI_ID_DEBUG_HALF_TRANSPARENT,
 	GUI_ID_DEBUG_BUFFERS_BOUNDING_BOXES,
+	GUI_ID_DEBUG_BUFFERS_BOUNDING_SPHERE,
+	GUI_ID_DEBUG_BUFFERS_BOUNDING_ELLIPSOID,
 	GUI_ID_DEBUG_ALL,
 
 	GUI_ID_MODEL_MATERIAL_SOLID,
@@ -611,6 +613,8 @@ public:
 			menu->setItemChecked(menu->getSelectedItem()+4, false);
 			menu->setItemChecked(menu->getSelectedItem()+5, false);
 			menu->setItemChecked(menu->getSelectedItem()+6, false);
+			menu->setItemChecked(menu->getSelectedItem()+7, false);
+			menu->setItemChecked(menu->getSelectedItem()+8, false);
 			if (Model)
 				Model->setDebugDataVisible(scene::EDS_OFF);
 			break;
@@ -644,6 +648,17 @@ public:
 			if (Model)
 				Model->setDebugDataVisible((scene::E_DEBUG_SCENE_TYPE)(Model->isDebugDataVisible()^scene::EDS_BBOX_BUFFERS));
 			break;
+		case GUI_ID_DEBUG_BUFFERS_BOUNDING_SPHERE: // View -> Debug Information
+			menu->setItemChecked(menu->getSelectedItem(), !menu->isItemChecked(menu->getSelectedItem()));
+			if (Model)
+				Model->setDebugDataVisible((scene::E_DEBUG_SCENE_TYPE)(Model->isDebugDataVisible()^scene::EDS_BSPHERE));
+			break;
+		case GUI_ID_DEBUG_BUFFERS_BOUNDING_ELLIPSOID: // View -> Debug Information
+			menu->setItemChecked(menu->getSelectedItem(), !menu->isItemChecked(menu->getSelectedItem()));
+			if (Model)
+				Model->setDebugDataVisible((scene::E_DEBUG_SCENE_TYPE)(Model->isDebugDataVisible()^scene::EDS_BELLIPSOID));
+			break;
+
 		case GUI_ID_DEBUG_ALL: // View -> Debug Information
 			menu->setItemChecked(menu->getSelectedItem()-1, true);
 			menu->setItemChecked(menu->getSelectedItem()-2, true);
@@ -651,6 +666,8 @@ public:
 			menu->setItemChecked(menu->getSelectedItem()-4, true);
 			menu->setItemChecked(menu->getSelectedItem()-5, true);
 			menu->setItemChecked(menu->getSelectedItem()-6, true);
+			menu->setItemChecked(menu->getSelectedItem()-7, true);
+			menu->setItemChecked(menu->getSelectedItem()-8, true);
 			if (Model)
 				Model->setDebugDataVisible(scene::EDS_FULL);
 			break;
@@ -862,6 +879,8 @@ int main(int argc, char* argv[])
 	submenu->addItem(L"Wire overlay", GUI_ID_DEBUG_WIRE_OVERLAY);
 	submenu->addItem(L"Half-Transparent", GUI_ID_DEBUG_HALF_TRANSPARENT);
 	submenu->addItem(L"Buffers bounding boxes", GUI_ID_DEBUG_BUFFERS_BOUNDING_BOXES);
+	submenu->addItem(L"Bounding Sphere", GUI_ID_DEBUG_BUFFERS_BOUNDING_SPHERE);
+	submenu->addItem(L"Bounding Ellipsoid", GUI_ID_DEBUG_BUFFERS_BOUNDING_ELLIPSOID);
 	submenu->addItem(L"All", GUI_ID_DEBUG_ALL);
 
 	submenu = menu->getSubMenu(1)->getSubMenu(2);
@@ -979,7 +998,7 @@ int main(int argc, char* argv[])
 	// load the irrlicht engine logo
 	IGUIImage *img =
 		env->addImage(driver->getTexture("irrlichtlogo3.png"),
-			core::position2d<s32>(10, driver->getScreenSize().Height - 128));
+			core::position2d<s32>(10, driver->getScreenSize().Height - 64));
 
 	// lock the logo's edges to the bottom left corner of the screen
 	img->setAlignment(EGUIA_UPPERLEFT, EGUIA_UPPERLEFT,

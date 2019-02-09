@@ -982,6 +982,91 @@ IMesh* CGeometryCreator::createVolumeLightMesh(
 	return mesh;
 }
 
+//! Create a 3d axis aligned sphere mesh (lines,no quads)
+IMesh* CGeometryCreator::createRingSphereMesh(const core::vector3df& center,const core::vector3df& radius,
+		int rings,int stripes,int segments,
+		const video::SColor colorRing,const video::SColor colorStripe,const video::SColor colorRing180 //x,y,z
+		) const
+{
+	SMeshBuffer* buffer = new SMeshBuffer();
+	buffer->setPrimitiveType(scene::E_PRIMITIVE_TYPE::EPT_LINES);
+
+	if ( segments < 1 ) segments = 1;
+	if ( rings < 1 ) rings = 1;
+	stripes += 1;
+	if ( stripes < 1 ) stripes = 1;
+
+	buffer->Vertices.reallocate(rings * (stripes-1) * segments * 2);
+
+	//rings(slice) in xz
+	video::S3DVertex a,b,p0;
+	a.Color = colorRing;
+	a.TCoords.X = 0.f;
+	a.TCoords.Y = 0.f;
+
+	const f32 angleSeg = core::PI*2.f / segments;
+	f32 angleZ = core::PI / rings;
+	for ( int g = 0; g < rings; ++g )
+	{
+		f32 xz = g * angleZ;
+		const f32 sxz = sinf(xz);
+		const f32 cxz = cosf(xz);
+
+		a.Color = g & 1 ? colorRing : colorRing180;
+		b.Color = a.Color;
+		for ( int i = 0; i < segments; ++i )
+		{
+			f32 xy = i * angleSeg;
+			a.Normal.X = sinf(xy) * cxz;
+			a.Normal.Y = cosf(xy);
+			a.Normal.Z = sinf(xy) * sxz;
+			a.Pos.X = center.X + a.Normal.X * radius.X;
+			a.Pos.Y = center.Y + a.Normal.Y * radius.Y;
+			a.Pos.Z = center.Z + a.Normal.Z * radius.Z;
+			if ( 0 == i ) p0 = a;
+			else { buffer->Vertices.push_back(a);buffer->Vertices.push_back(b);}
+			b = a;
+		}
+		buffer->Vertices.push_back(a);
+		buffer->Vertices.push_back(p0);
+	}
+
+	//stripe(stack) in y
+	a.Color = colorStripe;
+
+	const f32 angleStripe = core::PI / stripes;
+	const f32 angleStripeMinus180 = core::PI*-0.5f;
+	for ( int g = 1; g < stripes; ++g ) //no poles
+	{
+		f32 xy = g * angleStripe - angleStripeMinus180;
+		f32 r_xz = cos(xy);
+		a.Normal.Y = sin(xy);
+		a.Pos.Y = center.Y + a.Normal.Y * radius.Y;
+		for ( int i = 0; i < segments; ++i )
+		{
+			f32 xz = i * angleSeg;
+			a.Normal.X = cosf(xz);
+			a.Normal.Z = sinf(xz);
+			a.Pos.X = center.X + a.Normal.X * r_xz * radius.X;
+			a.Pos.Z = center.Z + a.Normal.Z * r_xz * radius.Z;
+			if ( 0 == i ) p0 = a;
+			else { buffer->Vertices.push_back(a);buffer->Vertices.push_back(b);}
+			b = a;
+		}
+		buffer->Vertices.push_back(a);
+		buffer->Vertices.push_back(p0);
+	}
+
+	SMesh* mesh = new SMesh();
+	mesh->addMeshBuffer(buffer);
+	buffer->drop();
+
+	mesh->setHardwareMappingHint(EHM_STATIC);
+	mesh->recalculateBoundingBox();
+	return mesh;
+
+}
+
 
 } // end namespace scene
 } // end namespace irr
