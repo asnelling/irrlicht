@@ -97,8 +97,6 @@ void CShadowVolumeSceneNode::createShadowVolume(const core::vector3df& light, bo
 }
 
 
-//#define IRR_USE_REVERSE_EXTRUDED
-
 u32 CShadowVolumeSceneNode::createEdgesAndCaps(const core::vector3df& light,
 					SShadowVolume* svp, core::aabbox3d<f32>* bb)
 {

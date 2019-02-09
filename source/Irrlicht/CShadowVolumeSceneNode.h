@@ -65,7 +65,24 @@ namespace scene
 		core::array<u16> Indices;
 		core::array<u16> Edges;
 
+/*
+	shadow is always broken
+
+	cases
+	a)  #undef IRR_USE_ADJACENCY,#undef IRR_USE_REVERSE_EXTRUDED
+
+		openGL: works best
+		D3D: works(specialfx), but not visible in demo
+		burning: as openGL
+
+	b) #define IRR_USE_ADJACENCY,#define IRR_USE_REVERSE_EXTRUDED
+		openGL: produces some infinity shadow mesh-vertices
+		D3D:
+	
+*/
+
 //#define IRR_USE_ADJACENCY
+//#define IRR_USE_REVERSE_EXTRUDED
 
 #ifdef IRR_USE_ADJACENCY
 		core::array<u16> Adjacency;
