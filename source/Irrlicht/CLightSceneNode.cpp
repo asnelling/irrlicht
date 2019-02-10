@@ -34,10 +34,13 @@ CLightSceneNode::CLightSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 id,
 //! pre render event
 void CLightSceneNode::OnRegisterSceneNode()
 {
-	doLightRecalc();	// TODO: since doLightRecalc has now been added to updateAbsolutePosition it might be possible to remove this one.
+	//doLightRecalc();	// TODO: since doLightRecalc has now been added to updateAbsolutePosition it might be possible to remove this one.
 
 	if (IsVisible)
 		SceneManager->registerNodeForRendering(this, ESNRP_LIGHT);
+
+	if ( DebugDataVisible )
+		SceneManager->registerNodeForRendering(this, ESNRP_TRANSPARENT);
 
 	ISceneNode::OnRegisterSceneNode();
 }
@@ -50,32 +53,51 @@ void CLightSceneNode::render()
 	if (!driver)
 		return;
 
-	if ( DebugDataVisible & scene::EDS_BBOX )
+	E_SCENE_NODE_RENDER_PASS pass = SceneManager->getSceneNodeRenderPass();
+	if ( pass == ESNRP_LIGHT )
+	{
+		DriverLightIndex = driver->addDynamicLight(LightData);
+		setVisible(LightIsOn);
+	}
+
+	if ( pass == ESNRP_TRANSPARENT && DebugDataVisible )
 	{
 		driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 		video::SMaterial m;
 		m.Lighting = false;
+		m.ZWriteEnable = false;
+		m.AntiAliasing = 0;
 		driver->setMaterial(m);
 
-		switch ( LightData.Type )
-		{
-			case video::ELT_POINT:
-			case video::ELT_SPOT:
-				driver->draw3DBox(BBox, LightData.DiffuseColor.toSColor());
-				break;
+		//show ambient + diffuse
+		video::SColorf c;
+		c.r = LightData.AmbientColor.r + LightData.DiffuseColor.r;
+		c.g = LightData.AmbientColor.g + LightData.DiffuseColor.g;
+		c.b = LightData.AmbientColor.b + LightData.DiffuseColor.b;
+		c.a = 1.f;
+		video::SColor col(c.toSColor());
 
-			case video::ELT_DIRECTIONAL:
-				driver->draw3DLine(core::vector3df(0.f, 0.f, 0.f),
-						LightData.Direction * LightData.Radius,
-						LightData.DiffuseColor.toSColor());
-				break;
-			default:
-				break;
+		if ( LightData.Type == video::ELT_POINT || LightData.Type == video::ELT_SPOT  )
+		{
+			//reflect scene manager
+			if ( DebugDataVisible & scene::EDS_BBOX ) driver->draw3DBox(BBox, col);
+			//reflect driver (sphere inside box)
+			if ( DebugDataVisible & scene::EDS_BSPHERE) driver->draw3DCircle(BBox.getCenter(),BBox.getExtent() / 2,4,1,64,col,col,col);
+			//lightdata.radius
+			if ( DebugDataVisible & scene::EDS_BELLIPSOID) driver->draw3DCircle(BBox.getCenter(),core::vector3df(LightData.Radius),2,1,64,0xFF10EB10,0xFF1010EB,0xFFEB1010);
+		}
+
+		// show direction
+		if ( LightData.Type == video::ELT_DIRECTIONAL || LightData.Type == video::ELT_SPOT ||
+			 DebugDataVisible & scene::EDS_NORMALS  )
+		{
+			//driver->draw3DLine(core::vector3df(0.f, 0.f, 0.f),LightData.Direction * LightData.Radius,col);
+			core::vector3df c = LightData.Position; //AbsoluteTransformation.getTranslation();
+			SceneManager->drawLocalAxes(c,core::vector3df(LightData.Radius * 0.25f));
+			SceneManager->drawMesh("__localarrow",c,LightData.Direction,LightData.Radius,col);
 		}
 	}
 
-	DriverLightIndex = driver->addDynamicLight(LightData);
-	setVisible(LightIsOn);
 }
 
 
@@ -187,9 +209,11 @@ void CLightSceneNode::doLightRecalc()
 	}
 	if ((LightData.Type == video::ELT_SPOT) || (LightData.Type == video::ELT_POINT))
 	{
-		const f32 r = LightData.Radius * LightData.Radius * 0.5f;
-		BBox.MaxEdge.set( r, r, r );
+		//no driver lighting outside this volume
+		//no shadows generated outside this volume
+		const f32 r = core::vector3df(LightData.Radius).getLength();
 		BBox.MinEdge.set( -r, -r, -r );
+		BBox.MaxEdge.set( r, r, r );
 		//setAutomaticCulling( scene::EAC_BOX );
 		setAutomaticCulling( scene::EAC_OFF );
 		LightData.Position = getAbsolutePosition();
