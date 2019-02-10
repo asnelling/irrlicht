@@ -43,6 +43,9 @@ namespace scene
 		//! Show Bounding Ellipsoid with radius Box.getExtent/2 (inner sphere)
 		EDS_BELLIPSOID = 128,
 
+		//! Show xyz axes in modelspace
+		EDS_LOCAL_AXES = 256,
+
 		//! Show all debug infos
 		EDS_FULL = 0xffffffff
 	};

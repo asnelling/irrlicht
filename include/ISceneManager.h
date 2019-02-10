@@ -1672,6 +1672,10 @@ namespace scene
 		\return True if node is not visible in the current scene, else
 		false. */
 		virtual bool isCulled(const ISceneNode* node) const =0;
+
+		//Helper Render Functions
+		virtual void drawMesh(const char* name,const core::vector3df& pos, const core::vector3df& dir, f32 scale, video::SColor col) = 0;
+		virtual void drawLocalAxes(const core::vector3df& pos, const core::vector3df& scale) = 0;
 	};
 
 

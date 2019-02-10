@@ -2590,6 +2590,59 @@ IMeshWriter* CSceneManager::createMeshWriter(EMESH_WRITER_TYPE type)
 }
 
 
+//Helper Render Functions
+void CSceneManager::drawMesh(const char* name, const core::vector3df& pos, const core::vector3df& dir, f32 scale, video::SColor col)
+{
+	IAnimatedMesh* amesh = getMesh(name,"");
+	if ( 0 == amesh && name )
+	{
+		if ( !strcmp(name,"__localarrow") ) amesh = addArrowMesh("__localarrow",0xffffffff,0xffffffff,2,4,1.f,0.9f,0.005f,0.05f);
+		else if ( !strcmp(name,"__localarrow_middle") ) amesh = addArrowMesh("__localarrow_middle",0xffffffff,0xffffffff,4,8,1.f,0.9f,0.005f,0.05f);
+	}
+	if ( 0 == amesh ) return;
+
+	video::IVideoDriver* driver = getVideoDriver();
+	if ( 0 == driver ) return;
+
+	core::matrix4 m2(core::matrix4::EM4CONST_NOTHING);
+	m2.buildRotateFromToUnit(core::vector3df(0.f,1.f,0.f), dir );
+	m2.setTranslation(pos);
+
+	core::matrix4 m3;
+	m3.setScale(scale);
+	m2 *= m3;
+	driver->setTransform(video::ETS_WORLD, m2);
+
+	video::SMaterial m;
+	m.Lighting = true;
+	m.NormalizeNormals = false;
+	m.AmbientColor = 0;
+	m.EmissiveColor = col;
+	m.DiffuseColor = 0;
+	m.SpecularColor = 0;
+	m.Shininess = 0;
+	driver->setMaterial(m);
+
+	for ( u32 f = 0; f < amesh->getFrameCount(); ++f )
+	{
+		const IMesh *mesh = amesh->getMesh ( f );
+		for ( u32 mb = 0; mb != mesh->getMeshBufferCount(); ++mb )
+		{
+			driver->drawMeshBuffer ( mesh->getMeshBuffer ( mb ) );
+		}
+	}
+
+}
+
+void CSceneManager::drawLocalAxes(const core::vector3df& pos,const core::vector3df& scale)
+{
+	drawMesh("__localarrow",pos,core::vector3df(1.f,0.f,0.f),scale.X,0xFF10EB10);
+	drawMesh("__localarrow",pos,core::vector3df(0.f,1.f,0.f),scale.Y,0xFF1010EB);
+	drawMesh("__localarrow",pos,core::vector3df(0.f,0.f,1.f),scale.Z,0xFFEB1010);
+}
+
+
+
 // creates a scenemanager
 ISceneManager* createSceneManager(video::IVideoDriver* driver,
 		io::IFileSystem* fs, gui::ICursorControl* cursorcontrol,

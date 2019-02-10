@@ -348,6 +348,7 @@ namespace core
 			\param to: vector to rotate to
 			 */
 			CMatrix4<T>& buildRotateFromTo(const core::vector3df& from, const core::vector3df& to);
+			void buildRotateFromToUnit(const core::vector3df& from, const core::vector3df& to);
 
 			//! Builds a combined matrix which translates to a center before rotation and translates from origin afterwards
 			/** \param center Position to rotate around
@@ -1990,16 +1991,26 @@ namespace core
 		core::vector3df t(to);
 		f.normalize();
 		t.normalize();
+		buildRotateFromToUnit(f,t);
+		return *this;
+	}
 
+	//! Builds a matrix that rotates from one vector to another
+	/** \param from: vector to rotate from (must be unit vector)
+		\param to: vector to rotate to (must be unit vector)
+	*/
+	template <class T>
+	inline void CMatrix4<T>::buildRotateFromToUnit(const core::vector3df& from, const core::vector3df& to)
+	{
 		// axis multiplication by sin
-		core::vector3df vs(t.crossProduct(f));
+		core::vector3df vs(to.crossProduct(from));
 
 		// axis of rotation
 		core::vector3df v(vs);
-		v.normalize();
+		v.normalize_vertex_safe(); //since from&to can be the same division zero must be checked
 
 		// cosinus angle
-		T ca = f.dotProduct(t);
+		T ca = from.dotProduct(to);
 
 		core::vector3df vt(v * (1 - ca));
 
@@ -2027,8 +2038,6 @@ namespace core
 		M[13] = 0;
 		M[14] = 0;
 		M[15] = 1;
-
-		return *this;
 	}
 
 	//! Builds a matrix which rotates a source vector to a look vector over an arbitrary axis

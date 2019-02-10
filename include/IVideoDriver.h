@@ -799,8 +799,6 @@ namespace video
 			White Sphere around bounding box: draw3DCircle(box.getCenter(),vector3df(box.getRadius),4,4,10,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF);
 			White Sphere inside bounding box: draw3DCircle(box.getCenter(),box.getExtent() / 2,4,4,10,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF);
 			red/green/blue Color Rings around axes: draw3DCircle(box.getCenter(),box.getExtent() / 2,2,1,10,0xFFEB1010,0xFF10EB10,0xFF1010EB);
-			
-			[IGeometryCreator::createRingSphereMesh] is mesh Implementation
 		*/
 		virtual void draw3DCircle(const core::vector3df& center,const core::vector3df& radius,
 			int rings,int stripes,int segments,

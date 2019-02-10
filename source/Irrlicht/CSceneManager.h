@@ -531,6 +531,10 @@ namespace scene
 		//! returns if node is culled
 		virtual bool isCulled(const ISceneNode* node) const _IRR_OVERRIDE_;
 
+		//Helper Render Functions
+		virtual void drawMesh(const char* name, const core::vector3df& pos, const core::vector3df& dir, f32 scale, video::SColor col) _IRR_OVERRIDE_;
+		virtual void drawLocalAxes(const core::vector3df& pos, const core::vector3df& scale) _IRR_OVERRIDE_;
+
 	private:
 
 		// load and create a mesh which we know already isn't in the cache and put it in there

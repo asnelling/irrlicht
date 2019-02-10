@@ -471,11 +471,33 @@ void CAnimatedMeshSceneNode::render()
 
 		//show bounding sphere outside
 		if (DebugDataVisible & scene::EDS_BSPHERE)
-			driver->draw3DCircle(Box.getCenter(),core::vector3df(Box.getRadius()),8,8,32,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF);
+		{
+			debug_mat.Lighting = false;
+			debug_mat.Wireframe = false;
+			debug_mat.ZBuffer = video::ECFN_LESSEQUAL;
+			driver->setMaterial(debug_mat);
+
+			driver->draw3DCircle(Box.getCenter(),core::vector3df(Box.getRadius()),8,8,32,0xFFEBEBEB,0xFFEBEBEB,0xFFEBEBEB);
+		}
 
 		//show bounding ellipsoid inside
 		if (DebugDataVisible & scene::EDS_BELLIPSOID)
-			driver->draw3DCircle(Box.getCenter(),Box.getExtent() / 2,2,1,32,0xFFEB1010,0xFF10EB10,0xFF1010EB);
+		{
+			debug_mat.Lighting = false;
+			debug_mat.Wireframe = false;
+			debug_mat.ZBuffer = video::ECFN_LESSEQUAL;
+			driver->setMaterial(debug_mat);
+			driver->draw3DCircle(Box.getCenter(),Box.getExtent()/2,2,1,32,0xFF10EB10,0xFF1010EB,0xFFEB1010);
+		}
+
+		//show axes
+		if (DebugDataVisible & scene::EDS_LOCAL_AXES)
+		{
+			debug_mat.Lighting = false;
+			debug_mat.Wireframe = false;
+			debug_mat.ZBuffer = video::ECFN_LESSEQUAL;
+			SceneManager->drawLocalAxes(Box.getCenter(),Box.getExtent()/2);
+		}
 
 	}
 }

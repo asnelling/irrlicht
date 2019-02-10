@@ -881,69 +881,77 @@ void CNullDriver::draw3DCircle(const core::vector3df& center,const core::vector3
 {
 	//rings(slice) in xz
 	S3DVertex a,b;
-	a.Color = colorRing;
-	b.Color = colorRing;
 	S3DVertex p0;
 
+	//todo: control tesselation size by screen projection size...
 	if ( segments < 1 ) segments = 1;
 	const f32 angleSeg = core::PI*2.f / segments;
 
-	if ( rings < 1 ) rings = 1;
-	f32 angleZ = core::PI / rings;
-	for ( int g = 0; g < rings; ++g )
+	if ( rings )
 	{
-		f32 xz = g * angleZ;
-		const f32 sxz = sinf(xz);
-		const f32 cxz = cosf(xz);
+		a.Color = colorRing;
+		b.Color = colorRing;
 
-		a.Color = g & 1 ? colorRing : colorRing180;
-		b.Color = a.Color;
-		for ( int i = 0; i < segments; ++i )
+		if ( rings < 1 ) rings = 1;
+		f32 angleZ = core::PI / rings;
+		for ( int g = 0; g < rings; ++g )
 		{
-			f32 xy = i * angleSeg;
-			a.Normal.X = sinf(xy) * cxz;
-			a.Normal.Y = cosf(xy);
-			a.Normal.Z = sinf(xy) * sxz;
-			a.Pos.X = center.X + a.Normal.X * radius.X;
-			a.Pos.Y = center.Y + a.Normal.Y * radius.Y;
-			a.Pos.Z = center.Z + a.Normal.Z * radius.Z;
-			if ( 0 == i ) p0 = a;
-			else draw3DLine(a.Pos,b.Pos,a.Color,b.Color);
-			b = a;
+			f32 xz = g * angleZ;
+			const f32 sxz = sinf(xz);
+			const f32 cxz = cosf(xz);
+
+			a.Color = g & 1 ? colorRing : colorRing180;
+			b.Color = a.Color;
+			for ( int i = 0; i < segments; ++i )
+			{
+				f32 xy = i * angleSeg;
+				a.Normal.X = sinf(xy) * cxz;
+				a.Normal.Y = cosf(xy);
+				a.Normal.Z = sinf(xy) * sxz;
+				a.Pos.X = center.X + a.Normal.X * radius.X;
+				a.Pos.Y = center.Y + a.Normal.Y * radius.Y;
+				a.Pos.Z = center.Z + a.Normal.Z * radius.Z;
+				if ( 0 == i ) p0 = a;
+				else draw3DLine(a.Pos,b.Pos,a.Color,b.Color);
+				b = a;
+			}
+			draw3DLine(a.Pos,p0.Pos,a.Color,p0.Color);
 		}
-		draw3DLine(a.Pos,p0.Pos,a.Color,p0.Color);
 	}
 
 	//stripe(stack) in y
-	a.Color = colorStripe;
-	b.Color = colorStripe;
-
-	stripes += 1;
-	if ( stripes < 1 ) stripes = 1;
-	const f32 angleStripe = core::PI / stripes;
-	const f32 angleStripeMinus180 = core::PI*-0.5f;
-	for ( int g = 1; g < stripes; ++g ) //no poles
+	if ( stripes )
 	{
-		f32 xy = g * angleStripe - angleStripeMinus180;
-		f32 r_xz = cos(xy);
-		a.Normal.Y = sin(xy);
-		a.Pos.Y = center.Y + a.Normal.Y * radius.Y;
-		for ( int i = 0; i < segments; ++i )
-		{
-			f32 xz = i * angleSeg;
-			a.Normal.X = cosf(xz);
-			a.Normal.Z = sinf(xz);
-			a.Pos.X = center.X + a.Normal.X * r_xz * radius.X;
-			a.Pos.Z = center.Z + a.Normal.Z * r_xz * radius.Z;
-			if ( 0 == i ) p0 = a;
-			else draw3DLine(a.Pos,b.Pos,a.Color,b.Color);
-			b = a;
-		}
-		draw3DLine(a.Pos,p0.Pos,a.Color,p0.Color);
+		a.Color = colorStripe;
+		b.Color = colorStripe;
 
+		stripes += 1;
+		if ( stripes < 1 ) stripes = 1;
+		const f32 angleStripe = core::PI / stripes;
+		const f32 angleStripeMinus180 = core::PI*-0.5f;
+		for ( int g = 1; g < stripes; ++g ) //no poles
+		{
+			f32 xy = g * angleStripe - angleStripeMinus180;
+			f32 r_xz = cos(xy);
+			a.Normal.Y = sin(xy);
+			a.Pos.Y = center.Y + a.Normal.Y * radius.Y;
+			for ( int i = 0; i < segments; ++i )
+			{
+				f32 xz = i * angleSeg;
+				a.Normal.X = cosf(xz);
+				a.Normal.Z = sinf(xz);
+				a.Pos.X = center.X + a.Normal.X * r_xz * radius.X;
+				a.Pos.Z = center.Z + a.Normal.Z * r_xz * radius.Z;
+				if ( 0 == i ) p0 = a;
+				else draw3DLine(a.Pos,b.Pos,a.Color,b.Color);
+				b = a;
+			}
+			draw3DLine(a.Pos,p0.Pos,a.Color,p0.Color);
+		}
 	}
 
 }
+
 
 
 //! draws an 2d image
