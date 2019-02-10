@@ -444,7 +444,6 @@ namespace video
 		u32 MaxTextureUnits;
 		u32 MaxFixedPipelineTextureUnits;
 		u32 MaxUserClipPlanes;
-		f32 MaxLightDistance;
 		s32 LastSetLight;
 
 		enum E_CACHE_2D_ATTRIBUTES

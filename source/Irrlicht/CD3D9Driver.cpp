@@ -36,7 +36,7 @@ CD3D9Driver::CD3D9Driver(const SIrrlichtCreationParameters& params, io::IFileSys
 	DepthStencilSurface(0), WindowId(0), SceneSourceRect(0),
 	LastVertexType((video::E_VERTEX_TYPE)-1), VendorID(0),
 	MaxTextureUnits(0), MaxFixedPipelineTextureUnits(0), MaxUserClipPlanes(0),
-	MaxLightDistance(0.f), LastSetLight(-1),
+	LastSetLight(-1),
 	ColorFormat(ECF_A8R8G8B8), DeviceLost(false),
 	DriverWasReset(true), OcclusionQuerySupport(false),
 	AlphaToCoverageSupport(false), Params(params)
@@ -52,7 +52,6 @@ CD3D9Driver::CD3D9Driver(const SIrrlichtCreationParameters& params, io::IFileSys
 		CurrentTexture[i] = 0;
 		LastTextureMipMapsAvailable[i] = false;
 	}
-	MaxLightDistance = sqrtf(FLT_MAX);
 	// create sphere map matrix
 
 	SphereMapMatrixD3D9._11 = 0.5f; SphereMapMatrixD3D9._12 = 0.0f;
@@ -2621,7 +2620,8 @@ s32 CD3D9Driver::addDynamicLight(const SLight& dl)
 	light.Position = *(D3DVECTOR*)((void*)(&dl.Position));
 	light.Direction = *(D3DVECTOR*)((void*)(&dl.Direction));
 
-	light.Range = core::min_(dl.Radius, MaxLightDistance);
+	//don't use light range to be compatible with openGL (cutoff with dl.Radius is wrong)
+	light.Range = sqrtf(FLT_MAX);
 	light.Falloff = dl.Falloff;
 
 	light.Diffuse = *(D3DCOLORVALUE*)((void*)(&dl.DiffuseColor));
