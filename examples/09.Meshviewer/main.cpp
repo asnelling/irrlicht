@@ -62,8 +62,9 @@ enum
 	GUI_ID_DEBUG_WIRE_OVERLAY,
 	GUI_ID_DEBUG_HALF_TRANSPARENT,
 	GUI_ID_DEBUG_BUFFERS_BOUNDING_BOXES,
-	GUI_ID_DEBUG_BUFFERS_BOUNDING_SPHERE,
-	GUI_ID_DEBUG_BUFFERS_BOUNDING_ELLIPSOID,
+	GUI_ID_DEBUG_BOUNDING_SPHERE,
+	GUI_ID_DEBUG_BOUNDING_ELLIPSOID,
+	GUI_ID_DEBUG_LOCAL_AXES,
 	GUI_ID_DEBUG_ALL,
 
 	GUI_ID_MODEL_MATERIAL_SOLID,
@@ -615,6 +616,7 @@ public:
 			menu->setItemChecked(menu->getSelectedItem()+6, false);
 			menu->setItemChecked(menu->getSelectedItem()+7, false);
 			menu->setItemChecked(menu->getSelectedItem()+8, false);
+			menu->setItemChecked(menu->getSelectedItem()+9, false);
 			if (Model)
 				Model->setDebugDataVisible(scene::EDS_OFF);
 			break;
@@ -648,15 +650,20 @@ public:
 			if (Model)
 				Model->setDebugDataVisible((scene::E_DEBUG_SCENE_TYPE)(Model->isDebugDataVisible()^scene::EDS_BBOX_BUFFERS));
 			break;
-		case GUI_ID_DEBUG_BUFFERS_BOUNDING_SPHERE: // View -> Debug Information
+		case GUI_ID_DEBUG_BOUNDING_SPHERE: // View -> Debug Information
 			menu->setItemChecked(menu->getSelectedItem(), !menu->isItemChecked(menu->getSelectedItem()));
 			if (Model)
 				Model->setDebugDataVisible((scene::E_DEBUG_SCENE_TYPE)(Model->isDebugDataVisible()^scene::EDS_BSPHERE));
 			break;
-		case GUI_ID_DEBUG_BUFFERS_BOUNDING_ELLIPSOID: // View -> Debug Information
+		case GUI_ID_DEBUG_BOUNDING_ELLIPSOID: // View -> Debug Information
 			menu->setItemChecked(menu->getSelectedItem(), !menu->isItemChecked(menu->getSelectedItem()));
 			if (Model)
 				Model->setDebugDataVisible((scene::E_DEBUG_SCENE_TYPE)(Model->isDebugDataVisible()^scene::EDS_BELLIPSOID));
+			break;
+		case GUI_ID_DEBUG_LOCAL_AXES: // View -> Debug Information
+			menu->setItemChecked(menu->getSelectedItem(), !menu->isItemChecked(menu->getSelectedItem()));
+			if (Model)
+				Model->setDebugDataVisible((scene::E_DEBUG_SCENE_TYPE)(Model->isDebugDataVisible()^scene::EDS_LOCAL_AXES));
 			break;
 
 		case GUI_ID_DEBUG_ALL: // View -> Debug Information
@@ -668,6 +675,7 @@ public:
 			menu->setItemChecked(menu->getSelectedItem()-6, true);
 			menu->setItemChecked(menu->getSelectedItem()-7, true);
 			menu->setItemChecked(menu->getSelectedItem()-8, true);
+			menu->setItemChecked(menu->getSelectedItem()-9, true);
 			if (Model)
 				Model->setDebugDataVisible(scene::EDS_FULL);
 			break;
@@ -879,8 +887,9 @@ int main(int argc, char* argv[])
 	submenu->addItem(L"Wire overlay", GUI_ID_DEBUG_WIRE_OVERLAY);
 	submenu->addItem(L"Half-Transparent", GUI_ID_DEBUG_HALF_TRANSPARENT);
 	submenu->addItem(L"Buffers bounding boxes", GUI_ID_DEBUG_BUFFERS_BOUNDING_BOXES);
-	submenu->addItem(L"Bounding Sphere", GUI_ID_DEBUG_BUFFERS_BOUNDING_SPHERE);
-	submenu->addItem(L"Bounding Ellipsoid", GUI_ID_DEBUG_BUFFERS_BOUNDING_ELLIPSOID);
+	submenu->addItem(L"Bounding Sphere", GUI_ID_DEBUG_BOUNDING_SPHERE);
+	submenu->addItem(L"Bounding Ellipsoid", GUI_ID_DEBUG_BOUNDING_ELLIPSOID);
+	submenu->addItem(L"Local Axes", GUI_ID_DEBUG_LOCAL_AXES);
 	submenu->addItem(L"All", GUI_ID_DEBUG_ALL);
 
 	submenu = menu->getSubMenu(1)->getSubMenu(2);

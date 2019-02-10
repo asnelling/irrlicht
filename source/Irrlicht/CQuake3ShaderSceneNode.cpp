@@ -309,6 +309,7 @@ void CQuake3ShaderSceneNode::render()
 	const SVarGroup *group;
 
 	material.Lighting = false;
+	material.AmbientColor = 0xff808080;
 	material.setTexture(1, 0);
 	material.NormalizeNormals = false;
 
@@ -342,8 +343,6 @@ void CQuake3ShaderSceneNode::render()
 	}
 
 	driver->setTransform(video::ETS_WORLD, AbsoluteTransformation );
-	if (Shadow)
-		Shadow->updateShadowVolumes();
 
 	//! render all stages
 	u32 drawCount = (pass == ESNRP_TRANSPARENT_EFFECT) ? 1 : 0;
@@ -391,11 +390,22 @@ void CQuake3ShaderSceneNode::render()
 		//material.TextureLayer[0].AnisotropicFilter = 0xFF;
 		material.setTextureMatrix( 0, textureMatrix );
 
+		material.Lighting = blendfunc.type == video::EMT_TRANSPARENT_ADD_COLOR ? false : true;
+
 		driver->setMaterial( material );
 		driver->drawMeshBuffer( MeshBuffer );
 		drawCount += 1;
 
 	}
+
+	if ( pushProjection & 1 )
+	{
+		driver->setTransform( video::ETS_PROJECTION, projection );
+		pushProjection = 0;
+	}
+
+	if (Shadow)
+		Shadow->updateShadowVolumes();
 
 	if ( DebugDataVisible & scene::EDS_MESH_WIRE_OVERLAY )
 	{
@@ -411,80 +421,16 @@ void CQuake3ShaderSceneNode::render()
 	// show normals
 	if ( DebugDataVisible & scene::EDS_NORMALS )
 	{
-		video::SMaterial deb_m;
+		// for every vertex normal
+		const u32 vSize = video::getVertexPitchFromType(MeshBuffer->getVertexType());
+		const video::S3DVertex* v = ( const video::S3DVertex*)MeshBuffer->getVertices();
 
-		IAnimatedMesh * arrow = SceneManager->addArrowMesh (
-				"__debugnormalq3",
-				0xFFECEC00,0xFF999900,
-				4, 8,
-				8.f, 6.f,
-				0.5f,1.f
-			);
-		if ( 0 == arrow )
+		for ( u32 i=0; i != MeshBuffer->getVertexCount(); ++i )
 		{
-			arrow = SceneManager->getMesh ( "__debugnormalq3" );
-		}
-		const IMesh *mesh = arrow->getMesh ( 0 );
-
-		// find a good scaling factor
-
-		core::matrix4 m2;
-
-		// draw normals
-		const scene::IMeshBuffer* mb = MeshBuffer;
-		const u32 vSize = video::getVertexPitchFromType(mb->getVertexType());
-		const video::S3DVertex* v = ( const video::S3DVertex*)mb->getVertices();
-
-		//f32 colCycle = 270.f / (f32) core::s32_max ( mb->getVertexCount() - 1, 1 );
-
-		for ( u32 i=0; i != mb->getVertexCount(); ++i )
-		{
-			// Align to v->normal
-			m2.buildRotateFromTo ( core::vector3df ( 0.f, 1.f, 0 ), v->Normal );
-			m2.setTranslation ( v->Pos + AbsoluteTransformation.getTranslation () );
-/*
-			core::quaternion quatRot( v->Normal.Z, 0.f, -v->Normal.X, 1 + v->Normal.Y );
-			quatRot.normalize();
-			quatRot.getMatrix ( m2, v->Pos );
-
-			m2 [ 12 ] += AbsoluteTransformation [ 12 ];
-			m2 [ 13 ] += AbsoluteTransformation [ 13 ];
-			m2 [ 14 ] += AbsoluteTransformation [ 14 ];
-*/
-			driver->setTransform(video::ETS_WORLD, m2 );
-
-			deb_m.Lighting = true;
-/*
-			irr::video::SColorHSL color;
-			irr::video::SColor rgb(0);
-			color.Hue = i * colCycle * core::DEGTORAD;
-			color.Saturation = 1.f;
-			color.Luminance = 0.5f;
-			color.toRGB(  deb_m.EmissiveColor );
-*/
-			switch ( i )
-			{
-				case 0: deb_m.EmissiveColor.set(0xFFFFFFFF); break;
-				case 1: deb_m.EmissiveColor.set(0xFFFF0000); break;
-				case 2: deb_m.EmissiveColor.set(0xFF00FF00); break;
-				case 3: deb_m.EmissiveColor.set(0xFF0000FF); break;
-				default:
-					deb_m.EmissiveColor = v->Color; break;
-			}
-			driver->setMaterial( deb_m );
-
-			for ( u32 a = 0; a != mesh->getMeshBufferCount(); ++a )
-				driver->drawMeshBuffer ( mesh->getMeshBuffer ( a ) );
-
+			SceneManager->drawMesh("__localarrow",v->Pos + AbsoluteTransformation.getTranslation(),v->Normal,8.f,v->Color);
 			v = (const video::S3DVertex*) ( (u8*) v + vSize );
 		}
-		driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
-	}
 
-
-	if ( pushProjection & 1 )
-	{
-		driver->setTransform( video::ETS_PROJECTION, projection );
 	}
 
 	if ( DebugDataVisible & scene::EDS_BBOX )

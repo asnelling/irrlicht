@@ -424,9 +424,10 @@ void CDemo::loadSceneData()
 			model1->setPosition(core::vector3df(100,40,-80));
 			model1->setScale(core::vector3df(2,2,2));
 			model1->setMD2Animation(scene::EMAT_STAND);
-			model1->setMaterialFlag(video::EMF_LIGHTING, false);
+			model1->setMaterialFlag(video::EMF_LIGHTING, true);
 			model1->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
 			model1->setMaterialType(video::EMT_SPHERE_MAP);
+			model1->getMaterial(0).Shininess = 15.f;
 			model1->addShadowVolumeSceneNode();
 		}
 
@@ -495,12 +496,13 @@ void CDemo::loadSceneData()
 		bill->setMaterialFlag(video::EMF_LIGHTING, false);
 		bill->setMaterialTexture(0, driver->getTexture(mediaPath + "portal1.bmp"));
 		bill->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
+		bill->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 		bill->addAnimator(anim);
 	}
 
 	anim->drop();
 
-	// create cirlce flying dynamic light with transparent billboard attached
+	// create circle flying dynamic light with transparent billboard attached
 
 	scene::ILightSceneNode* light = 0;
 
@@ -518,6 +520,7 @@ void CDemo::loadSceneData()
 	bill->setMaterialFlag(video::EMF_LIGHTING, false);
 	bill->setMaterialTexture(0, driver->getTexture(mediaPath + "particlewhite.bmp"));
 	bill->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
+	bill->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 
 	// create meta triangle selector with all triangles selectors in it.
 	metaSelector = sm->createMetaTriangleSelector();
