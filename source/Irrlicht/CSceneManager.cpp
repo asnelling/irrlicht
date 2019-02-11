@@ -2604,14 +2604,18 @@ void CSceneManager::drawMesh(const char* name, const core::vector3df& pos, const
 	video::IVideoDriver* driver = getVideoDriver();
 	if ( 0 == driver ) return;
 
-	core::matrix4 m2(core::matrix4::EM4CONST_NOTHING);
-	m2.buildRotateFromToUnit(core::vector3df(0.f,1.f,0.f), dir );
-	m2.setTranslation(pos);
+	core::matrix4 m1(core::matrix4::EM4CONST_NOTHING);
+	m1.buildRotateFromToUnit(core::vector3df(0.f,1.f,0.f), dir );
+	m1.setTranslation(pos);
 
-	core::matrix4 m3;
-	m3.setScale(scale);
-	m2 *= m3;
-	driver->setTransform(video::ETS_WORLD, m2);
+	core::matrix4 m2;
+	m2.setScale(scale);
+
+	//m1 *= m2;
+	core::matrix4 m3(core::matrix4::EM4CONST_NOTHING);
+	m3.setbyproduct_nocheck(m1,m2);
+
+	driver->setTransform(video::ETS_WORLD, m3);
 
 	video::SMaterial m;
 	m.Lighting = true;

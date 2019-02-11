@@ -306,14 +306,15 @@ void CQuake3ShaderSceneNode::render()
 	E_SCENE_NODE_RENDER_PASS pass = SceneManager->getSceneNodeRenderPass();
 
 	video::SMaterial material;
-	const SVarGroup *group;
-
 	material.Lighting = false;
-	material.AmbientColor = 0xff808080;
+	material.AmbientColor.set(0xff666666);
+	material.DiffuseColor.set(0xffebebeb);
+	material.SpecularColor.set(0);
 	material.setTexture(1, 0);
 	material.NormalizeNormals = false;
 
 	// generic stage
+	const SVarGroup *group;
 	group = Shader->getGroup( 1 );
 	material.BackfaceCulling = getCullingFunction( group->get( "cull" ) );
 
@@ -364,7 +365,7 @@ void CQuake3ShaderSceneNode::render()
 		group = Shader->getGroup( stage );
 
 		material.setTexture(0, tex );
-		material.ZBuffer = getDepthFunction( group->get( "depthfunc" ) );
+		material.ZBuffer = (u8)getDepthFunction( group->get( "depthfunc" ) );
 
 		if ( group->isDefined( "depthwrite" ) )
 		{

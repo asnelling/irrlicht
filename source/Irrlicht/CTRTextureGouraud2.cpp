@@ -21,6 +21,7 @@
 #undef INVERSE_W
 
 #undef IPOL_C0
+#undef IPOL_C1
 #undef IPOL_T0
 #undef IPOL_T1
 
@@ -34,6 +35,7 @@
 #define WRITE_W
 
 #define IPOL_C0
+#define IPOL_C1
 #define IPOL_T0
 //#define IPOL_T1
 
@@ -46,8 +48,12 @@
 	#undef SUBTEXEL
 #endif
 
-#ifndef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS < 1
 	#undef IPOL_C0
+#endif
+
+#if BURNING_MATERIAL_MAX_COLORS < 2
+	#undef IPOL_C1
 #endif
 
 #if !defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) && defined ( USE_ZBUFFER )
@@ -131,7 +137,7 @@ void CTRTextureGouraud2::scanline_bilinear ()
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC;
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -156,7 +162,10 @@ void CTRTextureGouraud2::scanline_bilinear ()
 	slopeW = (line.w[1] - line.w[0]) * invDeltaX;
 #endif
 #ifdef IPOL_C0
-	slopeC = (line.c[0][1] - line.c[0][0]) * invDeltaX;
+	slopeC[0] = (line.c[0][1] - line.c[0][0]) * invDeltaX;
+#endif
+#ifdef IPOL_C1
+	slopeC[1] = (line.c[1][1] - line.c[1][0]) * invDeltaX;
 #endif
 #ifdef IPOL_T0
 	slopeT[0] = (line.t[0][1] - line.t[0][0]) * invDeltaX;
@@ -174,7 +183,10 @@ void CTRTextureGouraud2::scanline_bilinear ()
 	line.w[0] += slopeW * subPixel;
 #endif
 #ifdef IPOL_C0
-	line.c[0][0] += slopeC * subPixel;
+	line.c[0][0] += slopeC[0] * subPixel;
+#endif
+#ifdef IPOL_C1
+	line.c[1][0] += slopeC[1] * subPixel;
 #endif
 #ifdef IPOL_T0
 	line.t[0][0] += slopeT[0] * subPixel;
@@ -197,8 +209,8 @@ void CTRTextureGouraud2::scanline_bilinear ()
 	tFixPoint tx0;
 	tFixPoint ty0;
 
-#ifdef IPOL_C0
 	tFixPoint r0, g0, b0;
+#ifdef IPOL_C0
 	tFixPoint r1, g1, b1;
 #endif
 
@@ -273,7 +285,10 @@ void CTRTextureGouraud2::scanline_bilinear ()
 		line.w[0] += slopeW;
 #endif
 #ifdef IPOL_C0
-		line.c[0][0] += slopeC;
+		line.c[0][0] += slopeC[0];
+#endif
+#ifdef IPOL_C1
+		line.c[1][0] += slopeC[1];
 #endif
 #ifdef IPOL_T0
 		line.t[0][0] += slopeT[0];
@@ -333,6 +348,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 	scan.c[0][0] = a->Color[0];
 #endif
 
+#ifdef IPOL_C1
+	scan.slopeC[1][0] = (c->Color[1] - a->Color[1]) * scan.invDeltaY[0];
+	scan.c[1][0] = a->Color[1];
+#endif
+
 #ifdef IPOL_T0
 	scan.slopeT[0][0] = (c->Tex[0] - a->Tex[0]) * scan.invDeltaY[0];
 	scan.t[0][0] = a->Tex[0];
@@ -373,6 +393,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 		scan.c[0][1] = a->Color[0];
 #endif
 
+#ifdef IPOL_C1
+		scan.slopeC[1][1] = (b->Color[1] - a->Color[1]) * scan.invDeltaY[1];
+		scan.c[1][1] = a->Color[1];
+#endif
+
 #ifdef IPOL_T0
 		scan.slopeT[0][1] = (b->Tex[0] - a->Tex[0]) * scan.invDeltaY[1];
 		scan.t[0][1] = a->Tex[0];
@@ -409,6 +434,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 		scan.c[0][1] += scan.slopeC[0][1] * subPixel;
 #endif
 
+#ifdef IPOL_C1
+		scan.c[1][0] += scan.slopeC[1][0] * subPixel;
+		scan.c[1][1] += scan.slopeC[1][1] * subPixel;
+#endif
+
 #ifdef IPOL_T0
 		scan.t[0][0] += scan.slopeT[0][0] * subPixel;
 		scan.t[0][1] += scan.slopeT[0][1] * subPixel;
@@ -440,6 +470,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 #ifdef IPOL_C0
 			line.c[0][scan.left] = scan.c[0][0];
 			line.c[0][scan.right] = scan.c[0][1];
+#endif
+
+#ifdef IPOL_C1
+			line.c[1][scan.left] = scan.c[1][0];
+			line.c[1][scan.right] = scan.c[1][1];
 #endif
 
 #ifdef IPOL_T0
@@ -475,6 +510,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 			scan.c[0][1] += scan.slopeC[0][1];
 #endif
 
+#ifdef IPOL_C1
+			scan.c[1][0] += scan.slopeC[1][0];
+			scan.c[1][1] += scan.slopeC[1][1];
+#endif
+
 #ifdef IPOL_T0
 			scan.t[0][0] += scan.slopeT[0][0];
 			scan.t[0][1] += scan.slopeT[0][1];
@@ -506,6 +546,9 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 #ifdef IPOL_C0
 			scan.c[0][0] = a->Color[0] + scan.slopeC[0][0] * temp[0];
 #endif
+#ifdef IPOL_C1
+			scan.c[1][0] = a->Color[1] + scan.slopeC[1][0] * temp[0];
+#endif
 #ifdef IPOL_T0
 			scan.t[0][0] = a->Tex[0] + scan.slopeT[0][0] * temp[0];
 #endif
@@ -532,6 +575,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 #ifdef IPOL_C0
 		scan.slopeC[0][1] = (c->Color[0] - b->Color[0]) * scan.invDeltaY[2];
 		scan.c[0][1] = b->Color[0];
+#endif
+
+#ifdef IPOL_C1
+		scan.slopeC[1][1] = (c->Color[1] - b->Color[1]) * scan.invDeltaY[2];
+		scan.c[1][1] = b->Color[1];
 #endif
 
 #ifdef IPOL_T0
@@ -571,6 +619,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 		scan.c[0][1] += scan.slopeC[0][1] * subPixel;
 #endif
 
+#ifdef IPOL_C1
+		scan.c[1][0] += scan.slopeC[1][0] * subPixel;
+		scan.c[1][1] += scan.slopeC[1][1] * subPixel;
+#endif
+
 #ifdef IPOL_T0
 		scan.t[0][0] += scan.slopeT[0][0] * subPixel;
 		scan.t[0][1] += scan.slopeT[0][1] * subPixel;
@@ -604,6 +657,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 			line.c[0][scan.right] = scan.c[0][1];
 #endif
 
+#ifdef IPOL_C1
+			line.c[1][scan.left] = scan.c[1][0];
+			line.c[1][scan.right] = scan.c[1][1];
+#endif
+
 #ifdef IPOL_T0
 			line.t[0][scan.left] = scan.t[0][0];
 			line.t[0][scan.right] = scan.t[0][1];
@@ -635,6 +693,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 #ifdef IPOL_C0
 			scan.c[0][0] += scan.slopeC[0][0];
 			scan.c[0][1] += scan.slopeC[0][1];
+#endif
+
+#ifdef IPOL_C1
+			scan.c[1][0] += scan.slopeC[1][0];
+			scan.c[1][1] += scan.slopeC[1][1];
 #endif
 
 #ifdef IPOL_T0

@@ -208,29 +208,29 @@ namespace video
 		enum E_TRANSFORMATION_STATE_BURNING_VIDEO
 		{
 			ETS_VIEW_PROJECTION = ETS_COUNT,
-			ETS_CURRENT,
+			ETS_PROJ_MODEL_VIEW,
 			ETS_CLIPSCALE,
 			ETS_VIEW_INVERSE,
-			ETS_WORLD_INVERSE,
+			ETS_MODEL_VIEW,
+			ETS_NORMAL, //3x3
 
 			ETS_COUNT_BURNING
 		};
 
 		enum E_TRANSFORMATION_FLAG
 		{
-			ETF_IDENTITY = 1,
-			ETF_TEXGEN_CAMERA_NORMAL = 2,
-			ETF_TEXGEN_CAMERA_REFLECTION = 4,
+			ETF_VALID = 1,
+			ETF_IDENTITY = 2,
+			ETF_TEXGEN_CAMERA_SPHERE = 4,
+			ETF_TEXGEN_CAMERA_REFLECTION = 8,
 		};
-		u32 TransformationFlag[ETS_COUNT_BURNING];
+		u32 TransformationFlag[ETS_COUNT_BURNING]; // E_TRANSFORMATION_FLAG
 		core::matrix4 Transformation[ETS_COUNT_BURNING];
 
-		void getCameraPosWorldSpace ();
-		void getLightPosObjectSpace ();
-
+		void transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO state);
 
 		// Vertex Cache
-		static const SVSize vSize[];
+		SVSize vSize[8];
 
 		SVertexCache VertexCache;
 
@@ -241,6 +241,7 @@ namespace video
 		void VertexCache_get ( s4DVertex ** face );
 		void VertexCache_getbypass ( s4DVertex ** face );
 
+		void VertexCache_map_source_format();
 		void VertexCache_fill ( const u32 sourceIndex,const u32 destIndex );
 		s4DVertex * VertexCache_getVertex ( const u32 sourceIndex );
 
@@ -277,6 +278,7 @@ namespace video
 		void select_polygon_mipmap2 ( s4DVertex* source[], u32 tex, const CSoftwareTexture2_Bound& b ) const;
 
 
+		SBurningShaderEyeSpace EyeSpace;
 		SBurningShaderLightSpace LightSpace;
 		SBurningShaderMaterial Material;
 

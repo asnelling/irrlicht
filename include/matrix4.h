@@ -287,6 +287,7 @@ namespace core
 			/** \param out: where result matrix is written to.
 			\return Returns false if there is no inverse matrix. */
 			bool getInverse(CMatrix4<T>& out) const;
+			bool transposed_inverse(CMatrix4<T>& out) const;
 
 			//! Builds a right-handed perspective projection matrix based on a field of view
 			CMatrix4<T>& buildProjectionMatrixPerspectiveFovRH(f32 fieldOfViewRadians, f32 aspectRatio, f32 zNear, f32 zFar);
@@ -1034,8 +1035,17 @@ namespace core
 	template <class T>
 	inline CMatrix4<T>& CMatrix4<T>::makeIdentity()
 	{
+#if 0
 		memset(M, 0, 16*sizeof(T));
 		M[0] = M[5] = M[10] = M[15] = (T)1;
+#else
+		register T* m = M;
+		*m++=1;*m++=0;*m++=0;*m++=0;
+		*m++=0;*m++=1;*m++=0;*m++=0;
+		*m++=0;*m++=0;*m++=1;*m++=0;
+		*m++=0;*m++=0;*m++=0;*m=1;
+#endif
+
 #if defined ( USE_MATRIX_TEST )
 		definitelyIdentityMatrix=true;
 #endif
@@ -1436,6 +1446,49 @@ namespace core
 #if defined ( USE_MATRIX_TEST )
 		out.definitelyIdentityMatrix = definitelyIdentityMatrix;
 #endif
+		return true;
+	}
+
+	template <class T>
+	inline bool CMatrix4<T>::transposed_inverse(CMatrix4<T>& out) const
+	{
+		const T* m = M;
+
+		f64 d = (m[0] * m[5] - m[1] * m[4]) * (m[10] * m[15] - m[11] * m[14]) -
+			(m[0] * m[6] - m[2] * m[4]) * (m[9] * m[15] - m[11] * m[13]) +
+			(m[0] * m[7] - m[3] * m[4]) * (m[9] * m[14] - m[10] * m[13]) +
+			(m[1] * m[6] - m[2] * m[5]) * (m[8] * m[15] - m[11] * m[12]) -
+			(m[1] * m[7] - m[3] * m[5]) * (m[8] * m[14] - m[10] * m[12]) +
+			(m[2] * m[7] - m[3] * m[6]) * (m[8] * m[13] - m[9] * m[12]);
+
+		if( fabs( d ) < DBL_MIN )
+		{
+			out.makeIdentity();
+			return false;
+		}
+
+		d = 1.0 / d;
+		T* o = out.pointer();
+		o[0] =(T)(d*(m[5] *(m[10]*m[15]-m[11]*m[14])+m[6] *(m[11]*m[13]-m[9] *m[15])+m[7] *(m[9] *m[14]-m[10]*m[13])));
+		o[4] =(T)(d*(m[9] *(m[2] *m[15]-m[3] *m[14])+m[10]*(m[3] *m[13]-m[1] *m[15])+m[11]*(m[1] *m[14]-m[2] *m[13])));
+		o[8] =(T)(d*(m[13]*(m[2] *m[7] -m[3] *m[6]) +m[14]*(m[3] *m[5] -m[1] *m[7]) +m[15]*(m[1] *m[6] -m[2] *m[5])));
+		o[12]=(T)(d*(m[1] *(m[7] *m[10]-m[6] *m[11])+m[2] *(m[5] *m[11]-m[7] *m[9]) +m[3] *(m[6] *m[9] -m[5] *m[10])));
+
+		o[1] =(T)(d*(m[6] *(m[8] *m[15]-m[11]*m[12])+m[7] *(m[10]*m[12]-m[8] *m[14])+m[4] *(m[11]*m[14]-m[10]*m[15])));
+		o[5] =(T)(d*(m[10]*(m[0] *m[15]-m[3] *m[12])+m[11]*(m[2] *m[12]-m[0] *m[14])+m[8] *(m[3] *m[14]-m[2] *m[15])));
+		o[9] =(T)(d*(m[14]*(m[0] *m[7] -m[3] *m[4]) +m[15]*(m[2] *m[4] -m[0] *m[6]) +m[12]*(m[3] *m[6] -m[2] *m[7])));
+		o[13]=(T)(d*(m[2] *(m[7] *m[8] -m[4] *m[11])+m[3] *(m[4] *m[10]-m[6] *m[8]) +m[0] *(m[6] *m[11]-m[7] *m[10])));
+
+		o[2] =(T)(d*(m[7] *(m[8] *m[13]-m[9] *m[12])+m[4] *(m[9] *m[15]-m[11]*m[13])+m[5] *(m[11]*m[12]-m[8] *m[15])));
+		o[6] =(T)(d*(m[11]*(m[0] *m[13]-m[1] *m[12])+m[8] *(m[1] *m[15]-m[3] *m[13])+m[9] *(m[3] *m[12]-m[0] *m[15])));
+		o[10]=(T)(d*(m[15]*(m[0] *m[5] -m[1] *m[4]) +m[12]*(m[1] *m[7] -m[3] *m[5]) +m[13]*(m[3] *m[4] -m[0] *m[7])));
+		o[14]=(T)(d*(m[3] *(m[5] *m[8] -m[4] *m[9]) +m[0] *(m[7] *m[9] -m[5] *m[11])+m[1] *(m[4] *m[11]-m[7] *m[8])));
+
+		o[3] =(T)(d*(m[4] *(m[10]*m[13]-m[9] *m[14])+m[5] *(m[8] *m[14]-m[10]*m[12])+m[6] *(m[9] *m[12]-m[8] *m[13])));
+		o[7] =(T)(d*(m[8] *(m[2] *m[13]-m[1] *m[14])+m[9] *(m[0] *m[14]-m[2] *m[12])+m[10]*(m[1] *m[12]-m[0] *m[13])));
+		o[11]=(T)(d*(m[12]*(m[2] *m[5] -m[1] *m[6]) +m[13]*(m[0] *m[6] -m[2] *m[4]) +m[14]*(m[1] *m[4] -m[0] *m[5])));
+		o[15]=(T)(d*(m[0] *(m[5] *m[10]-m[6] *m[9]) +m[1] *(m[6] *m[8] -m[4] *m[10])+m[2] *(m[4] *m[9] -m[5] *m[8])));
+
 		return true;
 	}
 

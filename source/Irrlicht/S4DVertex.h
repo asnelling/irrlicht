@@ -20,7 +20,7 @@ namespace video
 #define reciprocal_zero(x) ((x) != 0.f ? 1.f / (x):0.f)
 
 //Check coordinates are in render target/window space
-#define SOFTWARE_DRIVER_2_DO_CLIPCHECK
+//#define SOFTWARE_DRIVER_2_DO_CLIPCHECK
 #if defined (SOFTWARE_DRIVER_2_DO_CLIPCHECK) && defined(_WIN32)
 	#define SOFTWARE_DRIVER_2_CLIPCHECK      if( xStart < 0 || xStart + dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
 	#define SOFTWARE_DRIVER_2_CLIPCHECK_REF  if( pShader.xStart < 0 || pShader.xStart + pShader.dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
@@ -359,12 +359,13 @@ struct sVec3
 		b += v0.b * v1.b;
 	}
 
-	void saturate ( sVec4 &dest, u32 argb )
+
+	void saturate ( sVec4 &dest, u32 argb ) const
 	{
-		dest.x = ( ( argb & 0xFF000000 ) >> 24 ) * ( 1.f / 255.f );
-		dest.y = core::min_ ( r, 1.f );
-		dest.z = core::min_ ( g, 1.f );
-		dest.w = core::min_ ( b, 1.f );
+		dest.a = ( ( argb & 0xFF000000 ) >> 24 ) * ( 1.f / 255.f );
+		dest.r = r <= 1.f ? r : 1.f;
+		dest.g = g <= 1.f ? g : 1.f;
+		dest.b = b <= 1.f ? b : 1.f;
 	}
 
 	// f = a * t + b * ( 1 - t )
@@ -448,12 +449,22 @@ enum e4DVertexFlag
 	VERTEX4D_FORMAT_COLOR_1			= 0x00100000,
 	VERTEX4D_FORMAT_COLOR_2			= 0x00200000,
 
-	VERTEX4D_FORMAT_MASK_BUMP		= 0x0F000000,
+	VERTEX4D_FORMAT_MASK_TANGENT	= 0x0F000000,
 	VERTEX4D_FORMAT_BUMP_DOT3		= 0x01000000,
 
 };
 
-#define BURNING_MATERIAL_MAX_COLORS 1
+
+#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+	#ifdef SOFTWARE_DRIVER_2_USE_SEPARATE_SPECULAR_COLOR
+		#define BURNING_MATERIAL_MAX_COLORS 2
+	#else
+		#define BURNING_MATERIAL_MAX_COLORS 1
+	#endif
+#else
+	#define BURNING_MATERIAL_MAX_COLORS 0
+#endif
+
 #define BURNING_MATERIAL_MAX_TEXTURES 2
 #define BURNING_MATERIAL_MAX_TANGENT 1
 
@@ -462,16 +473,18 @@ struct s4DVertex_proxy
 {
 	u32 flag;
 	sVec4 Pos;
+#if BURNING_MATERIAL_MAX_TEXTURES > 0
 	sVec2 Tex[BURNING_MATERIAL_MAX_TEXTURES];
-
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#endif
+#if BURNING_MATERIAL_MAX_COLORS > 0
 	sVec4 Color[BURNING_MATERIAL_MAX_COLORS];
 #endif
-
+#if BURNING_MATERIAL_MAX_TANGENT > 0
 	sVec3 LightTangent[BURNING_MATERIAL_MAX_TANGENT];
-
+#endif
 };
 
+//ensure handcrafted sizeof(s4DVertex)
 #define SIZEOF_SVERTEX	64
 #define SIZEOF_SVERTEX_LOG2	6
 
@@ -483,15 +496,17 @@ struct s4DVertex
 	u32 flag;
 
 	sVec4 Pos;
+#if BURNING_MATERIAL_MAX_TEXTURES > 0
 	sVec2 Tex[ BURNING_MATERIAL_MAX_TEXTURES ];
-
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#endif
+#if BURNING_MATERIAL_MAX_COLORS > 0
 	sVec4 Color[ BURNING_MATERIAL_MAX_COLORS ];
 #endif
-
+#if BURNING_MATERIAL_MAX_TANGENT > 0
 	sVec3 LightTangent[BURNING_MATERIAL_MAX_TANGENT];
+#endif
 
-	//u8 fill [ SIZEOF_SVERTEX - sizeof (s4DVertex_proxy) ];
+	//u8 __align [ SIZEOF_SVERTEX - sizeof (s4DVertex_proxy) ];
 
 	// f = a * t + b * ( 1 - t )
 	void interpolate(const s4DVertex& b, const s4DVertex& a, const f32 t)
@@ -501,7 +516,15 @@ struct s4DVertex
 
 		Pos.interpolate ( a.Pos, b.Pos, t );
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_TEXTURES > 0
+		size = (flag & VERTEX4D_FORMAT_MASK_TEXTURE) >> 16;
+		for ( i = 0; i!= size; ++i )
+		{
+			Tex[i].interpolate ( a.Tex[i], b.Tex[i], t );
+		}
+#endif
+
+#if BURNING_MATERIAL_MAX_COLORS > 0
 		size = (flag & VERTEX4D_FORMAT_MASK_COLOR) >> 20;
 		for ( i = 0; i!= size; ++i )
 		{
@@ -509,18 +532,13 @@ struct s4DVertex
 		}
 #endif
 
-		size = (flag & VERTEX4D_FORMAT_MASK_TEXTURE) >> 16;
-		for ( i = 0; i!= size; ++i )
-		{
-			Tex[i].interpolate ( a.Tex[i], b.Tex[i], t );
-		}
-
-		size = (flag & VERTEX4D_FORMAT_MASK_BUMP) >> 24;
+#if BURNING_MATERIAL_MAX_TANGENT > 0
+		size = (flag & VERTEX4D_FORMAT_MASK_TANGENT) >> 24;
 		for ( i = 0; i!= size; ++i )
 		{
 			LightTangent[i].interpolate ( a.LightTangent[i], b.LightTangent[i], t );
 		}
-
+#endif
 	}
 };
 
@@ -528,10 +546,10 @@ struct s4DVertex
 
 struct SAlignedVertex
 {
-	SAlignedVertex ( u32 element, u32 aligned )
+	SAlignedVertex ( u32 element )
 		: ElementSize ( element )
 	{
-		u32 byteSize = (ElementSize << SIZEOF_SVERTEX_LOG2 ) + aligned;
+		u32 byteSize = ((ElementSize << SIZEOF_SVERTEX_LOG2 ) + 4095) & ~4095; // + aligned;
 		mem = new u8 [ byteSize ];
 		data = (s4DVertex*) mem;
 	}
@@ -567,7 +585,7 @@ struct SCacheInfo
 #define VERTEXCACHE_MISS 0xFFFFFFFF
 struct SVertexCache
 {
-	SVertexCache (): mem ( VERTEXCACHE_ELEMENT * 2, 128 ) {}
+	SVertexCache (): mem ( VERTEXCACHE_ELEMENT * 2 ) {}
 
 	SCacheInfo info[VERTEXCACHE_ELEMENT];
 
@@ -628,14 +646,20 @@ struct sScanConvertData
 	f32 slopeZ[2];		// z slope along edges
 #endif
 
+#if BURNING_MATERIAL_MAX_COLORS > 0
 	sVec4 c[BURNING_MATERIAL_MAX_COLORS][2];			// color
 	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS][2];	// color slope along edges
+#endif
 
+#if BURNING_MATERIAL_MAX_TEXTURES > 0
 	sVec2 t[BURNING_MATERIAL_MAX_TEXTURES][2];		// texture
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES][2];	// texture slope along edges
+#endif
 
+#if BURNING_MATERIAL_MAX_TANGENT > 0
 	sVec3 l[BURNING_MATERIAL_MAX_TANGENT][2];		// Light Tangent
 	sVec3 slopeL[BURNING_MATERIAL_MAX_TEXTURES][2];	// tanget slope along edges
+#endif
 };
 
 // passed to scan Line
@@ -650,12 +674,17 @@ struct sScanLineData
 	f32 z[2];			// z start, z end of scanline
 #endif
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 	sVec4 c[BURNING_MATERIAL_MAX_COLORS][2];			// color start, color end of scanline
 #endif
 
+#if BURNING_MATERIAL_MAX_TEXTURES > 0
 	sVec2 t[BURNING_MATERIAL_MAX_TEXTURES][2];		// texture start, texture end of scanline
+#endif
+
+#if BURNING_MATERIAL_MAX_TANGENT > 0
 	sVec3 l[BURNING_MATERIAL_MAX_TANGENT][2];		// Light Tangent start, end
+#endif
 };
 
 // passed to pixel Shader

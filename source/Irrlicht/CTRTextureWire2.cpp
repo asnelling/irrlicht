@@ -47,7 +47,7 @@
 	#undef SUBTEXEL
 #endif
 
-#ifndef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS < 1
 	#undef IPOL_C0
 #endif
 
@@ -184,7 +184,7 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 #endif
 
 	tVideoSample color;
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 	tFixPoint r0, g0, b0;
 #ifdef IPOL_C0
 	sVec4 slopeC;

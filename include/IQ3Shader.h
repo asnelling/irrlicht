@@ -80,11 +80,11 @@ namespace quake3
 	typedef core::array< video::ITexture* > tTexArray;
 
 	// string helper.. TODO: move to generic files
-	inline s16 isEqual ( const core::stringc &string, u32 &pos, const c8 * const list[], u16 listSize )
+	inline s32 isEqual ( const core::stringc &string, u32 &pos, const c8 * const list[], u32 listSize )
 	{
 		const char * in = string.c_str () + pos;
 
-		for ( u16 i = 0; i != listSize; ++i )
+		for ( u32 i = 0; i < listSize; ++i )
 		{
 			if (string.size() < pos)
 				return -2;
@@ -97,7 +97,7 @@ namespace quake3
 				continue;
 
 			pos += len + 1;
-			return (s16) i;
+			return (s32)i;
 		}
 		return -2;
 	}
@@ -190,9 +190,9 @@ namespace quake3
 
 	// parses the content of Variable depthfunc
 	// return a z-test
-	inline u8 getDepthFunction ( const core::stringc &string )
+	inline video::E_COMPARISON_FUNC getDepthFunction ( const core::stringc &string )
 	{
-		u8 ret = video::ECFN_LESSEQUAL;
+		video::E_COMPARISON_FUNC ret = video::ECFN_LESSEQUAL;
 
 		if ( string.size() == 0 )
 			return ret;

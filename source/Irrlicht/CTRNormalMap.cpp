@@ -49,8 +49,12 @@
 	#undef SUBTEXEL
 #endif
 
-#ifndef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS < 1
 	#undef IPOL_C0
+#endif
+
+#if BURNING_MATERIAL_MAX_TANGENT < 1
+	#undef IPOL_L0
 #endif
 
 #if !defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) && defined ( USE_ZBUFFER )
@@ -220,7 +224,9 @@ void CTRNormalMap::scanline_bilinear ()
 	tFixPoint r1, g1, b1;
 	tFixPoint r2, g2, b2;
 
+#ifdef IPOL_L0
 	tFixPoint lx, ly, lz;
+#endif
 	tFixPoint ndotl;
 
 	sVec3 light;
@@ -286,12 +292,16 @@ void CTRNormalMap::scanline_bilinear ()
 			lz = tofix ( l.z - 0.5f );
 */
 
+#ifdef IPOL_L0
 			lx = tofix ( line.l[0][0].x, inversew );
 			ly = tofix ( line.l[0][0].y, inversew );
 			lz = tofix ( line.l[0][0].z, inversew );
 
 			// DOT 3 Normal Map light in tangent space
 			ndotl = saturateFix ( FIX_POINT_HALF_COLOR +  (( imulFix ( r1, lx ) + imulFix ( g1, ly ) + imulFix ( b1, lz ) ) << (COLOR_MAX_LOG2-1)) );
+#else
+			ndotl = FIX_POINT_ONE;
+#endif
 
 #ifdef IPOL_C0
 

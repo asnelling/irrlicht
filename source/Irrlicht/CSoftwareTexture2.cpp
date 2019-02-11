@@ -211,13 +211,13 @@ void CSoftwareTexture2::calcDerivative()
 		if ( MipMap[i] )
 		{
 			const core::dimension2du& dim = MipMap[i]->getDimension();
-			f32 u = 1.f / dim.Width;
-			f32 v = 1.f / dim.Height;
+			//f32 u = 1.f / dim.Width;
+			//f32 v = 1.f / dim.Height;
 
-			b.cx = -0.000100f; //u*0.005f;
-			b.cy = -0.000400f; //v*0.005f;
-			b.w = dim.Width -0.5f;
-			b.h = dim.Height-0.5f;
+			b.cx = 0.f; //u*0.005f;
+			b.cy = 0.f; //v*0.005f;
+			b.w = dim.Width -0.9f;
+			b.h = dim.Height-0.9f;
 		}
 	}
 

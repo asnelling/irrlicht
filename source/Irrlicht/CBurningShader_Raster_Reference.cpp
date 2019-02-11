@@ -707,7 +707,7 @@ REALINLINE void CBurningShader_Raster_Reference::scanline2()
 
 	u32 i;
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 	for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 	{
 		line.c[i][1] = (line.c[i][1] - line.c[i][0]) * invDeltaX;
@@ -735,7 +735,7 @@ REALINLINE void CBurningShader_Raster_Reference::scanline2()
 		// advance next pixel
 		line.w[0] += line.w[1];
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 		for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 		{
 			line.c[i][0] += line.c[i][1];
@@ -808,7 +808,7 @@ REALINLINE void CBurningShader_Raster_Reference::scanline ()
 
 	a = (f32) pShader.i + subPixel;
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 	for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 	{
 		line.c[i][1] = (line.c[i][1] - line.c[i][0]) * invDeltaX;
@@ -833,7 +833,7 @@ REALINLINE void CBurningShader_Raster_Reference::scanline ()
 
 		line.w[0] += line.w[1];
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 		for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 		{
 			line.c[i][0] += line.c[i][1];
@@ -886,7 +886,7 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 	scan.slopeW[0] = (c->Pos.w - a->Pos.w) * scan.invDeltaY[0];
 	scan.w[0] = a->Pos.w;
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 	for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 	{
 		scan.c[i][0] = a->Color[i];
@@ -916,7 +916,7 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 		scan.slopeW[1] = (b->Pos.w - a->Pos.w) * scan.invDeltaY[1];
 		scan.w[1] = a->Pos.w;
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 		for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 		{
 			scan.c[i][1] = a->Color[i];
@@ -942,12 +942,13 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 		scan.w[0] += scan.slopeW[0] * subPixel;
 		scan.w[1] += scan.slopeW[1] * subPixel;
 
+#if BURNING_MATERIAL_MAX_COLORS > 0
 		for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 		{
 			scan.c[i][0] += scan.slopeC[i][0] * subPixel;
 			scan.c[i][1] += scan.slopeC[i][1] * subPixel;
 		}
-
+#endif
 		for ( i = 0; i != ShaderParam.TextureUnits; ++i )
 		{
 			scan.t[i][0] += scan.slopeT[i][0] * subPixel;
@@ -963,7 +964,7 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 			line.x[scan.right] = scan.x[1];
 			line.w[scan.right] = scan.w[1];
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 			for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 			{
 				line.c[i][scan.left] = scan.c[i][0];
@@ -985,12 +986,13 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 			scan.w[0] += scan.slopeW[0];
 			scan.w[1] += scan.slopeW[1];
 
+#if BURNING_MATERIAL_MAX_COLORS > 0
 			for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 			{
 				scan.c[i][0] += scan.slopeC[i][0];
 				scan.c[i][1] += scan.slopeC[i][1];
 			}
-
+#endif
 			for ( i = 0; i != ShaderParam.TextureUnits; ++i )
 			{
 				scan.t[i][0] += scan.slopeT[i][0];
@@ -1011,7 +1013,7 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 			scan.x[0] = a->Pos.x + scan.slopeX[0] * temp[0];
 			scan.w[0] = a->Pos.w + scan.slopeW[0] * temp[0];
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 			for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 			{
 				scan.c[i][0] = a->Color[i] + scan.slopeC[i][0] * temp[0];
@@ -1030,7 +1032,7 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 		scan.slopeW[1] = (c->Pos.w - b->Pos.w) * scan.invDeltaY[2];
 		scan.w[1] = b->Pos.w;
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 		for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 		{
 			scan.c[i][1] = b->Color[i];
@@ -1057,12 +1059,13 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 		scan.w[0] += scan.slopeW[0] * subPixel;
 		scan.w[1] += scan.slopeW[1] * subPixel;
 
+#if BURNING_MATERIAL_MAX_COLORS > 0
 		for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 		{
 			scan.c[i][0] += scan.slopeC[i][0] * subPixel;
 			scan.c[i][1] += scan.slopeC[i][1] * subPixel;
 		}
-
+#endif
 		for ( i = 0; i != ShaderParam.TextureUnits; ++i )
 		{
 			scan.t[i][0] += scan.slopeT[i][0] * subPixel;
@@ -1078,7 +1081,7 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 			line.x[scan.right] = scan.x[1];
 			line.w[scan.right] = scan.w[1];
 
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#if BURNING_MATERIAL_MAX_COLORS > 0
 			for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 			{
 				line.c[i][scan.left] = scan.c[i][0];
@@ -1100,12 +1103,13 @@ void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4
 			scan.w[0] += scan.slopeW[0];
 			scan.w[1] += scan.slopeW[1];
 
-			for ( i = 0; i != ShaderParam.TextureUnits; ++i )
+#if BURNING_MATERIAL_MAX_COLORS > 0
+			for ( i = 0; i != ShaderParam.ColorUnits; ++i )
 			{
 				scan.c[i][0] += scan.slopeC[i][0];
 				scan.c[i][1] += scan.slopeC[i][1];
 			}
-
+#endif
 			for ( i = 0; i != ShaderParam.TextureUnits; ++i )
 			{
 				scan.t[i][0] += scan.slopeT[i][0];

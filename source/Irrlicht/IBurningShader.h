@@ -54,8 +54,8 @@ namespace video
 		SPOTLIGHT	= 0x04,
 		SPECULAR	= 0x08,
 		FOG			= 0x10,
-		NORMALIZE	= 0x20,
-		VERTEXTRANSFORM	= 0x40,
+		NORMALIZE_NORMALS	= 0x20,
+		TEXTURE_TRANSFORM	= 0x40,
 	};
 
 	//currently in world space
@@ -72,13 +72,17 @@ namespace video
 		core::array<SBurningShaderLight> Light;
 		sVec3 Global_AmbientLight;
 		sVec4 FogColor;
-		sVec4 campos;
-		sVec4 vertex;
-		sVec4 normal;
+		sVec4 campos; //Camera Position in World Space
+		sVec4 vertex;//world position of vertex
+		sVec4 normal; //transformed normal
 
 		u32 Flags; // eLightFlags
 	};
-
+	struct SBurningShaderEyeSpace
+	{
+		sVec4 vertex; //eye coordinate position of vertex
+		sVec4 normal; //transformed normal
+	};
 	enum eCullFlag
 	{
 		CULL_FRONT = 1,
