@@ -104,7 +104,8 @@ namespace scene
 
 			bool operator == ( const SCacheInfo &other ) const
 			{
-				return 0 == memcmp ( this, &other, sizeof ( SCacheInfo ) );
+				//return 0 == memcmp ( this, &other, sizeof ( SCacheInfo ) );
+				return Frame == other.Frame && startFrameLoop == other.startFrameLoop && endFrameLoop == other.endFrameLoop;
 			}
 			s32 Frame;
 			s32 startFrameLoop;
