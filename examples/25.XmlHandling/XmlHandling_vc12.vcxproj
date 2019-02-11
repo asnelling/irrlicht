@@ -280,6 +280,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <OutputFile>..\..\bin\Win32-VisualStudio\25.XmlHandling.exe</OutputFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -329,6 +330,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <OutputFile>..\..\bin\Win64-VisualStudio\25.XmlHandling.exe</OutputFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
