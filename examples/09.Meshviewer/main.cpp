@@ -990,17 +990,32 @@ int main(int argc, char* argv[])
 		driver->getTexture("irrlicht2_ft.jpg"),
 		driver->getTexture("irrlicht2_bk.jpg"));
 
+	//adapt camera speed to model size
+	f32 scale = 1.f;
+	f32 target = 30.f;
+
+	if ( Model )
+	{
+		f32 r = Model->getBoundingBox().getRadius();
+		if ( r > 0.f )
+		{
+			scale = r / 60.f;
+			target = r * 0.5f;
+		}
+	}
+	f32 distance = 70.f * scale;
+
 	// add a camera scene node
-	Camera[0] = smgr->addCameraSceneNodeMaya();
+	Camera[0] = smgr->addCameraSceneNodeMaya(0,-1500.f * scale,200.f * scale,1500.f * scale,-1,distance);
 	Camera[0]->setFarValue(20000.f);
 	// Maya cameras reposition themselves relative to their target, so target the location
 	// where the mesh scene node is placed.
-	Camera[0]->setTarget(core::vector3df(0,30,0));
+	Camera[0]->setTarget(core::vector3df(0,target,0));
 
-	Camera[1] = smgr->addCameraSceneNodeFPS();
+	Camera[1] = smgr->addCameraSceneNodeFPS(0,100.f*scale,0.5f*scale);
 	Camera[1]->setFarValue(20000.f);
-	Camera[1]->setPosition(core::vector3df(0,0,-70));
-	Camera[1]->setTarget(core::vector3df(0,30,0));
+	Camera[1]->setPosition(core::vector3df(0,0,-distance));
+	Camera[1]->setTarget(core::vector3df(0,target,0));
 
 	setActiveCamera(Camera[0]);
 
