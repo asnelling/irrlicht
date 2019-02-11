@@ -184,6 +184,7 @@ bool CMainMenu::run()
 				{
 					bill->setMaterialFlag(video::EMF_LIGHTING, false);
 					bill->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
+					bill->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 					bill->setMaterialTexture(0, driver->getTexture(mediaPath + "particlered.bmp"));
 				}
 				// add fly circle animator to the light
@@ -202,6 +203,7 @@ bool CMainMenu::run()
 				{
 					bill->setMaterialFlag(video::EMF_LIGHTING, false);
 					bill->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
+					bill->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 					bill->setMaterialTexture(0, driver->getTexture(mediaPath + "portal1.bmp"));
 				}
 				// add fly circle animator to the light
