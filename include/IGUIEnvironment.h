@@ -380,7 +380,7 @@ public:
 	IReferenceCounted::drop() for more information. */
 	virtual IGUIFileOpenDialog* addFileOpenDialog(const wchar_t* title=0,
 		bool modal=true, IGUIElement* parent=0, s32 id=-1,
-		bool restoreCWD=false, io::path::char_type* startDir=0) = 0;
+		bool restoreCWD=false, const io::path::char_type* startDir=0) = 0;
 
 	//! Adds a color select dialog.
 	/** \param title The title of the dialog.
