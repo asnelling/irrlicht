@@ -29,7 +29,7 @@ const s32 FOD_HEIGHT = 250;
 //! constructor
 CGUIFileOpenDialog::CGUIFileOpenDialog(const wchar_t* title,
 		IGUIEnvironment* environment, IGUIElement* parent, s32 id,
-		bool restoreCWD, io::path::char_type* startDir)
+		bool restoreCWD, const io::path::char_type* startDir)
 : IGUIFileOpenDialog(environment, parent, id,
 		core::rect<s32>((parent->getAbsolutePosition().getWidth()-FOD_WIDTH)/2,
 					(parent->getAbsolutePosition().getHeight()-FOD_HEIGHT)/2,

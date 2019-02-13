@@ -26,7 +26,7 @@ namespace gui
 		//! constructor
 		CGUIFileOpenDialog(const wchar_t* title, IGUIEnvironment* environment,
 				IGUIElement* parent, s32 id, bool restoreCWD=false,
-				io::path::char_type* startDir=0);
+				const io::path::char_type* startDir=0);
 
 		//! destructor
 		virtual ~CGUIFileOpenDialog();

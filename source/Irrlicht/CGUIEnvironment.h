@@ -135,7 +135,7 @@ public:
 	//! Adds a file open dialog.
 	virtual IGUIFileOpenDialog* addFileOpenDialog(const wchar_t* title = 0,
 			bool modal=true, IGUIElement* parent=0, s32 id=-1,
-			bool restoreCWD=false, io::path::char_type* startDir=0) _IRR_OVERRIDE_;
+			bool restoreCWD=false, const io::path::char_type* startDir=0) _IRR_OVERRIDE_;
 
 	//! Adds a color select dialog.
 	virtual IGUIColorSelectDialog* addColorSelectDialog(const wchar_t* title = 0,
