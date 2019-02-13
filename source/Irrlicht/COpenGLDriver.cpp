@@ -2102,11 +2102,11 @@ void COpenGLDriver::setRenderStates3DMode()
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 		// switch back the matrices
-		CacheHandler->setMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(Matrices[ETS_PROJECTION].pointer());
-
 		CacheHandler->setMatrixMode(GL_MODELVIEW);
 		glLoadMatrixf((Matrices[ETS_VIEW] * Matrices[ETS_WORLD]).pointer());
+
+		CacheHandler->setMatrixMode(GL_PROJECTION);
+		glLoadMatrixf(Matrices[ETS_PROJECTION].pointer());
 
 		ResetRenderStates = true;
 #ifdef GL_EXT_clip_volume_hint
@@ -3056,7 +3056,7 @@ s32 COpenGLDriver::addDynamicLight(const SLight& light)
 
 void COpenGLDriver::assignHardwareLight(u32 lightIndex)
 {
-	setTransform(ETS_WORLD, core::matrix4());
+	setTransform(ETS_WORLD, core::IdentityMatrix);
 
 	s32 lidx;
 	for (lidx=GL_LIGHT0; lidx < GL_LIGHT0 + MaxLights; ++lidx)

@@ -216,8 +216,8 @@ void CSoftwareTexture2::calcDerivative()
 
 			b.cx = 0.f; //u*0.005f;
 			b.cy = 0.f; //v*0.005f;
-			b.w = dim.Width -0.9f;
-			b.h = dim.Height-0.9f;
+			b.w = dim.Width -1.f;
+			b.h = dim.Height-1.f;
 		}
 	}
 

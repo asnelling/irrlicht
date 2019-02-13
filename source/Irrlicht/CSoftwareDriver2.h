@@ -226,7 +226,6 @@ namespace video
 		};
 		u32 TransformationFlag[ETS_COUNT_BURNING]; // E_TRANSFORMATION_FLAG
 		core::matrix4 Transformation[ETS_COUNT_BURNING];
-
 		void transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO state);
 
 		// Vertex Cache
@@ -253,7 +252,8 @@ namespace video
 
 
 #ifdef SOFTWARE_DRIVER_2_LIGHTING
-		void lightVertex ( s4DVertex *dest, u32 vertexargb );
+		void lightVertex_world ( s4DVertex *dest, u32 vertexargb );
+		void lightVertex_eye ( s4DVertex *dest, u32 vertexargb );
 #endif
 
 		//! Sets the fog mode.

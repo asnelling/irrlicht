@@ -39,6 +39,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	MipMapLOD_bias2 = 0.2f;
 	AreaMinDrawSize = 0.01f;
 	VertexCache_map_source_format();
+	memset ( TransformationFlag, 0, sizeof ( TransformationFlag ) );
 
 	// create backbuffer
 	BackBuffer = new CImage(BURNINGSHADER_COLOR_FORMAT, params.WindowSize);
@@ -139,6 +140,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 
 	//reset Lightspace
 	LightSpace.reset ();
+	EyeSpace.reset();
 
 	// select the right renderer
 	setCurrentShader();
@@ -194,6 +196,7 @@ void CBurningVideoDriver::setCurrentShader()
 
 	TransformationFlag[ ETS_TEXTURE_0] &= ~(ETF_TEXGEN_CAMERA_SPHERE|ETF_TEXGEN_CAMERA_REFLECTION);
 	LightSpace.Flags &= ~TEXTURE_TRANSFORM;
+	EyeSpace.Flags &= ~TEXTURE_TRANSFORM;
 
 	switch ( Material.org.MaterialType )
 	{
@@ -257,13 +260,15 @@ void CBurningVideoDriver::setCurrentShader()
 
 		case EMT_SPHERE_MAP:
 			TransformationFlag[ ETS_TEXTURE_0] |= ETF_TEXGEN_CAMERA_SPHERE;
+			EyeSpace.Flags |= TEXTURE_TRANSFORM;
 			LightSpace.Flags |= TEXTURE_TRANSFORM;
 			break;
 		case EMT_REFLECTION_2_LAYER:
 			if ( texture1 )
 			{
 				shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M1;
-				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_SPHERE;
+				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
+				EyeSpace.Flags |= TEXTURE_TRANSFORM;
 				LightSpace.Flags |= TEXTURE_TRANSFORM;
 			}
 			break;
@@ -272,7 +277,8 @@ void CBurningVideoDriver::setCurrentShader()
 			if ( texture1 )
 			{
 				shader = ETR_TRANSPARENT_REFLECTION_2_LAYER;
-				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_SPHERE;
+				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
+				EyeSpace.Flags |= TEXTURE_TRANSFORM;
 				LightSpace.Flags |= TEXTURE_TRANSFORM;
 			}
 			break;
@@ -282,6 +288,7 @@ void CBurningVideoDriver::setCurrentShader()
 		case EMT_PARALLAX_MAP_SOLID:
 		case EMT_PARALLAX_MAP_TRANSPARENT_VERTEX_ALPHA:
 			shader = ETR_NORMAL_MAP_SOLID;
+			EyeSpace.Flags |= TEXTURE_TRANSFORM;
 			LightSpace.Flags |= TEXTURE_TRANSFORM;
 			break;
 
@@ -493,7 +500,10 @@ void CBurningVideoDriver::setTransform(E_TRANSFORMATION_STATE state, const core:
 		case ETS_TEXTURE_2:
 		case ETS_TEXTURE_3:
 			if ( 0 == (TransformationFlag[state] & ETF_IDENTITY ) )
+			{
+				EyeSpace.Flags |= TEXTURE_TRANSFORM;
 				LightSpace.Flags |= TEXTURE_TRANSFORM;
+			}
 			break;
 		default:
 			break;
@@ -605,7 +615,7 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 	m[10] = 1.f;
 	m[11] = 0.f;
 	m[12] = (w * 0.5f ) - 0.5f;
-	m[13] = (h * 0.5f ) - 0.25f; //hackish to force one line down...
+	m[13] = (h * 0.5f ) - 0.5f; //0.25 hackish to force one line down...
 	m[14] = 0.f;
 	m[15] = 1.f;
 
@@ -727,7 +737,8 @@ void CBurningVideoDriver::setViewPort(const core::rect<s32>& area)
 	ViewPort.clipAgainst(rendert);
 
 	//Transformation [ ETS_CLIPSCALE ].buildNDCToDCMatrix ( ViewPort, 1.f );
-	buildNDCToDCMatrix( Transformation [ ETS_CLIPSCALE ],ViewPort);
+	buildNDCToDCMatrix( Transformation[ETS_CLIPSCALE],ViewPort);
+	TransformationFlag[ETS_CLIPSCALE]  |= ETF_VALID;
 
 	if (CurrentShader)
 		CurrentShader->setRenderTarget(RenderTargetSurface, ViewPort);
@@ -1189,7 +1200,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 
 #if defined (SOFTWARE_DRIVER_2_LIGHTING) || defined ( SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM )
 
-	// vertex normal in light space
+	// vertex normal in light(world) space
 	if ( Material.org.Lighting || (LightSpace.Flags & TEXTURE_TRANSFORM) )
 	{
 		if ( TransformationFlag[ETS_WORLD] & ETF_IDENTITY )
@@ -1209,12 +1220,20 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 		if ( LightSpace.Flags & NORMALIZE_NORMALS )
 			LightSpace.normal.normalize_xyz();
 	}
-	if ( LightSpace.Flags & TEXTURE_TRANSFORM )
+
+	// vertex normal in light(eye) space
+	if ( Material.org.Lighting || (EyeSpace.Flags & TEXTURE_TRANSFORM) )
 	{
-		Transformation[ETS_MODEL_VIEW].transformVect ( &EyeSpace.vertex.x, base->Pos );
-		Transformation[ETS_NORMAL].rotateVect(&EyeSpace.normal.x,base->Normal);
-		if ( LightSpace.Flags & NORMALIZE_NORMALS )
-			EyeSpace.normal.normalize_xyz();
+		Transformation[ETS_MODEL_VIEW].transformVect ( &EyeSpace.vertex4.x, base->Pos );
+		Transformation[ETS_NORMAL].rotateVect(&EyeSpace.normal3.x,base->Normal);
+		if ( EyeSpace.Flags & NORMALIZE_NORMALS )
+			EyeSpace.normal3.normalize_xyz();
+
+		f32 iw = reciprocal_zero(EyeSpace.vertex4.w);
+		EyeSpace.vertex3.x = EyeSpace.vertex4.x * iw;
+		EyeSpace.vertex3.y = EyeSpace.vertex4.y * iw;
+		EyeSpace.vertex3.z = EyeSpace.vertex4.z * iw;
+
 	}
 
 #endif
@@ -1224,7 +1243,8 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 	#if defined (SOFTWARE_DRIVER_2_LIGHTING)
 		if ( Material.org.Lighting )
 		{
-			lightVertex ( dest, base->Color.color );
+			//lightVertex_eye ( dest, base->Color.color );
+			lightVertex_world ( dest, base->Color.color );
 		}
 		else
 		{
@@ -1240,7 +1260,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 	memcpy32_small ( &dest->Tex[0],&base->TCoords,vSize[VertexCache.vType].TexSize << 3 /* * ( sizeof ( f32 ) * 2 ) */ );
 #else
 
-	if ( 0 == (LightSpace.Flags & TEXTURE_TRANSFORM) )
+	if ( 0 == (EyeSpace.Flags & TEXTURE_TRANSFORM) )
 	{
 		memcpy32_small ( &dest->Tex[0],&base->TCoords,vSize[VertexCache.vType].TexSize << 3 /*  * ( sizeof ( f32 ) * 2 ) */);
 	}
@@ -1269,44 +1289,52 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			const f32* M = Transformation [ ETS_TEXTURE_0 + t ].pointer();
 
 			// texgen
-			//ok d3d and opengl are different. 
 			if ( TransformationFlag[ETS_TEXTURE_0+t] & ETF_TEXGEN_CAMERA_SPHERE )
 			{
-
-				//https://github.com/Hrnchamd/MGE-XE/blob/master/src/mge/ffeshader.cpp
-				//https://github.com/daniel-/python-gl-engine/blob/master/src/shader/shader_utils.py
-				f32 iw = reciprocal_zero(EyeSpace.vertex.w);
-				u.x = EyeSpace.vertex.x*iw;
-				u.y = EyeSpace.vertex.y*iw;
-				u.z = EyeSpace.vertex.z*iw;
+				u.x = EyeSpace.vertex3.x;
+				u.y = EyeSpace.vertex3.y;
+				u.z = EyeSpace.vertex3.z;
 				u.normalize_xyz();
 
 				//reflect(u,N) u - 2.0 * dot(N, u) * N
-				dot = -2.f * EyeSpace.normal.dot_xyz(u);
-				r.x = u.x + dot * EyeSpace.normal.x;
-				r.y = u.y + dot * EyeSpace.normal.y;
-				r.z = u.z + dot * EyeSpace.normal.z;
+				dot = -2.f * EyeSpace.normal3.dot_xyz(u);
+				r.x = u.x + dot * EyeSpace.normal3.x;
+				r.y = u.y + dot * EyeSpace.normal3.y;
+				r.z = u.z + dot * EyeSpace.normal3.z;
 
+				//openGL
+/*
 				f32 m = 2.f * sqrtf(r.x*r.x+r.y*r.y+(r.z+1.f)*(r.z+1.f));
 				dest[0].Tex[t].x = r.x / m + 0.5f;
 				dest[0].Tex[t].y = r.y / m + 0.5f;
+*/
+				//~d3d with spheremap scale
+				f32 m = 0.25f / (0.00001f + sqrtf(r.x*r.x+r.y*r.y+r.z*r.z));
+				dest[0].Tex[t].x =  r.x * m + 0.5f;
+				dest[0].Tex[t].y = -r.y * m + 0.5f;
 			}
 			else
 			if ( TransformationFlag [ ETS_TEXTURE_0 + t ] & ETF_TEXGEN_CAMERA_REFLECTION )
 			{
-				n.x = LightSpace.campos.x - LightSpace.vertex.x;
-				n.y = LightSpace.campos.y - LightSpace.vertex.y;
-				n.z = LightSpace.campos.z - LightSpace.vertex.z;
-				n.normalize_xyz();
-				n.x += LightSpace.normal.x;
-				n.y += LightSpace.normal.y;
-				n.z += LightSpace.normal.z;
-				n.normalize_xyz();
+				u.x = EyeSpace.vertex3.x;
+				u.y = EyeSpace.vertex3.y;
+				u.z = EyeSpace.vertex3.z;
+				u.normalize_xyz();
 
-				const f32 *view = Transformation[ETS_VIEW].pointer();
+				//reflect(u,N) u - 2.0 * dot(N, u) * N
+				dot = -2.f * EyeSpace.normal3.dot_xyz(u);
+				r.x = u.x + dot * EyeSpace.normal3.x;
+				r.y = u.y + dot * EyeSpace.normal3.y;
+				//r.z = u.z + dot * EyeSpace.normal.z;
 
-				dest[0].Tex[t].x = 0.5f * ( 1.f + (n.x * view[0] + n.y * view[4] + n.z * view[8] ));
-				dest[0].Tex[t].y = 0.5f * ( 1.f + (n.x * view[1] + n.y * view[5] + n.z * view[9] ));
+				//openGL
+/*
+				dest[0].Tex[t].x = r.x;
+				dest[0].Tex[t].y = r.y;
+*/
+				//~d3d with spheremap scale
+				dest[0].Tex[t].x =  r.x;
+				dest[0].Tex[t].y =  r.y;
 			}
 			else
 			{
@@ -1397,7 +1425,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 #endif
 
 #if BURNING_MATERIAL_MAX_TANGENT > 0
-	if ( LightSpace.Light.size () && ( vSize[VertexCache.vType].Format & VERTEX4D_FORMAT_BUMP_DOT3 ) )
+	if ( EyeSpace.Light.size () && ( vSize[VertexCache.vType].Format & VERTEX4D_FORMAT_BUMP_DOT3 ) )
 	{
 		const S3DVertexTangents *tangent = ((S3DVertexTangents*) source );
 
@@ -1406,16 +1434,16 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 		dest->LightTangent[0].x = 0.f;
 		dest->LightTangent[0].y = 0.f;
 		dest->LightTangent[0].z = 0.f;
-		for ( u32 i = 0; i < 2 && i < LightSpace.Light.size (); ++i )
+		for ( u32 i = 0; i < 2 && i < EyeSpace.Light.size (); ++i )
 		{
-			const SBurningShaderLight &light = LightSpace.Light[i];
+			const SBurningShaderLight &light = EyeSpace.Light[i];
 
 			if ( !light.LightIsOn )
 				continue;
 
-			vp.x = light.pos.x - LightSpace.vertex.x;
-			vp.y = light.pos.y - LightSpace.vertex.y;
-			vp.z = light.pos.z - LightSpace.vertex.z;
+			vp.x = light.pos.x - EyeSpace.vertex3.x;
+			vp.y = light.pos.y - EyeSpace.vertex3.y;
+			vp.z = light.pos.z - EyeSpace.vertex3.z;
 
 	/*
 			vp.x = light.pos_objectspace.x - base->Pos.X;
@@ -1772,7 +1800,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	VertexCache_reset ( vertices, vertexCount, indexList, primitiveCount, vType, pType, iType );
 	
 	transform_calc(ETS_PROJ_MODEL_VIEW);
-	if ( Material.org.Lighting || (LightSpace.Flags & TEXTURE_TRANSFORM) )
+	if ( Material.org.Lighting || ((LightSpace.Flags|EyeSpace.Flags) & TEXTURE_TRANSFORM) )
 	{
 		transform_calc(ETS_VIEW_INVERSE);
 		transform_calc(ETS_MODEL_VIEW);
@@ -1910,6 +1938,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 void CBurningVideoDriver::setAmbientLight(const SColorf& color)
 {
 	LightSpace.Global_AmbientLight.setColorf ( color );
+	EyeSpace.Global_AmbientLight.setColorf ( color );
 }
 
 
@@ -1933,10 +1962,15 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 	switch ( dl.Type )
 	{
 		case ELT_DIRECTIONAL:
-			l.dir.x = -nDirection.X;
-			l.dir.y = -nDirection.Y;
-			l.dir.z = -nDirection.Z;
-			l.dir.w = 0.f;
+			l.pos.x = dl.Position.X;
+			l.pos.y = dl.Position.Y;
+			l.pos.z = dl.Position.Z;
+			l.pos.w = 0.f;
+
+			l.spotDirection.x = -nDirection.X;
+			l.spotDirection.y = -nDirection.Y;
+			l.spotDirection.z = -nDirection.Z;
+			l.spotDirection.w = 0.f;
 
 			l.constantAttenuation = 1.f;
 			l.linearAttenuation = 0.f;
@@ -1948,7 +1982,6 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 
 			break;
 		case ELT_POINT:
-			LightSpace.Flags |= POINTLIGHT;
 			l.pos.x = dl.Position.X;
 			l.pos.y = dl.Position.Y;
 			l.pos.z = dl.Position.Z;
@@ -1964,16 +1997,15 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			break;
 
 		case ELT_SPOT:
-			LightSpace.Flags |= SPOTLIGHT;
 			l.pos.x = dl.Position.X;
 			l.pos.y = dl.Position.Y;
 			l.pos.z = dl.Position.Z;
 			l.pos.w = 1.f;
 
-			l.dir.x = nDirection.X;
-			l.dir.y = nDirection.Y;
-			l.dir.z = nDirection.Z;
-			l.dir.w = 0.0f;
+			l.spotDirection.x = nDirection.X;
+			l.spotDirection.y = nDirection.Y;
+			l.spotDirection.z = nDirection.Z;
+			l.spotDirection.w = 0.0f;
 
 			l.constantAttenuation = dl.Attenuation.X + 0.0001f;
 			l.linearAttenuation = dl.Attenuation.Y;
@@ -1987,16 +2019,34 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			break;
 	}
 
+	l.pos4 = l.pos;
+	l.spotDirection4 = l.spotDirection;
 	LightSpace.Light.push_back ( l );
-	return LightSpace.Light.size() - 1;
+	
+	setTransform(ETS_WORLD,irr::core::IdentityMatrix);
+	transform_calc(ETS_MODEL_VIEW);
+	Transformation[ETS_MODEL_VIEW].transformVec4 ( &l.pos4.x, &l.pos.x );
+	Transformation[ETS_MODEL_VIEW].rotateVec4 ( &l.spotDirection4.x, &l.spotDirection.x );
+	//f32 w = reciprocal_zero(l.pos4.w);
+	//l.pos4.x *= w;
+	//l.pos4.y *= w;
+	//l.pos4.z *= w;
+
+	EyeSpace.Light.push_back ( l );
+
+	return EyeSpace.Light.size() - 1;
 }
 
 //! Turns a dynamic light on or off
 void CBurningVideoDriver::turnLightOn(s32 lightIndex, bool turnOn)
 {
-	if(lightIndex > -1 && lightIndex < (s32)LightSpace.Light.size())
+	if(lightIndex >= 0 && lightIndex < (s32)LightSpace.Light.size())
 	{
 		LightSpace.Light[lightIndex].LightIsOn = turnOn;
+	}
+	if((u32)lightIndex < EyeSpace.Light.size())
+	{
+		EyeSpace.Light[lightIndex].LightIsOn = turnOn;
 	}
 }
 
@@ -2004,6 +2054,7 @@ void CBurningVideoDriver::turnLightOn(s32 lightIndex, bool turnOn)
 void CBurningVideoDriver::deleteAllDynamicLights()
 {
 	LightSpace.reset ();
+	EyeSpace.reset ();
 	CNullDriver::deleteAllDynamicLights();
 
 }
@@ -2035,10 +2086,11 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	Material.EmissiveColor.setR8G8B8 ( Material.org.EmissiveColor.color );
 	Material.SpecularColor.setR8G8B8 ( Material.org.SpecularColor.color );
 
-	core::setbit_cond ( LightSpace.Flags, (Material.org.Shininess != 0.f) & (Material.org.SpecularColor.color & 0x00ffffff), SPECULAR );
-	core::setbit_cond ( LightSpace.Flags, Material.org.FogEnable, FOG );
-	core::setbit_cond ( LightSpace.Flags, Material.org.NormalizeNormals, NORMALIZE_NORMALS );
-	if (LightSpace.Flags & (SPECULAR) ) LightSpace.Flags |= NORMALIZE_NORMALS;
+	core::setbit_cond ( EyeSpace.Flags, (Material.org.Shininess != 0.f) & (Material.org.SpecularColor.color & 0x00ffffff), SPECULAR );
+	core::setbit_cond ( EyeSpace.Flags, Material.org.FogEnable, FOG );
+	core::setbit_cond ( EyeSpace.Flags, Material.org.NormalizeNormals, NORMALIZE_NORMALS );
+	if (EyeSpace.Flags & SPECULAR ) EyeSpace.Flags |= NORMALIZE_NORMALS;
+	LightSpace.Flags = EyeSpace.Flags;
 #endif
 
 	setCurrentShader();
@@ -2052,6 +2104,7 @@ void CBurningVideoDriver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 {
 	CNullDriver::setFog(color, fogType, start, end, density, pixelFog, rangeFog);
 	LightSpace.FogColor.setA8R8G8B8 ( color.color );
+	EyeSpace.FogColor.setA8R8G8B8 ( color.color );
 }
 
 #if defined(SOFTWARE_DRIVER_2_LIGHTING) && BURNING_MATERIAL_MAX_COLORS > 0
@@ -2059,11 +2112,10 @@ void CBurningVideoDriver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 /*!
 	applies lighting model
 */
-void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
+void CBurningVideoDriver::lightVertex_world ( s4DVertex *dest, u32 vertexargb )
 {
 	sVec3 dColor;
 
-	//gl_FrontLightModelProduct.sceneColor = gl_FrontMaterial.emission + gl_FrontMaterial.ambient * gl_LightModel.ambient
 	dColor = Material.EmissiveColor;
 	dColor.mulAdd (LightSpace.Global_AmbientLight, Material.AmbientColor );
 
@@ -2107,7 +2159,7 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 			case ELT_DIRECTIONAL:
 
 				//angle between normal and light vector
-				dot = LightSpace.normal.dot_xyz ( light.dir );
+				dot = LightSpace.normal.dot_xyz ( light.spotDirection );
 
 				// accumulate ambient
 				ambient.add ( light.AmbientColor );
@@ -2175,7 +2227,7 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				vp.mul ( reciprocal_zero( distance ) );
 
 				// point on surface inside cone of illumination
-				spotDot = light.dir.dot_xyz(vp);
+				spotDot = light.spotDirection.dot_xyz(vp);
 				if (spotDot > light.spotCosCutoff)
 					continue;
 
@@ -2212,6 +2264,189 @@ void CBurningVideoDriver::lightVertex ( s4DVertex *dest, u32 vertexargb )
 				if ( (dot = R.dot_xyz(E)) > 0.f)
 				{
 					f32 srgb = powf ( dot, Material.org.Shininess );
+					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
+				}
+				break;
+
+			default:
+				break;
+		}
+
+	}
+
+	// sum up lights
+	dColor.mulAdd (ambient, Material.AmbientColor );
+	dColor.mulAdd (diffuse, Material.DiffuseColor);
+
+	//has to move to shader (for vertex color only this will fit [expect clamping])
+
+	sVec3 c;
+	c.setR8G8B8(vertexargb);
+	dColor.r *= c.r;
+	dColor.g *= c.g;
+	dColor.b *= c.b;
+
+	//separate specular
+#if defined(SOFTWARE_DRIVER_2_USE_SEPARATE_SPECULAR_COLOR) && 1
+	dest->Color[1].a = 1.f;
+	dest->Color[1].r = specular.r * Material.SpecularColor.r;
+	dest->Color[1].g = specular.g * Material.SpecularColor.g;
+	dest->Color[1].b = specular.b * Material.SpecularColor.b;
+#else
+	dColor.mulAdd (specular, Material.SpecularColor);
+#endif
+
+	dColor.saturate ( dest->Color[0], vertexargb );
+}
+
+/*!
+	applies lighting model
+*/
+void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
+{
+	sVec3 dColor;
+
+	//gl_FrontLightModelProduct.sceneColor = gl_FrontMaterial.emission + gl_FrontMaterial.ambient * gl_LightModel.ambient
+	dColor = Material.EmissiveColor;
+	dColor.mulAdd (EyeSpace.Global_AmbientLight, Material.AmbientColor );
+
+	if ( EyeSpace.Light.size () == 0 )
+	{
+		dColor.saturate( dest->Color[0], vertexargb);
+		return;
+	}
+
+	sVec3 ambient;
+	sVec3 diffuse;
+	sVec3 specular;
+
+
+	// the universe started in darkness..
+	ambient.set ( 0.f, 0.f, 0.f );
+	diffuse.set ( 0.f, 0.f, 0.f );
+	specular.set ( 0.f, 0.f, 0.f );
+
+
+	u32 i;
+	f32 dot;
+	f32 distance;
+	f32 attenuation;
+	sVec4 vp;			// unit vector vertex to light
+	sVec4 lightHalf;	// blinn-phong reflection
+	sVec4 R; // normalize(-reflect(L,Lightspace.normal))
+	sVec4 E; // normalize(-v); // Eye Coordinates(0,0,0) = LightSpace.campos
+
+	f32 spotDot;			// cos of angle between spotlight and point on surface
+
+	for ( i = 0; i < EyeSpace.Light.size (); ++i )
+	{
+		const SBurningShaderLight &light = EyeSpace.Light[i];
+
+		if ( !light.LightIsOn )
+			continue;
+
+		switch ( light.Type )
+		{
+			case ELT_DIRECTIONAL:
+
+				//angle between normal and light vector
+				dot = EyeSpace.normal3.dot_xyz ( light.spotDirection );
+
+				// accumulate ambient
+				ambient.add ( light.AmbientColor );
+
+				// diffuse component
+				if ( dot > 0.f )
+					diffuse.mulAdd ( light.DiffuseColor, dot );
+				break;
+
+			case ELT_POINT:
+				// surface to light
+				vp.x = light.pos4.x - EyeSpace.vertex3.x;
+				vp.y = light.pos4.y - EyeSpace.vertex3.y;
+				vp.z = light.pos4.z - EyeSpace.vertex3.z;
+
+				distance = vp.get_length_xyz();
+
+				attenuation = 1.f / (  light.constantAttenuation
+					                 + light.linearAttenuation * distance
+  								     /*+ light.quadraticAttenuation * (distance * distance)*/
+								);
+
+				// accumulate ambient
+				ambient.mulAdd ( light.AmbientColor,attenuation );
+
+				// build diffuse reflection
+
+				//angle between normal and light vector
+				vp.mul ( reciprocal_zero( distance ) ); //normalize
+				dot = EyeSpace.normal3.dot_xyz ( vp );
+				if ( dot <= 0.f ) continue;
+
+				// diffuse component
+				diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
+
+				if ( !(EyeSpace.Flags & SPECULAR) )
+					continue;
+
+				lightHalf.x = vp.x + EyeSpace.campos.x;
+				lightHalf.x = vp.y + EyeSpace.campos.y;
+				lightHalf.x = vp.z + EyeSpace.campos.z;
+				lightHalf.normalize_xyz();
+
+				dot = EyeSpace.normal3.dot_xyz ( lightHalf );
+				if ( dot > 0.f)
+				{
+					f32 srgb = powf ( dot,Material.org.Shininess );
+					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
+				}
+				break;
+
+			case ELT_SPOT:
+				// surface to light
+				vp.x = light.pos4.x - EyeSpace.vertex3.x;
+				vp.y = light.pos4.y - EyeSpace.vertex3.y;
+				vp.z = light.pos4.z - EyeSpace.vertex3.z;
+
+				distance = vp.get_length_xyz();
+
+				//normalize
+				vp.mul ( reciprocal_zero( distance ) );
+
+				// point on surface inside cone of illumination
+				spotDot = vp.dot_minus_xyz(light.spotDirection4);
+				if (spotDot < light.spotCosCutoff)
+					continue;
+
+
+				attenuation = 1.f / (light.constantAttenuation + light.linearAttenuation * distance
+  								+light.quadraticAttenuation * (distance * distance));
+				attenuation *= powf (spotDot,light.spotExponent);
+
+				// accumulate ambient
+				ambient.mulAdd ( light.AmbientColor,attenuation );
+
+
+				// build diffuse reflection
+				//angle between normal and light vector
+				dot = EyeSpace.normal3.dot_xyz ( vp );
+				if ( dot < 0.f ) continue;
+
+				// diffuse component
+				diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
+
+				if ( !(EyeSpace.Flags & SPECULAR) )
+					continue;
+
+				lightHalf.x = vp.x + EyeSpace.campos.x;
+				lightHalf.x = vp.y + EyeSpace.campos.y;
+				lightHalf.x = vp.z + EyeSpace.campos.z;
+				lightHalf.normalize_xyz();
+
+				dot = EyeSpace.normal3.dot_xyz ( lightHalf );
+				if ( dot > 0.f)
+				{
+					f32 srgb = powf ( dot,Material.org.Shininess );
 					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
 				}
 				break;
@@ -2784,6 +3019,7 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 	Material.org.Lighting = false;
 	Material.org.ZWriteEnable = false;
 	Material.org.ZBuffer = ECFN_LESSEQUAL;
+	EyeSpace.Flags &= ~TEXTURE_TRANSFORM;
 	LightSpace.Flags &= ~TEXTURE_TRANSFORM;
 
 	//glStencilMask(~0);

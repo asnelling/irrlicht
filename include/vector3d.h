@@ -178,19 +178,6 @@ namespace core
 			return *this;
 		}
 
-		//TA: needs his safe normalize
-		void normalize_vertex_safe()
-		{
-			T l = X*X + Y*Y + Z*Z;
-			if ((T)fabs(l)> (T)0.000001)
-			{
-				l = (T) 1.0 / (T)sqrt(l);
-				X *= l;
-				Y *= l;
-				Z *= l;
-			}
-		}
-
 		//! Sets the length of the vector to a new value
 		vector3d<T>& setLength(T newlength)
 		{

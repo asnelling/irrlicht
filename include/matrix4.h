@@ -250,6 +250,8 @@ namespace core
 			/** This operation is performed as if the vector was 4d with the 4th component =1
 				NOTE: out[3] will be written to (4th vector component)*/
 			void transformVec3(T *out, const T * in) const;
+			void transformVec4(T *out, const T * in) const;
+			void rotateVec4(T *out, const T* in) const;
 
 			//! Translate a vector by the translation part of this matrix.
 			/** This operation is performed as if the vector was 4d with the 4th component =1 */
@@ -1234,6 +1236,23 @@ namespace core
 		out[2] = in[0]*M[2] + in[1]*M[6] + in[2]*M[10] + M[14];
 	}
 
+	template <class T>
+	inline void CMatrix4<T>::transformVec4(T *out, const T* in) const
+	{
+		out[0] = in[0]*M[0] + in[1]*M[4] + in[2]*M[8]  + in[3]*M[12];
+		out[1] = in[0]*M[1] + in[1]*M[5] + in[2]*M[9]  + in[3]*M[13];
+		out[2] = in[0]*M[2] + in[1]*M[6] + in[2]*M[10] + in[3]*M[14];
+		out[3] = in[0]*M[3] + in[1]*M[7] + in[2]*M[11] + in[3]*M[15];
+	}
+
+	template <class T>
+	inline void CMatrix4<T>::rotateVec4(T *out, const T* in) const
+	{
+		out[0] = in[0]*M[0] + in[1]*M[4] + in[2]*M[8];
+		out[1] = in[0]*M[1] + in[1]*M[5] + in[2]*M[9];
+		out[2] = in[0]*M[2] + in[1]*M[6] + in[2]*M[10];
+	}
+
 
 	//! Transforms a plane by this matrix
 	template <class T>
@@ -2059,32 +2078,49 @@ namespace core
 		core::vector3df vs(to.crossProduct(from));
 
 		// axis of rotation
-		core::vector3df v(vs);
-		v.normalize_vertex_safe(); //since from&to can be the same division zero must be checked
+		core::vector3df v(from); //vs normalized
+		//since from&to can be the same, division by zero must be checked
+		{
+			T l = vs.X*vs.X + vs.Y*vs.Y + vs.Z*vs.Z;
+			if ((T)fabs(l)> (T)0.000001)
+			{
+				l = (T) 1.0 / (T)sqrt(l);
+				v.X = vs.X * l;
+				v.Y = vs.Y * l;
+				v.Z = vs.Z * l;
+			}
+			else
+			{
+#if defined ( USE_MATRIX_TEST )
+				definitelyIdentityMatrix=1;
+#endif
+			}
+		}
+
 
 		// cosinus angle
 		T ca = from.dotProduct(to);
 
 		core::vector3df vt(v * (1 - ca));
 
-		M[0] = vt.X * v.X + ca;
-		M[5] = vt.Y * v.Y + ca;
+		M[0]  = vt.X * v.X + ca;
+		M[5]  = vt.Y * v.Y + ca;
 		M[10] = vt.Z * v.Z + ca;
 
 		vt.X *= v.Y;
 		vt.Z *= v.X;
 		vt.Y *= v.Z;
 
-		M[1] = vt.X - vs.Z;
-		M[2] = vt.Z + vs.Y;
-		M[3] = 0;
+		M[1]  = vt.X - vs.Z;
+		M[2]  = vt.Z + vs.Y;
+		M[3]  = 0;
 
-		M[4] = vt.X + vs.Z;
-		M[6] = vt.Y - vs.X;
-		M[7] = 0;
+		M[4]  = vt.X + vs.Z;
+		M[6]  = vt.Y - vs.X;
+		M[7]  = 0;
 
-		M[8] = vt.Z - vs.Y;
-		M[9] = vt.Y + vs.X;
+		M[8]  = vt.Z - vs.Y;
+		M[9]  = vt.Y + vs.X;
 		M[11] = 0;
 
 		M[12] = 0;

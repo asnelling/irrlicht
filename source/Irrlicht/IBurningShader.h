@@ -35,8 +35,10 @@ namespace video
 		f32 constantAttenuation;
 		f32 quadraticAttenuation;
 		sVec4 pos;
+		sVec4 pos4;
 
-		sVec4 dir;
+		sVec4 spotDirection;
+		sVec4 spotDirection4;
 		f32 spotCosCutoff;
 		f32 spotCosInnerCutoff;
 		f32 spotExponent;
@@ -47,11 +49,9 @@ namespace video
 		sVec4 pos_objectspace;
 	};
 
-	enum eLightFlags
+	enum eTransformLightFlags
 	{
 		ENABLED		= 0x01,
-		POINTLIGHT	= 0x02,
-		SPOTLIGHT	= 0x04,
 		SPECULAR	= 0x08,
 		FOG			= 0x10,
 		NORMALIZE_NORMALS	= 0x20,
@@ -72,17 +72,41 @@ namespace video
 		core::array<SBurningShaderLight> Light;
 		sVec3 Global_AmbientLight;
 		sVec4 FogColor;
+
 		sVec4 campos; //Camera Position in World Space
 		sVec4 vertex;//world position of vertex
 		sVec4 normal; //transformed normal
 
-		u32 Flags; // eLightFlags
+		u32 Flags; // eTransformLightFlags
 	};
+
 	struct SBurningShaderEyeSpace
 	{
-		sVec4 vertex; //eye coordinate position of vertex
-		sVec4 normal; //transformed normal
+		SBurningShaderEyeSpace() {}
+		virtual ~SBurningShaderEyeSpace() {}
+		void reset ()
+		{
+			Light.set_used ( 0 );
+			Global_AmbientLight.set ( 0.f, 0.f, 0.f );
+
+			Flags = 0;
+			campos.x = 0.f;
+			campos.y = 0.f;
+			campos.z = 1.f;
+		}
+		core::array<SBurningShaderLight> Light;
+		sVec3 Global_AmbientLight;
+		sVec4 FogColor;
+
+		sVec4 campos; //Camera Position in eye Space
+		sVec4 vertex4; //eye coordinate position of vertex
+		sVec4 normal3; //transformed normal
+
+		sVec4 vertex3; //eye coordinate position of vertex projected
+
+		u32 Flags; // eTransformLightFlags
 	};
+
 	enum eCullFlag
 	{
 		CULL_FRONT = 1,
