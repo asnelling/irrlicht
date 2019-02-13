@@ -73,7 +73,7 @@ namespace video
 		EMT_SPHERE_MAP,
 
 		//! A reflecting material with an optional non reflecting texture layer.
-		/** The reflection map should be set as first texture. */
+		/** The reflection map should be set as second texture.*/
 		EMT_REFLECTION_2_LAYER,
 
 		//! A transparent material.
@@ -116,7 +116,7 @@ namespace video
 		EMT_TRANSPARENT_VERTEX_ALPHA,
 
 		//! A transparent reflecting material with an optional additional non reflecting texture layer.
-		/** The reflection map should be set as first texture. The
+		/** The reflection map should be set as second texture. The
 		transparency depends on the alpha value in the vertex colors. A
 		texture which will not reflect can be set as second texture.
 		Please note that this material type is currently not 100%
