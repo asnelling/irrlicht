@@ -2,6 +2,9 @@
 <config>
 <!--This is a config file for the Irrlicht Engine Mesh Viewer.-->
 <startUpModel file="dwarf.x" />
+<StartUpModelTexture1 file="" />
+<StartUpModelTexture2 file="" />
+<CameraAdjustToModel value="1" />
 <messageText caption="Irrlicht Engine Mesh Viewer">Welcome to the Mesh Viewer of the &quot;Irrlicht Engine&quot;!.
 This program is able to load and display all 3D geometry and models the Irrlicht Engine can.
 Controls: Left mouse to rotate, right mouse to move, both buttons to zoom. Escape to Stop FPS Camera

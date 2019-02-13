@@ -30,6 +30,9 @@ Some global variables used later on
 */
 IrrlichtDevice *Device = 0;
 io::path StartUpModelFile;
+io::path StartUpModelTexture1;     //override model texture
+io::path StartUpModelTexture2;     //override model texture
+int CameraAdjustToModel = 1; //should camera movement speed adjust to model size
 core::stringw MessageText;
 core::stringw Caption;
 scene::ISceneNode* Model = 0;
@@ -49,6 +52,8 @@ enum
 	GUI_ID_Z_SCALE,
 
 	GUI_ID_OPEN_MODEL,
+	GUI_ID_OPEN_TEXTURE1,
+	GUI_ID_OPEN_TEXTURE2,
 	GUI_ID_SET_MODEL_ARCHIVE,
 	GUI_ID_LOAD_AS_OCTREE,
 
@@ -70,6 +75,7 @@ enum
 	GUI_ID_MODEL_MATERIAL_SOLID,
 	GUI_ID_MODEL_MATERIAL_TRANSPARENT,
 	GUI_ID_MODEL_MATERIAL_REFLECTION,
+	GUI_ID_MODEL_MATERIAL_REFLECTION_2_LAYER,
 
 	GUI_ID_CAMERA_MAYA,
 	GUI_ID_CAMERA_FIRST_PERSON,
@@ -107,10 +113,10 @@ void setActiveCamera(scene::ICameraSceneNode* newActive)
 	if (0 == Device)
 		return;
 
-	scene::ICameraSceneNode * active = Device->getSceneManager()->getActiveCamera();
-	active->setInputReceiverEnabled(false);
+	scene::ICameraSceneNode* active = Device->getSceneManager()->getActiveCamera();
+	if ( active ) active->setInputReceiverEnabled(false);
 
-	newActive->setInputReceiverEnabled(true);
+	if ( newActive ) newActive->setInputReceiverEnabled(true);
 	Device->getSceneManager()->setActiveCamera(newActive);
 }
 
@@ -151,6 +157,91 @@ void updateScaleInfo(scene::ISceneNode* model)
 }
 
 /*
+  Set camera speed based on model radius
+*/
+void adjustCameraToModel()
+{
+	if ( !CameraAdjustToModel || !Device ) return;
+
+	//adapt camera speed to model size
+	union speedval
+	{
+		struct
+		{
+			f32 radius;
+			f32 target_y;
+			f32 distance;
+
+			f32 zoomSpeed;
+			f32 rotateSpeed;
+			f32 translationSpeed;
+
+			f32 fps_rotatespeed;
+			f32 fps_movespeed;
+
+			f32 cam_near;
+			f32 cam_far;
+		};
+		f32 v[10];
+	};
+	const speedval fix[] =
+	{
+		{0.86f,0.1f,2.f,  25.f,-400.f,5.f,100.f,0.0085f,0.5f,1000.f},
+		{1.7f,0.1f,2.f,  25.f,-400.f,5.f,100.f,0.0085f,0.5f,1000.f},
+		{57.7f,30.f,70.f, 200.f,-1500.f,1500.f,100.f,0.5f,1.f,20000.f} //default
+	};
+
+	const int fix_size = sizeof fix / sizeof *fix;
+	speedval v = fix[2];
+	if ( Model )
+	{
+		//scale linear between known size
+		v.radius = Model->getBoundingBox().getRadius();
+		int ipol = 0;
+		int i;
+		for ( i = 0; i < fix_size; ++i ) if ( v.radius > fix[i].radius ) ipol = i;
+		if ( ipol > fix_size-2 ) ipol = fix_size-2;
+		f32 t = (v.radius-fix[ipol].radius)/(fix[ipol+1].radius-fix[ipol+0].radius);
+		for ( i = 1; i < 10; ++i )
+		{
+			v.v[i] = fix[ipol].v[i]*(1.f-t) + fix[ipol+1].v[i]*t;
+		}
+	}
+	
+	//recreate camera
+	scene::ISceneManager* smgr = Device->getSceneManager();
+	
+	int activeCameraID = 0;
+	scene::ICameraSceneNode* active = smgr->getActiveCamera();
+	int i;
+	if ( active )
+	{
+		for ( i = 0; i < 2; ++i ) if ( active == Camera[i] ) activeCameraID = i;
+		setActiveCamera(0);
+	}
+
+	for ( i = 0; i < 2; ++i )
+	{
+		if ( Camera[i] )
+		{
+			Camera[i]->remove();
+			Camera[i] = 0;
+		}
+		if ( i == 0 ) Camera[i] = smgr->addCameraSceneNodeMaya(0,v.rotateSpeed,v.zoomSpeed,v.translationSpeed,0,v.distance);
+		else if ( i == 1 ) Camera[i] = smgr->addCameraSceneNodeFPS(0,v.fps_rotatespeed,v.fps_movespeed,1);
+		if ( !Camera[i] ) continue;
+
+		Camera[i]->setFarValue(v.cam_far);
+		Camera[i]->setNearValue(v.cam_near);
+		Camera[i]->setPosition(core::vector3df(0,0,-v.distance));
+		Camera[i]->setTarget(core::vector3df(0,v.target_y,0));
+	}
+	
+	setActiveCamera(Camera[activeCameraID]);
+
+}
+
+/*
 Function showAboutText() displays a messagebox with a caption and
 a message text. The texts will be stored in the MessageText and Caption
 variables at startup.
@@ -169,8 +260,9 @@ Function loadModel() loads a model and displays it using an
 addAnimatedMeshSceneNode and the scene manager. Nothing difficult. It also
 displays a short message box, if the model could not be loaded.
 */
-void loadModel(const io::path& filename)
+void loadModel(const io::path& filename,int texture_slot=0)
 {
+	if ( filename.empty() ) return;
 	io::path extension;
 	core::getFileNameExtension(extension, filename);
 	extension.make_lower();
@@ -192,7 +284,7 @@ void loadModel(const io::path& filename)
 		texture = Device->getVideoDriver()->getTexture( filename );
 		if ( texture && Model )
 		{
-			Model->setMaterialTexture(0, texture);
+			Model->setMaterialTexture(texture_slot, texture);
 		}
 		return;
 	}
@@ -223,32 +315,37 @@ void loadModel(const io::path& filename)
 		return;
 	}
 
-	// load a model into the engine. Also log the time it takes to load it.
+	if ( filename == "cube.buildin" ) Model = Device->getSceneManager()->addCubeSceneNode(1);
 
-	u32 then = Device->getTimer()->getRealTime();
-	scene::IAnimatedMesh* mesh = Device->getSceneManager()->getMesh( filename.c_str() );
-	Device->getLogger()->log("Loading time (ms): ", core::stringc(Device->getTimer()->getRealTime() - then).c_str());
-
-	if (!mesh)
+	if ( 0 == Model )
 	{
-		// model could not be loaded
+		// load a model into the engine. Also log the time it takes to load it.
 
-		if (StartUpModelFile != filename)
-			Device->getGUIEnvironment()->addMessageBox(
-			Caption.c_str(), L"The model could not be loaded. " \
-			L"Maybe it is not a supported file format.");
-		return;
+		u32 then = Device->getTimer()->getRealTime();
+		scene::IAnimatedMesh* mesh = Device->getSceneManager()->getMesh( filename.c_str() );
+		Device->getLogger()->log("Loading time (ms): ", core::stringc(Device->getTimer()->getRealTime() - then).c_str());
+
+		if (!mesh)
+		{
+			// model could not be loaded
+
+			if (StartUpModelFile != filename)
+				Device->getGUIEnvironment()->addMessageBox(
+				Caption.c_str(), L"The model could not be loaded. " \
+				L"Maybe it is not a supported file format.");
+			return;
+		}
+		
+		if (Octree)
+			Model = Device->getSceneManager()->addOctreeSceneNode(mesh->getMesh(0));
+		else
+		{
+			scene::IAnimatedMeshSceneNode* animModel = Device->getSceneManager()->addAnimatedMeshSceneNode(mesh);
+			Model = animModel;
+		}
 	}
 
 	// set default material properties
-
-	if (Octree)
-		Model = Device->getSceneManager()->addOctreeSceneNode(mesh->getMesh(0));
-	else
-	{
-		scene::IAnimatedMeshSceneNode* animModel = Device->getSceneManager()->addAnimatedMeshSceneNode(mesh);
-		Model = animModel;
-	}
 	Model->setMaterialFlag(video::EMF_LIGHTING, UseLight);
 	Model->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, UseLight);
 //	Model->setMaterialFlag(video::EMF_BACK_FACE_CULLING, false);
@@ -258,9 +355,14 @@ void loadModel(const io::path& filename)
 	// that's not so simple. so we do it brute force
 	gui::IGUIContextMenu* menu = (gui::IGUIContextMenu*)Device->getGUIEnvironment()->getRootGUIElement()->getElementFromId(GUI_ID_TOGGLE_DEBUG_INFO, true);
 	if (menu)
+	{
 		for(int item = 1; item < 6; ++item)
+		{
 			menu->setItemChecked(item, false);
+		}
+	}
 	updateScaleInfo(Model);
+	adjustCameraToModel();
 }
 
 
@@ -436,12 +538,21 @@ public:
 					OnMenuItemSelected( (IGUIContextMenu*)event.GUIEvent.Caller );
 				break;
 
+			case EGET_DIRECTORY_SELECTED:
+				{
+					IGUIFileOpenDialog* dialog = 
+						(IGUIFileOpenDialog*)event.GUIEvent.Caller;
+				}
+				break;
 			case EGET_FILE_SELECTED:
 				{
 					// load the model file, selected in the file open dialog
 					IGUIFileOpenDialog* dialog =
 						(IGUIFileOpenDialog*)event.GUIEvent.Caller;
-					loadModel(dialog->getFileNameP());
+
+					int texture_slot = 0;
+					if ( id == GUI_ID_OPEN_TEXTURE2 ) texture_slot = 1;
+					loadModel(dialog->getFileNameP(),texture_slot);
 				}
 				break;
 
@@ -593,6 +704,14 @@ public:
 		case GUI_ID_OPEN_MODEL: // File -> Open Model File & Texture
 			env->addFileOpenDialog(L"Please select a model file to open");
 			break;
+		case GUI_ID_OPEN_TEXTURE1: // File -> Open Model Texture 1
+			env->addFileOpenDialog(L"Please select the first Texture file to open",
+				true,0,GUI_ID_OPEN_TEXTURE1,false,StartUpModelTexture1.c_str());
+			break;
+		case GUI_ID_OPEN_TEXTURE2: // File -> Open Model Texture 2
+			env->addFileOpenDialog(L"Please select the second Texture file to open",
+				true,0,GUI_ID_OPEN_TEXTURE2,false,StartUpModelTexture2.c_str());
+			break;
 		case GUI_ID_SET_MODEL_ARCHIVE: // File -> Set Model Archive
 			env->addFileOpenDialog(L"Please select your game archive/directory");
 			break;
@@ -693,6 +812,10 @@ public:
 		case GUI_ID_MODEL_MATERIAL_REFLECTION: // View -> Material -> Reflection
 			if (Model)
 				Model->setMaterialType(video::EMT_SPHERE_MAP);
+			break;
+		case GUI_ID_MODEL_MATERIAL_REFLECTION_2_LAYER: // View -> Material -> Reflection 2Layer
+			if (Model)
+				Model->setMaterialType(video::EMT_REFLECTION_2_LAYER);
 			break;
 
 		case GUI_ID_CAMERA_MAYA:
@@ -830,6 +953,15 @@ int main(int argc, char* argv[])
 				else
 				if (core::stringw("messageText") == xml->getNodeName())
 					Caption = xml->getAttributeValue(L"caption");
+				else
+				if (core::stringw("CameraAdjustToModel") == xml->getNodeName())
+					CameraAdjustToModel = xml->getAttributeValueAsInt(L"value");
+				else
+				if (core::stringw("StartUpModelTexture1") == xml->getNodeName())
+					StartUpModelTexture1 = xml->getAttributeValue(L"file");
+				else
+				if (core::stringw("StartUpModelTexture2") == xml->getNodeName())
+					StartUpModelTexture2 = xml->getAttributeValue(L"file");
 			}
 			break;
 		default:
@@ -843,6 +975,10 @@ int main(int argc, char* argv[])
 	// We can pass a model to load per command line parameter
 	if (argc > 1)
 		StartUpModelFile = argv[1];
+	if (argc > 2)
+		StartUpModelTexture1 = argv[2];
+	if (argc > 3)
+		StartUpModelTexture2 = argv[3];
 
 	// set a nicer font
 	IGUISkin* skin = env->getSkin();
@@ -868,9 +1004,12 @@ int main(int argc, char* argv[])
 
 	gui::IGUIContextMenu* submenu;
 	submenu = menu->getSubMenu(0);
-	submenu->addItem(L"Open Model File & Texture...", GUI_ID_OPEN_MODEL);
+	submenu->addItem(L"Open Model File...", GUI_ID_OPEN_MODEL);
 	submenu->addItem(L"Set Model Archive...", GUI_ID_SET_MODEL_ARCHIVE);
 	submenu->addItem(L"Load as Octree", GUI_ID_LOAD_AS_OCTREE);
+	submenu->addSeparator();
+	submenu->addItem(L"Open Texture 1...", GUI_ID_OPEN_TEXTURE1);
+	submenu->addItem(L"Open Texture 2...", GUI_ID_OPEN_TEXTURE2);
 	submenu->addSeparator();
 	submenu->addItem(L"Quit", GUI_ID_QUIT);
 
@@ -896,6 +1035,7 @@ int main(int argc, char* argv[])
 	submenu->addItem(L"Solid", GUI_ID_MODEL_MATERIAL_SOLID);
 	submenu->addItem(L"Transparent", GUI_ID_MODEL_MATERIAL_TRANSPARENT);
 	submenu->addItem(L"Reflection", GUI_ID_MODEL_MATERIAL_REFLECTION);
+	submenu->addItem(L"Reflection 2 Layer", GUI_ID_MODEL_MATERIAL_REFLECTION_2_LAYER);
 
 	submenu = menu->getSubMenu(2);
 	submenu->addItem(L"Maya Style", GUI_ID_CAMERA_MAYA);
@@ -979,7 +1119,9 @@ int main(int argc, char* argv[])
 	// show about message box and load default model
 	if (argc==1)
 		showAboutText();
-	loadModel(StartUpModelFile.c_str());
+	loadModel(StartUpModelFile);
+	loadModel(StartUpModelTexture1);
+	loadModel(StartUpModelTexture2,1);
 
 	// add skybox
 	SkyBox = smgr->addSkyBoxSceneNode(
@@ -990,34 +1132,22 @@ int main(int argc, char* argv[])
 		driver->getTexture("irrlicht2_ft.jpg"),
 		driver->getTexture("irrlicht2_bk.jpg"));
 
-	//adapt camera speed to model size
-	f32 scale = 1.f;
-	f32 target = 30.f;
-
-	if ( Model )
+	if ( !CameraAdjustToModel )
 	{
-		f32 r = Model->getBoundingBox().getRadius();
-		if ( r > 0.f )
-		{
-			scale = r / 60.f;
-			target = r * 0.5f;
-		}
+		// add a camera scene node
+		Camera[0] = smgr->addCameraSceneNodeMaya();
+		Camera[0]->setFarValue(20000.f);
+		// Maya cameras reposition themselves relative to their target, so target the location
+		// where the mesh scene node is placed.
+		Camera[0]->setTarget(core::vector3df(0,30,0));
+
+		Camera[1] = smgr->addCameraSceneNodeFPS();
+		Camera[1]->setFarValue(20000.f);
+		Camera[1]->setPosition(core::vector3df(0,0,-70));
+		Camera[1]->setTarget(core::vector3df(0,30,0));
+
+		setActiveCamera(Camera[0]);
 	}
-	f32 distance = 70.f * scale;
-
-	// add a camera scene node
-	Camera[0] = smgr->addCameraSceneNodeMaya(0,-1500.f * scale,200.f * scale,1500.f * scale,-1,distance);
-	Camera[0]->setFarValue(20000.f);
-	// Maya cameras reposition themselves relative to their target, so target the location
-	// where the mesh scene node is placed.
-	Camera[0]->setTarget(core::vector3df(0,target,0));
-
-	Camera[1] = smgr->addCameraSceneNodeFPS(0,100.f*scale,0.5f*scale);
-	Camera[1]->setFarValue(20000.f);
-	Camera[1]->setPosition(core::vector3df(0,0,-distance));
-	Camera[1]->setTarget(core::vector3df(0,target,0));
-
-	setActiveCamera(Camera[0]);
 
 	// load the irrlicht engine logo
 	IGUIImage *img =
