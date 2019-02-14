@@ -36,8 +36,11 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	setDebugName("CBurningVideoDriver");
 	#endif
 
-	MipMapLOD_bias2 = 0.2f;
-	AreaMinDrawSize = 0.01f;
+	AreaMinDrawSize = 0.0001f;
+#ifdef BURNINGVIDEO_RENDERER_FAST
+	AreaMinDrawSize = 0.5f;
+#endif
+
 	VertexCache_map_source_format();
 	memset ( TransformationFlag, 0, sizeof ( TransformationFlag ) );
 
@@ -588,6 +591,92 @@ void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
 
 //--------- Transform from NDC to DC, transform TexCoo ----------------------------------------------
 
+
+struct tweakBurning
+{
+	tweakBurning()
+	{
+		current = 1;
+		step = 0.0001f;
+
+		ndc_shrink_x = -0.75f;
+		ndc_scale_x = 0.5f;
+		ndc_trans_x = -0.5f;
+
+		ndc_shrink_y = -0.75f;
+		ndc_scale_y = -0.5f;
+		ndc_trans_y = -0.5f;
+
+		tex_w_add = 0.f;
+		tex_h_add = 0.f;
+		tex_cx_add = 0.f;
+		tex_cy_add = 0.f;
+
+	}
+	int current;
+	f32 step;
+	union
+	{
+		struct{
+		f32 step;
+
+		f32 ndc_shrink_x;
+		f32 ndc_scale_x;
+		f32 ndc_trans_x;
+
+		f32 ndc_shrink_y;
+		f32 ndc_scale_y;
+		f32 ndc_trans_y;
+
+		f32 tex_w_add;
+		f32 tex_cx_add;
+		f32 tex_h_add;
+		f32 tex_cy_add;
+		};
+		f32 val[16];
+	};
+	static const char* const name[16];
+	void postEventFromUser(const SEvent& e);
+};
+
+const char* const tweakBurning::name[]={"step",
+	"ndc_shrink_x","ndc_scale_x","ndc_trans_x",
+	"ndc_shrink_y","ndc_scale_y","ndc_trans_y",
+	"tex_w_add","tex_cx_add","tex_h_add","tex_cy_add",0};
+
+void tweakBurning::postEventFromUser(const SEvent& e)
+{
+	int show = 0;
+	if ( e.EventType == EET_KEY_INPUT_EVENT )
+	{
+		switch ( e.KeyInput.Key)
+		{
+			case KEY_KEY_1: step *= 0.9f; if ( step < 0.00001f ) step = 0.0001f;show = 2;break;
+			case KEY_KEY_2: step *= 1.1f;show = 2; break;
+
+			case KEY_KEY_3: if (!e.KeyInput.PressedDown) {current -= 1; if (current < 1 ) current = 10; show = 1;} break;
+			case KEY_KEY_4: if (!e.KeyInput.PressedDown) {current += 1; if (current > 10 ) current = 1; show = 1;} break;
+
+			case KEY_KEY_5: val[current] -= e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
+			case KEY_KEY_6: val[current] += e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
+		}
+	}
+	if ( show )
+	{
+		if ( step < 0.0001f ) step = 0.0001f;
+		char buf[256];
+		if ( show == 2 ) sprintf(buf,"%s %f\n",name[0],val[0]);
+		else sprintf(buf,"%s %f\n",name[current],val[current]);
+		OutputDebugStringA(buf);
+	}
+}
+tweakBurning Tweak;
+
+void CBurningVideoDriver::postEventFromUser(void* sevent)
+{
+	Tweak.postEventFromUser(*(const SEvent*) sevent);
+}
+
 // used to scale <-1,-1><1,1> to viewport
 void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 {
@@ -599,82 +688,28 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 
 	f32* m = out.pointer();
 
-	f32 w = (f32)viewport.getWidth();
-	f32 h = (f32)viewport.getHeight();
+	m[0]  = (viewport.getWidth() + Tweak.ndc_shrink_x ) * Tweak.ndc_scale_x;
+	m[5]  = (viewport.getHeight() + Tweak.ndc_shrink_y ) * Tweak.ndc_scale_y;
+	m[12] = Tweak.ndc_trans_x + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
+	m[13] = Tweak.ndc_trans_y + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
 
-	m[0]  = w *  0.5f;
+	m[0]  = (viewport.getWidth() - 0.75f ) * 0.5f;
 	m[1]  = 0.f;
 	m[2]  = 0.f;
 	m[3]  = 0.f;
 	m[4]  = 0.f;
-	m[5]  = h * -0.5f;
+	m[5]  = (viewport.getHeight() - 0.75f ) * -0.5f;
 	m[6]  = 0.f;
 	m[7]  = 0.f;
 	m[8]  = 0.f;
 	m[9]  = 0.f;
 	m[10] = 1.f;
 	m[11] = 0.f;
-	m[12] = (w * 0.5f ) - 0.5f;
-	m[13] = (h * 0.5f ) - 0.5f; //0.25 hackish to force one line down...
+	m[12] = -0.5f + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
+	m[13] = -0.5f + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
 	m[14] = 0.f;
 	m[15] = 1.f;
 
-}
-
-struct tweakBurning
-{
-	tweakBurning()
-	{
-		current = 1;
-		step = 0.0001f;
-		tex_w_add = 0.f;
-		tex_h_add = 0.f;
-		tex_cx_add = 0.f;
-		tex_cy_add = 0.f;
-	}
-	int current;
-	union
-	{
-		struct{
-		f32 step;
-		f32 tex_w_add;
-		f32 tex_cx_add;
-		f32 tex_h_add;
-		f32 tex_cy_add;
-		};
-		f32 val[8];
-	};
-	static const char* const name[8];
-	void postEventFromUser(const SEvent& e);
-};
-
-const char* const tweakBurning::name[8]={"step","tex_w_add","tex_cx_add","tex_h_add","tex_cy_add",0};
-void tweakBurning::postEventFromUser(const SEvent& e)
-{
-	int show = 0;
-	if ( e.EventType == EET_KEY_INPUT_EVENT )
-	{
-		switch ( e.KeyInput.Key)
-		{
-			case KEY_KEY_1: if (!e.KeyInput.PressedDown) {current -= 1; if (current < 0 ) current = 4; show = 1;} break;
-			case KEY_KEY_2: if (!e.KeyInput.PressedDown) {current += 1; if (current > 4 ) current = 0; show = 1;} break;
-			case KEY_KEY_3: val[current] -= e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
-			case KEY_KEY_4: val[current] += e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
-		}
-	}
-	if ( show )
-	{
-		if ( step == 0.f ) step = 0.0001f;
-		char buf[256];
-		sprintf(buf,"%s %f\n",name[current],val[current]);
-		OutputDebugStringA(buf);
-	}
-}
-tweakBurning Tweak;
-
-void CBurningVideoDriver::postEventFromUser(void* sevent)
-{
-	Tweak.postEventFromUser(*(const SEvent*) sevent);
 }
 
 /*!
@@ -1201,7 +1236,8 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 #if defined (SOFTWARE_DRIVER_2_LIGHTING) || defined ( SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM )
 
 	// vertex normal in light(world) space
-	if ( Material.org.Lighting || (LightSpace.Flags & TEXTURE_TRANSFORM) )
+/*
+	if ( LightSpace.enabled && (Material.org.Lighting || (LightSpace.Flags & TEXTURE_TRANSFORM)) )
 	{
 		if ( TransformationFlag[ETS_WORLD] & ETF_IDENTITY )
 		{
@@ -1220,7 +1256,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 		if ( LightSpace.Flags & NORMALIZE_NORMALS )
 			LightSpace.normal.normalize_xyz();
 	}
-
+*/
 	// vertex normal in light(eye) space
 	if ( Material.org.Lighting || (EyeSpace.Flags & TEXTURE_TRANSFORM) )
 	{
@@ -1243,8 +1279,8 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 	#if defined (SOFTWARE_DRIVER_2_LIGHTING)
 		if ( Material.org.Lighting )
 		{
-			//lightVertex_eye ( dest, base->Color.color );
-			lightVertex_world ( dest, base->Color.color );
+			lightVertex_eye ( dest, base->Color.color );
+			//if ( LightSpace.enabled) lightVertex_world ( dest, base->Color.color );
 		}
 		else
 		{
@@ -1444,13 +1480,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			vp.x = light.pos.x - EyeSpace.vertex3.x;
 			vp.y = light.pos.y - EyeSpace.vertex3.y;
 			vp.z = light.pos.z - EyeSpace.vertex3.z;
-
-	/*
-			vp.x = light.pos_objectspace.x - base->Pos.X;
-			vp.y = light.pos_objectspace.y - base->Pos.Y;
-			vp.z = light.pos_objectspace.z - base->Pos.Z;
-	*/
-
+	
 			vp.normalize_xyz();
 
 
@@ -1800,9 +1830,14 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	VertexCache_reset ( vertices, vertexCount, indexList, primitiveCount, vType, pType, iType );
 	
 	transform_calc(ETS_PROJ_MODEL_VIEW);
-	if ( Material.org.Lighting || ((LightSpace.Flags|EyeSpace.Flags) & TEXTURE_TRANSFORM) )
+/*
+	if ( LightSpace.enabled && ( Material.org.Lighting || (LightSpace.Flags & TEXTURE_TRANSFORM)) )
 	{
 		transform_calc(ETS_VIEW_INVERSE);
+	}
+*/
+	if ( Material.org.Lighting || (EyeSpace.Flags & TEXTURE_TRANSFORM) )
+	{
 		transform_calc(ETS_MODEL_VIEW);
 		transform_calc(ETS_NORMAL);
 	}
@@ -1868,8 +1903,8 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 		memcpy32_small ( ( (u8*) CurrentOut.data + ( 1 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[1], SIZEOF_SVERTEX * 2 );
 		memcpy32_small ( ( (u8*) CurrentOut.data + ( 2 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[2], SIZEOF_SVERTEX * 2 );
 
+		//clear clipping & projected flags
 		const u32 flag = CurrentOut.data->flag & VERTEX4D_FORMAT_MASK;
-
 		for ( g = 0; g != CurrentOut.ElementSize; ++g )
 		{
 			CurrentOut.data[g].flag = flag;
@@ -1987,7 +2022,7 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			l.pos.z = dl.Position.Z;
 			l.pos.w = 1.f;
 
-			l.constantAttenuation = dl.Attenuation.X + 0.0001f;
+			l.constantAttenuation = dl.Attenuation.X;
 			l.linearAttenuation = dl.Attenuation.Y;
 			l.quadraticAttenuation = dl.Attenuation.Z;
 
@@ -2007,31 +2042,30 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			l.spotDirection.z = nDirection.Z;
 			l.spotDirection.w = 0.0f;
 
-			l.constantAttenuation = dl.Attenuation.X + 0.0001f;
+			l.constantAttenuation = dl.Attenuation.X;
 			l.linearAttenuation = dl.Attenuation.Y;
 			l.quadraticAttenuation = dl.Attenuation.Z;
 
-			l.spotCosCutoff = cosf(dl.OuterCone * 2.0f * core::DEGTORAD);
-			l.spotCosInnerCutoff = cosf(dl.InnerCone * 2.0f * core::DEGTORAD);
-			l.spotExponent = dl.Falloff * 6.f; //todo
+			l.spotCosCutoff = cosf(dl.OuterCone * 2.0f * core::DEGTORAD * 0.5f);
+			l.spotCosInnerCutoff = cosf(dl.InnerCone * 2.0f * core::DEGTORAD * 0.5f);
+			l.spotExponent = dl.Falloff;
 			break;
 		default:
 			break;
 	}
-
-	l.pos4 = l.pos;
-	l.spotDirection4 = l.spotDirection;
-	LightSpace.Light.push_back ( l );
-	
+/*
+	if ( LightSpace.enabled )
+	{
+		l.pos4 = l.pos;
+		l.spotDirection4 = l.spotDirection;
+		LightSpace.Light.push_back ( l );
+	}
+*/	
+	//which means ETS_VIEW
 	setTransform(ETS_WORLD,irr::core::IdentityMatrix);
 	transform_calc(ETS_MODEL_VIEW);
 	Transformation[ETS_MODEL_VIEW].transformVec4 ( &l.pos4.x, &l.pos.x );
 	Transformation[ETS_MODEL_VIEW].rotateVec4 ( &l.spotDirection4.x, &l.spotDirection.x );
-	//f32 w = reciprocal_zero(l.pos4.w);
-	//l.pos4.x *= w;
-	//l.pos4.y *= w;
-	//l.pos4.z *= w;
-
 	EyeSpace.Light.push_back ( l );
 
 	return EyeSpace.Light.size() - 1;
@@ -2040,7 +2074,7 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 //! Turns a dynamic light on or off
 void CBurningVideoDriver::turnLightOn(s32 lightIndex, bool turnOn)
 {
-	if(lightIndex >= 0 && lightIndex < (s32)LightSpace.Light.size())
+	if((u32)lightIndex < LightSpace.Light.size())
 	{
 		LightSpace.Light[lightIndex].LightIsOn = turnOn;
 	}
@@ -2333,8 +2367,6 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 	f32 attenuation;
 	sVec4 vp;			// unit vector vertex to light
 	sVec4 lightHalf;	// blinn-phong reflection
-	sVec4 R; // normalize(-reflect(L,Lightspace.normal))
-	sVec4 E; // normalize(-v); // Eye Coordinates(0,0,0) = LightSpace.campos
 
 	f32 spotDot;			// cos of angle between spotlight and point on surface
 
@@ -2350,7 +2382,7 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 			case ELT_DIRECTIONAL:
 
 				//angle between normal and light vector
-				dot = EyeSpace.normal3.dot_xyz ( light.spotDirection );
+				dot = EyeSpace.normal3.dot_xyz ( light.spotDirection4 );
 
 				// accumulate ambient
 				ambient.add ( light.AmbientColor );
@@ -2368,10 +2400,12 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 
 				distance = vp.get_length_xyz();
 
-				attenuation = 1.f / (  light.constantAttenuation
-					                 + light.linearAttenuation * distance
-  								     /*+ light.quadraticAttenuation * (distance * distance)*/
-								);
+				attenuation = light.constantAttenuation
+					          + light.linearAttenuation * distance
+					          + light.quadraticAttenuation * (distance * distance);
+				attenuation = reciprocal_one(attenuation);
+
+				//att = clamp(1.0 - dist/radius, 0.0, 1.0); att *= att
 
 				// accumulate ambient
 				ambient.mulAdd ( light.AmbientColor,attenuation );
@@ -2388,14 +2422,15 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 
 				if ( !(EyeSpace.Flags & SPECULAR) )
 					continue;
-
+/*
 				lightHalf.x = vp.x + EyeSpace.campos.x;
-				lightHalf.x = vp.y + EyeSpace.campos.y;
-				lightHalf.x = vp.z + EyeSpace.campos.z;
+				lightHalf.y = vp.y + EyeSpace.campos.y;
+				lightHalf.z = vp.z + EyeSpace.campos.z;
 				lightHalf.normalize_xyz();
 
 				dot = EyeSpace.normal3.dot_xyz ( lightHalf );
 				if ( dot > 0.f)
+*/
 				{
 					f32 srgb = powf ( dot,Material.org.Shininess );
 					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
@@ -2418,9 +2453,10 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 				if (spotDot < light.spotCosCutoff)
 					continue;
 
-
-				attenuation = 1.f / (light.constantAttenuation + light.linearAttenuation * distance
-  								+light.quadraticAttenuation * (distance * distance));
+				attenuation = light.constantAttenuation
+					          + light.linearAttenuation * distance
+					          + light.quadraticAttenuation * distance * distance;
+				attenuation = reciprocal_one(attenuation);
 				attenuation *= powf (spotDot,light.spotExponent);
 
 				// accumulate ambient
@@ -2437,14 +2473,15 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 
 				if ( !(EyeSpace.Flags & SPECULAR) )
 					continue;
-
+/*
 				lightHalf.x = vp.x + EyeSpace.campos.x;
-				lightHalf.x = vp.y + EyeSpace.campos.y;
-				lightHalf.x = vp.z + EyeSpace.campos.z;
+				lightHalf.y = vp.y + EyeSpace.campos.y;
+				lightHalf.z = vp.z + EyeSpace.campos.z;
 				lightHalf.normalize_xyz();
 
 				dot = EyeSpace.normal3.dot_xyz ( lightHalf );
 				if ( dot > 0.f)
+*/
 				{
 					f32 srgb = powf ( dot,Material.org.Shininess );
 					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
@@ -2654,14 +2691,15 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 
 	const core::dimension2d<s32> renderTargetSize ( ViewPort.getSize() );
 
-	const s32 xPlus = -(renderTargetSize.Width>>1);
-	const f32 xFact = 1.0f / (renderTargetSize.Width>>1);
+	const f32 xPlus = -(renderTargetSize.Width*0.5f);
+	const f32 xFact = 1.0f / (renderTargetSize.Width*0.5f);
 
-	const s32 yPlus = renderTargetSize.Height-(renderTargetSize.Height>>1);
-	const f32 yFact = 1.0f / (renderTargetSize.Height>>1);
+	const f32 yPlus = renderTargetSize.Height-(renderTargetSize.Height*0.5f);
+	const f32 yFact = 1.0f / (renderTargetSize.Height*0.5f);
 
 	// fill VertexCache direct
 	VertexCache.vertexCount = 4;
+	VertexCache.vType = 0;
 
 	VertexCache.info[0].index = 0;
 	VertexCache.info[1].index = 1;
@@ -2683,11 +2721,10 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 #endif
 
 	s32 i;
-
 	for ( i = 0; i < 8; i += 2 )
 	{
-		v[i + 0].flag = clipToFrustumTest ( v + i );
-		v[i + 1].flag = 0;
+		v[i + 0].flag = clipToFrustumTest ( v + i ) | vSize[VertexCache.vType].Format;
+		v[i + 1].flag = vSize[VertexCache.vType].Format;
 		if ( (v[i].flag & VERTEX4D_INSIDE ) == VERTEX4D_INSIDE )
 		{
 			ndc_2_dc_and_project ( v + i + 1, v + i, 2 );
@@ -2713,7 +2750,7 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 
 		if ( test == VERTEX4D_INSIDE )
 		{
-			render->drawWireFrameTriangle ( face[0] + 1, face[1] + 1, face[2] + 1 );
+			render->drawTriangle ( face[0] + 1, face[1] + 1, face[2] + 1 );
 			continue;
 		}
 		// Todo: all vertices are clipped in 2d..
@@ -2722,6 +2759,14 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 		memcpy32_small ( CurrentOut.data + 0, face[0], sizeof ( s4DVertex ) * 2 );
 		memcpy32_small ( CurrentOut.data + 2, face[1], sizeof ( s4DVertex ) * 2 );
 		memcpy32_small ( CurrentOut.data + 4, face[2], sizeof ( s4DVertex ) * 2 );
+
+		//clear clipping & projected flags
+		const u32 flag = CurrentOut.data->flag & VERTEX4D_FORMAT_MASK;
+		for ( u32 g = 0; g != CurrentOut.ElementSize; ++g )
+		{
+			CurrentOut.data[g].flag = flag;
+			Temp.data[g].flag = flag;
+		}
 
 		vOut = clipToFrustum ( CurrentOut.data, Temp.data, 3 );
 		if ( vOut < 3 )
@@ -2735,7 +2780,7 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 		for ( u32 g = 0; g <= vOut - 6; g += 2 )
 		{
 			// rasterize
-			render->drawWireFrameTriangle ( CurrentOut.data + 1, &CurrentOut.data[g + 3], &CurrentOut.data[g + 5] );
+			render->drawTriangle ( CurrentOut.data + 1, CurrentOut.data + g + 3, CurrentOut.data + g + 5 );
 		}
 
 	}
@@ -2793,13 +2838,13 @@ void CBurningVideoDriver::OnResize(const core::dimension2d<u32>& size)
 {
 	// make sure width and height are multiples of 2
 	core::dimension2d<u32> realSize(size);
-
+/*
 	if (realSize.Width % 2)
 		realSize.Width += 1;
 
 	if (realSize.Height % 2)
 		realSize.Height += 1;
-
+*/
 	if (ScreenSize != realSize)
 	{
 		if (ViewPort.getWidth() == (s32)ScreenSize.Width &&

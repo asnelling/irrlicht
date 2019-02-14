@@ -284,7 +284,6 @@ namespace video
 
 		static const sVec4 NDCPlane[6];
 
-		f32 MipMapLOD_bias2; //adjust mipmap select. ( > smaller mipmapmap)
 		f32 AreaMinDrawSize; //minimal visible covered area for primitive
 
 	};

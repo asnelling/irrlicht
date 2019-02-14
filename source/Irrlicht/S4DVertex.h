@@ -18,12 +18,13 @@ namespace video
 
 // null check necessary (burningvideo only)
 #define reciprocal_zero(x) ((x) != 0.f ? 1.f / (x):0.f)
+#define reciprocal_one(x) ((x) != 0.f ? 1.f / (x):1.f)
 #define fill_convention_left(x) (s32) ceilf(x)
 #define fill_convention_right(x) ((s32) ceilf(x))-1
 
 
 //Check coordinates are in render target/window space
-#define SOFTWARE_DRIVER_2_DO_CLIPCHECK
+//#define SOFTWARE_DRIVER_2_DO_CLIPCHECK
 #if defined (SOFTWARE_DRIVER_2_DO_CLIPCHECK) && defined(_WIN32)
 	#define SOFTWARE_DRIVER_2_CLIPCHECK      if( xStart < 0 || xStart + dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
 	#define SOFTWARE_DRIVER_2_CLIPCHECK_REF  if( pShader.xStart < 0 || pShader.xStart + pShader.dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()

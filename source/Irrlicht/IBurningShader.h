@@ -46,7 +46,6 @@ namespace video
 		sVec3 AmbientColor;
 		sVec3 DiffuseColor;
 		sVec3 SpecularColor;
-		sVec4 pos_objectspace;
 	};
 
 	enum eTransformLightFlags
@@ -61,7 +60,7 @@ namespace video
 	//currently in world space
 	struct SBurningShaderLightSpace
 	{
-		SBurningShaderLightSpace() {}
+		SBurningShaderLightSpace() {enabled = 0;}
 		virtual ~SBurningShaderLightSpace() {}
 		void reset ()
 		{
@@ -69,6 +68,7 @@ namespace video
 			Global_AmbientLight.set ( 0.f, 0.f, 0.f );
 			Flags = 0;
 		}
+		int enabled;
 		core::array<SBurningShaderLight> Light;
 		sVec3 Global_AmbientLight;
 		sVec4 FogColor;
@@ -92,7 +92,8 @@ namespace video
 			Flags = 0;
 			campos.x = 0.f;
 			campos.y = 0.f;
-			campos.z = 1.f;
+			campos.z = 0.f;
+			campos.w = 1.f;
 		}
 		core::array<SBurningShaderLight> Light;
 		sVec3 Global_AmbientLight;
