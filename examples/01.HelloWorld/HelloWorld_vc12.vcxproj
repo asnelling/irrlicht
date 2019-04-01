@@ -137,7 +137,7 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\bin\Win32-VisualStudio\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_v110|Win32'">..\..\bin\Win32-VisualStudio\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\..\bin\Win32-VisualStudio\</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_v110|x64'">..\..\bin\Win32-VisualStudio\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_v110|x64'">..\..\bin\Win64-VisualStudio\</OutDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release_v110|Win32'" />
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
