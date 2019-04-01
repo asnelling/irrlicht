@@ -52,10 +52,10 @@ int main(int argumentCount, char * arguments[])
 	//TEST(textureFeatures);
 	//TEST(drawVertexPrimitive);
 	//TEST(terrainSceneNode);
-	//TEST(twodmaterial);
+	TEST(twodmaterial);
 	//TEST(billboards);
 	//TEST(testGeometryCreator);
-	TEST(lights);
+	//TEST(lights);
 	//TEST(burningsVideo);
 	//TEST(flyCircleAnimator);
 	//TEST(orthoCam);

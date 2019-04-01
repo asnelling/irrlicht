@@ -36,6 +36,7 @@ outside the string class for explicit use.
 template <typename T, typename TAlloc = irrAllocator<T> >
 class string;
 static size_t multibyteToWString(string<wchar_t>& destination, const char* source, u32 sourceSize);
+inline s32 isdigit(s32 c);
 
 enum eLocaleID
 {
@@ -729,6 +730,32 @@ public:
 		return *this;
 	}
 
+	//! Insert a certain amount of characters into the string before the given index
+	//\param pos Insert the characters before this index
+	//\param s String to insert. Must be at least of size n
+	//\param n Number of characters from string s to use.
+	string<T,TAlloc>& insert(u32 pos, const char* s, u32 n)
+	{
+		if ( pos < used )
+		{
+			reserve(used+n);
+
+			// move stuff behind insert point
+			const u32 end = used+n-1;
+			for (u32 i=0; i<used-pos; ++i)
+			{
+				array[end-i] = array[end-(i+n)];
+			}
+			used += n;
+
+			for (u32 i=0; i<n; ++i)
+			{
+				array[pos+i] = s[i];
+			}
+		}
+
+		return *this;
+	}
 
 	//! Reserves some memory.
 	/** \param count: Amount of characters to reserve. */
@@ -1258,7 +1285,7 @@ public:
 	}
 
 	//! Erase 0's at the end when a string ends with a floating point number
-	/** After generating strings from floats we often end up with strings 
+	/** After generating strings from floats we often end up with strings
 		ending up with lots of zeros which don't add any value. Erase 'em all.
 		Examples: "0.100000" becomes "0.1"
 	              "10.000000" becomes "10"
@@ -1273,9 +1300,9 @@ public:
 		{
 			u32 eraseStart=i+1;
 			u32 dot=0;
-			if( isdigit(array[i]) )
+			if( core::isdigit(array[i]) )
 			{
-				while( --i>0 && isdigit(array[i]) );
+				while( --i>0 && core::isdigit(array[i]) );
 				if ( array[i] == decimalPoint )
 					dot = i;
 			}
@@ -1284,7 +1311,7 @@ public:
 				dot = i;
 				eraseStart = i;
 			}
-			if ( dot > 0 && isdigit(array[dot-1]) )
+			if ( dot > 0 && core::isdigit(array[dot-1]) )
 			{
 				array[eraseStart] = 0;
 				used = eraseStart+1;
@@ -1366,7 +1393,7 @@ public:
 			return 0;
 
 		const u32 oldSize=ret.size();
-		
+
 		u32 tokenStartIdx = 0;
 		for (u32 i=0; i<used; ++i)
 		{
@@ -1385,14 +1412,14 @@ public:
 						else if ( !ignoreEmptyTokens )
 							ret.push_back(string<T,TAlloc>());
 					}
-					tokenStartIdx = i+1;					
+					tokenStartIdx = i+1;
 					break;
 				}
 			}
 		}
 		if ((used - 1) > tokenStartIdx)
 			ret.push_back(string<T,TAlloc>(&array[tokenStartIdx], (used - 1) - tokenStartIdx));
-		
+
 		return ret.size()-oldSize;
 	}
 
