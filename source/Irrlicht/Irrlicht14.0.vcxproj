@@ -1309,6 +1309,7 @@
     <ClCompile Include="CSkinnedMesh.cpp" />
     <ClCompile Include="CSTLMeshFileLoader.cpp" />
     <ClCompile Include="CTRGouraudNoZ2.cpp" />
+    <ClCompile Include="CTR_transparent_reflection_2_layer.cpp" />
     <ClCompile Include="CWGLManager.cpp" />
     <ClCompile Include="CXMeshFileLoader.cpp" />
     <ClCompile Include="CAnimatedMeshSceneNode.cpp" />
