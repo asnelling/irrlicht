@@ -933,8 +933,8 @@ void CNullDriver::draw3DCircle(const core::vector3df& center,const core::vector3
 		for ( int g = 1; g < stripes; ++g ) //no poles
 		{
 			f32 xy = g * angleStripe - angleStripeMinus180;
-			f32 r_xz = cos(xy);
-			a.Normal.Y = sin(xy);
+			f32 r_xz = cosf(xy);
+			a.Normal.Y = sinf(xy);
 			a.Pos.Y = center.Y + a.Normal.Y * radius.Y;
 			for ( int i = 0; i < segments; ++i )
 			{
