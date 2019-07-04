@@ -698,7 +698,7 @@ namespace video
 
 		virtual bool checkDriverReset() _IRR_OVERRIDE_ {return false;}
 
-		virtual void postEventFromUser(void* sevent)  _IRR_OVERRIDE_ {}
+		virtual void postEventFromUser(const void* sevent)  _IRR_OVERRIDE_ {}
 
 	protected:
 

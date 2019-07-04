@@ -1350,6 +1350,7 @@
     <None Include="..\..\readme.txt">
       <Filter>doc</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDefaultSceneNodeAnimatorFactory.cpp">

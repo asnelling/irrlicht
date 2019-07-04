@@ -1541,7 +1541,8 @@ namespace video
 		/**	\return True if the format is available, false if not. */
 		virtual bool queryTextureFormat(ECOLOR_FORMAT format) const = 0;
 
-		virtual void postEventFromUser(void* sevent) = 0;
+		//!Pass Events to IVideoDriver. (const SEvent* event). Currently used in Burning only
+		virtual void postEventFromUser(const void* SEvent_event) = 0;
 	};
 
 } // end namespace video

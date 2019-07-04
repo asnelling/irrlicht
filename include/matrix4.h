@@ -250,6 +250,8 @@ namespace core
 			/** This operation is performed as if the vector was 4d with the 4th component =1
 				NOTE: out[3] will be written to (4th vector component)*/
 			void transformVec3(T *out, const T * in) const;
+
+			//! An alternate transform vector method, reading from and writing to an array of 4 floats
 			void transformVec4(T *out, const T * in) const;
 			void rotateVec4(T *out, const T* in) const;
 
@@ -1254,8 +1256,6 @@ namespace core
 		out[1] = in[0]*M[1] + in[1]*M[5] + in[2]*M[9];
 		out[2] = in[0]*M[2] + in[1]*M[6] + in[2]*M[10];
 	}
-
-
 	//! Transforms a plane by this matrix
 	template <class T>
 	inline void CMatrix4<T>::transformPlane( core::plane3d<f32> &plane) const

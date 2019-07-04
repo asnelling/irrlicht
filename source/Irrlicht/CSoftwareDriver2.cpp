@@ -672,9 +672,9 @@ void tweakBurning::postEventFromUser(const SEvent& e)
 }
 tweakBurning Tweak;
 
-void CBurningVideoDriver::postEventFromUser(void* sevent)
+void CBurningVideoDriver::postEventFromUser(const void* sevent)
 {
-	Tweak.postEventFromUser(*(const SEvent*) sevent);
+	if (sevent) Tweak.postEventFromUser(*(const SEvent*) sevent);
 }
 
 // used to scale <-1,-1><1,1> to viewport

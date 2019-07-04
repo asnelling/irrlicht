@@ -167,7 +167,7 @@ namespace video
 		IDepthBuffer * getDepthBuffer () { return DepthBuffer; }
 		IStencilBuffer * getStencilBuffer () { return StencilBuffer; }
 
-		virtual void postEventFromUser(void* sevent)  _IRR_OVERRIDE_;
+		virtual void postEventFromUser(const void* sevent)  _IRR_OVERRIDE_;
 
 	protected:
 
