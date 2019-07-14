@@ -100,7 +100,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	BurningShader[ETR_TEXTURE_BLEND] = createTRTextureBlend( this );
 
 	BurningShader[ETR_TRANSPARENT_REFLECTION_2_LAYER] = createTriangleRendererTexture_transparent_reflection_2_layer(this);
-	BurningShader[ETR_REFERENCE] = createTriangleRendererReference ( this );
+	//BurningShader[ETR_REFERENCE] = createTriangleRendererReference ( this );
 
 
 	// add the same renderer for all solid types

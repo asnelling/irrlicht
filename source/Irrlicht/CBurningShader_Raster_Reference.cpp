@@ -5,7 +5,7 @@
 #include "IrrCompileConfig.h"
 #include "IBurningShader.h"
 
-#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
+#if defined(_IRR_COMPILE_WITH_BURNINGSVIDEO_) && 0
 
 
 namespace irr
@@ -787,6 +787,9 @@ REALINLINE void CBurningShader_Raster_Reference::scanline ()
 				break;
 			case BD3DCMP_EQUAL:
 				condition = a != pShader.z[pShader.i];
+				break;
+			default:
+				condition = 0;
 				break;
 		}
 		while ( a < pShader.z[pShader.i] )
