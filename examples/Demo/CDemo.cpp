@@ -405,7 +405,7 @@ void CDemo::loadSceneData()
 				continue;
 			}
 			// Now add the MeshBuffer(s) with the current Shader to the Manager
-			scene::IMeshSceneNode* q3 = sm->addQuake3SceneNode ( meshBuffer, shader );
+			//scene::IMeshSceneNode* q3 = sm->addQuake3SceneNode ( meshBuffer, shader );
 			//q3->setDebugDataVisible(scene::EDS_NORMALS);
 		}
 	}

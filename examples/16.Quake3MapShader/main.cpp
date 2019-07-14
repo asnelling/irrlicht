@@ -335,6 +335,8 @@ int IRRCALLCONV main(int argc, char* argv[])
 		case video::EDT_DIRECT3D9:
 			gui->addImage(driver->getTexture("directxlogo.png"), pos);
 			break;
+		default:
+			break;
 	}
 
 	/*

@@ -459,6 +459,8 @@ void CBurningVideoDriver::transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO st
 		case ETS_NORMAL:
 			Transformation[ETS_MODEL_VIEW].transposed_inverse(Transformation[state]);
 			break;
+		default:
+			break;
 	}
 	TransformationFlag[state] |= ETF_VALID;
 }

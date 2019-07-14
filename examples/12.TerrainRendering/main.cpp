@@ -214,8 +214,13 @@ int main()
 	*/
 	scene::CDynamicMeshBuffer* buffer = new scene::CDynamicMeshBuffer(video::EVT_2TCOORDS, video::EIT_16BIT);
 	terrain->getMeshBufferForLOD(*buffer, 0);
-	video::S3DVertex2TCoords* data = (video::S3DVertex2TCoords*)buffer->getVertexBuffer().getData();
+
 	// Work on data or get the IndexBuffer with a similar call.
+	video::S3DVertex2TCoords* data = (video::S3DVertex2TCoords*)buffer->getVertexBuffer().getData();
+	if (data)
+	{
+	}
+
 	buffer->drop(); // When done drop the buffer again.
 
 	/*
