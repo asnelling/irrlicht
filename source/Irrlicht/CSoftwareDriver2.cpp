@@ -4,7 +4,7 @@
 
 #include "IrrCompileConfig.h"
 #include "CSoftwareDriver2.h"
-#include <Windows.h>
+
 #ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 
 #include "SoftwareDriver2_helper.h"
@@ -667,7 +667,7 @@ void tweakBurning::postEventFromUser(const SEvent& e)
 		char buf[256];
 		if ( show == 2 ) sprintf(buf,"%s %f\n",name[0],val[0]);
 		else sprintf(buf,"%s %f\n",name[current],val[current]);
-		OutputDebugStringA(buf);
+		os::Printer::print(buf);
 	}
 }
 tweakBurning Tweak;
