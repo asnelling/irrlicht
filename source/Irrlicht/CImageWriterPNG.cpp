@@ -121,6 +121,7 @@ bool CImageWriterPNG::writeImage(io::IWriteFile* file, IImage* image,u32 param) 
 				image->getDimension().Width, image->getDimension().Height,
 				8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
 				PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+			break;
 	}
 
 	s32 lineWidth = image->getDimension().Width;
@@ -161,11 +162,9 @@ bool CImageWriterPNG::writeImage(io::IWriteFile* file, IImage* image,u32 param) 
 	case ECF_A1R5G5B5:
 		CColorConverter::convert_A1R5G5B5toA8R8G8B8(data,image->getDimension().Height*image->getDimension().Width,tmpImage);
 		break;
-#ifndef _DEBUG
 		// TODO: Error handling in case of unsupported color format
 	default:
 		break;
-#endif
 	}
 
 	// Create array of pointers to rows in image data
