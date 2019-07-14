@@ -1264,8 +1264,8 @@ inline void setClip ( AbsRectangle &out, const core::rect<s32> *clip,
 		return;
 	}
 
-	const s32 w = tex ? tex->getDimension().Width : 0;
-	const s32 h = tex ? tex->getDimension().Height : 0;
+	const u32 w = tex ? tex->getDimension().Width : 0;
+	const u32 h = tex ? tex->getDimension().Height : 0;
 	//driver could have changed texture size.
 	if ( clip && tex_org && (w != tex_org->Width || h != tex_org->Height) )
 	{

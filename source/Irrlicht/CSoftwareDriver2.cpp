@@ -409,6 +409,8 @@ void CBurningVideoDriver::transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO st
 		case ETS_NORMAL:
 			ok = TransformationFlag[ETS_MODEL_VIEW] & ETF_VALID;
 			break;
+		default:
+			break;
 	}
 
 	if ( !ok )
@@ -472,12 +474,9 @@ void CBurningVideoDriver::setTransform(E_TRANSFORMATION_STATE state, const core:
 #if defined ( USE_MATRIX_TEST )
 	core::setbit_cond ( TransformationFlag[state], mat.getDefinitelyIdentityMatrix(), ETF_IDENTITY );
 #else
-	const u32* l = (const u32*) mat.pointer();
-	const u32* r = (const u32*) core::IdentityMatrix.pointer();
-	size_t n = 16;
-    for (; n && *l == *r; n--, l++, r++);
-	if ( n ) TransformationFlag[state] &= ~ETF_IDENTITY;
-	else TransformationFlag[state] |= ETF_IDENTITY;
+	core::setbit_cond(TransformationFlag[state],
+		!memcmp(mat.pointer(), core::IdentityMatrix.pointer(),sizeof(mat)),ETF_IDENTITY
+	);
 #endif
 
 	switch ( state )
@@ -614,7 +613,7 @@ struct tweakBurning
 
 	}
 	int current;
-	f32 step;
+
 	union
 	{
 		struct{
@@ -659,6 +658,8 @@ void tweakBurning::postEventFromUser(const SEvent& e)
 
 			case KEY_KEY_5: val[current] -= e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
 			case KEY_KEY_6: val[current] += e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
+			default:
+				break;
 		}
 	}
 	if ( show )

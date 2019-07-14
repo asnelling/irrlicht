@@ -535,7 +535,7 @@ void Resample_subSampling(eBlitter op,video::IImage* dst,const core::rect<s32>* 
 	const float rs = 1.f/(scale[0]*scale[1]);
 
 	float sum[4];
-	u32 sbgra;
+	u32 sbgra = 0;
 
 	float f[4];
 	int fi[4];
@@ -614,6 +614,8 @@ void Resample_subSampling(eBlitter op,video::IImage* dst,const core::rect<s32>* 
 				case BLITTER_TEXTURE_ALPHA_BLEND:
 				case BLITTER_TEXTURE_ALPHA_COLOR_BLEND:
 					break;
+				default:
+					break;
 			}
 			if ( dst_sRGB )
 			{
@@ -641,6 +643,8 @@ void Resample_subSampling(eBlitter op,video::IImage* dst,const core::rect<s32>* 
 				} break;
 				case video::ECF_A1R5G5B5: *(u16*)(dstData+(dy*dst_clip.x1)*2 + (dx*2)) = video::A8R8G8B8toA1R5G5B5(sbgra); break;
 				case video::ECF_R5G6B5:   *(u16*)(dstData+(dy*dst_clip.x1)*2 + (dx*2)) = video::A8R8G8B8toR5G6B5(sbgra); break;
+				default:
+					break;
 			}
 		}
 	}
