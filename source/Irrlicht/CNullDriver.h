@@ -153,7 +153,7 @@ namespace video
 			);
 
 		//! draws an 2d image
-		virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos) _IRR_OVERRIDE_;
+		virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture) _IRR_OVERRIDE_;
 
 		//! draws a set of 2d images, using a color and the alpha
 		/** channel of the texture if desired. The images are drawn
@@ -570,7 +570,7 @@ namespace video
 			u32 verticesOut = 0,
 			IShaderConstantSetCallBack* callback = 0,
 			E_MATERIAL_TYPE baseMaterial = video::EMT_SOLID,
-			s32 userData = 0, E_GPU_SHADING_LANGUAGE shadingLang = EGSL_DEFAULT) _IRR_OVERRIDE_;
+			s32 userData = 0) _IRR_OVERRIDE_;
 
 		//! Like IGPUProgrammingServices::addShaderMaterial() (look there for a detailed description),
 		//! but tries to load the programs from files.
@@ -589,7 +589,7 @@ namespace video
 			u32 verticesOut = 0,
 			IShaderConstantSetCallBack* callback = 0,
 			E_MATERIAL_TYPE baseMaterial = video::EMT_SOLID,
-			s32 userData = 0, E_GPU_SHADING_LANGUAGE shadingLang = EGSL_DEFAULT) _IRR_OVERRIDE_;
+			s32 userData = 0) _IRR_OVERRIDE_;
 
 		//! Like IGPUProgrammingServices::addShaderMaterial() (look there for a detailed description),
 		//! but tries to load the programs from files.
@@ -608,7 +608,7 @@ namespace video
 			u32 verticesOut = 0,
 			IShaderConstantSetCallBack* callback = 0,
 			E_MATERIAL_TYPE baseMaterial = video::EMT_SOLID,
-			s32 userData = 0, E_GPU_SHADING_LANGUAGE shadingLang = EGSL_DEFAULT) _IRR_OVERRIDE_;
+			s32 userData = 0) _IRR_OVERRIDE_;
 
 		//! Returns a pointer to the mesh manipulator.
 		virtual scene::IMeshManipulator* getMeshManipulator() _IRR_OVERRIDE_;

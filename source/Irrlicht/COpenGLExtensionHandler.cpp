@@ -60,6 +60,7 @@ COpenGLExtensionHandler::COpenGLExtensionHandler() :
 	pGlCheckFramebufferStatusEXT(0), pGlFramebufferTexture2DEXT(0),
 	pGlBindRenderbufferEXT(0), pGlDeleteRenderbuffersEXT(0), pGlGenRenderbuffersEXT(0),
 	pGlRenderbufferStorageEXT(0), pGlFramebufferRenderbufferEXT(0), pGlGenerateMipmapEXT(0),
+	pGlActiveStencilFaceEXT(0),
 	// MRTs
 	pGlDrawBuffersARB(0), pGlDrawBuffersATI(0),
 	pGlGenBuffersARB(0), pGlBindBufferARB(0), pGlBufferDataARB(0), pGlDeleteBuffersARB(0),
@@ -750,8 +751,10 @@ void COpenGLExtensionHandler::initExtensions(bool stencilBuffer)
 #endif
 		OcclusionQuerySupport=false;
 
-		Feature.BlendOperation = (Version >= 140) || FeatureAvailable[IRR_EXT_blend_minmax] || FeatureAvailable[IRR_EXT_blend_subtract] ||
-		FeatureAvailable[IRR_EXT_blend_logic_op];
+    Feature.BlendOperation = (Version >= 140) ||
+            FeatureAvailable[IRR_EXT_blend_minmax] ||
+            FeatureAvailable[IRR_EXT_blend_subtract] ||
+            FeatureAvailable[IRR_EXT_blend_logic_op];
 
 #ifdef _DEBUG
 	if (FeatureAvailable[IRR_NVX_gpu_memory_info])

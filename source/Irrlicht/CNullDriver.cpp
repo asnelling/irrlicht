@@ -114,6 +114,7 @@ CNullDriver::CNullDriver(io::IFileSystem* io, const core::dimension2d<u32>& scre
 
 	setTextureCreationFlag(ETCF_ALWAYS_32_BIT, true);
 	setTextureCreationFlag(ETCF_CREATE_MIP_MAPS, true);
+	setTextureCreationFlag(ETCF_TRY_HARDWARE_MIP_MAPS, true);
 	setTextureCreationFlag(ETCF_ALLOW_MEMORY_COPY, true);
 
 	ViewPort = core::rect<s32>(core::position2d<s32>(0,0), core::dimension2di(screenSize));
@@ -432,12 +433,6 @@ void CNullDriver::renameTexture(ITexture* texture, const io::path& newName)
 
 ITexture* CNullDriver::addTexture(const core::dimension2d<u32>& size, const io::path& name, ECOLOR_FORMAT format)
 {
-	if (IImage::isRenderTargetOnlyFormat(format))
-	{
-		os::Printer::log("Could not create ITexture, format only supported for render target textures.", ELL_WARNING);
-		return 0;
-	}
-
 	if (0 == name.size())
 	{
 		os::Printer::log("Could not create ITexture, texture needs to have a non-empty name.", ELL_WARNING);
@@ -530,12 +525,6 @@ ITexture* CNullDriver::addTextureCubemap(const irr::u32 sideLen, const io::path&
 {
 	if ( 0 == sideLen )
 		return 0;
-
-	if (IImage::isRenderTargetOnlyFormat(format))
-	{
-		os::Printer::log("Could not create ITexture, format only supported for render target textures.", ELL_WARNING);
-		return 0;
-	}
 
 	if (0 == name.size())
 	{
@@ -956,13 +945,17 @@ void CNullDriver::draw3DCircle(const core::vector3df& center,const core::vector3
 
 
 //! draws an 2d image
-void CNullDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos)
+void CNullDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture)
 {
 	if (!texture)
 		return;
 
 	draw2DImage(texture,destPos, core::rect<s32>(core::position2d<s32>(0,0),
-												core::dimension2di(texture->getOriginalSize())));
+												core::dimension2di(texture->getOriginalSize())),
+												0, 
+												SColor(255,255,255,255), 
+												useAlphaChannelOfTexture
+												);
 }
 
 
@@ -1767,11 +1760,6 @@ IImage* CNullDriver::createImage(ECOLOR_FORMAT format, const core::dimension2d<u
 IImage* CNullDriver::createImage(ECOLOR_FORMAT format, IImage *imageToCopy)
 {
 	os::Printer::log("Deprecated method, please create an empty image instead and use copyTo().", ELL_WARNING);
-	if(IImage::isRenderTargetOnlyFormat(format))
-	{
-		os::Printer::log("Could not create IImage, format only supported for render target textures.", ELL_WARNING);
-		return 0;
-	}
 
 	CImage* tmp = new CImage(format, imageToCopy->getDimension());
 	imageToCopy->copyTo(tmp);
@@ -2465,7 +2453,7 @@ s32 CNullDriver::addHighLevelShaderMaterial(
 	u32 verticesOut,
 	IShaderConstantSetCallBack* callback,
 	E_MATERIAL_TYPE baseMaterial,
-	s32 userData, E_GPU_SHADING_LANGUAGE shadingLang)
+	s32 userData)
 {
 	os::Printer::log("High level shader materials not available (yet) in this driver, sorry");
 	return -1;
@@ -2488,7 +2476,7 @@ s32 CNullDriver::addHighLevelShaderMaterialFromFiles(
 		u32 verticesOut,
 		IShaderConstantSetCallBack* callback,
 		E_MATERIAL_TYPE baseMaterial,
-		s32 userData, E_GPU_SHADING_LANGUAGE shadingLang)
+		s32 userData)
 {
 	io::IReadFile* vsfile = 0;
 	io::IReadFile* psfile = 0;
@@ -2529,7 +2517,7 @@ s32 CNullDriver::addHighLevelShaderMaterialFromFiles(
 		psfile, pixelShaderEntryPointName, psCompileTarget,
 		gsfile, geometryShaderEntryPointName, gsCompileTarget,
 		inType, outType, verticesOut,
-		callback, baseMaterial, userData, shadingLang);
+		callback, baseMaterial, userData);
 
 	if (psfile)
 		psfile->drop();
@@ -2560,7 +2548,7 @@ s32 CNullDriver::addHighLevelShaderMaterialFromFiles(
 		u32 verticesOut,
 		IShaderConstantSetCallBack* callback,
 		E_MATERIAL_TYPE baseMaterial,
-		s32 userData, E_GPU_SHADING_LANGUAGE shadingLang)
+		s32 userData)
 {
 	c8* vs = 0;
 	c8* ps = 0;
@@ -2611,7 +2599,7 @@ s32 CNullDriver::addHighLevelShaderMaterialFromFiles(
 		ps, pixelShaderEntryPointName, psCompileTarget,
 		gs, geometryShaderEntryPointName, gsCompileTarget,
 		inType, outType, verticesOut,
-		callback, baseMaterial, userData, shadingLang);
+		callback, baseMaterial, userData);
 
 	delete [] vs;
 	delete [] ps;

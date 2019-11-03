@@ -207,7 +207,6 @@ namespace irr
 		u32 Width, Height;
 
 		bool Resizable;
-		bool WindowHasFocus;
 		bool WindowMinimized;
 
 		struct SKeyMap
