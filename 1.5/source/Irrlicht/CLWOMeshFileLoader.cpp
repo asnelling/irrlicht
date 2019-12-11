@@ -154,10 +154,10 @@ IAnimatedMesh* CLWOMeshFileLoader::createMesh(io::IReadFile* file)
 	Mesh = new SMesh();
 
 	if (!readFileHeader())
-		return false;
+		return 0;
 
 	if (!readChunks())
-		return false;
+		return 0;
 
 	SAnimatedMesh* am = new SAnimatedMesh();
 	am->Type = EAMT_3DS;

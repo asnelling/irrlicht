@@ -1,3 +1,7 @@
+
+ - Fix compile error in CLWOMeshFileLoader on newer gcc.
+ 
+-------------------------------------
 Changes in version 1.5.2 (16.12.2009)
 
  - Properly check boundaries in getFont and setFont.
