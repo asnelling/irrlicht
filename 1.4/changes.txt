@@ -1,3 +1,6 @@
+ - Fix c::b windows project file for Debug and Release-Fast FPU by adding missing option -D__GNUWIN32__
+
+-------------------------------------------
 Changes in version 1.4.2 (22.9.2008)
 
  - Unified the handling of zwrite enable with transparent materials on all hw accelerated drivers. This means that all transparent materials will now disable ZWrite, ignoring the material flag.

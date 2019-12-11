@@ -23,6 +23,7 @@
 					<Add option="-D_USRDLL" />
 					<Add option="-DIRRLICHT_EXPORTS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-D__GNUWIN32__" />
 					<Add directory="..\..\include" />
 					<Add directory="zlib" />
 				</Compiler>
@@ -90,6 +91,7 @@
 					<Add option="-D_USRDLL" />
 					<Add option="-DIRRLICHT_EXPORTS" />
 					<Add option="-D_CRT_SECURE_NO_DEPRECATE" />
+					<Add option="-D__GNUWIN32__" />
 					<Add directory="..\..\include" />
 					<Add directory="zlib" />
 				</Compiler>
