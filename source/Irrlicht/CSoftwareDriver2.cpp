@@ -142,7 +142,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	setRenderTargetImage(BackBuffer);
 
 	//reset Lightspace
-	LightSpace.reset ();
+	//LightSpace.reset ();
 	EyeSpace.reset();
 
 	// select the right renderer
@@ -198,7 +198,7 @@ void CBurningVideoDriver::setCurrentShader()
 	EBurningFFShader shader = zMaterialTest ? ETR_TEXTURE_GOURAUD : ETR_TEXTURE_GOURAUD_NOZ;
 
 	TransformationFlag[ ETS_TEXTURE_0] &= ~(ETF_TEXGEN_CAMERA_SPHERE|ETF_TEXGEN_CAMERA_REFLECTION);
-	LightSpace.Flags &= ~TEXTURE_TRANSFORM;
+	//LightSpace.Flags &= ~TEXTURE_TRANSFORM;
 	EyeSpace.Flags &= ~TEXTURE_TRANSFORM;
 
 	switch ( Material.org.MaterialType )
@@ -264,7 +264,7 @@ void CBurningVideoDriver::setCurrentShader()
 		case EMT_SPHERE_MAP:
 			TransformationFlag[ ETS_TEXTURE_0] |= ETF_TEXGEN_CAMERA_SPHERE;
 			EyeSpace.Flags |= TEXTURE_TRANSFORM;
-			LightSpace.Flags |= TEXTURE_TRANSFORM;
+			//LightSpace.Flags |= TEXTURE_TRANSFORM;
 			break;
 		case EMT_REFLECTION_2_LAYER:
 			if ( texture1 )
@@ -272,7 +272,7 @@ void CBurningVideoDriver::setCurrentShader()
 				shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M1;
 				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
 				EyeSpace.Flags |= TEXTURE_TRANSFORM;
-				LightSpace.Flags |= TEXTURE_TRANSFORM;
+				//LightSpace.Flags |= TEXTURE_TRANSFORM;
 			}
 			break;
 
@@ -282,7 +282,7 @@ void CBurningVideoDriver::setCurrentShader()
 				shader = ETR_TRANSPARENT_REFLECTION_2_LAYER;
 				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
 				EyeSpace.Flags |= TEXTURE_TRANSFORM;
-				LightSpace.Flags |= TEXTURE_TRANSFORM;
+				//LightSpace.Flags |= TEXTURE_TRANSFORM;
 			}
 			break;
 
@@ -292,7 +292,7 @@ void CBurningVideoDriver::setCurrentShader()
 		case EMT_PARALLAX_MAP_TRANSPARENT_VERTEX_ALPHA:
 			shader = ETR_NORMAL_MAP_SOLID;
 			EyeSpace.Flags |= TEXTURE_TRANSFORM;
-			LightSpace.Flags |= TEXTURE_TRANSFORM;
+			//LightSpace.Flags |= TEXTURE_TRANSFORM;
 			break;
 
 		default:
@@ -434,6 +434,7 @@ void CBurningVideoDriver::transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO st
 			break;
 		case ETS_VIEW_INVERSE:
 			Transformation[ ETS_VIEW ].getInverse(Transformation[state]);
+#if 0
 			{
 				const f32* M = Transformation[state].pointer ();
 				LightSpace.campos.x = M[12];
@@ -441,6 +442,7 @@ void CBurningVideoDriver::transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO st
 				LightSpace.campos.z = M[14];
 				LightSpace.campos.w = 1.f;
 			}
+#endif
 			break;
 
 		case ETS_VIEW_PROJECTION:
@@ -506,7 +508,7 @@ void CBurningVideoDriver::setTransform(E_TRANSFORMATION_STATE state, const core:
 			if ( 0 == (TransformationFlag[state] & ETF_IDENTITY ) )
 			{
 				EyeSpace.Flags |= TEXTURE_TRANSFORM;
-				LightSpace.Flags |= TEXTURE_TRANSFORM;
+				//LightSpace.Flags |= TEXTURE_TRANSFORM;
 			}
 			break;
 		default:
@@ -1034,7 +1036,7 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,s4DVerte
 }
 
 
-inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( s4DVertex **v, const u32 size ) const
+inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( s4DVertex* v[], const u32 size ) const
 {
 	u32 g;
 
@@ -1112,7 +1114,7 @@ inline f32 CBurningVideoDriver::screenarea2 ( s4DVertex* const v[] ) const
 
 /*!
 */
-inline f32 CBurningVideoDriver::texelarea2 ( s4DVertex* const v[], s32 tex ) const
+inline f32 CBurningVideoDriver::texelarea2 ( s4DVertex* const v[], int tex ) const
 {
 	sVec2 a(v[1]->Tex[tex].x - v[0]->Tex[tex].x,v[1]->Tex[tex].y - v[0]->Tex[tex].y);
 	sVec2 b(v[2]->Tex[tex].x - v[0]->Tex[tex].x,v[2]->Tex[tex].y - v[0]->Tex[tex].y);
@@ -1239,7 +1241,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 #if defined (SOFTWARE_DRIVER_2_LIGHTING) || defined ( SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM )
 
 	// vertex normal in light(world) space
-/*
+#if 0
 	if ( LightSpace.enabled && (Material.org.Lighting || (LightSpace.Flags & TEXTURE_TRANSFORM)) )
 	{
 		if ( TransformationFlag[ETS_WORLD] & ETF_IDENTITY )
@@ -1259,7 +1261,8 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 		if ( LightSpace.Flags & NORMALIZE_NORMALS )
 			LightSpace.normal.normalize_xyz();
 	}
-*/
+#endif
+
 	// vertex normal in light(eye) space
 	if ( Material.org.Lighting || (EyeSpace.Flags & TEXTURE_TRANSFORM) )
 	{
@@ -1975,7 +1978,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 //! \param color: New color of the ambient light.
 void CBurningVideoDriver::setAmbientLight(const SColorf& color)
 {
-	LightSpace.Global_AmbientLight.setColorf ( color );
+	//LightSpace.Global_AmbientLight.setColorf ( color );
 	EyeSpace.Global_AmbientLight.setColorf ( color );
 }
 
@@ -2077,10 +2080,12 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 //! Turns a dynamic light on or off
 void CBurningVideoDriver::turnLightOn(s32 lightIndex, bool turnOn)
 {
+#if 0
 	if((u32)lightIndex < LightSpace.Light.size())
 	{
 		LightSpace.Light[lightIndex].LightIsOn = turnOn;
 	}
+#endif
 	if((u32)lightIndex < EyeSpace.Light.size())
 	{
 		EyeSpace.Light[lightIndex].LightIsOn = turnOn;
@@ -2090,7 +2095,7 @@ void CBurningVideoDriver::turnLightOn(s32 lightIndex, bool turnOn)
 //! deletes all dynamic lights there are
 void CBurningVideoDriver::deleteAllDynamicLights()
 {
-	LightSpace.reset ();
+	//LightSpace.reset ();
 	EyeSpace.reset ();
 	CNullDriver::deleteAllDynamicLights();
 
@@ -2127,7 +2132,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	core::setbit_cond ( EyeSpace.Flags, Material.org.FogEnable, FOG );
 	core::setbit_cond ( EyeSpace.Flags, Material.org.NormalizeNormals, NORMALIZE_NORMALS );
 	if (EyeSpace.Flags & SPECULAR ) EyeSpace.Flags |= NORMALIZE_NORMALS;
-	LightSpace.Flags = EyeSpace.Flags;
+	//LightSpace.Flags = EyeSpace.Flags;
 #endif
 
 	setCurrentShader();
@@ -2140,12 +2145,13 @@ void CBurningVideoDriver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 	f32 end, f32 density, bool pixelFog, bool rangeFog)
 {
 	CNullDriver::setFog(color, fogType, start, end, density, pixelFog, rangeFog);
-	LightSpace.FogColor.setA8R8G8B8 ( color.color );
+	//LightSpace.FogColor.setA8R8G8B8 ( color.color );
 	EyeSpace.FogColor.setA8R8G8B8 ( color.color );
 }
 
 #if defined(SOFTWARE_DRIVER_2_LIGHTING) && BURNING_MATERIAL_MAX_COLORS > 0
 
+#if 0
 /*!
 	applies lighting model
 */
@@ -2335,6 +2341,7 @@ void CBurningVideoDriver::lightVertex_world ( s4DVertex *dest, u32 vertexargb )
 
 	dColor.saturate ( dest->Color[0], vertexargb );
 }
+#endif
 
 /*!
 	applies lighting model
@@ -2994,7 +3001,7 @@ ITexture* CBurningVideoDriver::addRenderTargetTexture(const core::dimension2d<u3
 		const io::path& name, const ECOLOR_FORMAT format)
 {
 	IImage* img = createImage(BURNINGSHADER_COLOR_FORMAT, size);
-	ITexture* tex = new CSoftwareTexture2(img, name, CSoftwareTexture2::IS_RENDERTARGET );
+	ITexture* tex = new CSoftwareTexture2(img, name, CSoftwareTexture2::IS_RENDERTARGET | CSoftwareTexture2::NP2_SIZE);
 	img->drop();
 	addTexture(tex);
 	tex->drop();
@@ -3042,6 +3049,10 @@ ITexture* CBurningVideoDriver::createDeviceDependentTexture(const io::path& name
 	return texture;
 }
 
+ITexture* CBurningVideoDriver::createDeviceDependentTextureCubemap(const io::path& name, const core::array<IImage*>& image)
+{
+	return 0;
+}
 
 //! Returns the maximum amount of primitives (mostly vertices) which
 //! the device is able to render with one drawIndexedTriangleList
@@ -3068,7 +3079,7 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 	Material.org.ZWriteEnable = false;
 	Material.org.ZBuffer = ECFN_LESSEQUAL;
 	EyeSpace.Flags &= ~TEXTURE_TRANSFORM;
-	LightSpace.Flags &= ~TEXTURE_TRANSFORM;
+	//LightSpace.Flags &= ~TEXTURE_TRANSFORM;
 
 	//glStencilMask(~0);
 	//glStencilFunc(GL_ALWAYS, 0, ~0);

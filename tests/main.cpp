@@ -46,26 +46,12 @@ int main(int argumentCount, char * arguments[])
 	// Use an STL vector so that we don't rely on Irrlicht.
 	std::vector<STestDefinition> tests;
 
-#if 1
+#if 0
 	// To interactively debug a test, move it (temporarily) in here and enable the define to only run this test
 	// Otherwise debugging is slightly tricky as each test runs in it's own process.
-	//TEST(textureFeatures);
-	//TEST(drawVertexPrimitive);
-	//TEST(terrainSceneNode);
-	TEST(twodmaterial);
-	//TEST(billboards);
-	//TEST(testGeometryCreator);
-	//TEST(lights);
-	//TEST(burningsVideo);
-	//TEST(flyCircleAnimator);
-	//TEST(orthoCam);
-	//TEST(planeMatrix);
-	//TEST(guiDisabledMenu);
-	//TEST(b3dAnimation);
-	//TEST(writeImageToFile);
-	//TEST(meshTransform);
-	//TEST(transparentMaterials);
+	TEST(stencilShadow);
 #else
+
 	TEST(disambiguateTextures); // Normally you should run this first, since it validates the working directory.
 	// Now the simple tests without device
 	TEST(testIrrArray);
@@ -137,7 +123,6 @@ int main(int argumentCount, char * arguments[])
 	TEST(mrt);
 	TEST(projectionMatrix);
 	// large scenes/long rendering
-	// shadows are slow
 	TEST(orthoCam);
 	TEST(stencilShadow);
 	// q3 maps are slow
@@ -148,7 +133,7 @@ int main(int argumentCount, char * arguments[])
 	TEST(line2DTest);
 #endif
 
-	unsigned int numberOfTests = (unsigned)tests.size();
+	unsigned int numberOfTests = tests.size();
 	unsigned int testToRun = 0;
 	unsigned int fails = 0;
 
@@ -177,7 +162,7 @@ int main(int argumentCount, char * arguments[])
 		{
 			numberOfTests = testToRun + abs(atoi(arguments[2]));
 			if (numberOfTests>=tests.size())
-				numberOfTests=(unsigned)tests.size();
+				numberOfTests=tests.size();
 		}
 	}
 

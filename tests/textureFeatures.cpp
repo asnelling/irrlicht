@@ -25,11 +25,11 @@ bool renderMipLevels(video::E_DRIVER_TYPE driverType)
 		return true;
 	}
 
-	// Can't pass manual data with hardware mip maps
-	driver->setTextureCreationFlag(video::ETCF_TRY_HARDWARE_MIP_MAPS, false);
+	// Can't pass manual data with hardware mip maps (at least on d3d, not sure about older GL)
+	driver->setTextureCreationFlag(video::ETCF_AUTO_GENERATE_MIP_MAPS, false);
 
 	stabilizeScreenBackground(driver);
-	
+
 	logTestString("Testing driver %ls\n", driver->getName());
 
 	scene::ISceneNode* n = smgr->addCubeSceneNode();
@@ -55,7 +55,7 @@ bool renderMipLevels(video::E_DRIVER_TYPE driverType)
 					mipdata[index++]=val;
 			}
 		}
-		
+
 		image->setMipMapsData(mipdata, false, true);
 		video::ITexture* tex = driver->addTexture("miptest", image);
 		if (!tex)
@@ -77,7 +77,7 @@ bool renderMipLevels(video::E_DRIVER_TYPE driverType)
 	smgr->drawAll();
 	driver->endScene();
 
-	bool result = takeScreenshotAndCompareAgainstReference(driver, "-renderMipmap.png");
+	bool result = takeScreenshotAndCompareAgainstReference(driver, "-renderMipmap.png", 99.5);
 
 	if (!result)
 		logTestString("mipmap render failed.\n", driver->getName());
@@ -110,7 +110,7 @@ bool lockAllMipLevels(video::E_DRIVER_TYPE driverType)
 	}
 
 	// Can't lock surfaces for hardware mip-maps
-	driver->setTextureCreationFlag(video::ETCF_TRY_HARDWARE_MIP_MAPS, false);
+	driver->setTextureCreationFlag(video::ETCF_AUTO_GENERATE_MIP_MAPS, false);
 
 	stabilizeScreenBackground(driver);
 
@@ -237,7 +237,7 @@ bool lockWithAutoMipmap(video::E_DRIVER_TYPE driverType)
 	}
 
 	// Can't lock surfaces for hardware mip-maps (sadly... so also can't test if it works like this)
-	driver->setTextureCreationFlag(video::ETCF_TRY_HARDWARE_MIP_MAPS, false);
+	driver->setTextureCreationFlag(video::ETCF_AUTO_GENERATE_MIP_MAPS, false);
 
 	stabilizeScreenBackground(driver);
 
@@ -422,9 +422,6 @@ bool lockCubemapTexture(video::E_DRIVER_TYPE driverType)
 				result = false;
 				break;
 			}
-			u32 b0 = bits[0].color;
-			u32 b2 = bits[2].color;
-
 			result &= ((bits[0].color == 0xff00ff00) && (bits[2].color == 0xff0000fd));
 			tex->unlock();
 		}

@@ -9,9 +9,9 @@ using namespace scene;
 using namespace video;
 
 /** Tests that the geometry creator does what it says it does. */
-bool testGeometryCreator_run(video::E_DRIVER_TYPE type)
+bool testGeometryCreator(void)
 {
-	IrrlichtDevice *device = createDevice(type,
+	IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO,
 					core::dimension2du(160,120), 32);
 	if (!device)
 		return false;
@@ -28,7 +28,7 @@ bool testGeometryCreator_run(video::E_DRIVER_TYPE type)
 	material.Lighting = false;
 	material.TextureLayer[0].Texture = wall;
 
-	irr::scene::IMesh * meshHill = geom->createHillPlaneMesh(dimension2df(10, 5), dimension2du(5, 5), 
+	irr::scene::IMesh * meshHill = geom->createHillPlaneMesh(dimension2df(10, 5), dimension2du(5, 5),
 									&material, 10, dimension2df(2, 2), dimension2df(3, 3) );
 	IMeshSceneNode * node = smgr->addMeshSceneNode(meshHill, 0, -1,
 									vector3df(0, 10, 0), vector3df(-60, 0, 0));
@@ -116,8 +116,7 @@ bool testGeometryCreator_run(video::E_DRIVER_TYPE type)
 
 	// This screenshot shows some mipmap problems, but this seems to be
 	// no fault of the mesh
-	//mhmmm.. opengl/directd9 show same behavior like burning (color fringe/lines around patches).
-	result = takeScreenshotAndCompareAgainstReference(driver, "-testTerrainMesh.png", 99.989f);
+	result &= takeScreenshotAndCompareAgainstReference(driver, "-testTerrainMesh.png", 99.989f);
 
 	device->closeDevice();
 	device->run();
@@ -126,9 +125,3 @@ bool testGeometryCreator_run(video::E_DRIVER_TYPE type)
 	return result;
 }
 
-bool testGeometryCreator(void)
-{
-	bool result = true;
-	TestWithAllDrivers(testGeometryCreator_run);
-	return result;
-}

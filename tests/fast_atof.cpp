@@ -90,8 +90,8 @@ static bool testCalculation_atof(const char * valueString)
 	logTestString("\n String '%s'\n New fast %.40f\n Old fast %.40f\n     atof %.40f\n",
 		valueString, newFastValue, oldFastValue, atofValue);
 
-	const f32 diffNew = fabs(newFastValue - atofValue) ;
-	const f32 diffOld = fabs(oldFastValue - atofValue) ;
+	const f32 diffNew = fabsf(newFastValue - atofValue) ;
+	const f32 diffOld = fabsf(oldFastValue - atofValue) ;
 	bool accurate = diffNew <= diffOld || equalsByUlp(diffNew, diffOld, 1);
 
 	if(!accurate)

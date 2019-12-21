@@ -178,6 +178,7 @@ namespace video
 		//bool setTexture(u32 stage, video::ITexture* texture);
 
 		virtual ITexture* createDeviceDependentTexture(const io::path& name, IImage* image) _IRR_OVERRIDE_;
+		virtual ITexture* createDeviceDependentTextureCubemap(const io::path& name, const core::array<IImage*>& image) _IRR_OVERRIDE_;
 
 		video::CImage* BackBuffer;
 		video::IImagePresenter* Presenter;
@@ -252,7 +253,7 @@ namespace video
 
 
 #ifdef SOFTWARE_DRIVER_2_LIGHTING
-		void lightVertex_world ( s4DVertex *dest, u32 vertexargb );
+		//void lightVertex_world ( s4DVertex *dest, u32 vertexargb );
 		void lightVertex_eye ( s4DVertex *dest, u32 vertexargb );
 #endif
 
@@ -279,7 +280,7 @@ namespace video
 
 
 		SBurningShaderEyeSpace EyeSpace;
-		SBurningShaderLightSpace LightSpace;
+		//SBurningShaderLightSpace LightSpace;
 		SBurningShaderMaterial Material;
 
 		static const sVec4 NDCPlane[6];

@@ -943,6 +943,11 @@ bool CSoftwareDriver::queryTextureFormat(ECOLOR_FORMAT format) const
 	return format == ECF_A1R5G5B5;
 }
 
+ITexture* CSoftwareDriver::createDeviceDependentTextureCubemap(const io::path& name, const core::array<IImage*>& image)
+{
+	return 0;
+}
+
 
 } // end namespace video
 } // end namespace irr

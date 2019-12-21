@@ -105,9 +105,9 @@ void CDemo::run()
 
 			createParticleImpacts();
 
-			u32 clearFlag = video::ECBF_DEPTH;
+			u16 clearFlag = video::ECBF_DEPTH;
 
-			if (1 || timeForThisScene != -1)
+			if (timeForThisScene != -1)
 				clearFlag |= video::ECBF_COLOR;
 
 			driver->beginScene(clearFlag, backColor);
@@ -405,8 +405,7 @@ void CDemo::loadSceneData()
 				continue;
 			}
 			// Now add the MeshBuffer(s) with the current Shader to the Manager
-			//scene::IMeshSceneNode* q3 = sm->addQuake3SceneNode ( meshBuffer, shader );
-			//q3->setDebugDataVisible(scene::EDS_NORMALS);
+			sm->addQuake3SceneNode ( meshBuffer, shader );
 		}
 	}
 
@@ -425,11 +424,12 @@ void CDemo::loadSceneData()
 			model1->setPosition(core::vector3df(100,40,-80));
 			model1->setScale(core::vector3df(2,2,2));
 			model1->setMD2Animation(scene::EMAT_STAND);
-			model1->setMaterialFlag(video::EMF_LIGHTING, true);
+			model1->setMaterialFlag(video::EMF_LIGHTING, false);
 			model1->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
 			model1->setMaterialType(video::EMT_SPHERE_MAP);
-			model1->getMaterial(0).Shininess = 15.f;
-			model1->addShadowVolumeSceneNode();
+			model1->setAutomaticCulling(scene::EAC_OFF); // avoid shadows not updating
+			scene::IShadowVolumeSceneNode * shadVol = model1->addShadowVolumeSceneNode();
+			shadVol->setOptimization(scene::ESV_NONE);	// Sydney has broken shadows otherwise
 		}
 
 		model2 = sm->addAnimatedMeshSceneNode(mesh);
@@ -441,7 +441,9 @@ void CDemo::loadSceneData()
 			model2->setMaterialTexture(0, device->getVideoDriver()->getTexture(mediaPath + "sydney.bmp"));
 			model2->setMaterialFlag(video::EMF_LIGHTING, true);
 			model2->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
-			model2->addShadowVolumeSceneNode();
+			model2->setAutomaticCulling(scene::EAC_OFF); // avoid shadows not updating
+			scene::IShadowVolumeSceneNode * shadVol = model2->addShadowVolumeSceneNode();
+			shadVol->setOptimization(scene::ESV_NONE);	// Sydney has broken shadows otherwise
 		}
 	}
 
@@ -497,13 +499,12 @@ void CDemo::loadSceneData()
 		bill->setMaterialFlag(video::EMF_LIGHTING, false);
 		bill->setMaterialTexture(0, driver->getTexture(mediaPath + "portal1.bmp"));
 		bill->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
-		bill->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 		bill->addAnimator(anim);
 	}
 
 	anim->drop();
 
-	// create circle flying dynamic light with transparent billboard attached
+	// create cirlce flying dynamic light with transparent billboard attached
 
 	scene::ILightSceneNode* light = 0;
 
@@ -521,7 +522,6 @@ void CDemo::loadSceneData()
 	bill->setMaterialFlag(video::EMF_LIGHTING, false);
 	bill->setMaterialTexture(0, driver->getTexture(mediaPath + "particlewhite.bmp"));
 	bill->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
-	bill->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 
 	// create meta triangle selector with all triangles selectors in it.
 	metaSelector = sm->createMetaTriangleSelector();
@@ -583,7 +583,7 @@ void CDemo::createLoadingScreen()
 	const io::path mediaPath = getExampleMediaPath();
 
 	// irrlicht logo
-	device->getGUIEnvironment()->addImage(device->getVideoDriver()->getTexture(mediaPath + "irrlichtlogo3.png"),
+	device->getGUIEnvironment()->addImage(device->getVideoDriver()->getTexture(mediaPath + "irrlichtlogo2.png"),
 		core::position2d<s32>(5,5));
 
 	// loading text

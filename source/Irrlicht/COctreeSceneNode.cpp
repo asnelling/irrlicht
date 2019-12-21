@@ -34,7 +34,7 @@ COctreeSceneNode::COctreeSceneNode(ISceneNode* parent, ISceneManager* mgr,
 	: IOctreeSceneNode(parent, mgr, id), StdOctree(0), LightMapOctree(0),
 	TangentsOctree(0), VertexType((video::E_VERTEX_TYPE)-1),
 	MinimalPolysPerNode(minimalPolysPerNode), Mesh(0), Shadow(0),
-	UseVBOs(EOV_USE_VBO_WITH_VISIBITLY), PolygonChecks(EOPC_BOX)
+	UseVBOs(EOV_NO_VBO), PolygonChecks(EOPC_BOX)
 {
 #ifdef _DEBUG
 	setDebugName("COctreeSceneNode");
@@ -579,11 +579,7 @@ bool COctreeSceneNode::createTree(IMesh* mesh)
 }
 
 
-//! returns the material based on the zero based index i. To get the amount
-//! of materials used by this scene node, use getMaterialCount().
-//! This function is needed for inserting the node into the scene hirachy on a
-//! optimal position for minimizing renderstate changes, but can also be used
-//! to directly modify the material of a scene node.
+//! returns the material based on the zero based index i. 
 video::SMaterial& COctreeSceneNode::getMaterial(u32 i)
 {
 	if ( i >= Materials.size() )

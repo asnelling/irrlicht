@@ -17,6 +17,11 @@
 #include "CImage.h"
 #include "CColorConverter.h"
 
+// Check if GL version we compile with should have the glGenerateMipmap function.
+#if defined(GL_VERSION_3_0) || defined(GL_ES_VERSION_2_0)
+	#define IRR_OPENGL_HAS_glGenerateMipmap
+#endif
+
 namespace irr
 {
 namespace video
@@ -47,14 +52,13 @@ public:
 
 	COpenGLCoreTexture(const io::path& name, const core::array<IImage*>& images, E_TEXTURE_TYPE type, TOpenGLDriver* driver) : ITexture(name, type), Driver(driver), TextureType(GL_TEXTURE_2D),
 		TextureName(0), InternalFormat(GL_RGBA), PixelFormat(GL_RGBA), PixelType(GL_UNSIGNED_BYTE), Converter(0), LockReadOnly(false), LockImage(0), LockLayer(0),
-		KeepImage(false), MipLevelStored(0), AutoGenerateMipMaps(false)
+		KeepImage(false), MipLevelStored(0), LegacyAutoGenerateMipMaps(false)
 	{
 		_IRR_DEBUG_BREAK_IF(images.size() == 0)
 
 		DriverType = Driver->getDriverType();
 		TextureType = TextureTypeIrrToGL(Type);
 		HasMipMaps = Driver->getTextureCreationFlag(ETCF_CREATE_MIP_MAPS);
-		AutoGenerateMipMaps = Driver->queryFeature(EVDF_MIP_MAP_AUTO_UPDATE);
 		KeepImage = Driver->getTextureCreationFlag(ETCF_ALLOW_MEMORY_COPY);
 
 		getImageValues(images[0]);
@@ -99,7 +103,8 @@ public:
 		glTexParameteri(TextureType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(TextureType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		if (HasMipMaps && AutoGenerateMipMaps)
+#ifdef GL_GENERATE_MIPMAP_HINT
+		if (HasMipMaps)
 		{
 			if (Driver->getTextureCreationFlag(ETCF_OPTIMIZED_FOR_SPEED))
 				glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST);
@@ -108,26 +113,28 @@ public:
 			else
 				glHint(GL_GENERATE_MIPMAP_HINT, GL_DONT_CARE);
 		}
+#endif
 
-#if (defined(IRR_OPENGL_VERSION) && IRR_OPENGL_VERSION < 20) || (defined(IRR_OPENGL_ES_VERSION) && IRR_OPENGL_ES_VERSION < 20)
+#if !defined(IRR_OPENGL_HAS_glGenerateMipmap) && defined(GL_GENERATE_MIPMAP)
 		if (HasMipMaps)
-			glTexParameteri(TextureType, GL_GENERATE_MIPMAP, (AutoGenerateMipMaps) ? GL_TRUE : GL_FALSE);
+		{
+			LegacyAutoGenerateMipMaps = Driver->getTextureCreationFlag(ETCF_AUTO_GENERATE_MIP_MAPS)  &&
+										Driver->queryFeature(EVDF_MIP_MAP_AUTO_UPDATE);
+			glTexParameteri(TextureType, GL_GENERATE_MIPMAP, LegacyAutoGenerateMipMaps ? GL_TRUE : GL_FALSE);
+		}
 #endif
 
 		for (u32 i = 0; i < (*tmpImages).size(); ++i)
 			uploadTexture(true, i, 0, (*tmpImages)[i]->getData());
 
-		bool autoGenerateRequired = true;
-
-		for (u32 i = 0; i < (*tmpImages).size(); ++i)
+		if (HasMipMaps && !LegacyAutoGenerateMipMaps)
 		{
-			void* mipmapsData = (*tmpImages)[i]->getMipMapsData();
-
-			if (autoGenerateRequired || mipmapsData)
+			// Create mipmaps (either from image mipmaps or generate them)
+			for (u32 i = 0; i < (*tmpImages).size(); ++i)
+			{
+				void* mipmapsData = (*tmpImages)[i]->getMipMapsData();
 				regenerateMipMapLevels(mipmapsData, i);
-
-			if (!mipmapsData)
-				autoGenerateRequired = false;
+			}
 		}
 
 		if (!KeepImage)
@@ -144,11 +151,11 @@ public:
 		Driver->testGLError(__LINE__);
 	}
 
-	COpenGLCoreTexture(const io::path& name, const core::dimension2d<u32>& size, E_TEXTURE_TYPE type, ECOLOR_FORMAT format, TOpenGLDriver* driver) 
-		: ITexture(name, type), 
+	COpenGLCoreTexture(const io::path& name, const core::dimension2d<u32>& size, E_TEXTURE_TYPE type, ECOLOR_FORMAT format, TOpenGLDriver* driver)
+		: ITexture(name, type),
 		Driver(driver), TextureType(GL_TEXTURE_2D),
 		TextureName(0), InternalFormat(GL_RGBA), PixelFormat(GL_RGBA), PixelType(GL_UNSIGNED_BYTE), Converter(0), LockReadOnly(false), LockImage(0), LockLayer(0), KeepImage(false),
-		MipLevelStored(0), AutoGenerateMipMaps(false)
+		MipLevelStored(0), LegacyAutoGenerateMipMaps(false)
 	{
 		DriverType = Driver->getDriverType();
 		TextureType = TextureTypeIrrToGL(Type);
@@ -189,7 +196,7 @@ public:
 
 		switch (Type)
 		{
-		case ETT_2D: 
+		case ETT_2D:
 			glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, Size.Width, Size.Height, 0, PixelFormat, PixelType, 0);
 			break;
 		case ETT_CUBEMAP:
@@ -234,15 +241,19 @@ public:
 		{
 			_IRR_DEBUG_BREAK_IF(LockLayer > Images.size())
 
-			LockImage = Images[LockLayer];
-			LockImage->grab();
+			if ( mipmapLevel == 0 || (Images[LockLayer] && Images[LockLayer]->getMipMapsData(mipmapLevel)) )
+			{
+				LockImage = Images[LockLayer];
+				LockImage->grab();
+			}
 		}
-		else
+
+		if ( !LockImage )
 		{
 			core::dimension2d<u32> lockImageSize( IImage::getMipMapsSize(Size, MipLevelStored));
 
 			// note: we save mipmap data also in the image because IImage doesn't allow saving single mipmap levels to the mipmap data
-			LockImage = Driver->createImage(ColorFormat, Size);
+			LockImage = Driver->createImage(ColorFormat, lockImageSize);
 
 			if (LockImage && mode != ETLM_WRITE_ONLY)
 			{
@@ -252,6 +263,7 @@ public:
 				IImage* tmpImage = LockImage;	// not sure yet if the size required by glGetTexImage is always correct, if not we might have to allocate a different tmpImage and convert colors later on.
 
 				Driver->getCacheHandler()->getTextureCache().set(0, this);
+				Driver->testGLError(__LINE__);
 
 				GLenum tmpTextureType = TextureType;
 
@@ -378,7 +390,7 @@ public:
 
 	virtual void regenerateMipMapLevels(void* data = 0, u32 layer = 0) _IRR_OVERRIDE_
 	{
-		if (!HasMipMaps || (!data && !AutoGenerateMipMaps) || (Size.Width <= 1 && Size.Height <= 1))
+		if (!HasMipMaps || LegacyAutoGenerateMipMaps || (Size.Width <= 1 && Size.Height <= 1))
 			return;
 
 		const COpenGLCoreTexture* prevTexture = Driver->getCacheHandler()->getTextureCache().get(0);
@@ -411,7 +423,8 @@ public:
 		}
 		else
 		{
-#if (defined(IRR_OPENGL_VERSION) && IRR_OPENGL_VERSION >= 20) || (defined(IRR_OPENGL_ES_VERSION) && IRR_OPENGL_ES_VERSION >= 20)
+#ifdef IRR_OPENGL_HAS_glGenerateMipmap
+			glEnable(GL_TEXTURE_2D);	// Hack some ATI cards need this glEnable according to https://www.khronos.org/opengl/wiki/Common_Mistakes
 			Driver->irrGlGenerateMipmap(TextureType);
 #endif
 		}
@@ -438,8 +451,11 @@ protected:
 
 	void * getLockImageData(irr::u32 miplevel) const
 	{
-		if ( KeepImage && MipLevelStored > 0 )
+		if ( KeepImage && MipLevelStored > 0
+			&& LockImage->getMipMapsData(MipLevelStored) )
+		{
 			return LockImage->getMipMapsData(MipLevelStored);
+		}
 		return LockImage->getData();
 	}
 
@@ -503,7 +519,6 @@ protected:
 		if (IImage::isCompressedFormat(image->getColorFormat()))
 		{
 			KeepImage = false;
-			AutoGenerateMipMaps = false;
 		}
 
 		OriginalSize = image->getDimension();
@@ -575,7 +590,7 @@ protected:
 					glTexImage2D(tmpTextureType, level, InternalFormat, width, height, 0, PixelFormat, PixelType, tmpData);
 				else
 					glTexSubImage2D(tmpTextureType, level, 0, 0, width, height, PixelFormat, PixelType, tmpData);
-
+				Driver->testGLError(__LINE__);
 				break;
 			default:
 				break;
@@ -595,7 +610,7 @@ protected:
 					Driver->irrGlCompressedTexImage2D(tmpTextureType, level, InternalFormat, width, height, 0, dataSize, data);
 				else
 					Driver->irrGlCompressedTexSubImage2D(tmpTextureType, level, 0, 0, width, height, PixelFormat, dataSize, data);
-
+				Driver->testGLError(__LINE__);
 				break;
 			default:
 				break;
@@ -607,7 +622,7 @@ protected:
 	{
 		switch ( type)
 		{
-		case ETT_2D: 
+		case ETT_2D:
 			return GL_TEXTURE_2D;
 		case ETT_CUBEMAP:
 			return GL_TEXTURE_CUBE_MAP;
@@ -634,7 +649,7 @@ protected:
 	core::array<IImage*> Images;
 
 	u8 MipLevelStored;
-	bool AutoGenerateMipMaps;
+	bool LegacyAutoGenerateMipMaps;
 
 	mutable SStatesCache StatesCache;
 };

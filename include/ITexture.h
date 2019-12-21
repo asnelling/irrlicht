@@ -36,6 +36,7 @@ enum E_TEXTURE_CREATION_FLAG
 	which format the file on disk has. Please note that some drivers (like
 	the software device) will ignore this, because they are only able to
 	create and use 16 bit textures.
+	Default is true.
 	When using this flag, it does not make sense to use the flags
 	ETCF_ALWAYS_16_BIT, ETCF_OPTIMIZED_FOR_QUALITY, or
 	ETCF_OPTIMIZED_FOR_SPEED at the same time. 
@@ -59,7 +60,9 @@ enum E_TEXTURE_CREATION_FLAG
 	Not all texture formats are affected (usually those up to ECF_A8R8G8B8). */
 	ETCF_OPTIMIZED_FOR_SPEED = 0x00000008,
 
-	/** Automatically creates mip map levels for the textures. */
+	/** Creates textures with mipmap levels. 
+	If disabled textures can not have mipmaps.
+	Default is true. */
 	ETCF_CREATE_MIP_MAPS = 0x00000010,
 
 	/** Discard any alpha layer and use non-alpha color format. 
@@ -80,15 +83,19 @@ enum E_TEXTURE_CREATION_FLAG
 	*/
 	ETCF_ALLOW_MEMORY_COPY = 0x00000080,
 
-	//! When the driver supports it try using hardware mipmaps
-	/* Per default ON.
+	//! Enable automatic updating mip maps when the base texture changes.
+	/** Default is true.
 	This flag is only used when ETCF_CREATE_MIP_MAPS is also enabled and if the driver supports it.
-	Enabling hardware mipmaps should be faster than manual mipmaps in most situations.
-	But note that:
-	- You can no longer manually set mipmap data (for example from image loading)
-	- Texture locking for mipmap levels usually won't work anymore.
-	  So you can't access those mipmaps on the CPU. */
-	ETCF_TRY_HARDWARE_MIP_MAPS = 0x00000100,
+	Please note:
+	- On D3D (and maybe older OGL?) you can no longer manually set mipmap data when enabled 
+	 (for example mips from image loading will be ignored).
+	- On D3D (and maybe older OGL?) texture locking for mipmap levels usually won't work anymore.
+	- On new OGL this flag is ignored.
+	- When disabled you do _not_ get hardware mipmaps on D3D, so mipmap generation can be slower.
+	- When disabled you can still update your mipmaps when the texture changed by manually calling regenerateMipMapLevels.
+	- You can still call regenerateMipMapLevels when this flag is enabled (it will be a hint on d3d to update mips immediately)
+	  */
+	ETCF_AUTO_GENERATE_MIP_MAPS = 0x00000100,
 
 	//! Allow sRGB/linear conversion
 	ETCF_IMAGE_IS_LINEAR = 0x00000400,
@@ -219,8 +226,8 @@ public:
 	data. The data has to be a continuous pixel data for all mipmaps until
 	1x1 pixel. Each mipmap has to be half the width and height of the previous
 	level. At least one pixel will be always kept.
-	\param layer It informs a texture about layer which needs
-	mipmaps regeneration. */
+	\param layer It informs a texture about which cubemap or texture array layer 
+	needs mipmap regeneration. */
 	virtual void regenerateMipMapLevels(void* data = 0, u32 layer = 0) = 0;
 
 	//! Get original size of the texture.

@@ -1342,6 +1342,9 @@
     <ClInclude Include="CBlit.h">
       <Filter>Irrlicht\video\Null</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\IOctreeSceneNode.h">
+      <Filter>include\scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\changes.txt">

@@ -32,7 +32,20 @@ namespace scene
 		//! Updates the shadow volumes for current light positions.
 		/** Called each render cycle from Animated Mesh SceneNode render method. */
 		virtual void updateShadowVolumes() _IRR_OVERRIDE_;
-		virtual void extendBoundingBox(core::aabbox3d<f32>& dst) _IRR_OVERRIDE_;
+
+		//! Query the current bounding box
+		virtual void extendBoundingBox(core::aabbox3d<f32>& dst) const _IRR_OVERRIDE_;
+
+		//! Set optimization used to create shadow volumes
+		/** Default is ESV_SILHOUETTE_BY_POS. If the shadow 
+		looks bad then give ESV_NONE a try (which will be slower). */
+		virtual void setOptimization(ESHADOWVOLUME_OPTIMIZATION optimization) _IRR_OVERRIDE_;
+
+		//! Get currently active optimization used to create shadow volumes
+		virtual ESHADOWVOLUME_OPTIMIZATION getOptimization() const _IRR_OVERRIDE_
+		{
+			return Optimization;
+		}
 
 		//! pre render method
 		virtual void OnRegisterSceneNode() _IRR_OVERRIDE_;
@@ -50,8 +63,8 @@ namespace scene
 
 		typedef core::array<core::vector3df> SShadowVolume;
 
-		void createShadowVolume(const core::vector3df& pos, bool isDirectional=false);
-		u32 createEdgesAndCaps(const core::vector3df& light, SShadowVolume* svp, core::aabbox3d<f32>* bb);
+		void createShadowVolume(const core::vector3df& pos, bool isDirectional);
+		u32 createEdgesAndCaps(const core::vector3df& light, bool isDirectional, SShadowVolume* svp, core::aabbox3d<f32>* bb);
 
 		core::aabbox3d<f32> Box;
 
@@ -84,13 +97,13 @@ namespace scene
 //#define IRR_USE_ADJACENCY
 //#define IRR_USE_REVERSE_EXTRUDED
 
-#ifdef IRR_USE_ADJACENCY
 		core::array<u16> Adjacency;
 		//! Generates adjacency information based on mesh indices.
 		void calculateAdjacency();
-#endif
+
 		// tells if face is front facing
 		core::array<bool> FaceData;
+		bool AdjacencyDirtyFlag;
 
 		const scene::IMesh* ShadowMesh;
 
@@ -99,8 +112,8 @@ namespace scene
 		u32 ShadowVolumesUsed;
 
 		f32 Infinity;
-
 		bool UseZFailMethod;
+		ESHADOWVOLUME_OPTIMIZATION Optimization;
 	};
 
 } // end namespace scene

@@ -58,6 +58,7 @@ namespace video
 	};
 
 	//currently in world space
+#if 0
 	struct SBurningShaderLightSpace
 	{
 		SBurningShaderLightSpace() {enabled = 0;}
@@ -79,7 +80,7 @@ namespace video
 
 		u32 Flags; // eTransformLightFlags
 	};
-
+#endif
 	struct SBurningShaderEyeSpace
 	{
 		SBurningShaderEyeSpace() {}
