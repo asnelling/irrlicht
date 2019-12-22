@@ -243,7 +243,7 @@ namespace video
 
 		void VertexCache_map_source_format();
 		void VertexCache_fill ( const u32 sourceIndex,const u32 destIndex );
-		s4DVertex * VertexCache_getVertex ( const u32 sourceIndex );
+		s4DVertex* VertexCache_getVertex ( const u32 sourceIndex ) const;
 
 
 		// culling & clipping
@@ -284,8 +284,6 @@ namespace video
 		SBurningShaderMaterial Material;
 
 		static const sVec4 NDCPlane[6];
-
-		f32 AreaMinDrawSize; //minimal visible covered area for primitive
 
 	};
 

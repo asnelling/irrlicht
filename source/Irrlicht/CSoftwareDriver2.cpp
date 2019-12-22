@@ -23,6 +23,93 @@ namespace irr
 namespace video
 {
 
+// run time parameter
+struct tweakBurning
+{
+	tweakBurning()
+	{
+		current = 11;
+		step = 0.0001f;
+
+		ndc_shrink_x = -0.75f;
+		ndc_scale_x = 0.5f;
+		ndc_trans_x = -0.5f;
+
+		ndc_shrink_y = -0.75f;
+		ndc_scale_y = -0.5f;
+		ndc_trans_y = -0.5f;
+
+		tex_w_add = 0.f;
+		tex_h_add = 0.f;
+		tex_cx_add = 0.f;
+		tex_cy_add = 0.f;
+
+		AreaMinDrawSize = 0.001f;
+	}
+	int current;
+
+	union
+	{
+		struct {
+			f32 step;
+
+			f32 ndc_shrink_x;
+			f32 ndc_scale_x;
+			f32 ndc_trans_x;
+
+			f32 ndc_shrink_y;
+			f32 ndc_scale_y;
+			f32 ndc_trans_y;
+
+			f32 tex_w_add;
+			f32 tex_cx_add;
+			f32 tex_h_add;
+			f32 tex_cy_add;
+
+			f32 AreaMinDrawSize; //! minimal visible covered area for primitive
+		};
+		f32 val[16];
+	};
+	static const char* const name[16];
+	void postEventFromUser(const SEvent& e);
+};
+
+const char* const tweakBurning::name[] = { "step",
+	"ndc_shrink_x","ndc_scale_x","ndc_trans_x",
+	"ndc_shrink_y","ndc_scale_y","ndc_trans_y",
+	"tex_w_add","tex_cx_add","tex_h_add","tex_cy_add",
+	"dc_area",0 };
+
+void tweakBurning::postEventFromUser(const SEvent& e)
+{
+	int show = 0;
+	if (e.EventType == EET_KEY_INPUT_EVENT)
+	{
+		switch (e.KeyInput.Key)
+		{
+		case KEY_KEY_1: step *= 0.9f; if (step < 0.00001f) step = 0.0001f; show = 2; break;
+		case KEY_KEY_2: step *= 1.1f; show = 2; break;
+
+		case KEY_KEY_3: if (!e.KeyInput.PressedDown) { current -= 1; if (current < 1) current = 11; show = 1; } break;
+		case KEY_KEY_4: if (!e.KeyInput.PressedDown) { current += 1; if (current > 11) current = 1; show = 1; } break;
+
+		case KEY_KEY_5: val[current] -= e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
+		case KEY_KEY_6: val[current] += e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
+		default:
+			break;
+		}
+	}
+	if (show)
+	{
+		if (step < 0.0001f) step = 0.0001f;
+		char buf[256];
+		if (show == 2) sprintf(buf, "%s %f\n", name[0], val[0]);
+		else sprintf(buf, "%s %f\n", name[current], val[current]);
+		os::Printer::print(buf);
+	}
+}
+tweakBurning Tweak;
+
 //! constructor
 CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters& params, io::IFileSystem* io, video::IImagePresenter* presenter)
 : CNullDriver(io, params.WindowSize), BackBuffer(0), Presenter(presenter),
@@ -35,11 +122,6 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	#ifdef _DEBUG
 	setDebugName("CBurningVideoDriver");
 	#endif
-
-	AreaMinDrawSize = 0.0001f;
-#ifdef BURNINGVIDEO_RENDERER_FAST
-	AreaMinDrawSize = 0.5f;
-#endif
 
 	VertexCache_map_source_format();
 	memset ( TransformationFlag, 0, sizeof ( TransformationFlag ) );
@@ -595,88 +677,6 @@ void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
 //--------- Transform from NDC to DC, transform TexCoo ----------------------------------------------
 
 
-struct tweakBurning
-{
-	tweakBurning()
-	{
-		current = 1;
-		step = 0.0001f;
-
-		ndc_shrink_x = -0.75f;
-		ndc_scale_x = 0.5f;
-		ndc_trans_x = -0.5f;
-
-		ndc_shrink_y = -0.75f;
-		ndc_scale_y = -0.5f;
-		ndc_trans_y = -0.5f;
-
-		tex_w_add = 0.f;
-		tex_h_add = 0.f;
-		tex_cx_add = 0.f;
-		tex_cy_add = 0.f;
-
-	}
-	int current;
-
-	union
-	{
-		struct{
-		f32 step;
-
-		f32 ndc_shrink_x;
-		f32 ndc_scale_x;
-		f32 ndc_trans_x;
-
-		f32 ndc_shrink_y;
-		f32 ndc_scale_y;
-		f32 ndc_trans_y;
-
-		f32 tex_w_add;
-		f32 tex_cx_add;
-		f32 tex_h_add;
-		f32 tex_cy_add;
-		};
-		f32 val[16];
-	};
-	static const char* const name[16];
-	void postEventFromUser(const SEvent& e);
-};
-
-const char* const tweakBurning::name[]={"step",
-	"ndc_shrink_x","ndc_scale_x","ndc_trans_x",
-	"ndc_shrink_y","ndc_scale_y","ndc_trans_y",
-	"tex_w_add","tex_cx_add","tex_h_add","tex_cy_add",0};
-
-void tweakBurning::postEventFromUser(const SEvent& e)
-{
-	int show = 0;
-	if ( e.EventType == EET_KEY_INPUT_EVENT )
-	{
-		switch ( e.KeyInput.Key)
-		{
-			case KEY_KEY_1: step *= 0.9f; if ( step < 0.00001f ) step = 0.0001f;show = 2;break;
-			case KEY_KEY_2: step *= 1.1f;show = 2; break;
-
-			case KEY_KEY_3: if (!e.KeyInput.PressedDown) {current -= 1; if (current < 1 ) current = 10; show = 1;} break;
-			case KEY_KEY_4: if (!e.KeyInput.PressedDown) {current += 1; if (current > 10 ) current = 1; show = 1;} break;
-
-			case KEY_KEY_5: val[current] -= e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
-			case KEY_KEY_6: val[current] += e.KeyInput.Shift ? step * 100.f : step; show = 1; break;
-			default:
-				break;
-		}
-	}
-	if ( show )
-	{
-		if ( step < 0.0001f ) step = 0.0001f;
-		char buf[256];
-		if ( show == 2 ) sprintf(buf,"%s %f\n",name[0],val[0]);
-		else sprintf(buf,"%s %f\n",name[current],val[current]);
-		os::Printer::print(buf);
-	}
-}
-tweakBurning Tweak;
-
 void CBurningVideoDriver::postEventFromUser(const void* sevent)
 {
 	if (sevent) Tweak.postEventFromUser(*(const SEvent*) sevent);
@@ -1130,6 +1130,7 @@ inline f32 CBurningVideoDriver::texelarea2 ( s4DVertex* const v[], int tex ) con
 
 
 // Vertex Cache
+#if 0
 const SVSize vSize_template[] =
 {
 	{ VERTEX4D_FORMAT_TEXTURE_1 | VERTEX4D_FORMAT_COLOR_1, sizeof(S3DVertex), 1 },
@@ -1138,6 +1139,7 @@ const SVSize vSize_template[] =
 	{ VERTEX4D_FORMAT_TEXTURE_2 | VERTEX4D_FORMAT_COLOR_1, sizeof(S3DVertex), 2 },	// reflection map
 	{ 0, sizeof(f32) * 3, 0 },	// core::vector3df*
 };
+#endif
 
 void CBurningVideoDriver::VertexCache_map_source_format()
 {
@@ -1545,13 +1547,13 @@ clipandproject:
 
 //
 
-REALINLINE s4DVertex * CBurningVideoDriver::VertexCache_getVertex ( const u32 sourceIndex )
+s4DVertex* CBurningVideoDriver::VertexCache_getVertex ( const u32 sourceIndex ) const
 {
-	for ( s32 i = 0; i < VERTEXCACHE_ELEMENT; ++i )
+	for ( u32 i = 0; i < VERTEXCACHE_ELEMENT; ++i )
 	{
 		if ( VertexCache.info[ i ].index == sourceIndex )
 		{
-			return (s4DVertex *) ( (u8*) VertexCache.mem.data + ( i << ( SIZEOF_SVERTEX_LOG2 + 1  ) ) );
+			return (s4DVertex*) ( (u8*) VertexCache.mem.data + ( i << ( SIZEOF_SVERTEX_LOG2 + 1  ) ) );
 		}
 	}
 	return 0;
@@ -1563,7 +1565,7 @@ REALINLINE s4DVertex * CBurningVideoDriver::VertexCache_getVertex ( const u32 so
 	fill blockwise on the next 16(Cache_Size) unique vertices in indexlist
 	merge the next 16 vertices with the current
 */
-REALINLINE void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
+void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
 {
 	SCacheInfo info[VERTEXCACHE_ELEMENT];
 
@@ -1857,7 +1859,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	u32 m;
 	video::CSoftwareTexture2* tex;
 
-	for ( i = 0; i < (u32) primitiveCount; ++i )
+	for ( i = 0; i < primitiveCount; ++i )
 	{
 		VertexCache_get(face);
 
@@ -1871,7 +1873,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 		if ( ( face[0]->flag & face[1]->flag & face[2]->flag & VERTEX4D_CLIPMASK ) == VERTEX4D_INSIDE )
 		{
 			dc_area = screenarea2 ( face );
-			u32 sign = dc_area < -AreaMinDrawSize ? CULL_BACK: dc_area > AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
+			u32 sign = dc_area < -Tweak.AreaMinDrawSize ? CULL_BACK: dc_area > Tweak.AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
 			if ( Material.Culling & sign ) 
 				continue;
 
@@ -1929,7 +1931,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 
 		// check 2d backface culling on first
 		dc_area = screenarea ( CurrentOut.data );
-		u32 sign = dc_area < -AreaMinDrawSize ? CULL_BACK: dc_area > AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
+		u32 sign = dc_area < -Tweak.AreaMinDrawSize ? CULL_BACK: dc_area > Tweak.AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
 		if ( Material.Culling & sign ) 
 			continue;
 
@@ -3144,8 +3146,8 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 	const u32 h = RenderTargetSurface->getDimension().Height;
 	const u32 w = RenderTargetSurface->getDimension().Width;
 	tVideoSample *dst;
-	u32 *stencil;
-	u32* const stencilBase=(u32*) StencilBuffer->lock();
+	const u32* stencil;
+	const u32* stencilBase = (u32*) StencilBuffer->lock();
 
 #if defined(SOFTWARE_DRIVER_2_32BIT)
 #else
@@ -3156,7 +3158,7 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 	for ( u32 y = 0; y < h; ++y )
 	{
 		dst = (tVideoSample*)RenderTargetSurface->getData() + ( y * w );
-		stencil =  stencilBase + ( y * w );
+		stencil = stencilBase + ( y * w );
 
 		for ( u32 x = 0; x < w; ++x )
 		{

@@ -136,8 +136,8 @@ void CTRGouraudNoZ2::scanline_bilinear ()
 #endif
 
 	// apply top-left fill-convention, left
-	xStart = core::ceil32( line.x[0] );
-	xEnd = core::ceil32( line.x[1] ) - 1;
+	xStart = fill_convention_left( line.x[0] );
+	xEnd = fill_convention_right( line.x[1] );
 
 	dx = xEnd - xStart;
 
@@ -354,8 +354,8 @@ void CTRGouraudNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const 
 #endif
 
 		// apply top-left fill convention, top part
-		yStart = core::ceil32( a->Pos.y );
-		yEnd = core::ceil32( b->Pos.y ) - 1;
+		yStart = fill_convention_left( a->Pos.y );
+		yEnd = fill_convention_right( b->Pos.y );
 
 #ifdef SUBTEXEL
 		subPixel = ( (f32) yStart ) - a->Pos.y;
@@ -513,8 +513,8 @@ void CTRGouraudNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const 
 #endif
 
 		// apply top-left fill convention, top part
-		yStart = core::ceil32( b->Pos.y );
-		yEnd = core::ceil32( c->Pos.y ) - 1;
+		yStart = fill_convention_left( b->Pos.y );
+		yEnd = fill_convention_right( c->Pos.y );
 
 #ifdef SUBTEXEL
 

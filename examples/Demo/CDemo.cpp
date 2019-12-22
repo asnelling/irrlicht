@@ -427,7 +427,7 @@ void CDemo::loadSceneData()
 			model1->setMaterialFlag(video::EMF_LIGHTING, false);
 			model1->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
 			model1->setMaterialType(video::EMT_SPHERE_MAP);
-			model1->setAutomaticCulling(scene::EAC_OFF); // avoid shadows not updating
+			//model1->setAutomaticCulling(scene::EAC_OFF); // avoid shadows not updating
 			scene::IShadowVolumeSceneNode * shadVol = model1->addShadowVolumeSceneNode();
 			shadVol->setOptimization(scene::ESV_NONE);	// Sydney has broken shadows otherwise
 		}
@@ -441,7 +441,7 @@ void CDemo::loadSceneData()
 			model2->setMaterialTexture(0, device->getVideoDriver()->getTexture(mediaPath + "sydney.bmp"));
 			model2->setMaterialFlag(video::EMF_LIGHTING, true);
 			model2->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
-			model2->setAutomaticCulling(scene::EAC_OFF); // avoid shadows not updating
+			//model2->setAutomaticCulling(scene::EAC_OFF); // avoid shadows not updating
 			scene::IShadowVolumeSceneNode * shadVol = model2->addShadowVolumeSceneNode();
 			shadVol->setOptimization(scene::ESV_NONE);	// Sydney has broken shadows otherwise
 		}
@@ -497,6 +497,7 @@ void CDemo::loadSceneData()
 		bill = sm->addBillboardSceneNode(0, core::dimension2d<f32>(100,100),
 			waypoint[r]+ core::vector3df(0,20,0));
 		bill->setMaterialFlag(video::EMF_LIGHTING, false);
+		bill->setMaterialFlag(video::EMF_ZWRITE_ENABLE, false);
 		bill->setMaterialTexture(0, driver->getTexture(mediaPath + "portal1.bmp"));
 		bill->setMaterialType(video::EMT_TRANSPARENT_ADD_COLOR);
 		bill->addAnimator(anim);
@@ -504,7 +505,7 @@ void CDemo::loadSceneData()
 
 	anim->drop();
 
-	// create cirlce flying dynamic light with transparent billboard attached
+	// create circle flying dynamic light with transparent billboard attached
 
 	scene::ILightSceneNode* light = 0;
 

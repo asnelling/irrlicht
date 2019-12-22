@@ -257,8 +257,8 @@ void CAnimatedMeshSceneNode::OnAnimate(u32 timeMs)
 		scene::IMesh * mesh = getMeshForCurrentFrame();
 
 		if (mesh) Box = mesh->getBoundingBox();
-		// active Shadow enlarges
-		if (Shadow ) Shadow->extendBoundingBox(Box);
+		// active Shadow enlarges this bounding box
+		if (Shadow) Shadow->extendBoundingBox(Box);
 	}
 	LastTimeMs = timeMs;
 

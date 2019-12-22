@@ -319,7 +319,6 @@ void CNullDriver::deleteAllTextures()
 
 bool CNullDriver::beginScene(u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
 {
-	core::clearFPUException();
 	PrimitivesDrawn = 0;
 	return true;
 }

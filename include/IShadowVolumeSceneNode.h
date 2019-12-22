@@ -57,7 +57,7 @@ namespace scene
 		//! Get currently active optimization used to create shadow volumes
 		virtual ESHADOWVOLUME_OPTIMIZATION getOptimization() const = 0;
 
-		//! Query the current bounding box
+		//! add the shadow volume bounding box for e.q. to the shadow caster bbox
 		virtual void extendBoundingBox(core::aabbox3d<f32>& dst) const = 0;
 	};
 
