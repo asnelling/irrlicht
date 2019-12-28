@@ -2617,7 +2617,7 @@ s32 CNullDriver::addShaderMaterial(const c8* vertexShaderProgram,
 	s32 userData)
 {
 	os::Printer::log("Shader materials not implemented yet in this driver, sorry.");
-	return -1;
+	return baseMaterial;
 }
 
 
