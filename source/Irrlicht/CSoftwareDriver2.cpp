@@ -150,7 +150,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 
 	// create triangle renderers
 
-	irr::memset32 ( BurningShader, 0, sizeof ( BurningShader ) );
+	memset( BurningShader, 0, sizeof ( BurningShader ) );
 	//BurningShader[ETR_FLAT] = createTRFlat2(DepthBuffer);
 	//BurningShader[ETR_FLAT_WIRE] = createTRFlatWire2(DepthBuffer);
 	BurningShader[ETR_GOURAUD] = createTriangleRendererGouraud2(this);
@@ -681,11 +681,12 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 	//or sampler is not on texel center
 
 	f32* m = out.pointer();
-
+#if 0
 	m[0]  = (viewport.getWidth() + Tweak.ndc_shrink_x ) * Tweak.ndc_scale_x;
 	m[5]  = (viewport.getHeight() + Tweak.ndc_shrink_y ) * Tweak.ndc_scale_y;
 	m[12] = Tweak.ndc_trans_x + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
 	m[13] = Tweak.ndc_trans_y + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
+#endif
 
 	m[0]  = (viewport.getWidth() - 0.75f ) * 0.5f;
 	m[1]  = 0.f;
@@ -856,25 +857,15 @@ REALINLINE u32 CBurningVideoDriver::clipToFrustumTest ( const s4DVertex * v  ) c
 {
 	u32 flag = 0;
 
-	flag |= v->Pos.z <= v->Pos.w ? 1 : 0;
+	flag |=  v->Pos.z <= v->Pos.w ? 1 : 0;
 	flag |= -v->Pos.z <= v->Pos.w ? 2 : 0;
 
-	flag |= v->Pos.x <= v->Pos.w ? 4 : 0;
+	flag |=  v->Pos.x <= v->Pos.w ? 4 : 0;
 	flag |= -v->Pos.x <= v->Pos.w ? 8 : 0;
 
-	flag |= v->Pos.y <= v->Pos.w ? 16 : 0;
+	flag |=  v->Pos.y <= v->Pos.w ? 16 : 0;
 	flag |= -v->Pos.y <= v->Pos.w ? 32 : 0;
 
-/*
-	if ( v->Pos.z <= v->Pos.w ) flag |= 1;
-	if (-v->Pos.z <= v->Pos.w ) flag |= 2;
-
-	if ( v->Pos.x <= v->Pos.w ) flag |= 4;
-	if (-v->Pos.x <= v->Pos.w ) flag |= 8;
-
-	if ( v->Pos.y <= v->Pos.w ) flag |= 16;
-	if (-v->Pos.y <= v->Pos.w ) flag |= 32;
-*/
 /*
 	for ( u32 i = 0; i!= 6; ++i )
 	{
@@ -1025,51 +1016,6 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,const s4
 	}
 }
 
-#if 0
-inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( s4DVertex* v[], const u32 size ) const
-{
-	u32 g;
-
-	const f32* dc = Transformation [ ETS_CLIPSCALE ].pointer();
-
-	for ( g = 0; g != size; g += 1 )
-	{
-		s4DVertex * a = (s4DVertex*) v[g];
-
-		if ( (a[1].flag & VERTEX4D_PROJECTED ) == VERTEX4D_PROJECTED )
-			continue;
-
-		a[1].flag = a->flag | VERTEX4D_PROJECTED;
-
-		// project homogenous vertex, store 1/w
-		const f32 w = a->Pos.w;
-		const f32 iw = reciprocal_zero ( w );
-
-		// to device coordinates
-		a[1].Pos.x = iw * ( a->Pos.x * dc[ 0] + w * dc[12] );
-		a[1].Pos.y = iw * ( a->Pos.y * dc[ 5] + w * dc[13] );
-
-#ifndef SOFTWARE_DRIVER_2_USE_WBUFFER
-		a[1].Pos.z = a->Pos.z * iw;
-#endif
-
-#if BURNING_MATERIAL_MAX_COLORS > 0
-		#ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
-			a[1].Color[0] = a->Color[0] * iw;
-		#else
-			a[1].Color[0] = a->Color[0];
-		#endif
-#endif
-
-#if BURNING_MATERIAL_MAX_TANGENT > 0
-		a[1].LightTangent[0] = a[0].LightTangent[0] * iw;
-#endif
-		a[1].Pos.w = iw;
-
-	}
-
-}
-#endif
 
 /*!
 	crossproduct in projected 2D -> screen area triangle
@@ -1474,14 +1420,11 @@ clipandproject:
 	// to DC Space, project homogenous vertex
 	if ( (dest[0].flag & VERTEX4D_CLIPMASK ) == VERTEX4D_INSIDE )
 	{
-		//ndc_2_dc_and_project2 ( (s4DVertex**) &dest, 1 );
 		ndc_2_dc_and_project ( dest+1, dest,1<<1 );
 	}
 
-	//return dest;
 }
 
-//
 
 s4DVertex* CBurningVideoDriver::VertexCache_getVertex ( const u32 sourceIndex ) const
 {
@@ -1513,7 +1456,7 @@ void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
 		// rewind to start of primitive
 		VertexCache.indicesIndex = VertexCache.indicesRun;
 
-		irr::memset32 ( info, VERTEXCACHE_MISS, sizeof ( info ) );
+		memset( info, VERTEXCACHE_MISS, sizeof ( info ) );
 
 		// get the next unique vertices cache line
 		u32 fillIndex = 0;
@@ -1632,36 +1575,6 @@ void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
 	VertexCache.indicesRun += VertexCache.primitivePitch;
 }
 
-#if 0
-/*!
-*/
-REALINLINE void CBurningVideoDriver::VertexCache_getbypass ( s4DVertex ** face )
-{
-	const u32 i0 = core::if_c_a_else_0 ( VertexCache.pType != scene::EPT_TRIANGLE_FAN, VertexCache.indicesRun );
-
-	if ( VertexCache.iType == 1 )
-	{
-		const u16 *p = (const u16 *) VertexCache.indices;
-		VertexCache_fill ( p[ i0    ], 0 );
-		VertexCache_fill ( p[ VertexCache.indicesRun + 1], 1 );
-		VertexCache_fill ( p[ VertexCache.indicesRun + 2], 2 );
-	}
-	else
-	{
-		const u32 *p = (const u32 *) VertexCache.indices;
-		VertexCache_fill ( p[ i0    ], 0 );
-		VertexCache_fill ( p[ VertexCache.indicesRun + 1], 1 );
-		VertexCache_fill ( p[ VertexCache.indicesRun + 2], 2 );
-	}
-
-	VertexCache.indicesRun += VertexCache.primitivePitch;
-
-	face[0] = (s4DVertex *) ( (u8*) VertexCache.mem.data + ( 0 << ( SIZEOF_SVERTEX_LOG2 + 1  ) ) );
-	face[1] = (s4DVertex *) ( (u8*) VertexCache.mem.data + ( 1 << ( SIZEOF_SVERTEX_LOG2 + 1  ) ) );
-	face[2] = (s4DVertex *) ( (u8*) VertexCache.mem.data + ( 2 << ( SIZEOF_SVERTEX_LOG2 + 1  ) ) );
-
-}
-#endif
 
 /*!
 */
@@ -1763,7 +1676,7 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 			break;
 	}
 
-	irr::memset32 ( VertexCache.info, VERTEXCACHE_MISS, sizeof ( VertexCache.info ) );
+	memset( VertexCache.info, VERTEXCACHE_MISS, sizeof ( VertexCache.info ) );
 }
 
 
