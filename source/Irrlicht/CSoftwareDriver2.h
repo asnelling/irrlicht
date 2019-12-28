@@ -279,7 +279,6 @@ namespace video
 
 
 		SBurningShaderEyeSpace EyeSpace;
-		//SBurningShaderLightSpace LightSpace;
 		SBurningShaderMaterial Material;
 
 		static const sVec4 NDCPlane[6];

@@ -58,30 +58,6 @@ namespace video
 		TEXTURE_TRANSFORM	= 0x40,
 	};
 
-	//currently in world space
-#if 0
-	struct SBurningShaderLightSpace
-	{
-		SBurningShaderLightSpace() {enabled = 0;}
-		virtual ~SBurningShaderLightSpace() {}
-		void reset ()
-		{
-			Light.set_used ( 0 );
-			Global_AmbientLight.set ( 0.f, 0.f, 0.f );
-			Flags = 0;
-		}
-		int enabled;
-		core::array<SBurningShaderLight> Light;
-		sVec3 Global_AmbientLight;
-		sVec4 FogColor;
-
-		sVec4 campos; //Camera Position in World Space
-		sVec4 vertex;//world position of vertex
-		sVec4 normal; //transformed normal
-
-		u32 Flags; // eTransformLightFlags
-	};
-#endif
 	struct SBurningShaderEyeSpace
 	{
 		SBurningShaderEyeSpace() {}

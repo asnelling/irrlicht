@@ -117,45 +117,6 @@ struct sVec2
 
 };
 
-// A8R8G8B8
-#if 0
-struct sVec4;
-struct sCompressedVec4
-{
-	u32 argb;
-
-	void setA8R8G8B8 ( u32 value )
-	{
-		argb = value;
-	}
-
-	void setColorf ( const video::SColorf & color )
-	{
-		argb = core::floor32_fast( color.a * 255.f ) << 24 |
-				core::floor32_fast( color.r * 255.f ) << 16 |
-				core::floor32_fast( color.g * 255.f ) << 8  |
-				core::floor32_fast( color.b * 255.f );
-	}
-
-	void setVec4 ( const sVec4 & v );
-
-	// f = a * t + b * ( 1 - t )
-	void interpolate(const sCompressedVec4& a, const sCompressedVec4& b, const f32 t)
-	{
-		argb = PixelBlend32 ( b.argb, a.argb, core::floor32_fast( t * 256.f ) );
-	}
-};
-
-
-inline void sCompressedVec4::setVec4(const sVec4 & v)
-{
-	argb = core::floor32_fast(v.x * 255.f) << 24 |
-		core::floor32_fast(v.y * 255.f) << 16 |
-		core::floor32_fast(v.z * 255.f) << 8 |
-		core::floor32_fast(v.w * 255.f);
-}
-
-#endif
 
 struct sVec4
 {
@@ -163,12 +124,10 @@ struct sVec4
 	{
 		struct { f32 x, y, z, w; };
 		struct { f32 a, r, g, b; };
-//		struct { sVec2 xy, zw; };	// sorry, this does not compile with gcc
 	};
 
 
 	sVec4 () {}
-	//sVec4 ( f32 s) : x ( s ), y ( s ), z ( s ), w ( s ) {}
 	sVec4 ( f32 _x, f32 _y, f32 _z, f32 _w )
 		: x ( _x ), y ( _y ), z( _z ), w ( _w ){}
 
@@ -297,15 +256,6 @@ struct sVec4
 		w *= s;
 	}
 
-/*
-	void operator*=(f32 s)
-	{
-		x *= s;
-		y *= s;
-		z *= s;
-		w *= s;
-	}
-*/
 	void operator*=(const sVec4 &other)
 	{
 		x *= other.x;
@@ -661,10 +611,10 @@ REALINLINE void swapVertexPointer(const s4DVertex** v1, const s4DVertex** v2)
 // internal scan convert
 struct sScanConvertData
 {
-	u8 left;			// major edge left/right
-	u8 right;			// !left
+	u32 left;			// major edge left/right
+	u32 right;			// !left
 
-	f32 invDeltaY[3];	// inverse edge delta y
+	f32 invDeltaY[4];	// inverse edge delta y
 
 	f32 x[2];			// x coordinate
 	f32 slopeX[2];		// x slope along edges
