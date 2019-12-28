@@ -368,9 +368,15 @@ void CBurningVideoDriver::setCurrentShader()
 			}
 			break;
 
-		case EMT_NORMAL_MAP_TRANSPARENT_VERTEX_ALPHA:
 		case EMT_NORMAL_MAP_SOLID:
+		case EMT_NORMAL_MAP_TRANSPARENT_ADD_COLOR:
+		case EMT_NORMAL_MAP_TRANSPARENT_VERTEX_ALPHA:
+			shader = ETR_NORMAL_MAP_SOLID;
+			EyeSpace.Flags |= TEXTURE_TRANSFORM;
+			//LightSpace.Flags |= TEXTURE_TRANSFORM;
+			break;
 		case EMT_PARALLAX_MAP_SOLID:
+		case EMT_PARALLAX_MAP_TRANSPARENT_ADD_COLOR:
 		case EMT_PARALLAX_MAP_TRANSPARENT_VERTEX_ALPHA:
 			shader = ETR_NORMAL_MAP_SOLID;
 			EyeSpace.Flags |= TEXTURE_TRANSFORM;
@@ -938,7 +944,7 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 
 			// copy current to out
 			//*out = *a;
-			memcpy32_small ( out, a, SIZEOF_SVERTEX * 2 );
+			memcpy32_small ( out, a, SIZEOF_S4DVERTEX * 2 );
 			b = out;
 
 			out += 2;
@@ -996,7 +1002,7 @@ u32 CBurningVideoDriver::clipToFrustum ( s4DVertex *v0, s4DVertex * v1, const u3
 
 	replace w/w by 1/w
 */
-inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,s4DVertex *source, u32 vIn ) const
+inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,const s4DVertex *source, const u32 vIn ) const
 {
 	u32 g;
 
@@ -1004,7 +1010,7 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,s4DVerte
 
 	for ( g = 0; g != vIn; g += 2 )
 	{
-		if ( (dest[g].flag & VERTEX4D_PROJECTED ) == VERTEX4D_PROJECTED )
+		if ( dest[g].flag & VERTEX4D_PROJECTED )
 			continue;
 
 		dest[g].flag = source[g].flag | VERTEX4D_PROJECTED;
@@ -1015,6 +1021,7 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,s4DVerte
 		// to device coordinates
 		dest[g].Pos.x = iw * ( source[g].Pos.x * dc[ 0] + w * dc[12] );
 		dest[g].Pos.y = iw * ( source[g].Pos.y * dc[ 5] + w * dc[13] );
+		dest[g].Pos.w = iw;
 
 #ifndef SOFTWARE_DRIVER_2_USE_WBUFFER
 		dest[g].Pos.z = iw * source[g].Pos.z;
@@ -1031,11 +1038,11 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,s4DVerte
 #if BURNING_MATERIAL_MAX_TANGENT > 0
 		dest[g].LightTangent[0] = source[g].LightTangent[0] * iw;
 #endif
-		dest[g].Pos.w = iw;
+
 	}
 }
 
-
+#if 0
 inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( s4DVertex* v[], const u32 size ) const
 {
 	u32 g;
@@ -1079,7 +1086,7 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project2 ( s4DVertex* v[], const u
 	}
 
 }
-
+#endif
 
 /*!
 	crossproduct in projected 2D -> screen area triangle
@@ -1146,38 +1153,38 @@ void CBurningVideoDriver::VertexCache_map_source_format()
 	u32 s0 = sizeof(s4DVertex);
 	u32 s1 = sizeof(s4DVertex_proxy);
 
-	if ( s1 <= SIZEOF_SVERTEX/2 )
+	if ( s1 <= SIZEOF_S4DVERTEX/2 )
 	{
 		os::Printer::log ( "BurningVideo vertex format unnecessary to large", ELL_WARNING );
 	}
 
-	if ( s0 != SIZEOF_SVERTEX )
+	if ( s0 != SIZEOF_S4DVERTEX)
 	{
 		os::Printer::log ( "BurningVideo vertex format compile problem", ELL_ERROR );
-		_IRR_DEBUG_BREAK_IF(s0 != SIZEOF_SVERTEX);
+		_IRR_DEBUG_BREAK_IF(s0 != SIZEOF_S4DVERTEX);
 	}
 
-	vSize[0].Format = VERTEX4D_FORMAT_TEXTURE_1 | VERTEX4D_FORMAT_COLOR_1;
-	vSize[0].Pitch = sizeof(S3DVertex);
-	vSize[0].TexSize = 1;
+	vSize[E4VT_STANDARD].Format = VERTEX4D_FORMAT_TEXTURE_1 | VERTEX4D_FORMAT_COLOR_1;
+	vSize[E4VT_STANDARD].Pitch = sizeof(S3DVertex);
+	vSize[E4VT_STANDARD].TexSize = 1;
 
-	vSize[1].Format = VERTEX4D_FORMAT_TEXTURE_2 | VERTEX4D_FORMAT_COLOR_1;
-	vSize[1].Pitch = sizeof(S3DVertex2TCoords);
-	vSize[1].TexSize = 2;
+	vSize[E4VT_2TCOORDS].Format = VERTEX4D_FORMAT_TEXTURE_2 | VERTEX4D_FORMAT_COLOR_1;
+	vSize[E4VT_2TCOORDS].Pitch = sizeof(S3DVertex2TCoords);
+	vSize[E4VT_2TCOORDS].TexSize = 2;
 
-	vSize[2].Format = VERTEX4D_FORMAT_TEXTURE_2 | VERTEX4D_FORMAT_COLOR_1 | VERTEX4D_FORMAT_BUMP_DOT3;
-	vSize[2].Pitch = sizeof(S3DVertexTangents);
-	vSize[2].TexSize = 2;
+	vSize[E4VT_TANGENTS].Format = VERTEX4D_FORMAT_TEXTURE_2 | VERTEX4D_FORMAT_COLOR_1 | VERTEX4D_FORMAT_BUMP_DOT3;
+	vSize[E4VT_TANGENTS].Pitch = sizeof(S3DVertexTangents);
+	vSize[E4VT_TANGENTS].TexSize = 2;
 
 	// reflection map
-	vSize[3].Format = VERTEX4D_FORMAT_TEXTURE_2 | VERTEX4D_FORMAT_COLOR_1;
-	vSize[3].Pitch = sizeof(S3DVertex);
-	vSize[3].TexSize = 2;
+	vSize[E4VT_REFLECTION_MAP].Format = VERTEX4D_FORMAT_TEXTURE_2 | VERTEX4D_FORMAT_COLOR_1;
+	vSize[E4VT_REFLECTION_MAP].Pitch = sizeof(S3DVertex);
+	vSize[E4VT_REFLECTION_MAP].TexSize = 2;
 
 	// shadow
-	vSize[4].Format = 0;
-	vSize[4].Pitch = sizeof(f32) * 3; // core::vector3df*
-	vSize[4].TexSize = 0;
+	vSize[E4VT_SHADOW].Format = 0;
+	vSize[E4VT_SHADOW].Pitch = sizeof(f32) * 3; // core::vector3df*
+	vSize[E4VT_SHADOW].TexSize = 0;
 
 	u32 size;
 
@@ -1216,8 +1223,8 @@ void CBurningVideoDriver::VertexCache_map_source_format()
 */
 void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 destIndex)
 {
-	u8 * source;
-	s4DVertex *dest;
+	u8* source;
+	s4DVertex* dest;
 
 	source = (u8*) VertexCache.vertices + ( sourceIndex * vSize[VertexCache.vType].Pitch );
 
@@ -1230,14 +1237,14 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 	VertexCache.info[ destIndex ].hit = 0;
 
 	// destination Vertex
-	dest = (s4DVertex *) ( (u8*) VertexCache.mem.data + ( destIndex << ( SIZEOF_SVERTEX_LOG2 + 1  ) ) );
+	dest = (s4DVertex *) ( (u8*) VertexCache.mem.data + ( destIndex << ( SIZEOF_S4DVERTEX_LOG2 + 1  ) ) );
 
 	// transform Model * World * Camera * Projection * NDCSpace matrix
 	const S3DVertex *base = ((S3DVertex*) source );
 	Transformation [ ETS_PROJ_MODEL_VIEW].transformVect ( &dest->Pos.x, base->Pos );
 
 	//mhm ;-) maybe no goto
-	if ( VertexCache.vType == 4 ) goto clipandproject;
+	if ( VertexCache.vType == E4VT_SHADOW) goto clipandproject;
 
 
 #if defined (SOFTWARE_DRIVER_2_LIGHTING) || defined ( SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM )
@@ -1531,15 +1538,16 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 #endif
 
 clipandproject:
-	dest[0].flag = dest[1].flag = vSize[VertexCache.vType].Format;
 
 	// test vertex
-	dest[0].flag |= clipToFrustumTest ( dest);
+	dest[0].flag = clipToFrustumTest ( dest) | vSize[VertexCache.vType].Format;
+	dest[1].flag = dest[0].flag;
 
 	// to DC Space, project homogenous vertex
 	if ( (dest[0].flag & VERTEX4D_CLIPMASK ) == VERTEX4D_INSIDE )
 	{
-		ndc_2_dc_and_project2 ( (s4DVertex**) &dest, 1 );
+		//ndc_2_dc_and_project2 ( (s4DVertex**) &dest, 1 );
+		ndc_2_dc_and_project ( dest+1, dest,1<<1 );
 	}
 
 	//return dest;
@@ -1553,7 +1561,7 @@ s4DVertex* CBurningVideoDriver::VertexCache_getVertex ( const u32 sourceIndex ) 
 	{
 		if ( VertexCache.info[ i ].index == sourceIndex )
 		{
-			return (s4DVertex*) ( (u8*) VertexCache.mem.data + ( i << ( SIZEOF_SVERTEX_LOG2 + 1  ) ) );
+			return (s4DVertex*) ( (u8*) VertexCache.mem.data + ( i << ( SIZEOF_S4DVERTEX_LOG2 + 1  ) ) );
 		}
 	}
 	return 0;
@@ -1567,13 +1575,13 @@ s4DVertex* CBurningVideoDriver::VertexCache_getVertex ( const u32 sourceIndex ) 
 */
 void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
 {
-	SCacheInfo info[VERTEXCACHE_ELEMENT];
-
 	// next primitive must be complete in cache
-	if (	VertexCache.indicesIndex - VertexCache.indicesRun < 3 &&
+	if (	VertexCache.indicesIndex - VertexCache.indicesRun < VertexCache.primitiveHasVertex &&
 			VertexCache.indicesIndex < VertexCache.indexCount
 		)
 	{
+		SCacheInfo info[VERTEXCACHE_ELEMENT];
+
 		// rewind to start of primitive
 		VertexCache.indicesIndex = VertexCache.indicesRun;
 
@@ -1591,13 +1599,14 @@ void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
 		{
 			switch ( VertexCache.iType )
 			{
-				case 1:
+				case E4IT_16BIT:
 					sourceIndex =  ((u16*)VertexCache.indices) [ VertexCache.indicesIndex ];
 					break;
-				case 2:
+				case E4IT_32BIT:
 					sourceIndex =  ((u32*)VertexCache.indices) [ VertexCache.indicesIndex ];
 					break;
-				case 4:
+				default:
+				case E4IT_NONE:
 					sourceIndex = VertexCache.indicesIndex;
 					break;
 			}
@@ -1664,25 +1673,25 @@ void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
 
 	switch ( VertexCache.iType )
 	{
-		case 1:
+		case E4IT_16BIT:
 		{
-			const u16 *p = (const u16 *) VertexCache.indices;
+			const u16* p = (const u16*) VertexCache.indices;
 			face[0] = VertexCache_getVertex ( p[ i0    ] );
 			face[1] = VertexCache_getVertex ( p[ VertexCache.indicesRun + 1] );
 			face[2] = VertexCache_getVertex ( p[ VertexCache.indicesRun + 2] );
 		}
 		break;
 
-		case 2:
+		case E4IT_32BIT:
 		{
-			const u32 *p = (const u32 *) VertexCache.indices;
+			const u32* p = (const u32*) VertexCache.indices;
 			face[0] = VertexCache_getVertex ( p[ i0    ] );
 			face[1] = VertexCache_getVertex ( p[ VertexCache.indicesRun + 1] );
 			face[2] = VertexCache_getVertex ( p[ VertexCache.indicesRun + 2] );
 		}
 		break;
 
-		case 4:
+		case E4IT_NONE:
 			face[0] = VertexCache_getVertex ( VertexCache.indicesRun + 0 );
 			face[1] = VertexCache_getVertex ( VertexCache.indicesRun + 1 );
 			face[2] = VertexCache_getVertex ( VertexCache.indicesRun + 2 );
@@ -1695,6 +1704,7 @@ void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
 	VertexCache.indicesRun += VertexCache.primitivePitch;
 }
 
+#if 0
 /*!
 */
 REALINLINE void CBurningVideoDriver::VertexCache_getbypass ( s4DVertex ** face )
@@ -1723,6 +1733,7 @@ REALINLINE void CBurningVideoDriver::VertexCache_getbypass ( s4DVertex ** face )
 	face[2] = (s4DVertex *) ( (u8*) VertexCache.mem.data + ( 2 << ( SIZEOF_SVERTEX_LOG2 + 1  ) ) );
 
 }
+#endif
 
 /*!
 */
@@ -1735,31 +1746,34 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 	VertexCache.vertices = vertices;
 	VertexCache.vertexCount = vertexCount;
 
-	VertexCache.indices = indices;
-	VertexCache.indicesIndex = 0;
-	VertexCache.indicesRun = 0;
-
 	switch(Material.org.MaterialType)
 	{
 		case EMT_REFLECTION_2_LAYER:
 		case EMT_TRANSPARENT_REFLECTION_2_LAYER:
-			VertexCache.vType = 3;
+			VertexCache.vType = E4VT_REFLECTION_MAP;
 			break;
 		default:
-			VertexCache.vType = vType;
+			VertexCache.vType = (e4DVertexType)vType;
 			break;
 	}
-		
-	VertexCache.pType = pType;
+
+	VertexCache.indices = indices;
+	VertexCache.indicesIndex = 0;
+	VertexCache.indicesRun = 0;
 
 	switch ( iType )
 	{
-		case EIT_16BIT: VertexCache.iType = 1; break;
-		case EIT_32BIT: VertexCache.iType = 2; break;
+		case EIT_16BIT: VertexCache.iType = E4IT_16BIT; break;
+		case EIT_32BIT: VertexCache.iType = E4IT_32BIT; break;
 		default:
-			VertexCache.iType = iType; break;
+			VertexCache.iType = (e4DIndexType)iType; break;
 	}
+	if (!VertexCache.indices)
+		VertexCache.iType = E4IT_NONE;
 
+	VertexCache.pType = pType;
+	VertexCache.primitiveHasVertex = 3;
+	VertexCache.primitivePitch = 1;
 	switch ( VertexCache.pType )
 	{
 		// most types here will not work as expected, only triangles/triangle_fan
@@ -1767,46 +1781,57 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 		case scene::EPT_POINTS:
 			VertexCache.indexCount = primitiveCount;
 			VertexCache.primitivePitch = 1;
+			VertexCache.primitiveHasVertex = 1;
 			break;
 		case scene::EPT_LINE_STRIP:
 			VertexCache.indexCount = primitiveCount+1;
 			VertexCache.primitivePitch = 1;
+			VertexCache.primitiveHasVertex = 2;
 			break;
 		case scene::EPT_LINE_LOOP:
 			VertexCache.indexCount = primitiveCount+1;
 			VertexCache.primitivePitch = 1;
+			VertexCache.primitiveHasVertex = 2;
 			break;
 		case scene::EPT_LINES:
 			VertexCache.indexCount = 2*primitiveCount;
 			VertexCache.primitivePitch = 2;
+			VertexCache.primitiveHasVertex = 2;
 			break;
 		case scene::EPT_TRIANGLE_STRIP:
 			VertexCache.indexCount = primitiveCount+2;
 			VertexCache.primitivePitch = 1;
+			VertexCache.primitiveHasVertex = 3;
 			break;
 		case scene::EPT_TRIANGLES:
 			VertexCache.indexCount = primitiveCount + primitiveCount + primitiveCount;
 			VertexCache.primitivePitch = 3;
+			VertexCache.primitiveHasVertex = 3;
 			break;
 		case scene::EPT_TRIANGLE_FAN:
 			VertexCache.indexCount = primitiveCount + 2;
 			VertexCache.primitivePitch = 1;
+			VertexCache.primitiveHasVertex = 3;
 			break;
 		case scene::EPT_QUAD_STRIP:
 			VertexCache.indexCount = 2*primitiveCount + 2;
 			VertexCache.primitivePitch = 2;
+			VertexCache.primitiveHasVertex = 4;
 			break;
 		case scene::EPT_QUADS:
 			VertexCache.indexCount = 4*primitiveCount;
 			VertexCache.primitivePitch = 4;
+			VertexCache.primitiveHasVertex = 4;
 			break;
 		case scene::EPT_POLYGON:
 			VertexCache.indexCount = primitiveCount+1;
 			VertexCache.primitivePitch = 1;
+			VertexCache.primitiveHasVertex = primitiveCount;
 			break;
 		case scene::EPT_POINT_SPRITES:
 			VertexCache.indexCount = primitiveCount;
 			VertexCache.primitivePitch = 1;
+			VertexCache.primitiveHasVertex = 1;
 			break;
 	}
 
@@ -1907,9 +1932,9 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 		}
 
 		// else if not complete inside clipping necessary
-		memcpy32_small ( ( (u8*) CurrentOut.data + ( 0 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[0], SIZEOF_SVERTEX * 2 );
-		memcpy32_small ( ( (u8*) CurrentOut.data + ( 1 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[1], SIZEOF_SVERTEX * 2 );
-		memcpy32_small ( ( (u8*) CurrentOut.data + ( 2 << ( SIZEOF_SVERTEX_LOG2 + 1 ) ) ), face[2], SIZEOF_SVERTEX * 2 );
+		memcpy32_small ( ( (u8*) CurrentOut.data + ( 0 << ( SIZEOF_S4DVERTEX_LOG2 + 1 ) ) ), face[0], SIZEOF_S4DVERTEX * 2 );
+		memcpy32_small ( ( (u8*) CurrentOut.data + ( 1 << ( SIZEOF_S4DVERTEX_LOG2 + 1 ) ) ), face[1], SIZEOF_S4DVERTEX * 2 );
+		memcpy32_small ( ( (u8*) CurrentOut.data + ( 2 << ( SIZEOF_S4DVERTEX_LOG2 + 1 ) ) ), face[2], SIZEOF_S4DVERTEX * 2 );
 
 		//clear clipping & projected flags
 		const u32 flag = CurrentOut.data->flag & VERTEX4D_FORMAT_MASK;
@@ -2510,7 +2535,7 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 	dColor.mulAdd (ambient, Material.AmbientColor );
 	dColor.mulAdd (diffuse, Material.DiffuseColor);
 
-	//has to move to shader (for vertex color only this will fit [expect clamping])
+	//has to move to shader (for vertex color only this will fit [except clamping])
 
 	sVec3 c;
 	c.setR8G8B8(vertexargb);
@@ -2711,12 +2736,18 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 
 	// fill VertexCache direct
 	VertexCache.vertexCount = 4;
-	VertexCache.vType = 0;
+	VertexCache.vType = E4VT_STANDARD;
+
+	VertexCache.indicesIndex = 0;
+	VertexCache.indicesRun = 0;
+	VertexCache.primitivePitch = 1;
 
 	VertexCache.info[0].index = 0;
 	VertexCache.info[1].index = 1;
 	VertexCache.info[2].index = 2;
 	VertexCache.info[3].index = 3;
+
+	static const u32 indexList[6] = { 0,1,2,0,2,3 };
 
 	s4DVertex* v = &VertexCache.mem.data [ 0 ];
 
@@ -2732,11 +2763,11 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 	v[6].Color[0].setA8R8G8B8 ( colorLeftDown.color );
 #endif
 
-	s32 i;
+	u32 i;
 	for ( i = 0; i < 8; i += 2 )
 	{
 		v[i + 0].flag = clipToFrustumTest ( v + i ) | vSize[VertexCache.vType].Format;
-		v[i + 1].flag = vSize[VertexCache.vType].Format;
+		v[i + 1].flag = v[i + 0].flag;
 		if ( (v[i].flag & VERTEX4D_INSIDE ) == VERTEX4D_INSIDE )
 		{
 			ndc_2_dc_and_project ( v + i + 1, v + i, 2 );
@@ -2747,9 +2778,7 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 	IBurningShader * render = BurningShader [ ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT ];
 	render->setRenderTarget(RenderTargetSurface, ViewPort);
 
-	static const s16 indexList[6] = {0,1,2,0,2,3};
-
-	s4DVertex * face[3];
+	s4DVertex* face[3];
 
 	for ( i = 0; i < 6; i += 3 )
 	{
@@ -2768,9 +2797,9 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 		// Todo: all vertices are clipped in 2d..
 		// is this true ?
 		u32 vOut = 6;
-		memcpy32_small ( CurrentOut.data + 0, face[0], sizeof ( s4DVertex ) * 2 );
-		memcpy32_small ( CurrentOut.data + 2, face[1], sizeof ( s4DVertex ) * 2 );
-		memcpy32_small ( CurrentOut.data + 4, face[2], sizeof ( s4DVertex ) * 2 );
+		memcpy32_small ( CurrentOut.data + 0, face[0], SIZEOF_S4DVERTEX * 2 );
+		memcpy32_small ( CurrentOut.data + 2, face[1], SIZEOF_S4DVERTEX * 2 );
+		memcpy32_small ( CurrentOut.data + 4, face[2], SIZEOF_S4DVERTEX * 2 );
 
 		//clear clipping & projected flags
 		const u32 flag = CurrentOut.data->flag & VERTEX4D_FORMAT_MASK;
@@ -3095,7 +3124,7 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 		shader->setParam ( 0, 0 );
 		shader->setParam ( 1, 1 );
 		shader->setParam ( 2, 0 );
-		drawVertexPrimitiveList (triangles.const_pointer(), count, 0, count/3, (video::E_VERTEX_TYPE) 4, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) 4 );
+		drawVertexPrimitiveList (triangles.const_pointer(), count, 0, count/3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
 		//glStencilOp(GL_KEEP, incr, GL_KEEP);
 		//glDrawArrays(GL_TRIANGLES,0,count);
 
@@ -3106,7 +3135,7 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 		shader->setParam ( 0, 0 );
 		shader->setParam ( 1, 2 );
 		shader->setParam ( 2, 0 );
-		drawVertexPrimitiveList (triangles.const_pointer(), count, 0, count/3, (video::E_VERTEX_TYPE) 4, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) 4 );
+		drawVertexPrimitiveList (triangles.const_pointer(), count, 0, count/3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
 		//glStencilOp(GL_KEEP, decr, GL_KEEP);
 		//glDrawArrays(GL_TRIANGLES,0,count);
 	}
@@ -3150,11 +3179,14 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 	const u32* stencilBase = (u32*) StencilBuffer->lock();
 
 #if defined(SOFTWARE_DRIVER_2_32BIT)
+	const u32 alpha = extractAlpha(leftUpEdge.color);
+	const u32 src = leftUpEdge.color;
 #else
 	const u16 alpha = extractAlpha( leftUpEdge.color ) >> 3;
 	const u32 src = video::A8R8G8B8toA1R5G5B5( leftUpEdge.color );
-
 #endif
+
+
 	for ( u32 y = 0; y < h; ++y )
 	{
 		dst = (tVideoSample*)RenderTargetSurface->getData() + ( y * w );
@@ -3165,7 +3197,7 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 			if ( stencil[x] > 0 )
 			{
 #if defined(SOFTWARE_DRIVER_2_32BIT)
-				dst[x] = PixelBlend32 ( dst[x], leftUpEdge.color );
+				dst[x] = PixelBlend32 ( dst[x], src,alpha );
 #else
 				dst[x] = PixelBlend16( dst[x], src, alpha );
 #endif

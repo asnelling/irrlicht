@@ -144,8 +144,8 @@ void CTRTextureGouraud2::scanline_bilinear ()
 #endif
 
 	// apply top-left fill-convention, left
-	xStart = core::ceil32_fast( line.x[0] );
-	xEnd = core::ceil32_fast( line.x[1] ) - 1;
+	xStart = fill_convention_left( line.x[0] );
+	xEnd = fill_convention_right( line.x[1] );
 
 	dx = xEnd - xStart;
 
@@ -153,7 +153,7 @@ void CTRTextureGouraud2::scanline_bilinear ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
@@ -372,7 +372,7 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 #endif
 
 	// rasterize upper sub-triangle
-	if ( (f32) 0.0 != scan.invDeltaY[1]  )
+	if ( F32_GREATER_0(scan.invDeltaY[1])  )
 	{
 		// calculate slopes for top edge
 		scan.slopeX[1] = (b->Pos.x - a->Pos.x) * scan.invDeltaY[1];
@@ -409,8 +409,8 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 #endif
 
 		// apply top-left fill convention, top part
-		yStart = core::ceil32_fast( a->Pos.y );
-		yEnd = core::ceil32_fast( b->Pos.y ) - 1;
+		yStart = fill_convention_left( a->Pos.y );
+		yEnd = fill_convention_right( b->Pos.y );
 
 #ifdef SUBTEXEL
 		subPixel = ( (f32) yStart ) - a->Pos.y;
@@ -529,10 +529,10 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 	}
 
 	// rasterize lower sub-triangle
-	if ( (f32) 0.0 != scan.invDeltaY[2] )
+	if (F32_GREATER_0(scan.invDeltaY[2]) )
 	{
 		// advance to middle point
-		if( (f32) 0.0 != scan.invDeltaY[1] )
+		if(F32_GREATER_0(scan.invDeltaY[1]) )
 		{
 			temp[0] = b->Pos.y - a->Pos.y;	// dy
 
@@ -593,8 +593,8 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 #endif
 
 		// apply top-left fill convention, top part
-		yStart = core::ceil32_fast( b->Pos.y );
-		yEnd = core::ceil32_fast( c->Pos.y ) - 1;
+		yStart = fill_convention_left( b->Pos.y );
+		yEnd = fill_convention_right( c->Pos.y );
 
 #ifdef SUBTEXEL
 

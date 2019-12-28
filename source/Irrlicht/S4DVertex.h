@@ -9,6 +9,7 @@
 #include "SoftwareDriver2_compile_config.h"
 #include "SoftwareDriver2_helper.h"
 #include "irrAllocator.h"
+#include "EPrimitiveTypes.h"
 
 namespace irr
 {
@@ -18,9 +19,13 @@ namespace video
 
 // null check necessary (burningvideo only)
 #define reciprocal_zero(x) ((x) != 0.f ? 1.f / (x):0.f)
+static inline f32 reciprocal_zero2(f32 x) { return x != 0.f ? 1.f / x : 0.f; }
 #define reciprocal_one(x) ((x) != 0.f ? 1.f / (x):1.f)
+
 #define fill_convention_left(x) (s32) ceilf(x)
 #define fill_convention_right(x) ((s32) ceilf(x))-1
+//#define fill_convention_left(x) 65536 - int(65536.0f - x)
+//#define fill_convention_right(x) 65535 - int(65536.0f - x)
 
 
 //Check coordinates are in render target/window space
@@ -162,11 +167,8 @@ struct sVec4
 	};
 
 
-
 	sVec4 () {}
-
-	sVec4 ( f32 s) : x ( s ), y ( s ), z ( s ), w ( s ) {}
-
+	//sVec4 ( f32 s) : x ( s ), y ( s ), z ( s ), w ( s ) {}
 	sVec4 ( f32 _x, f32 _y, f32 _z, f32 _w )
 		: x ( _x ), y ( _y ), z( _z ), w ( _w ){}
 
@@ -466,6 +468,23 @@ enum e4DVertexFlag
 
 };
 
+//! vertex layout
+enum e4DVertexType
+{
+	E4VT_STANDARD = 0, // EVT_STANDARD, video::S3DVertex.
+	E4VT_2TCOORDS = 1, // EVT_2TCOORDS, video::S3DVertex2TCoords.
+	E4VT_TANGENTS = 2, // EVT_TANGENTS, video::S3DVertexTangents
+	E4VT_REFLECTION_MAP = 3,
+	E4VT_SHADOW = 4
+};
+
+enum e4DIndexType
+{
+	E4IT_16BIT = 1, // EIT_16BIT,
+	E4IT_32BIT = 2, // EIT_32BIT,
+	E4IT_NONE  = 4, //
+};
+
 
 #ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
 	#ifdef SOFTWARE_DRIVER_2_USE_SEPARATE_SPECULAR_COLOR
@@ -497,8 +516,8 @@ struct s4DVertex_proxy
 };
 
 //ensure handcrafted sizeof(s4DVertex)
-#define SIZEOF_SVERTEX	64
-#define SIZEOF_SVERTEX_LOG2	6
+#define SIZEOF_S4DVERTEX	64
+#define SIZEOF_S4DVERTEX_LOG2	6
 
 /*!
 	Internal BurningVideo Vertex
@@ -518,7 +537,7 @@ struct s4DVertex
 	sVec3 LightTangent[BURNING_MATERIAL_MAX_TANGENT];
 #endif
 
-	//u8 __align [ SIZEOF_SVERTEX - sizeof (s4DVertex_proxy) ];
+	//u8 __align [ SIZEOF_S4DVERTEX - sizeof (s4DVertex_proxy) ];
 
 	// f = a * t + b * ( 1 - t )
 	void interpolate(const s4DVertex& b, const s4DVertex& a, const f32 t)
@@ -561,7 +580,7 @@ struct SAlignedVertex
 	SAlignedVertex ( u32 element )
 		: ElementSize ( element )
 	{
-		u32 byteSize = ((ElementSize << SIZEOF_SVERTEX_LOG2 ) + 4095) & ~4095; // + aligned;
+		u32 byteSize = ((ElementSize << SIZEOF_S4DVERTEX_LOG2 ) + 4095) & ~4095; // + aligned;
 		mem = new u8 [ byteSize ];
 		data = (s4DVertex*) mem;
 	}
@@ -613,15 +632,15 @@ struct SVertexCache
 	const void* indices;
 	u32 indexCount;
 	u32 indicesIndex;
-
 	u32 indicesRun;
 
 	// primitives consist of x vertices
+	u32 primitiveHasVertex;
 	u32 primitivePitch;
 
-	u32 vType;		//E_VERTEX_TYPE
-	u32 pType;		//scene::E_PRIMITIVE_TYPE
-	u32 iType;		//E_INDEX_TYPE iType
+	e4DVertexType vType;		//E_VERTEX_TYPE
+	scene::E_PRIMITIVE_TYPE pType;		//scene::E_PRIMITIVE_TYPE
+	e4DIndexType iType;		//E_INDEX_TYPE iType
 
 };
 

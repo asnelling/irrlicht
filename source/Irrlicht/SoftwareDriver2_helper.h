@@ -184,7 +184,7 @@ REALINLINE u32 if_mask_a_else_b ( const u32 mask, const u32 a, const u32 b )
 	Pixel = dest * ( 1 - alpha ) + source * alpha
 	alpha [0;256]
 */
-REALINLINE u32 PixelBlend32 ( const u32 c2, const u32 c1, u32 alpha )
+REALINLINE u32 PixelBlend32 ( const u32 c2, const u32 c1, const u32 alpha )
 {
 	u32 srcRB = c1 & 0x00FF00FF;
 	u32 srcXG = c1 & 0x0000FF00;
@@ -214,7 +214,7 @@ REALINLINE u32 PixelBlend32 ( const u32 c2, const u32 c1, u32 alpha )
 	Pixel = dest * ( 1 - alpha ) + source * alpha
 	alpha [0;32]
 */
-inline u16 PixelBlend16 ( const u16 c2, const u32 c1, const u16 alpha )
+inline u16 PixelBlend16 ( const u16 c2, const u16 c1, const u16 alpha )
 {
 	const u16 srcRB = c1 & 0x7C1F;
 	const u16 srcXG = c1 & 0x03E0;
@@ -596,6 +596,7 @@ REALINLINE tFixPoint imulFix_tex2(const tFixPoint x, const tFixPoint y)
 /*
 	Multiply x * y * 4
 */
+
 REALINLINE tFixPoint imulFix_tex4(const tFixPoint x, const tFixPoint y)
 {
 #ifdef SOFTWARE_DRIVER_2_32BIT
@@ -605,6 +606,18 @@ REALINLINE tFixPoint imulFix_tex4(const tFixPoint x, const tFixPoint y)
 #endif
 }
 
+
+#if 0
+#define imulFix_tex1(x,y) ((((tFixPointu)x >> 2) * ((tFixPointu)y >> 2)) >> (tFixPointu)(FIX_POINT_PRE + 4))
+#define imulFix_tex2(x,y) ((((tFixPointu)x >> 2) * ((tFixPointu)y >> 2)) >> (tFixPointu)(FIX_POINT_PRE + 3))
+
+#ifdef SOFTWARE_DRIVER_2_32BIT
+#define imulFix_tex4(x,y) ( ( (tFixPointu) x >> 2 ) * ( (tFixPointu) y >> 2 ) ) >> (tFixPointu) ( FIX_POINT_PRE + 2 )
+#else
+#define imulFix_tex4(x,y) ( x * y) >> ( FIX_POINT_PRE + ( VIDEO_SAMPLE_GRANULARITY * 3 ) )
+#endif
+#endif
+
 /*!
 	clamp FixPoint to maxcolor in FixPoint, min(a,31)
 */
@@ -613,6 +626,9 @@ REALINLINE tFixPoint clampfix_maxcolor ( const tFixPoint a)
 	tFixPoint c = (a - FIXPOINT_COLOR_MAX) >> 31;
 	return (a & c) | ( FIXPOINT_COLOR_MAX & ~c);
 }
+
+
+
 
 /*!
 	clamp FixPoint to 0 in FixPoint, max(a,0)
@@ -765,7 +781,7 @@ struct sInternalTexture
 
 
 // get video sample plain
-inline tVideoSample getTexel_plain ( const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty )
+static inline tVideoSample getTexel_plain ( const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty )
 {
 	u32 ofs;
 
@@ -797,7 +813,7 @@ inline void getTexel_fix ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
 }
 
 // get video sample to fixpoint
-REALINLINE void getTexel_fix ( tFixPoint &a,
+static REALINLINE void getTexel_fix ( tFixPoint &a,
 			const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty)
 {
 	u32 ofs;
@@ -813,7 +829,7 @@ REALINLINE void getTexel_fix ( tFixPoint &a,
 }
 
 
-inline void getSample_texture_dither (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
+static inline void getSample_texture_dither (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
 										const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty,
 										const u32 x, const u32 y
 								)
@@ -891,7 +907,7 @@ inline void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPo
 
 
 // get sample linear
-REALINLINE void getSample_linear ( tFixPointu &r, tFixPointu &g, tFixPointu &b,
+static REALINLINE void getSample_linear ( tFixPointu &r, tFixPointu &g, tFixPointu &b,
 								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
 								)
 {
@@ -910,7 +926,7 @@ REALINLINE void getSample_linear ( tFixPointu &r, tFixPointu &g, tFixPointu &b,
 }
 
 // get Sample bilinear
-REALINLINE void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
+static REALINLINE void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
 								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
 								)
 {
@@ -986,7 +1002,7 @@ REALINLINE void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
 
 
 // get sample linear
-REALINLINE void getSample_linear ( tFixPointu &a, tFixPointu &r, tFixPointu &g, tFixPointu &b,
+static REALINLINE void getSample_linear ( tFixPointu &a, tFixPointu &r, tFixPointu &g, tFixPointu &b,
 								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
 								)
 {
@@ -1006,7 +1022,7 @@ REALINLINE void getSample_linear ( tFixPointu &a, tFixPointu &r, tFixPointu &g, 
 }
 
 // get Sample bilinear
-REALINLINE void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,
+static REALINLINE void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,
 								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
 								)
 {
