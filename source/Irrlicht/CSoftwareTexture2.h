@@ -77,7 +77,7 @@ public:
 	//! compare the area drawn with the area of the texture
 	f32 getLODFactor( const f32 texArea ) const
 	{
-		return OrigImageDataSizeInPixels * texArea;
+		return MipMap0_Area * texArea;
 		//return MipMap[0]->getImageDataSizeInPixels () * texArea;
 	}
 
@@ -103,7 +103,7 @@ public:
 
 private:
 	void calcDerivative();
-	f32 OrigImageDataSizeInPixels;
+	f32 MipMap0_Area;
 
 	CImage* MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
 

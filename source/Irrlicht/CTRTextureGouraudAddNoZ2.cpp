@@ -146,7 +146,7 @@ void CTRTextureGouraudAddNoZ2::scanline_bilinear ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;

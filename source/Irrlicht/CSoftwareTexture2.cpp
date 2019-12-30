@@ -33,8 +33,8 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	ColorFormat = BURNINGSHADER_COLOR_FORMAT;
 	IsRenderTarget = (Flags & IS_RENDERTARGET) != 0;
 	HasMipMaps = (Flags & GEN_MIPMAP) != 0;
-	OrigImageDataSizeInPixels = 0.f;
-	for ( s32 i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i ) MipMap[i] = 0;
+	MipMap0_Area = 0.f;
+	for ( size_t i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i ) MipMap[i] = 0;
 	if (!image) return;
 
 	OriginalSize = image->getDimension();
@@ -192,7 +192,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 		if ( MipMap[i] )
 		{
 			core::rect<s32> p (MipMap[i]->getDimension());
-			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, 0,(color[i] & 0x00FFFFFF ) | 0x22000000);
+			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, 0,(color[i&15] & 0x00FFFFFF ) | 0x22000000);
 		}
 	}
 
@@ -201,7 +201,8 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 
 void CSoftwareTexture2::calcDerivative()
 {
-	OrigImageDataSizeInPixels = MipMap[0]->getImageDataSizeInPixels() * 0.5f;
+	const core::dimension2du& dim = MipMap[0]->getDimension();
+	MipMap0_Area = dim.Width * dim.Height * 0.5f;
 
 	//reset current MipMap
 	Size = MipMap[MipMapLOD]->getDimension();

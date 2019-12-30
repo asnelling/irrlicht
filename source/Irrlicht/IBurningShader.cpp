@@ -125,8 +125,8 @@ namespace video
 
 		s4DVertex c = *a;
 
-		f32 w = (f32)RenderTarget->getDimension().Width-1;
-		f32 h = (f32)RenderTarget->getDimension().Height-1;
+		const f32 w = (f32)RenderTarget->getDimension().Width-1;
+		const f32 h = (f32)RenderTarget->getDimension().Height-1;
 
 		if ( d.x < 2.f ) { c.Pos.x = b->Pos.x + 1.f + d.y; if ( c.Pos.x > w ) c.Pos.x = w; }
 		else c.Pos.x = b->Pos.x;

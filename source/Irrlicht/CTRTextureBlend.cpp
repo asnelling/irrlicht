@@ -264,7 +264,7 @@ void CTRTextureBlend::fragment_dst_color_src_alpha ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
@@ -449,7 +449,7 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
@@ -630,7 +630,7 @@ void CTRTextureBlend::fragment_one_one_minus_src_alpha()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2 ( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
@@ -829,7 +829,7 @@ void CTRTextureBlend::fragment_one_minus_dst_alpha_one ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
@@ -1027,7 +1027,7 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
@@ -1256,7 +1256,7 @@ void CTRTextureBlend::fragment_dst_color_one_minus_dst_alpha ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
@@ -1454,7 +1454,7 @@ void CTRTextureBlend::fragment_dst_color_zero ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
@@ -1650,7 +1650,7 @@ void CTRTextureBlend::fragment_dst_color_one ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
@@ -1849,7 +1849,7 @@ void CTRTextureBlend::fragment_zero_one_minus_scr_color ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;

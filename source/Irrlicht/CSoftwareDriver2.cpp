@@ -23,6 +23,10 @@ namespace irr
 namespace video
 {
 
+//#define Tweak_Burning
+
+#if defined(Tweak_Burning)
+
 // run time parameter
 struct tweakBurning
 {
@@ -109,6 +113,7 @@ void tweakBurning::postEventFromUser(const SEvent& e)
 	}
 }
 tweakBurning Tweak;
+#endif //defined(Tweak_Burning)
 
 //! constructor
 CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters& params, io::IFileSystem* io, video::IImagePresenter* presenter)
@@ -668,7 +673,9 @@ void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
 
 void CBurningVideoDriver::postEventFromUser(const void* sevent)
 {
+#if defined(Tweak_Burning)
 	if (sevent) Tweak.postEventFromUser(*(const SEvent*) sevent);
+#endif
 }
 
 // used to scale <-1,-1><1,1> to viewport
@@ -681,27 +688,27 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 	//or sampler is not on texel center
 
 	f32* m = out.pointer();
-#if 0
+#if defined(Tweak_Burning) && 0
 	m[0]  = (viewport.getWidth() + Tweak.ndc_shrink_x ) * Tweak.ndc_scale_x;
 	m[5]  = (viewport.getHeight() + Tweak.ndc_shrink_y ) * Tweak.ndc_scale_y;
 	m[12] = Tweak.ndc_trans_x + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
 	m[13] = Tweak.ndc_trans_y + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
 #endif
 
-	m[0]  = (viewport.getWidth() - 0.75f ) * 0.5f;
+	m[0]  = (viewport.getWidth() - 0.74998f ) * 0.5f;
 	m[1]  = 0.f;
 	m[2]  = 0.f;
 	m[3]  = 0.f;
 	m[4]  = 0.f;
-	m[5]  = (viewport.getHeight() - 0.75f ) * -0.5f;
+	m[5]  = (viewport.getHeight() - 0.74998f ) * -0.5f;
 	m[6]  = 0.f;
 	m[7]  = 0.f;
 	m[8]  = 0.f;
 	m[9]  = 0.f;
 	m[10] = 1.f;
 	m[11] = 0.f;
-	m[12] = -0.5f + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
-	m[13] = -0.5f + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
+	m[12] = -0.4998f + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
+	m[13] = -0.4998f + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
 	m[14] = 0.f;
 	m[15] = 1.f;
 
@@ -715,8 +722,13 @@ inline void CBurningVideoDriver::select_polygon_mipmap ( s4DVertex *v, u32 vIn, 
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
 	for ( u32 g = 0; g != vIn; g += 2 )
 	{
+#if defined(Tweak_Burning)
 		(v + g + 1 )->Tex[tex].x	= (v + g + 0)->Tex[tex].x * ( v + g + 1 )->Pos.w * (b.w+Tweak.tex_w_add) + (b.cx+Tweak.tex_cx_add);
 		(v + g + 1 )->Tex[tex].y	= (v + g + 0)->Tex[tex].y * ( v + g + 1 )->Pos.w * (b.h+Tweak.tex_h_add) + (b.cy+Tweak.tex_cy_add);
+#else
+		(v + g + 1)->Tex[tex].x = (v + g + 0)->Tex[tex].x * (v + g + 1)->Pos.w * b.w + b.cx;
+		(v + g + 1)->Tex[tex].y = (v + g + 0)->Tex[tex].y * (v + g + 1)->Pos.w * b.h + b.cy;
+#endif
 	}
 #else
 	for ( u32 g = 0; g != vIn; g += 2 )
@@ -734,6 +746,7 @@ inline void CBurningVideoDriver::select_polygon_mipmap ( s4DVertex *v, u32 vIn, 
 inline void CBurningVideoDriver::select_polygon_mipmap2 ( s4DVertex* v[], u32 tex, const CSoftwareTexture2_Bound& b ) const
 {
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
+#if defined(Tweak_Burning)
 	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * ( v[0] + 1 )->Pos.w * (b.w+Tweak.tex_w_add) + (b.cx+Tweak.tex_cx_add);
 	(v[0] + 1 )->Tex[tex].y	= v[0]->Tex[tex].y * ( v[0] + 1 )->Pos.w * (b.h+Tweak.tex_h_add) + (b.cy+Tweak.tex_cy_add);
 
@@ -742,7 +755,16 @@ inline void CBurningVideoDriver::select_polygon_mipmap2 ( s4DVertex* v[], u32 te
 
 	(v[2] + 1 )->Tex[tex].x	= v[2]->Tex[tex].x * ( v[2] + 1 )->Pos.w * (b.w+Tweak.tex_w_add) + (b.cx+Tweak.tex_cx_add);
 	(v[2] + 1 )->Tex[tex].y	= v[2]->Tex[tex].y * ( v[2] + 1 )->Pos.w * (b.h+Tweak.tex_h_add) + (b.cy+Tweak.tex_cy_add);
+#else
+	(v[0] + 1)->Tex[tex].x = v[0]->Tex[tex].x * (v[0] + 1)->Pos.w * b.w + b.cx;
+	(v[0] + 1)->Tex[tex].y = v[0]->Tex[tex].y * (v[0] + 1)->Pos.w * b.h + b.cy;
 
+	(v[1] + 1)->Tex[tex].x = v[1]->Tex[tex].x * (v[1] + 1)->Pos.w * b.w + b.cx;
+	(v[1] + 1)->Tex[tex].y = v[1]->Tex[tex].y * (v[1] + 1)->Pos.w * b.h + b.cy;
+
+	(v[2] + 1)->Tex[tex].x = v[2]->Tex[tex].x * (v[2] + 1)->Pos.w * b.w + b.cx;
+	(v[2] + 1)->Tex[tex].y = v[2]->Tex[tex].y * (v[2] + 1)->Pos.w * b.h + b.cy;
+#endif
 #else
 	(v[0] + 1 )->Tex[tex].x	= v[0]->Tex[tex].x * b.w;
 	(v[0] + 1 )->Tex[tex].y	= v[0]->Tex[tex].y * b.h;
@@ -1003,7 +1025,7 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex *dest,const s4
 
 #if BURNING_MATERIAL_MAX_COLORS > 0
 		#ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
-			dest[g].Color[0] = source[g].Color[0] * iw;
+			dest[g].Color[0] = source[g].Color[0] * iw; // alpha?
 		#else
 			dest[g].Color[0] = source[g].Color[0];
 		#endif
@@ -1402,10 +1424,12 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			dest->LightTangent[0].y += l.y;
 			dest->LightTangent[0].z += l.z;
 		}
-		dest->LightTangent[0].setLength ( 0.5f );
+		//normalize [-1,+1]
+		dest->LightTangent[0].setLength(0.5f);
 		dest->LightTangent[0].x += 0.5f;
 		dest->LightTangent[0].y += 0.5f;
 		dest->LightTangent[0].z += 0.5f;
+
 	}
 #endif //if BURNING_MATERIAL_MAX_TANGENT > 0
 
@@ -1734,7 +1758,11 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 		if ( ( face[0]->flag & face[1]->flag & face[2]->flag & VERTEX4D_CLIPMASK ) == VERTEX4D_INSIDE )
 		{
 			dc_area = screenarea2 ( face );
-			u32 sign = dc_area < -Tweak.AreaMinDrawSize ? CULL_BACK: dc_area > Tweak.AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
+#if defined(Tweak_Burning)
+			const u32 sign = dc_area < -Tweak.AreaMinDrawSize ? CULL_BACK: dc_area > Tweak.AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
+#else
+			const u32 sign = dc_area < -0.001f ? CULL_BACK : dc_area > 0.001f ? CULL_FRONT : CULL_INVISIBLE;
+#endif
 			if ( Material.Culling & sign ) 
 				continue;
 
@@ -1792,7 +1820,11 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 
 		// check 2d backface culling on first
 		dc_area = screenarea ( CurrentOut.data );
-		u32 sign = dc_area < -Tweak.AreaMinDrawSize ? CULL_BACK: dc_area > Tweak.AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
+#if defined(Tweak_Burning)
+		const u32 sign = dc_area < -Tweak.AreaMinDrawSize ? CULL_BACK : dc_area > Tweak.AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
+#else
+		const u32 sign = dc_area < -0.001f ? CULL_BACK : dc_area > 0.001f ? CULL_FRONT : CULL_INVISIBLE;
+#endif
 		if ( Material.Culling & sign ) 
 			continue;
 
@@ -1971,10 +2003,11 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 #endif
 
 #ifdef SOFTWARE_DRIVER_2_LIGHTING
-	Material.AmbientColor.setR8G8B8 ( Material.org.AmbientColor.color );
-	Material.DiffuseColor.setR8G8B8 ( Material.org.DiffuseColor.color );
-	Material.EmissiveColor.setR8G8B8 ( Material.org.EmissiveColor.color );
-	Material.SpecularColor.setR8G8B8 ( Material.org.SpecularColor.color );
+
+	Material.AmbientColor.setR8G8B8( Material.org.AmbientColor.color );
+	Material.DiffuseColor.setR8G8B8(Material.org.ColorMaterial ? 0xFFFFFFFF : Material.org.DiffuseColor.color );
+	Material.EmissiveColor.setR8G8B8( Material.org.EmissiveColor.color );
+	Material.SpecularColor.setR8G8B8( Material.org.SpecularColor.color );
 
 	core::setbit_cond ( EyeSpace.Flags, (Material.org.Shininess != 0.f) & (Material.org.SpecularColor.color & 0x00ffffff), SPECULAR );
 	core::setbit_cond ( EyeSpace.Flags, Material.org.FogEnable, FOG );
@@ -2002,17 +2035,17 @@ void CBurningVideoDriver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 /*!
 	applies lighting model
 */
-void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
+void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 {
 	sVec3 dColor;
 
 	//gl_FrontLightModelProduct.sceneColor = gl_FrontMaterial.emission + gl_FrontMaterial.ambient * gl_LightModel.ambient
 	dColor = Material.EmissiveColor;
-	dColor.mulAdd (EyeSpace.Global_AmbientLight, Material.AmbientColor );
+	dColor.mulAdd(EyeSpace.Global_AmbientLight, Material.AmbientColor);
 
-	if ( EyeSpace.Light.size () == 0 )
+	if (EyeSpace.Light.size() == 0)
 	{
-		dColor.saturate( dest->Color[0], vertexargb);
+		dColor.saturate(dest->Color[0], vertexargb);
 		return;
 	}
 
@@ -2022,9 +2055,9 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 
 
 	// the universe started in darkness..
-	ambient.set ( 0.f, 0.f, 0.f );
-	diffuse.set ( 0.f, 0.f, 0.f );
-	specular.set ( 0.f, 0.f, 0.f );
+	ambient.set(0.f, 0.f, 0.f);
+	diffuse.set(0.f, 0.f, 0.f);
+	specular.set(0.f, 0.f, 0.f);
 
 
 	u32 i;
@@ -2036,133 +2069,133 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 
 	f32 spotDot;			// cos of angle between spotlight and point on surface
 
-	for ( i = 0; i < EyeSpace.Light.size (); ++i )
+	for (i = 0; i < EyeSpace.Light.size(); ++i)
 	{
 		const SBurningShaderLight &light = EyeSpace.Light[i];
 
-		if ( !light.LightIsOn )
+		if (!light.LightIsOn)
 			continue;
 
-		switch ( light.Type )
+		switch (light.Type)
 		{
-			case ELT_DIRECTIONAL:
+		case ELT_DIRECTIONAL:
 
-				//angle between normal and light vector
-				dot = EyeSpace.normal3.dot_xyz ( light.spotDirection4 );
+			//angle between normal and light vector
+			dot = EyeSpace.normal3.dot_xyz(light.spotDirection4);
 
-				// accumulate ambient
-				ambient.add ( light.AmbientColor );
+			// accumulate ambient
+			ambient.add(light.AmbientColor);
 
-				// diffuse component
-				if ( dot > 0.f )
-					diffuse.mulAdd ( light.DiffuseColor, dot );
-				break;
+			// diffuse component
+			if (dot > 0.f)
+				diffuse.mulAdd(light.DiffuseColor, dot);
+			break;
 
-			case ELT_POINT:
-				// surface to light
-				vp.x = light.pos4.x - EyeSpace.vertex3.x;
-				vp.y = light.pos4.y - EyeSpace.vertex3.y;
-				vp.z = light.pos4.z - EyeSpace.vertex3.z;
+		case ELT_POINT:
+			// surface to light
+			vp.x = light.pos4.x - EyeSpace.vertex3.x;
+			vp.y = light.pos4.y - EyeSpace.vertex3.y;
+			vp.z = light.pos4.z - EyeSpace.vertex3.z;
 
-				distance = vp.get_length_xyz();
+			distance = vp.get_length_xyz();
 
-				attenuation = light.constantAttenuation
-					          + light.linearAttenuation * distance
-					          + light.quadraticAttenuation * (distance * distance);
-				attenuation = reciprocal_one(attenuation);
+			attenuation = light.constantAttenuation
+				+ light.linearAttenuation * distance
+				+ light.quadraticAttenuation * (distance * distance);
+			attenuation = reciprocal_one(attenuation);
 
-				//att = clamp(1.0 - dist/radius, 0.0, 1.0); att *= att
+			//att = clamp(1.0 - dist/radius, 0.0, 1.0); att *= att
 
-				// accumulate ambient
-				ambient.mulAdd ( light.AmbientColor,attenuation );
+			// accumulate ambient
+			ambient.mulAdd(light.AmbientColor, attenuation);
 
-				// build diffuse reflection
+			// build diffuse reflection
 
-				//angle between normal and light vector
-				vp.mul ( reciprocal_zero( distance ) ); //normalize
-				dot = EyeSpace.normal3.dot_xyz ( vp );
-				if ( dot <= 0.f ) continue;
+			//angle between normal and light vector
+			vp.mul(reciprocal_zero(distance)); //normalize
+			dot = EyeSpace.normal3.dot_xyz(vp);
+			if (dot <= 0.f) continue;
 
-				// diffuse component
-				diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
+			// diffuse component
+			diffuse.mulAdd(light.DiffuseColor, dot * attenuation);
 
-				if ( !(EyeSpace.Flags & SPECULAR) )
-					continue;
-/*
-				lightHalf.x = vp.x + EyeSpace.campos.x;
-				lightHalf.y = vp.y + EyeSpace.campos.y;
-				lightHalf.z = vp.z + EyeSpace.campos.z;
-				lightHalf.normalize_xyz();
+			if (!(EyeSpace.Flags & SPECULAR))
+				continue;
+			/*
+							lightHalf.x = vp.x + EyeSpace.campos.x;
+							lightHalf.y = vp.y + EyeSpace.campos.y;
+							lightHalf.z = vp.z + EyeSpace.campos.z;
+							lightHalf.normalize_xyz();
 
-				dot = EyeSpace.normal3.dot_xyz ( lightHalf );
-				if ( dot > 0.f)
-*/
-				{
-					f32 srgb = powf ( dot,Material.org.Shininess );
-					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
-				}
-				break;
+							dot = EyeSpace.normal3.dot_xyz ( lightHalf );
+							if ( dot > 0.f)
+			*/
+			{
+				f32 srgb = powf(dot, Material.org.Shininess);
+				specular.mulAdd(light.SpecularColor, srgb * attenuation);
+			}
+			break;
 
-			case ELT_SPOT:
-				// surface to light
-				vp.x = light.pos4.x - EyeSpace.vertex3.x;
-				vp.y = light.pos4.y - EyeSpace.vertex3.y;
-				vp.z = light.pos4.z - EyeSpace.vertex3.z;
+		case ELT_SPOT:
+			// surface to light
+			vp.x = light.pos4.x - EyeSpace.vertex3.x;
+			vp.y = light.pos4.y - EyeSpace.vertex3.y;
+			vp.z = light.pos4.z - EyeSpace.vertex3.z;
 
-				distance = vp.get_length_xyz();
+			distance = vp.get_length_xyz();
 
-				//normalize
-				vp.mul ( reciprocal_zero( distance ) );
+			//normalize
+			vp.mul(reciprocal_zero(distance));
 
-				// point on surface inside cone of illumination
-				spotDot = vp.dot_minus_xyz(light.spotDirection4);
-				if (spotDot < light.spotCosCutoff)
-					continue;
+			// point on surface inside cone of illumination
+			spotDot = vp.dot_minus_xyz(light.spotDirection4);
+			if (spotDot < light.spotCosCutoff)
+				continue;
 
-				attenuation = light.constantAttenuation
-					          + light.linearAttenuation * distance
-					          + light.quadraticAttenuation * distance * distance;
-				attenuation = reciprocal_one(attenuation);
-				attenuation *= powf (spotDot,light.spotExponent);
+			attenuation = light.constantAttenuation
+				+ light.linearAttenuation * distance
+				+ light.quadraticAttenuation * distance * distance;
+			attenuation = reciprocal_one(attenuation);
+			attenuation *= powf(spotDot, light.spotExponent);
 
-				// accumulate ambient
-				ambient.mulAdd ( light.AmbientColor,attenuation );
+			// accumulate ambient
+			ambient.mulAdd(light.AmbientColor, attenuation);
 
 
-				// build diffuse reflection
-				//angle between normal and light vector
-				dot = EyeSpace.normal3.dot_xyz ( vp );
-				if ( dot < 0.f ) continue;
+			// build diffuse reflection
+			//angle between normal and light vector
+			dot = EyeSpace.normal3.dot_xyz(vp);
+			if (dot < 0.f) continue;
 
-				// diffuse component
-				diffuse.mulAdd ( light.DiffuseColor, dot * attenuation );
+			// diffuse component
+			diffuse.mulAdd(light.DiffuseColor, dot * attenuation);
 
-				if ( !(EyeSpace.Flags & SPECULAR) )
-					continue;
-/*
-				lightHalf.x = vp.x + EyeSpace.campos.x;
-				lightHalf.y = vp.y + EyeSpace.campos.y;
-				lightHalf.z = vp.z + EyeSpace.campos.z;
-				lightHalf.normalize_xyz();
+			if (!(EyeSpace.Flags & SPECULAR))
+				continue;
+			/*
+							lightHalf.x = vp.x + EyeSpace.campos.x;
+							lightHalf.y = vp.y + EyeSpace.campos.y;
+							lightHalf.z = vp.z + EyeSpace.campos.z;
+							lightHalf.normalize_xyz();
 
-				dot = EyeSpace.normal3.dot_xyz ( lightHalf );
-				if ( dot > 0.f)
-*/
-				{
-					f32 srgb = powf ( dot,Material.org.Shininess );
-					specular.mulAdd ( light.SpecularColor, srgb * attenuation );
-				}
-				break;
+							dot = EyeSpace.normal3.dot_xyz ( lightHalf );
+							if ( dot > 0.f)
+			*/
+			{
+				f32 srgb = powf(dot, Material.org.Shininess);
+				specular.mulAdd(light.SpecularColor, srgb * attenuation);
+			}
+			break;
 
-			default:
-				break;
+		default:
+			break;
 		}
 
 	}
 
 	// sum up lights
-	dColor.mulAdd (ambient, Material.AmbientColor );
-	dColor.mulAdd (diffuse, Material.DiffuseColor);
+	dColor.mulAdd(ambient, Material.AmbientColor);
+	dColor.mulAdd(diffuse, Material.DiffuseColor);
 
 	//has to move to shader (for vertex color only this will fit [except clamping])
 
@@ -2179,13 +2212,14 @@ void CBurningVideoDriver::lightVertex_eye ( s4DVertex *dest, u32 vertexargb )
 	dest->Color[1].g = specular.g * Material.SpecularColor.g;
 	dest->Color[1].b = specular.b * Material.SpecularColor.b;
 #else
-	dColor.mulAdd (specular, Material.SpecularColor);
+	dColor.mulAdd(specular, Material.SpecularColor);
 #endif
 
-	dColor.saturate ( dest->Color[0], vertexargb );
+	dColor.saturate(dest->Color[0], vertexargb);
 }
 
 #endif
+
 
 //setup a quad
 #if defined SOFTWARE_DRIVER_2_2D_AS_3D
@@ -2729,6 +2763,9 @@ u32 CBurningVideoDriver::getMaximalPrimitiveCount() const
 void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector3df>& triangles, bool zfail, u32 debugDataVisible)
 {
 	const u32 count = triangles.size();
+	if (!StencilBuffer || !count)
+		return;
+
 	IBurningShader *shader = BurningShader [ ETR_STENCIL_SHADOW ];
 
 	CurrentShader = shader;
@@ -2737,34 +2774,34 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 	Material.org.MaterialType = video::EMT_SOLID;
 	Material.org.Lighting = false;
 	Material.org.ZWriteEnable = false;
-	Material.org.ZBuffer = ECFN_LESSEQUAL;
+	Material.org.ZBuffer = ECFN_LESS;
 	EyeSpace.Flags &= ~TEXTURE_TRANSFORM;
 
 	//glStencilMask(~0);
 	//glStencilFunc(GL_ALWAYS, 0, ~0);
 
-	if (true)// zpass does not work yet
+	if (zfail)
 	{
-		Material.org.BackfaceCulling = true;
-		Material.org.FrontfaceCulling = false;
-		Material.Culling = CULL_BACK | CULL_INVISIBLE;
-
-		shader->setParam ( 0, 0 );
-		shader->setParam ( 1, 1 );
-		shader->setParam ( 2, 0 );
-		drawVertexPrimitiveList (triangles.const_pointer(), count, 0, count/3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
-		//glStencilOp(GL_KEEP, incr, GL_KEEP);
-		//glDrawArrays(GL_TRIANGLES,0,count);
-
 		Material.org.BackfaceCulling = false;
 		Material.org.FrontfaceCulling = true;
 		Material.Culling = CULL_FRONT | CULL_INVISIBLE;
 
-		shader->setParam ( 0, 0 );
-		shader->setParam ( 1, 2 );
-		shader->setParam ( 2, 0 );
+		shader->setParam ( 0, StencilOp_KEEP);
+		shader->setParam ( 1, StencilOp_INCR);
+		shader->setParam ( 2, StencilOp_KEEP);
 		drawVertexPrimitiveList (triangles.const_pointer(), count, 0, count/3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
-		//glStencilOp(GL_KEEP, decr, GL_KEEP);
+		//glStencilOp(GL_KEEP, GL_INCR, GL_KEEP);
+		//glDrawArrays(GL_TRIANGLES,0,count);
+
+		Material.org.BackfaceCulling = true;
+		Material.org.FrontfaceCulling = false;
+		Material.Culling = CULL_BACK | CULL_INVISIBLE;
+
+		shader->setParam ( 0, StencilOp_KEEP);
+		shader->setParam ( 1, StencilOp_DECR);
+		shader->setParam ( 2, StencilOp_KEEP);
+		drawVertexPrimitiveList (triangles.const_pointer(), count, 0, count/3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
+		//glStencilOp(GL_KEEP, GL_DECR, GL_KEEP);
 		//glDrawArrays(GL_TRIANGLES,0,count);
 	}
 	else // zpass
@@ -2773,19 +2810,21 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 		Material.org.FrontfaceCulling = false;
 		Material.Culling = CULL_BACK | CULL_INVISIBLE;
 
-		shader->setParam ( 0, 0 );
-		shader->setParam ( 1, 0 );
-		shader->setParam ( 2, 1 );
-		//glStencilOp(GL_KEEP, GL_KEEP, incr);
+		shader->setParam ( 0, StencilOp_KEEP);
+		shader->setParam ( 1, StencilOp_KEEP);
+		shader->setParam ( 2, StencilOp_INCR);
+		drawVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
+		//glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 		//glDrawArrays(GL_TRIANGLES,0,count);
 
 		Material.org.BackfaceCulling = false;
 		Material.org.FrontfaceCulling = true;
 		Material.Culling = CULL_FRONT | CULL_INVISIBLE;
 
-		shader->setParam ( 0, 0 );
-		shader->setParam ( 1, 0 );
-		shader->setParam ( 2, 2 );
+		shader->setParam ( 0, StencilOp_KEEP);
+		shader->setParam ( 1, StencilOp_KEEP);
+		shader->setParam ( 2, StencilOp_DECR);
+		drawVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
 		//glStencilOp(GL_KEEP, GL_KEEP, decr);
 		//glDrawArrays(GL_TRIANGLES,0,count);
 	}
@@ -2822,7 +2861,7 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 
 		for ( u32 x = 0; x < w; ++x )
 		{
-			if ( stencil[x] > 0 )
+			if ( stencil[x] )
 			{
 #if defined(SOFTWARE_DRIVER_2_32BIT)
 				dst[x] = PixelBlend32 ( dst[x], src,alpha );
@@ -2833,7 +2872,8 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 		}
 	}
 
-	StencilBuffer->clear();
+	if ( clearStencilBuffer )
+		StencilBuffer->clear();
 }
 
 
@@ -2855,37 +2895,6 @@ bool CBurningVideoDriver::queryTextureFormat(ECOLOR_FORMAT format) const
 #endif // _IRR_COMPILE_WITH_BURNINGSVIDEO_
 
 
-#if defined(_IRR_WINDOWS_) && defined(_IRR_COMPILE_WITH_BURNINGSVIDEO_) && 0
-	#include <windows.h>
-
-struct dreadglobal
-{
-	DWORD dreadid;
-	HANDLE dread;
-	irr::video::CBurningVideoDriver *driver;
-	HANDLE sync;
-
-	const irr::SIrrlichtCreationParameters* params;
-	irr::io::IFileSystem* io;
-	irr::video::IImagePresenter* presenter;
-};
-dreadglobal b;
-
-DWORD WINAPI dreadFun( void *p)
-{
-    printf("Hi This is burning dread\n");
-	b.driver = new irr::video::CBurningVideoDriver(*b.params, b.io, b.presenter);
-
-	SetEvent ( b.sync );
-	while ( 1 )
-	{
-		Sleep ( 1000 );
-	}
-	return 0;
-}
-
-#endif
-
 namespace irr
 {
 namespace video
@@ -2895,21 +2904,9 @@ namespace video
 IVideoDriver* createBurningVideoDriver(const irr::SIrrlichtCreationParameters& params, io::IFileSystem* io, video::IImagePresenter* presenter)
 {
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
-
-	#if defined(_IRR_WINDOWS_) && 0
-		b.sync = CreateEventA ( 0, 0, 0, "burnevent0" );
-		b.params = &params;
-		b.io = io;
-		b.presenter = presenter;
-		b.dread = CreateThread ( 0, 0, dreadFun, 0, 0, &b.dreadid );
-		WaitForSingleObject ( b.sync, INFINITE );
-		return b.driver;
-	#else
 		return new CBurningVideoDriver(params, io, presenter);
-	#endif
-
 	#else
-	return 0;
+		return 0;
 	#endif // _IRR_COMPILE_WITH_BURNINGSVIDEO_
 }
 

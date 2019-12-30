@@ -85,19 +85,15 @@ public:
 
 	//! draws an indexed triangle list
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
-	virtual void setParam ( u32 index, f32 value) _IRR_OVERRIDE_;
+	virtual void setParam(u32 index, f32 value) _IRR_OVERRIDE_;
 
 private:
-	// fragment shader
-	typedef void (CTRStencilShadow::*tFragmentShader) ();
-	void fragment_zfail_decr ();
-	void fragment_zfail_incr ();
-
-	tFragmentShader fragmentShader;
+	void fragmentShader();
 
 	sScanConvertData scan;
 	sScanLineData line;
 
+	eStencilOp stencilOp[4];
 };
 
 //! constructor
@@ -107,6 +103,9 @@ CTRStencilShadow::CTRStencilShadow(CBurningVideoDriver* driver)
 	#ifdef _DEBUG
 	setDebugName("CTRStencilShadow");
 	#endif
+	stencilOp[0] = StencilOp_KEEP;
+	stencilOp[1] = StencilOp_KEEP;
+	stencilOp[2] = StencilOp_KEEP;
 }
 
 
@@ -114,28 +113,15 @@ CTRStencilShadow::CTRStencilShadow(CBurningVideoDriver* driver)
 */
 void CTRStencilShadow::setParam ( u32 index, f32 value)
 {
-	u32 val = (u32) value;
+	// glStencilOp (sfail,dpfail,dppass)
 
-	// glStencilOp (fail,zfail,zpass
-	if ( index == 1 && val == 1 )
-	{
-		fragmentShader = &CTRStencilShadow::fragment_zfail_incr;
-	}
-	else
-	if ( index == 1 && val == 2 )
-	{
-		fragmentShader = &CTRStencilShadow::fragment_zfail_decr;
-	}
+	if (index < 3) stencilOp[index] = (eStencilOp) (u32) value;
 }
 
 /*!
 */
-void CTRStencilShadow::fragment_zfail_decr ()
+void CTRStencilShadow::fragmentShader()
 {
-	if (!Stencil)
-		return;
-	//tVideoSample *dst;
-
 #ifdef USE_ZBUFFER
 	fp24 *z;
 #endif
@@ -158,15 +144,6 @@ void CTRStencilShadow::fragment_zfail_decr ()
 #ifdef IPOL_W
 	fp24 slopeW;
 #endif
-#ifdef IPOL_C0
-	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
-#endif
-#ifdef IPOL_T0
-	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
-#endif
-#ifdef IPOL_L0
-	sVec3 slopeL[BURNING_MATERIAL_MAX_TANGENT];
-#endif
 
 	// apply top-left fill-convention, left
 	xStart = fill_convention_left( line.x[0] );
@@ -178,28 +155,13 @@ void CTRStencilShadow::fragment_zfail_decr ()
 		return;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 #ifdef IPOL_Z
 	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
 #endif
 #ifdef IPOL_W
 	slopeW = (line.w[1] - line.w[0]) * invDeltaX;
-#endif
-#ifdef IPOL_C0
-	slopeC[0] = (line.c[0][1] - line.c[0][0]) * invDeltaX;
-#endif
-#ifdef IPOL_T0
-	slopeT[0] = (line.t[0][1] - line.t[0][0]) * invDeltaX;
-#endif
-#ifdef IPOL_T1
-	slopeT[1] = (line.t[1][1] - line.t[1][0]) * invDeltaX;
-#endif
-#ifdef IPOL_T2
-	slopeT[2] = (line.t[2][1] - line.t[2][0]) * invDeltaX;
-#endif
-#ifdef IPOL_L0
-	slopeL[0] = (line.l[0][1] - line.l[0][0]) * invDeltaX;
 #endif
 
 #ifdef SUBTEXEL
@@ -210,23 +172,7 @@ void CTRStencilShadow::fragment_zfail_decr ()
 #ifdef IPOL_W
 	line.w[0] += slopeW * subPixel;
 #endif
-#ifdef IPOL_C0
-	line.c[0][0] += slopeC[0] * subPixel;
 #endif
-#ifdef IPOL_T0
-	line.t[0][0] += slopeT[0] * subPixel;
-#endif
-#ifdef IPOL_T1
-	line.t[1][0] += slopeT[1] * subPixel;
-#endif
-#ifdef IPOL_T2
-	line.t[2][0] += slopeT[2] * subPixel;
-#endif
-#ifdef IPOL_L0
-	line.l[0][0] += slopeL[0] * subPixel;
-#endif
-#endif
-
 	SOFTWARE_DRIVER_2_CLIPCHECK;
 	//dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
@@ -243,22 +189,31 @@ void CTRStencilShadow::fragment_zfail_decr ()
 	f32 inversew;
 #endif
 
-
-#ifdef IPOL_C0
-	tFixPoint r3, g3, b3;
-#endif
-
-	for ( s32 i = 0; i <= dx; i++ )
+	s32 i;
+	for (i = 0; i <= dx; i++)
 	{
 #ifdef CMP_Z
-		if ( line.z[0] < z[i] )
+		if (line.z[0] < z[i])
 #endif
 #ifdef CMP_W
-		if ( line.w[0] < z[i] )
+		if (line.w[0] <= z[i])
 #endif
 		{
 			// zfail
-			stencil[i] -= 1;
+			switch (stencilOp[1])
+			{
+			case StencilOp_INCR: stencil[i] += 1; break;
+			case StencilOp_DECR: stencil[i] = core::s32_max(0, stencil[i] - 1); break;
+			}
+		}
+		else
+		{
+			// zpass
+			switch (stencilOp[2])
+			{
+			case StencilOp_INCR: stencil[i] += 1; break;
+			case StencilOp_DECR: stencil[i] = core::s32_max(0, stencil[i] - 1); break;
+			}
 		}
 
 #ifdef IPOL_Z
@@ -267,179 +222,10 @@ void CTRStencilShadow::fragment_zfail_decr ()
 #ifdef IPOL_W
 		line.w[0] += slopeW;
 #endif
-#ifdef IPOL_C0
-		line.c[0][0] += slopeC[0];
-#endif
-#ifdef IPOL_T0
-		line.t[0][0] += slopeT[0];
-#endif
-#ifdef IPOL_T1
-		line.t[1][0] += slopeT[1];
-#endif
-#ifdef IPOL_T2
-		line.t[2][0] += slopeT[2];
-#endif
-#ifdef IPOL_L0
-		line.l[0][0] += slopeL[0];
-#endif
 	}
+
 }
 
-/*!
-*/
-void CTRStencilShadow::fragment_zfail_incr()
-{
-	if (!Stencil)
-		return;
-	//tVideoSample *dst;
-
-#ifdef USE_ZBUFFER
-	fp24 *z;
-#endif
-
-#ifdef USE_SBUFFER
-	u32 *stencil;
-#endif
-
-	s32 xStart;
-	s32 xEnd;
-	s32 dx;
-
-
-#ifdef SUBTEXEL
-	f32 subPixel;
-#endif
-
-#ifdef IPOL_Z
-	f32 slopeZ;
-#endif
-#ifdef IPOL_W
-	fp24 slopeW;
-#endif
-#ifdef IPOL_C0
-	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
-#endif
-#ifdef IPOL_T0
-	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
-#endif
-#ifdef IPOL_L0
-	sVec3 slopeL[BURNING_MATERIAL_MAX_TANGENT];
-#endif
-
-	// apply top-left fill-convention, left
-	xStart = fill_convention_left( line.x[0] );
-	xEnd = fill_convention_right( line.x[1] );
-
-	dx = xEnd - xStart;
-
-	if ( dx < 0 )
-		return;
-
-	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
-
-#ifdef IPOL_Z
-	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
-#endif
-#ifdef IPOL_W
-	slopeW = (line.w[1] - line.w[0]) * invDeltaX;
-#endif
-#ifdef IPOL_C0
-	slopeC[0] = (line.c[0][1] - line.c[0][0]) * invDeltaX;
-#endif
-#ifdef IPOL_T0
-	slopeT[0] = (line.t[0][1] - line.t[0][0]) * invDeltaX;
-#endif
-#ifdef IPOL_T1
-	slopeT[1] = (line.t[1][1] - line.t[1][0]) * invDeltaX;
-#endif
-#ifdef IPOL_T2
-	slopeT[2] = (line.t[2][1] - line.t[2][0]) * invDeltaX;
-#endif
-#ifdef IPOL_L0
-	slopeL[0] = (line.l[0][1] - line.l[0][0]) * invDeltaX;
-#endif
-
-#ifdef SUBTEXEL
-	subPixel = ( (f32) xStart ) - line.x[0];
-#ifdef IPOL_Z
-	line.z[0] += slopeZ * subPixel;
-#endif
-#ifdef IPOL_W
-	line.w[0] += slopeW * subPixel;
-#endif
-#ifdef IPOL_C0
-	line.c[0][0] += slopeC[0] * subPixel;
-#endif
-#ifdef IPOL_T0
-	line.t[0][0] += slopeT[0] * subPixel;
-#endif
-#ifdef IPOL_T1
-	line.t[1][0] += slopeT[1] * subPixel;
-#endif
-#ifdef IPOL_T2
-	line.t[2][0] += slopeT[2] * subPixel;
-#endif
-#ifdef IPOL_L0
-	line.l[0][0] += slopeL[0] * subPixel;
-#endif
-#endif
-
-	SOFTWARE_DRIVER_2_CLIPCHECK;
-	//dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
-
-#ifdef USE_ZBUFFER
-	z = (fp24*) DepthBuffer->lock() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
-#endif
-
-#ifdef USE_SBUFFER
-	stencil = (u32*) Stencil->lock() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
-#endif
-
-#ifdef INVERSE_W
-	f32 inversew;
-#endif
-
-#ifdef IPOL_C0
-	tFixPoint r3, g3, b3;
-#endif
-
-	for ( s32 i = 0; i <= dx; i++ )
-	{
-#ifdef CMP_Z
-		if ( line.z[0] < z[i] )
-#endif
-#ifdef CMP_W
-		if ( line.w[0] < z[i] )
-#endif
-		{
-			// zfail
-			stencil[i] += 1;
-		}
-
-#ifdef IPOL_Z
-		line.z[0] += slopeZ;
-#endif
-#ifdef IPOL_W
-		line.w[0] += slopeW;
-#endif
-#ifdef IPOL_C0
-		line.c[0][0] += slopeC[0];
-#endif
-#ifdef IPOL_T0
-		line.t[0][0] += slopeT[0];
-#endif
-#ifdef IPOL_T1
-		line.t[1][0] += slopeT[1];
-#endif
-#ifdef IPOL_T2
-		line.t[2][0] += slopeT[2];
-#endif
-#ifdef IPOL_L0
-		line.l[0][0] += slopeL[0];
-#endif
-	}
-}
 
 void CTRStencilShadow::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
 {
@@ -650,7 +436,7 @@ void CTRStencilShadow::drawTriangle ( const s4DVertex *a,const s4DVertex *b,cons
 #endif
 
 			// render a scanline
-			(this->*fragmentShader) ();
+			fragmentShader ();
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];
@@ -858,7 +644,7 @@ void CTRStencilShadow::drawTriangle ( const s4DVertex *a,const s4DVertex *b,cons
 #endif
 
 			// render a scanline
-			(this->*fragmentShader) ();
+			fragmentShader ();
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];

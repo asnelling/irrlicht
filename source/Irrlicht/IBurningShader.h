@@ -94,6 +94,13 @@ namespace video
 		CULL_FRONT_AND_BACK = 8,
 	};
 
+	enum eStencilOp
+	{
+		StencilOp_KEEP = 0x1E00,
+		StencilOp_INCR = 0x1E02,
+		StencilOp_DECR = 0x1E03
+	};
+
 	struct SBurningShaderMaterial
 	{
 		SMaterial org;

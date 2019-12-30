@@ -167,7 +167,7 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 	m = dy << 1;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( (f32)dx );
+	const f32 invDeltaX = reciprocal_zero2( (f32)dx );
 
 #ifdef IPOL_Z
 	f32 slopeZ = (b->Pos.z - a->Pos.z) * invDeltaX;

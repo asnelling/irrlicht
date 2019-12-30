@@ -276,7 +276,7 @@ void CTRTextureLightMap2_M4::scanline_bilinear2_min ()
 	SOFTWARE_DRIVER_2_CLIPCHECK;
 
 	// slopes
-	const f32 invDeltaX = core::reciprocal_approxim ( line.x[1] - line.x[0] );
+	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
 
 	// search z-buffer for first not occulled pixel
 	z = (fp24*) DepthBuffer->lock() + ( line.y * RenderTarget->getDimension().Width ) + xStart;

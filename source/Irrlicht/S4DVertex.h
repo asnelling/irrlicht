@@ -48,9 +48,10 @@ static inline f32 reciprocal_zero2(f32 x) { return x != 0.f ? 1.f / x : 0.f; }
 	#define reciprocal_zero_no(x) 1.f/x
 #endif
 
+//!scanline renderer emulate line
 enum edge_test_flag
 {
-	edge_test_pass = 1,
+	edge_test_pass = 1,		//! not wireframe
 	edge_test_left = 0,
 	edge_test_first_line = 2
 };
