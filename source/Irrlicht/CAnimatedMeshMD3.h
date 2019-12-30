@@ -82,8 +82,6 @@ namespace scene
 		virtual void setDirty(E_BUFFER_TYPE buffer=EBT_VERTEX_AND_INDEX) _IRR_OVERRIDE_;
 
 	private:
-		//! animates one frame
-		inline void Animate(u32 frame);
 
 		video::SMaterial Material;
 

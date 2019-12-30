@@ -5,7 +5,7 @@
 #ifndef __C_ANIMATED_MESH_HALFLIFE_H_INCLUDED__
 #define __C_ANIMATED_MESH_HALFLIFE_H_INCLUDED__
 
-#include "IAnimatedMesh.h"
+#include "IAnimatedMeshMD2.h"
 #include "ISceneManager.h"
 #include "irrArray.h"
 #include "irrString.h"
@@ -35,11 +35,11 @@ namespace scene
 	#define MAXSTUDIOPIVOTS		256
 	#define MAXSTUDIOCONTROLLERS 8
 
-	typedef f32 vec3_hl[3];	// x,y,z
-	typedef f32 vec4_hl[4];	// x,y,z,w
-
 // byte-align structures
 #include "irrpack.h"
+
+	typedef f32 vec3_hl[3];	// x,y,z
+	typedef f32 vec4_hl[4];	// x,y,z,w
 
 	struct SHalflifeHeader
 	{
@@ -419,7 +419,7 @@ namespace scene
 
 		s32 StartFrame;			// Absolute Frame where the current animation start
 		s32 Frames;				// Relative Frames how much Frames this animation have
-		s32 LoopingFrames;		// How much of Frames sould be looped
+		s32 LoopingFrames;		// How much of Frames should be looped
 		s32 EndFrame;			// Absolute Frame where the current animation ends End = start + frames - 1
 
 		f32 FramesPerSecond;	// Speed in Frames/Seconds the animation is played
@@ -474,7 +474,7 @@ namespace scene
 	typedef core::array < BodyPart > IBodyList;
 
 
-	class CAnimatedMeshHalfLife : public IAnimatedMesh
+	class CAnimatedMeshHalfLife : public IAnimatedMeshMD2
 	{
 	public:
 
@@ -492,7 +492,6 @@ namespace scene
 		virtual IMesh* getMesh(s32 frame, s32 detailLevel, s32 startFrameLoop, s32 endFrameLoop) _IRR_OVERRIDE_;
 		virtual const core::aabbox3d<f32>& getBoundingBox() const _IRR_OVERRIDE_;
 		virtual E_ANIMATED_MESH_TYPE getMeshType() const _IRR_OVERRIDE_;
-		void renderModel ( u32 param, video::IVideoDriver * driver, const core::matrix4 &absoluteTransformation);
 
 		//! returns amount of mesh buffers.
 		virtual u32 getMeshBufferCount() const _IRR_OVERRIDE_;
@@ -532,6 +531,25 @@ namespace scene
 
 		//! Return the named Body List of this Animated Mesh
 		IBodyList *getBodyList() { return &BodyList; }
+
+		//IAnimatedMeshMD2
+		//! Returns frame loop data for a special MD2 animation type.
+		virtual void getFrameLoop(EMD2_ANIMATION_TYPE,
+			s32& outBegin, s32& outEnd, f32& outFps) const _IRR_OVERRIDE_;
+
+		//! Returns frame loop data for a special MD2 animation type.
+		virtual bool getFrameLoop(const c8* name,
+			s32& outBegin, s32& outEnd, f32& outFps) const _IRR_OVERRIDE_;
+
+		//! Returns amount of md2 animations in this file.
+		virtual s32 getAnimationCount() const _IRR_OVERRIDE_;
+
+		//! Returns name of md2 animation.
+		//! \param nr: Zero based index of animation.
+		virtual const c8* getAnimationName(s32 nr) const _IRR_OVERRIDE_;
+
+		//! Model Specific
+		virtual void renderDebug(u32 debugDataVisible, video::IVideoDriver * driver, const core::matrix4 &absoluteTransformation) _IRR_OVERRIDE_;
 
 	private:
 

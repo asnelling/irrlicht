@@ -408,7 +408,7 @@ E_ANIMATED_MESH_TYPE CAnimatedMeshMD2::getMeshType() const
 
 //! Returns frame loop data for a special MD2 animation type.
 void CAnimatedMeshMD2::getFrameLoop(EMD2_ANIMATION_TYPE l,
-				s32& outBegin, s32& outEnd, s32& outFPS) const
+				s32& outBegin, s32& outEnd, f32& outFPS) const
 {
 	if (l < 0 || l >= EMAT_COUNT)
 		return;
@@ -418,13 +418,13 @@ void CAnimatedMeshMD2::getFrameLoop(EMD2_ANIMATION_TYPE l,
 
 	// correct to anim between last->first frame
 	outEnd += MD2_FRAME_SHIFT == 0 ? 1 : (1 << MD2_FRAME_SHIFT) - 1;
-	outFPS = MD2AnimationTypeList[l].fps << MD2_FRAME_SHIFT;
+	outFPS = (f32)(MD2AnimationTypeList[l].fps << MD2_FRAME_SHIFT);
 }
 
 
 //! Returns frame loop data for a special MD2 animation type.
 bool CAnimatedMeshMD2::getFrameLoop(const c8* name,
-	s32& outBegin, s32&outEnd, s32& outFPS) const
+	s32& outBegin, s32&outEnd, f32& outFPS) const
 {
 	for (u32 i=0; i < AnimationData.size(); ++i)
 	{
@@ -433,7 +433,7 @@ bool CAnimatedMeshMD2::getFrameLoop(const c8* name,
 			outBegin = AnimationData[i].begin << MD2_FRAME_SHIFT;
 			outEnd = AnimationData[i].end << MD2_FRAME_SHIFT;
 			outEnd += MD2_FRAME_SHIFT == 0 ? 1 : (1 << MD2_FRAME_SHIFT) - 1;
-			outFPS = AnimationData[i].fps << MD2_FRAME_SHIFT;
+			outFPS = (f32)(AnimationData[i].fps << MD2_FRAME_SHIFT);
 			return true;
 		}
 	}

@@ -453,6 +453,13 @@ void CAnimatedMeshSceneNode::render()
 					}
 				}
 			}
+
+			// show bones for halflife models
+			if (Mesh->getMeshType() == EAMT_MDL_HALFLIFE)
+			{
+				((IAnimatedMeshMD2*)Mesh)->renderDebug(scene::EDS_SKELETON, driver, AbsoluteTransformation);
+			}
+
 		}
 
 		// show mesh
@@ -728,10 +735,11 @@ bool CAnimatedMeshSceneNode::setMD2Animation(EMD2_ANIMATION_TYPE anim)
 
 	IAnimatedMeshMD2* md = (IAnimatedMeshMD2*)Mesh;
 
-	s32 begin, end, speed;
+	s32 begin, end;
+	f32 speed;
 	md->getFrameLoop(anim, begin, end, speed);
 
-	setAnimationSpeed( f32(speed) );
+	setAnimationSpeed(speed);
 	setFrameLoop(begin, end);
 	return true;
 }
@@ -740,16 +748,20 @@ bool CAnimatedMeshSceneNode::setMD2Animation(EMD2_ANIMATION_TYPE anim)
 //! Starts a special MD2 animation.
 bool CAnimatedMeshSceneNode::setMD2Animation(const c8* animationName)
 {
-	if (!Mesh || Mesh->getMeshType() != EAMT_MD2)
+	if (!Mesh)
+		return false;
+	E_ANIMATED_MESH_TYPE meshType = Mesh->getMeshType();
+	if (meshType != EAMT_MD2 && meshType != EAMT_MDL_HALFLIFE)
 		return false;
 
 	IAnimatedMeshMD2* md = (IAnimatedMeshMD2*)Mesh;
 
-	s32 begin, end, speed;
+	s32 begin, end;
+	f32 speed;
 	if (!md->getFrameLoop(animationName, begin, end, speed))
 		return false;
 
-	setAnimationSpeed( (f32)speed );
+	setAnimationSpeed(speed);
 	setFrameLoop(begin, end);
 	return true;
 }

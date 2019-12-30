@@ -9,6 +9,11 @@
 
 namespace irr
 {
+	namespace video
+	{
+		class IVideoDriver;
+	} // end namespace video
+
 namespace scene
 {
 
@@ -53,7 +58,7 @@ namespace scene
 		\param outFPS The number of frames per second, this animation should be played at.
 		\return beginframe, endframe and frames per second for a default MD2 animation type. */
 		virtual void getFrameLoop(EMD2_ANIMATION_TYPE l, s32& outBegin,
-			s32& outEnd, s32& outFPS) const = 0;
+			s32& outEnd, f32& outFPS) const = 0;
 
 		//! Get frame loop data for a special MD2 animation type, identified by name.
 		/** \param name Name of the animation.
@@ -62,7 +67,7 @@ namespace scene
 		\param outFPS The number of frames per second, this animation should be played at.
 		\return beginframe, endframe and frames per second for a special MD2 animation type. */
 		virtual bool getFrameLoop(const c8* name,
-			s32& outBegin, s32& outEnd, s32& outFPS) const = 0;
+			s32& outBegin, s32& outEnd, f32& outFPS) const = 0;
 
 		//! Get amount of md2 animations in this file.
 		virtual s32 getAnimationCount() const = 0;
@@ -70,6 +75,9 @@ namespace scene
 		//! Get name of md2 animation.
 		/** \param nr: Zero based index of animation. */
 		virtual const c8* getAnimationName(s32 nr) const = 0;
+
+		//! Model Specific - render Debug Data
+		virtual void renderDebug(u32 debugDataVisible, video::IVideoDriver * driver, const core::matrix4 &absoluteTransformation) = 0;
 	};
 
 } // end namespace scene

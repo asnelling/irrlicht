@@ -26,7 +26,7 @@ namespace scene
 {
 
 // null check necessary
-#define reciprocal_check(x) fabs(x) < 0.00001f ? 0.f : 1.f / x
+static inline f32 reciprocal_check(f32 x) { return fabs(x) < 0.000001f ? 0.f : 1.f / x;	}
 
 // who, if not you..
 using namespace quake3;
@@ -1180,8 +1180,7 @@ void CQuake3ShaderSceneNode::animate( u32 stage,core::matrix4 &texture )
 				{
 					case STRETCH:
 						//tcMod stretch <func> <base> <amplitude> <phase> <frequency>
-						f[0] = function.evaluate(TimeAbs);
-						f[0] = reciprocal_check(f[0]);
+						f[0] = reciprocal_check(function.evaluate(TimeAbs));
 						m2.setTextureScaleCenter( f[0], f[0] );
 						break;
 					case TURBULENCE:
@@ -1326,8 +1325,6 @@ video::SMaterial& CQuake3ShaderSceneNode::getMaterial(u32 i)
 		m.setTexture(0, Q3Texture [ i ].Texture [ Q3Texture [ i ].TextureIndex ]);
 	return m;
 }
-
-#undef reciprocal_check
 
 } // end namespace scene
 } // end namespace irr

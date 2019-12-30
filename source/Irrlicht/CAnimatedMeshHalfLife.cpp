@@ -267,7 +267,7 @@ void CAnimatedMeshHalfLife::setDirty(E_BUFFER_TYPE buffer)
 
 
 static core::vector3df TransformedVerts[MAXSTUDIOVERTS];	// transformed vertices
-//static core::vector3df TransformedNormals[MAXSTUDIOVERTS];	// light surface normals
+static core::vector3df TransformedNormals[MAXSTUDIOVERTS];	// light surface normals
 
 
 /*!
@@ -369,10 +369,10 @@ void CAnimatedMeshHalfLife::initModel()
 		for (u32 modelnr = 0; modelnr < body->nummodels; ++modelnr)
 		{
 			const SHalflifeModel *model = (SHalflifeModel *)((u8*) Header + body->modelindex) + modelnr;
-#if 0
+
 			const vec3_hl *studioverts = (vec3_hl *)((u8*)Header + model->vertindex);
 			const vec3_hl *studionorms = (vec3_hl *)((u8*)Header + model->normindex);
-#endif
+
 			for (u32 i = 0; i < model->nummesh; ++i)
 			{
 				const SHalflifeMesh *mesh = (SHalflifeMesh *)((u8*)Header + model->meshindex) + i;
@@ -432,7 +432,6 @@ void CAnimatedMeshHalfLife::initModel()
 					for ( s32 g = 0; g < c; ++g, v += 1, tricmd += 4 )
 					{
 						// fill vertex
-	#if 0
 						const f32 *av = studioverts[tricmd[0]];
 						v->Pos.X = av[0];
 						v->Pos.Z = av[1];
@@ -443,10 +442,9 @@ void CAnimatedMeshHalfLife::initModel()
 						v->Normal.Z = av[1];
 						v->Normal.Y = av[2];
 
-	#endif
-						v->Normal.X = 0.f;
-						v->Normal.Z = 0.f;
-						v->Normal.Y = 1.f;
+						//v->Normal.X = 0.f;
+						//v->Normal.Z = 0.f;
+						//v->Normal.Y = 1.f;
 
 						v->TCoords.X = (tex_trans.X + tricmd[2])*tex_scale.X;
 						v->TCoords.Y = (tex_trans.Y + tricmd[3])*tex_scale.Y;
@@ -536,22 +534,22 @@ void CAnimatedMeshHalfLife::buildVertices()
 			const SHalflifeModel *model = (SHalflifeModel *)((u8*) Header + body->modelindex) + modelnr;
 
 			const u8 *vertbone = ((u8*)Header + model->vertinfoindex);
-
 			const vec3_hl *studioverts = (vec3_hl *)((u8*)Header + model->vertindex);
 
-			for (u32 i = 0; i < model->numverts; i++)
+			u32 i;
+			for (i = 0; i < model->numverts; ++i)
 			{
 				VectorTransform ( studioverts[i],  BoneTransform[vertbone[i]], TransformedVerts[i]  );
 			}
-	/*
+	
 			const u8 *normbone = ((u8*)Header + model->norminfoindex);
 			const vec3_hl *studionorms = (vec3_hl *)((u8*)Header + model->normindex);
-			for ( i = 0; i < model->numnorms; i++)
+			for ( i = 0; i < model->numnorms; ++i)
 			{
 				VectorTransform ( studionorms[i],  BoneTransform[normbone[i]], TransformedNormals[i]  );
 			}
-	*/
-			for (u32 i = 0; i < model->nummesh; i++)
+	
+			for (i = 0; i < model->nummesh; ++i)
 			{
 				const SHalflifeMesh *mesh = (SHalflifeMesh *)((u8*)Header + model->meshindex) + i;
 
@@ -570,11 +568,11 @@ void CAnimatedMeshHalfLife::buildVertices()
 						// fill vertex
 						const core::vector3df& av = TransformedVerts[tricmd[0]];
 						v->Pos = av;
-	/*
+	
 						const core::vector3df& an = TransformedNormals[tricmd[1]];
 						v->Normal = an;
-						//v->Normal.normalize();
-	*/
+						v->Normal.normalize();
+	
 					}
 				} // tricmd
 			} // nummesh
@@ -586,8 +584,11 @@ void CAnimatedMeshHalfLife::buildVertices()
 /*!
 	render Bones
 */
-void CAnimatedMeshHalfLife::renderModel(u32 param, IVideoDriver * driver, const core::matrix4 &absoluteTransformation)
+void CAnimatedMeshHalfLife::renderDebug(u32 debugDataVisible, IVideoDriver * driver, const core::matrix4 &absoluteTransformation)
 {
+	if (!Header || !driver)
+		return;
+
 	const SHalflifeBone *bone = (SHalflifeBone *) ((u8 *) Header + Header->boneindex);
 
 	const video::SColor blue(0xFF000080);
@@ -1581,7 +1582,7 @@ void CAnimatedMeshHalfLife::setUpBones()
 	{
 		anim += Header->numbones;
 		calcRotations( pos2, q2, seq, anim, CurrentFrame );
-		f32 s = Blending[0] / 255.f;
+		f32 s = Blending[0] * (1.f/255.f);
 
 		slerpBones( q, pos, q2, pos2, s );
 
@@ -1593,10 +1594,10 @@ void CAnimatedMeshHalfLife::setUpBones()
 			anim += Header->numbones;
 			calcRotations( pos4, q4, seq, anim, CurrentFrame );
 
-			s = Blending[0] / 255.f;
+			s = Blending[0] * (1.f / 255.f);
 			slerpBones( q3, pos3, q4, pos4, s );
 
-			s = Blending[1] / 255.f;
+			s = Blending[1] * (1.f / 255.f);
 			slerpBones( q, pos, q3, pos3, s );
 		}
 	}
@@ -1671,6 +1672,52 @@ void CAnimatedMeshHalfLife::setBoundingBox(const core::aabbox3df& box)
 	MeshIPol->setBoundingBox(box);
 }
 
+
+//! Returns frame loop data for a special MD2 animation type.
+void CAnimatedMeshHalfLife::getFrameLoop(EMD2_ANIMATION_TYPE l,
+	s32& outBegin, s32& outEnd, f32& outFPS) const
+{
+	if (l < 0 || l >= EMAT_COUNT)
+		return;
+
+}
+
+
+//! Returns frame loop data for a special MD2 animation type.
+bool CAnimatedMeshHalfLife::getFrameLoop(const c8* name,
+	s32& outBegin, s32& outEnd, f32& outFPS) const
+{
+	for (u32 i = 0; i < AnimList.size(); ++i)
+	{
+		const KeyFrameInterpolation& ipol = AnimList[i];
+		if (ipol.Name == name)
+		{
+			outBegin = ipol.StartFrame;
+			outEnd = ipol.EndFrame;
+			outFPS = ipol.FramesPerSecond;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+//! Returns amount of md2 animations in this file.
+s32 CAnimatedMeshHalfLife::getAnimationCount() const
+{
+	return AnimList.size();
+}
+
+
+//! Returns name of md2 animation.
+const c8* CAnimatedMeshHalfLife::getAnimationName(s32 nr) const
+{
+	if ((u32)nr >= AnimList.size())
+		return 0;
+
+	return AnimList[nr].Name.c_str();
+}
 
 } // end namespace scene
 } // end namespace irr

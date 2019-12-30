@@ -81,11 +81,11 @@ namespace scene
 
 		//! Returns frame loop data for a special MD2 animation type.
 		virtual void getFrameLoop(EMD2_ANIMATION_TYPE,
-			s32& outBegin, s32& outEnd, s32& outFps) const _IRR_OVERRIDE_;
+			s32& outBegin, s32& outEnd, f32& outFps) const _IRR_OVERRIDE_;
 
 		//! Returns frame loop data for a special MD2 animation type.
 		virtual bool getFrameLoop(const c8* name,
-			s32& outBegin, s32& outEnd, s32& outFps) const _IRR_OVERRIDE_;
+			s32& outBegin, s32& outEnd, f32& outFps) const _IRR_OVERRIDE_;
 
 		//! Returns amount of md2 animations in this file.
 		virtual s32 getAnimationCount() const _IRR_OVERRIDE_;
@@ -93,6 +93,9 @@ namespace scene
 		//! Returns name of md2 animation.
 		//! \param nr: Zero based index of animation.
 		virtual const c8* getAnimationName(s32 nr) const _IRR_OVERRIDE_;
+
+		//! Model Specific - render Debug Data
+		virtual void renderDebug(u32 debugDataVisible, video::IVideoDriver * driver, const core::matrix4 &absoluteTransformation) _IRR_OVERRIDE_ {}
 
 
 		//
