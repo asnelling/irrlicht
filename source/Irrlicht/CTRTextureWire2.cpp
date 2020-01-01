@@ -86,13 +86,15 @@ public:
 	//! draws an indexed triangle list
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
 	virtual void drawLine ( const s4DVertex *a,const s4DVertex *b) _IRR_OVERRIDE_;
-	virtual bool canWireFrame () { return true; }
+	virtual void drawPoint( const s4DVertex *a) _IRR_OVERRIDE_;
+	virtual bool canWireFrame () _IRR_OVERRIDE_  { return true; }
+	virtual bool canPointCloud() _IRR_OVERRIDE_  { return true; }
 
 protected:
 	virtual void scanline_bilinear ();
 
 	void renderAlphaLine ( const s4DVertex *a,const s4DVertex *b ) const;
-	void renderLine ( const s4DVertex *a,const s4DVertex *b ) const;
+	void renderLine ( const s4DVertex *a,const s4DVertex *b, int renderZero = 0 ) const;
 
 };
 
@@ -109,15 +111,16 @@ CTRTextureWire2::CTRTextureWire2(CBurningVideoDriver* driver)
 
 /*!
 */
-void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
+void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int renderZero) const
 {
 	int pitch0 = RenderTarget->getDimension().Width << VIDEO_SAMPLE_GRANULARITY;
 	int pitch1 = RenderTarget->getDimension().Width << 2;
 
-	int aposx = (int) a->Pos.x;
-	int aposy = (int) a->Pos.y;
-	int bposx = (int) b->Pos.x;
-	int bposy = (int) b->Pos.y;
+	//todo:!
+	int aposx = fill_convention_none(a->Pos.x);
+	int aposy = fill_convention_none(a->Pos.y);
+	int bposx = fill_convention_none(b->Pos.x);
+	int bposy = fill_convention_none(b->Pos.y);
 
 	int dx = bposx - aposx;
 	int dy = bposy - aposy;
@@ -154,8 +157,11 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b ) const
 		t = xInc1;xInc1=yInc1;yInc1=t;
 	}
 
-	if ( 0 == dx )
-		return;
+	if (0 == dx)
+	{
+		if (!renderZero) return;
+		dx = 1;
+	}
 
 	SOFTWARE_DRIVER_2_CLIPCHECK_WIRE;
 	dst = (tVideoSample*) ( (u8*) (tVideoSample*)RenderTarget->getData() + ( aposy * pitch0 ) + (aposx << VIDEO_SAMPLE_GRANULARITY ) );
@@ -285,9 +291,14 @@ void CTRTextureWire2::drawLine ( const s4DVertex *a,const s4DVertex *b)
 	// query access to TexMaps
 
 	// sort on height, y
-	if ( a->Pos.y > b->Pos.y ) swapVertexPointer(&a, &b);
+	if (F32_A_GREATER_B(a->Pos.y,b->Pos.y )) swapVertexPointer(&a, &b);
 
 	renderLine ( a, b );
+}
+
+void CTRTextureWire2::drawPoint(const s4DVertex *a)
+{
+	if ( (a->flag & VERTEX4D_CLIPMASK ) == VERTEX4D_INSIDE ) renderLine(a, a,1);
 }
 
 

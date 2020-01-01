@@ -24,6 +24,7 @@ static inline f32 reciprocal_zero2(f32 x) { return x != 0.f ? 1.f / x : 0.f; }
 
 #define fill_convention_left(x) (s32) ceilf(x)
 #define fill_convention_right(x) ((s32) ceilf(x))-1
+#define fill_convention_none(x) (s32) (x)
 //#define fill_convention_left(x) 65536 - int(65536.0f - x)
 //#define fill_convention_right(x) 65535 - int(65536.0f - x)
 
@@ -37,7 +38,7 @@ static inline f32 reciprocal_zero2(f32 x) { return x != 0.f ? 1.f / x : 0.f; }
 
 	inline f32 reciprocal_zero_no(const f32 x)
 	{
-		if ( fabs(x) <= 0.0001f ) __debugbreak();
+		if ( fabs(x) <= 0.00001f ) __debugbreak();
 		return 1.f / x;
 	}
 #else
@@ -53,7 +54,8 @@ enum edge_test_flag
 {
 	edge_test_pass = 1,		//! not wireframe
 	edge_test_left = 0,
-	edge_test_first_line = 2
+	edge_test_first_line = 2,
+	edge_test_point = 4
 };
 //if any edge test flag is set result=1 else 0. ( pass height test for degenerate triangle )
 #define reciprocal_edge(x) ((x) != 0.f ? 1.f / (x):(~EdgeTestPass)&1)
@@ -197,11 +199,19 @@ struct sVec4
 	{
 		//const f32 l = core::reciprocal_squareroot(x * x + y * y + z * z);
 		f32 l = x * x + y * y + z * z;
-		if (l > 0.000001f) l = 1.f / sqrtf(l);
-
-		x *= l;
-		y *= l;
-		z *= l;
+		if (l > 0.000001f)
+		{
+			l = 1.f / sqrtf(l);
+			x *= l;
+			y *= l;
+			z *= l;
+		}
+		else
+		{
+			x = 0.f;
+			y = 0.f;
+			z = 1.f;
+		}
 	}
 
 	void project_xyz ()
@@ -382,17 +392,16 @@ struct sVec3
 		b += other.b;
 	}
 
-	void setLength ( f32 len )
+	void normalize_xyz( f32 len,f32 ofs )
 	{
 		//const f32 l = len * core::reciprocal_squareroot ( r * r + g * g + b * b );
 		f32 l = r * r + g * g + b * b;
-		if (l > 0.000001f) l = 1.f / sqrtf(l);
 
-		r *= l;
-		g *= l;
-		b *= l;
+		l = l > 0.000001f ? len / sqrtf(l) : 0.f;
+		r = (r*l)+ofs;
+		g = (g*l)+ofs;
+		b = (b*l)+ofs;
 	}
-
 };
 
 
@@ -448,12 +457,16 @@ enum e4DIndexType
 #endif
 
 #define BURNING_MATERIAL_MAX_TEXTURES 2
-#define BURNING_MATERIAL_MAX_TANGENT 1
+#ifdef BURNINGVIDEO_RENDERER_BEAUTIFUL
+	#define BURNING_MATERIAL_MAX_TANGENT 1
+#else
+	#define BURNING_MATERIAL_MAX_TANGENT 0
+#endif
 
 // dummy Vertex. used for calculation vertex memory size
 struct s4DVertex_proxy
 {
-	u32 flag;
+	u32 flag; // e4DVertexFlag
 	sVec4 Pos;
 #if BURNING_MATERIAL_MAX_TEXTURES > 0
 	sVec2 Tex[BURNING_MATERIAL_MAX_TEXTURES];
@@ -488,7 +501,9 @@ struct s4DVertex
 	sVec3 LightTangent[BURNING_MATERIAL_MAX_TANGENT];
 #endif
 
-	//u8 __align [ SIZEOF_S4DVERTEX - sizeof (s4DVertex_proxy) ];
+#if BURNING_MATERIAL_MAX_COLORS < 1 || BURNING_MATERIAL_MAX_TANGENT < 1
+	u8 __align [ SIZEOF_S4DVERTEX - sizeof (s4DVertex_proxy) ];
+#endif
 
 	// f = a * t + b * ( 1 - t )
 	void interpolate(const s4DVertex& b, const s4DVertex& a, const f32 t)

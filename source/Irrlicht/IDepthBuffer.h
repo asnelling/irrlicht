@@ -73,7 +73,7 @@ namespace video
 
 
 	//! creates a Stencil Buffer
-	IStencilBuffer* createStencilBuffer(const core::dimension2d<u32>& size);
+	IStencilBuffer* createStencilBuffer(const core::dimension2d<u32>& size, u32 bit);
 
 } // end namespace video
 } // end namespace irr

@@ -24,6 +24,7 @@ namespace irr
 
 #ifdef SOFTWARE_DRIVER_2_32BIT
 	typedef u32	tVideoSample;
+	typedef u32	tStencilSample;
 
 	#define	MASK_A	0xFF000000
 	#define	MASK_R	0x00FF0000
@@ -43,6 +44,7 @@ namespace irr
 
 #else
 	typedef u16	tVideoSample;
+	typedef u8	tStencilSample;
 
 	#define	MASK_A	0x8000
 	#define	MASK_R	0x7C00
@@ -65,8 +67,10 @@ namespace irr
 
 
 // ----------------------- Generic ----------------------------------
+//! align_next - align to next upper 2^n
+#define align_next(num,to) (((num) + (to-1)) & (~(to-1)))
 
-//! a more useful memset for pixel
+//! a more useful memset for pixel. dest must be aligned at least to 4 byte
 // (standard memset only works with 8-bit values)
 inline void memset32(void * dest, const u32 value, u32 bytesize)
 {
@@ -101,7 +105,7 @@ inline void memset32(void * dest, const u32 value, u32 bytesize)
 	}
 }
 
-//! a more useful memset for pixel
+//! a more useful memset for pixel. dest must be aligned at least to 2 byte
 // (standard memset only works with 8-bit values)
 inline void memset16(void * dest, const u16 value, u32 bytesize)
 {
@@ -726,7 +730,7 @@ inline void color_to_fix1 ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint 
 
 
 
-// ----- FP24 ---- floating point z-buffer
+//! ----- FP24 1.23 fix point z-buffer
 
 #if 1
 typedef f32 fp24;

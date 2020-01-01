@@ -30,7 +30,11 @@ CDepthBuffer::CDepthBuffer(const core::dimension2d<u32>& size)
 //! destructor
 CDepthBuffer::~CDepthBuffer()
 {
-	delete [] Buffer;
+	if (Buffer)
+	{
+		delete[] Buffer;
+		Buffer = 0;
+	}
 }
 
 
@@ -38,17 +42,15 @@ CDepthBuffer::~CDepthBuffer()
 //! clears the zbuffer
 void CDepthBuffer::clear()
 {
+	core::inttofloat zMaxValue;
 
 #ifdef SOFTWARE_DRIVER_2_USE_WBUFFER
-	f32 zMax = 0.f;
+	zMaxValue.f = 0.f;
 #else
-	f32 zMax = 1.f;
+	zMaxValue.f = 1.f;
 #endif
 
-	u32 zMaxValue;
-	zMaxValue = IR(zMax);
-
-	memset32 ( Buffer, zMaxValue, TotalSize );
+	memset32 ( Buffer, zMaxValue.u, TotalSize );
 }
 
 
@@ -65,7 +67,7 @@ void CDepthBuffer::setSize(const core::dimension2d<u32>& size)
 
 	Pitch = size.Width * sizeof ( fp24 );
 	TotalSize = Pitch * size.Height;
-	Buffer = new u8[TotalSize];
+	Buffer = new u8[align_next(TotalSize,16)];
 	clear ();
 }
 
@@ -80,8 +82,8 @@ const core::dimension2d<u32>& CDepthBuffer::getSize() const
 // -----------------------------------------------------------------
 
 //! constructor
-CStencilBuffer::CStencilBuffer(const core::dimension2d<u32>& size)
-: Buffer(0), Size(0,0)
+CStencilBuffer::CStencilBuffer(const core::dimension2d<u32>& size, unsigned bit)
+: Buffer(0), Size(0,0),Bit(bit)
 {
 	#ifdef _DEBUG
 	setDebugName("CStencilBuffer");
@@ -95,7 +97,11 @@ CStencilBuffer::CStencilBuffer(const core::dimension2d<u32>& size)
 //! destructor
 CStencilBuffer::~CStencilBuffer()
 {
-	delete [] Buffer;
+	if (Buffer)
+	{
+		delete[] Buffer;
+		Buffer = 0;
+	}
 }
 
 
@@ -118,9 +124,9 @@ void CStencilBuffer::setSize(const core::dimension2d<u32>& size)
 
 	delete [] Buffer;
 
-	Pitch = size.Width * sizeof ( u32 );
+	Pitch = size.Width * sizeof (tStencilSample);
 	TotalSize = Pitch * size.Height;
-	Buffer = new u8[TotalSize];
+	Buffer = new u8[align_next(TotalSize,16)];
 	clear ();
 }
 
@@ -155,11 +161,11 @@ IDepthBuffer* createDepthBuffer(const core::dimension2d<u32>& size)
 }
 
 
-//! creates a ZBuffer
-IStencilBuffer* createStencilBuffer(const core::dimension2d<u32>& size)
+//! creates a Stencil Buffer
+IStencilBuffer* createStencilBuffer(const core::dimension2d<u32>& size, u32 bit)
 {
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
-	return new CStencilBuffer(size);
+	return new CStencilBuffer(size,bit);
 	#else
 	return 0;
 	#endif // _IRR_COMPILE_WITH_BURNINGSVIDEO_

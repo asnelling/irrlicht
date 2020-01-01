@@ -90,7 +90,7 @@ namespace video
 	{
 		CULL_FRONT = 1,
 		CULL_BACK = 2,
-		CULL_INVISIBLE = 4,
+		CULL_INVISIBLE = 4,	//primitive smaller than a pixel (AreaMinDrawSize)
 		CULL_FRONT_AND_BACK = 8,
 	};
 
@@ -174,6 +174,7 @@ namespace video
 		virtual void setTextureParam( u32 stage, video::CSoftwareTexture2* texture, s32 lodLevel);
 		virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) = 0;
 		virtual void drawLine ( const s4DVertex *a,const s4DVertex *b);
+		virtual void drawPoint(const s4DVertex *a);
 
 		void drawWireFrameTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c );
 
@@ -182,13 +183,14 @@ namespace video
 
 		virtual void setMaterial ( const SBurningShaderMaterial &material ) {};
 
-		void pushEdgeTest(int wireFrame,int save)
+		void pushEdgeTest(const int wireFrame,const int point,int save)
 		{
 			if ( save ) EdgeTestPass_stack = EdgeTestPass;
-			EdgeTestPass = wireFrame ? edge_test_left : edge_test_pass;
+			EdgeTestPass = point ? edge_test_point : wireFrame ? edge_test_left : edge_test_pass;
 		}
 		void popEdgeTest() { EdgeTestPass = EdgeTestPass_stack; }
 		virtual bool canWireFrame () { return false; }
+		virtual bool canPointCloud() { return false; }
 
 	protected:
 
@@ -196,7 +198,7 @@ namespace video
 
 		video::CImage* RenderTarget;
 		CDepthBuffer* DepthBuffer;
-		CStencilBuffer * Stencil;
+		CStencilBuffer* Stencil;
 		tVideoSample ColorMask;
 
 		sInternalTexture IT[ BURNING_MATERIAL_MAX_TEXTURES ];

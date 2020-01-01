@@ -33,7 +33,7 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	ColorFormat = BURNINGSHADER_COLOR_FORMAT;
 	IsRenderTarget = (Flags & IS_RENDERTARGET) != 0;
 	HasMipMaps = (Flags & GEN_MIPMAP) != 0;
-	MipMap0_Area = 0.f;
+	MipMap0_Area = 1.f;
 	for ( size_t i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i ) MipMap[i] = 0;
 	if (!image) return;
 
@@ -182,7 +182,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 
 
 	//visualize mipmap
-	for (i=0; 0 && i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
+	for (i=0; i < 0 && i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
 	{
 		static u32 color[] = { 0x30bf7f00,0x3040bf00,0x30bf00bf,0x3000bf00,
 			0x300080bf,0x30bf4000,0x300040bf,0x307f00bf,
@@ -192,7 +192,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 		if ( MipMap[i] )
 		{
 			core::rect<s32> p (MipMap[i]->getDimension());
-			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, 0,(color[i&15] & 0x00FFFFFF ) | 0x22000000);
+			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, 0,(color[i&15] & 0x00FFFFFF ) | 0x88000000);
 		}
 	}
 

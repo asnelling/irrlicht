@@ -55,7 +55,7 @@ namespace video
 	public:
 
 		//! constructor
-		CStencilBuffer(const core::dimension2d<u32>& size);
+		CStencilBuffer(const core::dimension2d<u32>& size, unsigned bit);
 
 		//! destructor
 		virtual ~CStencilBuffer();
@@ -80,11 +80,11 @@ namespace video
 
 
 	private:
-
 		u8* Buffer;
 		core::dimension2d<u32> Size;
 		u32 TotalSize;
 		u32 Pitch;
+		u32 Bit;
 	};
 
 } // end namespace video

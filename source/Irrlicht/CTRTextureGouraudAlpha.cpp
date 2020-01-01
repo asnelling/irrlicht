@@ -218,9 +218,12 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 	tFixPoint r0, g0, b0;
 #endif
 
+#ifdef BURNINGVIDEO_RENDERER_FAST
+#else
 #ifdef IPOL_C0
 	tFixPoint r1, g1, b1;
 	tFixPoint r2, g2, b2;
+#endif
 #endif
 
 	for ( s32 i = 0; i <= dx; ++i )

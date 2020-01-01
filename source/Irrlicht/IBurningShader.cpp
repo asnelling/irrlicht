@@ -137,17 +137,25 @@ namespace video
 
 	}
 
+	void IBurningShader::drawPoint(const s4DVertex *a)
+	{
+	}
+
 	void IBurningShader::drawWireFrameTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
 	{
-		if ( EdgeTestPass & edge_test_pass )
+		if ( EdgeTestPass & edge_test_pass ) drawTriangle(a, b, c);
+		else if (EdgeTestPass & edge_test_point)
 		{
-			drawTriangle(a,b,c);
-			return;
+			drawPoint(a);
+			drawPoint(b);
+			drawPoint(c);
 		}
-
-		drawLine ( a, b );
-		drawLine ( b, c );
-		drawLine ( a, c );
+		else
+		{
+			drawLine(a, b);
+			drawLine(b, c);
+			drawLine(a, c);
+		}
 	}
 
 

@@ -171,6 +171,8 @@ namespace video
 
 	protected:
 
+		void saveBuffer();
+
 		//! sets a render target
 		void setRenderTargetImage(video::CImage* image);
 
@@ -264,15 +266,15 @@ namespace video
 		SAlignedVertex Temp;
 
 		void ndc_2_dc_and_project ( s4DVertex* dest,const s4DVertex* source, const u32 vIn ) const;
-		f32 screenarea ( const s4DVertex *v0 ) const;
-		void select_polygon_mipmap ( s4DVertex *source, u32 vIn, u32 tex, const CSoftwareTexture2_Bound& b ) const;
-		f32 texelarea ( const s4DVertex *v0, int tex ) const;
-
 
 		//const is misleading. **v is const that true, but not *v..
-		f32 screenarea2 ( s4DVertex* const v[] ) const;
-		f32 texelarea2 ( s4DVertex* const v[], int tex ) const;
-		void select_polygon_mipmap2 ( s4DVertex* source[], u32 tex, const CSoftwareTexture2_Bound& b ) const;
+		f32 screenarea_inside ( s4DVertex* const v[] ) const;
+		f32 texelarea_inside ( s4DVertex* const v[], int tex ) const;
+		void select_polygon_mipmap_inside ( s4DVertex* source[], u32 tex, const CSoftwareTexture2_Bound& b ) const;
+
+		f32 screenarea_clipped(const s4DVertex *v0) const;
+		void select_polygon_mipmap_clipped(s4DVertex *source, u32 vIn, u32 tex, const CSoftwareTexture2_Bound& b) const;
+		f32 texelarea_clipped(const s4DVertex *v0, int tex) const;
 
 
 		SBurningShaderEyeSpace EyeSpace;

@@ -127,7 +127,7 @@ void CTRStencilShadow::fragmentShader()
 #endif
 
 #ifdef USE_SBUFFER
-	u32 *stencil;
+	tStencilSample *stencil;
 #endif
 
 	s32 xStart;
@@ -181,7 +181,7 @@ void CTRStencilShadow::fragmentShader()
 #endif
 
 #ifdef USE_SBUFFER
-	stencil = (u32*) Stencil->lock() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
+	stencil = (tStencilSample*) Stencil->lock() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 #endif
 
 
@@ -196,23 +196,23 @@ void CTRStencilShadow::fragmentShader()
 		if (line.z[0] < z[i])
 #endif
 #ifdef CMP_W
-		if (line.w[0] <= z[i])
+		if (line.w[0] > z[i])
 #endif
-		{
-			// zfail
-			switch (stencilOp[1])
-			{
-			case StencilOp_INCR: stencil[i] += 1; break;
-			case StencilOp_DECR: stencil[i] = core::s32_max(0, stencil[i] - 1); break;
-			}
-		}
-		else
 		{
 			// zpass
 			switch (stencilOp[2])
 			{
 			case StencilOp_INCR: stencil[i] += 1; break;
-			case StencilOp_DECR: stencil[i] = core::s32_max(0, stencil[i] - 1); break;
+			case StencilOp_DECR: stencil[i] -= 1; break;// core::s32_max(0, stencil[i] - 1); break;
+			}
+		}
+		else
+		{
+			// zfail
+			switch (stencilOp[1])
+			{
+			case StencilOp_INCR: stencil[i] += 1; break;
+			case StencilOp_DECR: stencil[i] -= 1; break;// core::s32_max(0, stencil[i] - 1); break;
 			}
 		}
 
