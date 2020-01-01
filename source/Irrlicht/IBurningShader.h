@@ -44,9 +44,9 @@ namespace video
 		f32 spotCosInnerCutoff;
 		f32 spotExponent;
 
-		sVec3 AmbientColor;
-		sVec3 DiffuseColor;
-		sVec3 SpecularColor;
+		sVec3Color AmbientColor;
+		sVec3Color DiffuseColor;
+		sVec3Color SpecularColor;
 	};
 
 	enum eTransformLightFlags
@@ -65,7 +65,7 @@ namespace video
 		void reset ()
 		{
 			Light.set_used ( 0 );
-			Global_AmbientLight.set ( 0.f, 0.f, 0.f );
+			Global_AmbientLight.set ( 0.f );
 
 			Flags = 0;
 			campos.x = 0.f;
@@ -74,8 +74,8 @@ namespace video
 			campos.w = 1.f;
 		}
 		core::array<SBurningShaderLight> Light;
-		sVec3 Global_AmbientLight;
-		sVec4 FogColor;
+		sVec3Color Global_AmbientLight;
+		sVec3Color FogColor;
 
 		sVec4 campos; //Camera Position in eye Space
 		sVec4 vertex4; //eye coordinate position of vertex
@@ -107,10 +107,10 @@ namespace video
 
 		u32 Culling; //eCullFlag
 
-		sVec3 AmbientColor;
-		sVec3 DiffuseColor;
-		sVec3 SpecularColor;
-		sVec3 EmissiveColor;
+		sVec3Color AmbientColor;
+		sVec3Color DiffuseColor;
+		sVec3Color SpecularColor;
+		sVec3Color EmissiveColor;
 
 	};
 

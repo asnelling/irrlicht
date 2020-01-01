@@ -918,7 +918,7 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 
 	f32 bDotPlane;
 
-	bDotPlane = b->Pos.dotProduct ( plane );
+	bDotPlane = b->Pos.dot( plane );
 
 /*
 	for( u32 i = 1; i < inCount + 1; ++i)
@@ -936,13 +936,13 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 		a = source + (i == inCount-1 ? 0 : (i+1)*2);
 
 		// current point inside
-		if ( a->Pos.dotProduct ( plane ) <= 0.f )
+		if ( a->Pos.dot( plane ) <= 0.f )
 		{
 			// last point outside
 			if ( F32_GREATER_0 ( bDotPlane ) )
 			{
 				// intersect line segment with plane
-				out->interpolate ( *b, *a, bDotPlane / (b->Pos - a->Pos).dotProduct ( plane ) );
+				out->interpolate ( *b, *a, bDotPlane / (b->Pos - a->Pos).dot( plane ) );
 				out += 2;
 				outCount += 1;
 			}
@@ -963,7 +963,7 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 			{
 				// previous was inside
 				// intersect line segment with plane
-				out->interpolate ( *b, *a, bDotPlane / (b->Pos - a->Pos).dotProduct ( plane ) );
+				out->interpolate ( *b, *a, bDotPlane / (b->Pos - a->Pos).dot( plane ) );
 				out += 2;
 				outCount += 1;
 			}
@@ -971,7 +971,7 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 			b = a;
 		}
 
-		bDotPlane = b->Pos.dotProduct ( plane );
+		bDotPlane = b->Pos.dot( plane );
 
 	}
 
@@ -2011,10 +2011,10 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 
 #ifdef SOFTWARE_DRIVER_2_LIGHTING
 
-	Material.AmbientColor.setR8G8B8( Material.org.AmbientColor.color );
-	Material.DiffuseColor.setR8G8B8(Material.org.ColorMaterial ? 0xFFFFFFFF : Material.org.DiffuseColor.color );
-	Material.EmissiveColor.setR8G8B8( Material.org.EmissiveColor.color );
-	Material.SpecularColor.setR8G8B8( Material.org.SpecularColor.color );
+	Material.AmbientColor.setA8R8G8B8( Material.org.AmbientColor.color );
+	Material.DiffuseColor.setA8R8G8B8(Material.org.ColorMaterial ? 0xFFFFFFFF : Material.org.DiffuseColor.color );
+	Material.EmissiveColor.setA8R8G8B8( Material.org.EmissiveColor.color );
+	Material.SpecularColor.setA8R8G8B8( Material.org.SpecularColor.color );
 
 	core::setbit_cond ( EyeSpace.Flags, (Material.org.Shininess != 0.f) & (Material.org.SpecularColor.color & 0x00ffffff), SPECULAR );
 	core::setbit_cond ( EyeSpace.Flags, Material.org.FogEnable, FOG );
@@ -2044,27 +2044,27 @@ void CBurningVideoDriver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 */
 void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 {
-	sVec3 dColor;
+	sVec3Color dColor;
 
 	//gl_FrontLightModelProduct.sceneColor = gl_FrontMaterial.emission + gl_FrontMaterial.ambient * gl_LightModel.ambient
 	dColor = Material.EmissiveColor;
-	dColor.mulAdd(EyeSpace.Global_AmbientLight, Material.AmbientColor);
+	dColor.mad_rgbv(EyeSpace.Global_AmbientLight, Material.AmbientColor);
 
 	if (EyeSpace.Light.size() == 0)
 	{
-		dColor.saturate(dest->Color[0], vertexargb);
+		dColor.sat(dest->Color[0], vertexargb);
 		return;
 	}
 
-	sVec3 ambient;
-	sVec3 diffuse;
-	sVec3 specular;
+	sVec3Color ambient;
+	sVec3Color diffuse;
+	sVec3Color specular;
 
 
 	// the universe started in darkness..
-	ambient.set(0.f, 0.f, 0.f);
-	diffuse.set(0.f, 0.f, 0.f);
-	specular.set(0.f, 0.f, 0.f);
+	ambient.set(0.f);
+	diffuse.set(0.f);
+	specular.set(0.f);
 
 
 	u32 i;
@@ -2091,11 +2091,11 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 			dot = EyeSpace.normal3.dot_xyz(light.spotDirection4);
 
 			// accumulate ambient
-			ambient.add(light.AmbientColor);
+			ambient.add_rgb(light.AmbientColor);
 
 			// diffuse component
 			if (dot > 0.f)
-				diffuse.mulAdd(light.DiffuseColor, dot);
+				diffuse.mad_rgb(light.DiffuseColor, dot);
 			break;
 
 		case ELT_POINT:
@@ -2114,7 +2114,7 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 			//att = clamp(1.0 - dist/radius, 0.0, 1.0); att *= att
 
 			// accumulate ambient
-			ambient.mulAdd(light.AmbientColor, attenuation);
+			ambient.mad_rgb(light.AmbientColor, attenuation);
 
 			// build diffuse reflection
 
@@ -2124,7 +2124,7 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 			if (dot <= 0.f) continue;
 
 			// diffuse component
-			diffuse.mulAdd(light.DiffuseColor, dot * attenuation);
+			diffuse.mad_rgb(light.DiffuseColor, dot * attenuation);
 
 			if (!(EyeSpace.Flags & SPECULAR))
 				continue;
@@ -2139,7 +2139,7 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 			*/
 			{
 				f32 srgb = powf(dot, Material.org.Shininess);
-				specular.mulAdd(light.SpecularColor, srgb * attenuation);
+				specular.mad_rgb(light.SpecularColor, srgb * attenuation);
 			}
 			break;
 
@@ -2166,7 +2166,7 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 			attenuation *= powf(spotDot, light.spotExponent);
 
 			// accumulate ambient
-			ambient.mulAdd(light.AmbientColor, attenuation);
+			ambient.mad_rgb(light.AmbientColor, attenuation);
 
 
 			// build diffuse reflection
@@ -2175,7 +2175,7 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 			if (dot < 0.f) continue;
 
 			// diffuse component
-			diffuse.mulAdd(light.DiffuseColor, dot * attenuation);
+			diffuse.mad_rgb(light.DiffuseColor, dot * attenuation);
 
 			if (!(EyeSpace.Flags & SPECULAR))
 				continue;
@@ -2190,7 +2190,7 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 			*/
 			{
 				f32 srgb = powf(dot, Material.org.Shininess);
-				specular.mulAdd(light.SpecularColor, srgb * attenuation);
+				specular.mad_rgb(light.SpecularColor, srgb * attenuation);
 			}
 			break;
 
@@ -2201,13 +2201,13 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 	}
 
 	// sum up lights
-	dColor.mulAdd(ambient, Material.AmbientColor);
-	dColor.mulAdd(diffuse, Material.DiffuseColor);
+	dColor.mad_rgbv(ambient, Material.AmbientColor);
+	dColor.mad_rgbv(diffuse, Material.DiffuseColor);
 
 	//has to move to shader (for vertex color only this will fit [except clamping])
 
-	sVec3 c;
-	c.setR8G8B8(vertexargb);
+	sVec3Color c;
+	c.setA8R8G8B8(vertexargb);
 	dColor.r *= c.r;
 	dColor.g *= c.g;
 	dColor.b *= c.b;
@@ -2219,10 +2219,10 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 	dest->Color[1].g = specular.g * Material.SpecularColor.g;
 	dest->Color[1].b = specular.b * Material.SpecularColor.b;
 #else
-	dColor.mulAdd(specular, Material.SpecularColor);
+	dColor.mad_rgbv(specular, Material.SpecularColor);
 #endif
 
-	dColor.saturate(dest->Color[0], vertexargb);
+	dColor.sat(dest->Color[0], vertexargb);
 }
 
 #endif

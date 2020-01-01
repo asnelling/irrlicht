@@ -144,19 +144,19 @@ struct sVec4
 
 	void setA8R8G8B8 ( const u32 argb )
 	{
-		x = ( ( argb & 0xFF000000 ) >> 24 ) * ( 1.f / 255.f );
-		y = ( ( argb & 0x00FF0000 ) >> 16 ) * ( 1.f / 255.f );
-		z = ( ( argb & 0x0000FF00 ) >>  8 ) * ( 1.f / 255.f );
-		w = ( ( argb & 0x000000FF )       ) * ( 1.f / 255.f );
+		a = ( ( argb & 0xFF000000 ) >> 24 ) * ( 1.f / 255.f );
+		r = ( ( argb & 0x00FF0000 ) >> 16 ) * ( 1.f / 255.f );
+		g = ( ( argb & 0x0000FF00 ) >>  8 ) * ( 1.f / 255.f );
+		b = ( ( argb & 0x000000FF )       ) * ( 1.f / 255.f );
 	}
 
 
 	void setColorf ( const video::SColorf & color )
 	{
-		x = color.a;
-		y = color.r;
-		z = color.g;
-		w = color.b;
+		a = color.a;
+		r = color.r;
+		g = color.g;
+		b = color.b;
 	}
 
 
@@ -170,7 +170,7 @@ struct sVec4
 	}
 
 
-	REALINLINE f32 dotProduct(const sVec4& other) const
+	REALINLINE f32 dot(const sVec4& other) const
 	{
 		return x*other.x + y*other.y + z*other.z + w*other.w;
 	}
@@ -183,11 +183,6 @@ struct sVec4
 	REALINLINE f32 dot_minus_xyz( const sVec4& other) const
 	{
 		return -x*other.x + -y*other.y + -z*other.z;
-	}
-
-	REALINLINE f32 get_length_xyz_square () const
-	{
-		return x * x + y * y + z * z;
 	}
 
 	f32 get_length_xyz () const
@@ -213,7 +208,7 @@ struct sVec4
 			z = 1.f;
 		}
 	}
-
+/*
 	void project_xyz ()
 	{
 		w = reciprocal_zero ( w );
@@ -221,7 +216,7 @@ struct sVec4
 		y *= w;
 		z *= w;
 	}
-
+*/
 	sVec4 operator-(const sVec4& other) const
 	{
 		return sVec4(x - other.x, y - other.y, z - other.z,w - other.w);
@@ -250,15 +245,6 @@ struct sVec4
 		return sVec4(x * other.x , y * other.y, z * other.z,w * other.w);
 	}
 
-	void mulReciprocal ( f32 s )
-	{
-		const f32 i = reciprocal_zero ( s );
-		x = (f32) ( x * i );
-		y = (f32) ( y * i );
-		z = (f32) ( z * i );
-		w = (f32) ( w * i );
-	}
-
 	void mul ( const f32 s )
 	{
 		x *= s;
@@ -284,124 +270,118 @@ struct sVec4
 	}
 };
 
+#include "irrpack.h"
+
 struct sVec3
 {
-	union
+	f32 x, y, z;
+
+	sVec3() {}
+	sVec3(f32 _x, f32 _y, f32 _z)
+		: x(_x), y(_y), z(_z) {}
+
+	// f = a * t + b * ( 1 - t )
+	void interpolate(const sVec3& v0, const sVec3& v1, const f32 t)
 	{
-		struct { f32 r, g, b; };
-		struct { f32 x, y, z; };
-	};
-
-
-	sVec3 () {}
-	sVec3 ( f32 _x, f32 _y, f32 _z )
-		: r ( _x ), g ( _y ), b( _z ) {}
-
-	sVec3 ( const sVec4 &v )
-		: r ( v.x ), g ( v.y ), b( v.z ) {}
-
-	void set ( f32 _r, f32 _g, f32 _b )
-	{
-		r = _r;
-		g = _g;
-		b = _b;
+		x = v1.x + ((v0.x - v1.x) * t);
+		y = v1.y + ((v0.y - v1.y) * t);
+		z = v1.z + ((v0.z - v1.z) * t);
 	}
 
-	void setR8G8B8 ( u32 argb )
+	sVec3 operator-(const sVec3& other) const
 	{
-		r = ( ( argb & 0x00FF0000 ) >> 16 ) * ( 1.f / 255.f );
-		g = ( ( argb & 0x0000FF00 ) >>  8 ) * ( 1.f / 255.f );
-		b = ( ( argb & 0x000000FF )       ) * ( 1.f / 255.f );
+		return sVec3(x - other.x, y - other.y, z - other.z);
 	}
 
-	void setColorf ( const video::SColorf & color )
+	sVec3 operator+(const sVec3& other) const
+	{
+		return sVec3(x + other.x, y + other.y, z + other.z);
+	}
+
+	sVec3 operator*(const f32 s) const
+	{
+		return sVec3(x * s, y * s, z * s);
+	}
+
+	void operator+=(const sVec3& other)
+	{
+		x += other.x;
+		y += other.y;
+		z += other.z;
+	}
+
+	void normalize_xyz(f32 len, f32 ofs)
+	{
+		//const f32 l = len * core::reciprocal_squareroot ( r * r + g * g + b * b );
+		f32 l = x * x + y * y + z * z;
+
+		l = l > 0.000001f ? len / sqrtf(l) : 0.f;
+		x = (x*l) + ofs;
+		y = (y*l) + ofs;
+		z = (z*l) + ofs;
+	}
+}  PACK_STRUCT;
+
+#include "irrunpack.h"
+
+struct sVec3Color
+{
+	f32 r, g, b,a;
+
+	void set(const f32 s)
+	{
+		r = s;
+		g = s;
+		b = s;
+		a = s;
+	}
+
+	void setA8R8G8B8(const u32 argb)
+	{
+		r = ((argb & 0x00FF0000) >> 16) * (1.f / 255.f);
+		g = ((argb & 0x0000FF00) >> 8 ) * (1.f / 255.f);
+		b = ((argb & 0x000000FF)      ) * (1.f / 255.f);
+		a = ((argb & 0xFF000000) >> 24) * (1.f / 255.f);
+	}
+
+	void setColorf(const video::SColorf & color)
 	{
 		r = color.r;
 		g = color.g;
 		b = color.b;
+		a = color.a;
 	}
 
-	void add (const sVec3& other)
+	void add_rgb(const sVec3Color& other)
 	{
 		r += other.r;
 		g += other.g;
 		b += other.b;
 	}
 
-	void mulAdd(const sVec3& other, const f32 v)
+	void mad_rgb(const sVec3Color& other, const f32 v)
 	{
 		r += other.r * v;
 		g += other.g * v;
 		b += other.b * v;
 	}
 
-	void mulAdd(const sVec3& v0, const sVec3& v1)
+	void mad_rgbv(const sVec3Color& v0, const sVec3Color& v1)
 	{
 		r += v0.r * v1.r;
 		g += v0.g * v1.g;
 		b += v0.b * v1.b;
 	}
 
-
-	void saturate ( sVec4 &dest, u32 argb ) const
+	//sVec4 is a,r,g,b
+	void sat(sVec4 &dest, const u32 argb) const
 	{
-		dest.a = ( ( argb & 0xFF000000 ) >> 24 ) * ( 1.f / 255.f );
+		dest.a = ((argb & 0xFF000000) >> 24) * (1.f / 255.f);
 		dest.r = r <= 1.f ? r : 1.f;
 		dest.g = g <= 1.f ? g : 1.f;
 		dest.b = b <= 1.f ? b : 1.f;
 	}
 
-	// f = a * t + b * ( 1 - t )
-	void interpolate(const sVec3& v0, const sVec3& v1, const f32 t)
-	{
-		r = v1.r + ( ( v0.r - v1.r ) * t );
-		g = v1.g + ( ( v0.g - v1.g ) * t );
-		b = v1.b + ( ( v0.b - v1.b ) * t );
-	}
-
-	sVec3 operator-(const sVec3& other) const
-	{
-		return sVec3(r - other.r, b - other.b, g - other.g);
-	}
-
-	sVec3 operator+(const sVec3& other) const
-	{
-		return sVec3(r + other.r, g + other.g, b + other.b);
-	}
-
-	sVec3 operator*(const f32 s) const
-	{
-		return sVec3(r * s , g * s, b * s);
-	}
-
-	sVec3 operator/(const f32 s) const
-	{
-		f32 inv = 1.f / s;
-		return sVec3(r * inv , g * inv, b * inv);
-	}
-
-	sVec3 operator*(const sVec3 &other) const
-	{
-		return sVec3(r * other.r , b * other.b, g * other.g);
-	}
-
-	void operator+=(const sVec3& other)
-	{
-		r += other.r;
-		g += other.g;
-		b += other.b;
-	}
-
-	void normalize_xyz( f32 len,f32 ofs )
-	{
-		//const f32 l = len * core::reciprocal_squareroot ( r * r + g * g + b * b );
-		f32 l = r * r + g * g + b * b;
-
-		l = l > 0.000001f ? len / sqrtf(l) : 0.f;
-		r = (r*l)+ofs;
-		g = (g*l)+ofs;
-		b = (b*l)+ofs;
-	}
 };
 
 
