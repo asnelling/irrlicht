@@ -223,15 +223,20 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 
 #ifdef IPOL_C0
 			a3 = tofix ( line.c[0][0].x,inversew );
+			getSample_color(r2, g2, b2, line.c[0][0], inversew);
 #endif
 
 			getSample_texture ( r0, g0, b0, &IT[0], tx0, ty0 );
 			color_to_fix ( r1, g1, b1, dst[i] );
 
 #ifdef IPOL_C0
-			r2 = clampfix_maxcolor ( r1 + imulFix ( r0, a3 ) );
-			g2 = clampfix_maxcolor ( g1 + imulFix ( g0, a3 ) );
-			b2 = clampfix_maxcolor ( b1 + imulFix ( b0, a3 ) );
+			r0 = imulFix(r0, r2);
+			g0 = imulFix(g0, g2);
+			b0 = imulFix(b0, b2);
+
+			r2 = r1 + imulFix(a3, r0 - r1);
+			g2 = g1 + imulFix(a3, g0 - g1);
+			b2 = b1 + imulFix(a3, b0 - b1);
 #else
 			r2 = clampfix_maxcolor ( r1 + r0 );
 			g2 = clampfix_maxcolor ( g1 + g0 );

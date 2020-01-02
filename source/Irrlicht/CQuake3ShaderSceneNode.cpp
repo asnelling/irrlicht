@@ -26,7 +26,7 @@ namespace scene
 {
 
 // null check necessary
-static inline f32 reciprocal_check(f32 x) { return fabs(x) < 0.000001f ? 0.f : 1.f / x;	}
+static inline f32 reciprocal_check(f32 x) { return fabsf(x) < 0.000001f ? 0.f : 1.f / x;	}
 
 // who, if not you..
 using namespace quake3;

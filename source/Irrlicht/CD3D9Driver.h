@@ -44,7 +44,7 @@ namespace video
 		//! destructor
 		virtual ~CD3D9Driver();
 
-		virtual bool beginScene(u32 clearFlag, SColor clearColor = SColor(255,0,0,0), f32 clearDepth = 1.f, u32 clearStencil = 0,
+		virtual bool beginScene(u16 clearFlag, SColor clearColor = SColor(255,0,0,0), f32 clearDepth = 1.f, u8 clearStencil = 0,
 			const SExposedVideoData& videoData = SExposedVideoData(), core::rect<s32>* sourceRect = 0) _IRR_OVERRIDE_;
 
 		virtual bool endScene() _IRR_OVERRIDE_;
@@ -58,8 +58,8 @@ namespace video
 		//! sets a material
 		virtual void setMaterial(const SMaterial& material) _IRR_OVERRIDE_;
 
-		virtual bool setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor = SColor(255,0,0,0),
-			f32 clearDepth = 1.f, u32 clearStencil = 0) _IRR_OVERRIDE_;
+		virtual bool setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor = SColor(255,0,0,0),
+			f32 clearDepth = 1.f, u8 clearStencil = 0) _IRR_OVERRIDE_;
 
 		//! sets a viewport
 		virtual void setViewPort(const core::rect<s32>& area) _IRR_OVERRIDE_;
@@ -168,7 +168,7 @@ namespace video
 
 		//! Draws a 3d line.
 		virtual void draw3DLine(const core::vector3df& start,
-			const core::vector3df& end, SColor color_start,SColor color_end) _IRR_OVERRIDE_;
+			const core::vector3df& end, SColor color = SColor(255,255,255,255)) _IRR_OVERRIDE_;
 
 		//! Draws a 3d box.
 		virtual void draw3DBox( const core::aabbox3d<f32>& box, SColor color = SColor(255,255,255,255 ) )  _IRR_OVERRIDE_;
@@ -270,7 +270,7 @@ namespace video
 		ITexture* addRenderTargetTextureCubemap(const irr::u32 sideLen,
 				const io::path& name, const ECOLOR_FORMAT format) _IRR_OVERRIDE_;
 
-		virtual void clearBuffers(u32 flag, SColor color = SColor(255,0,0,0), f32 depth = 1.f, u32 stencil = 0) _IRR_OVERRIDE_;
+		virtual void clearBuffers(u16 flag, SColor color = SColor(255,0,0,0), f32 depth = 1.f, u8 stencil = 0) _IRR_OVERRIDE_;
 
 		//! Returns an image created from the last rendered frame.
 		virtual IImage* createScreenShot(video::ECOLOR_FORMAT format=video::ECF_UNKNOWN, video::E_RENDER_TARGET target=video::ERT_FRAME_BUFFER) _IRR_OVERRIDE_;
@@ -443,6 +443,7 @@ namespace video
 		u32 MaxTextureUnits;
 		u32 MaxFixedPipelineTextureUnits;
 		u32 MaxUserClipPlanes;
+		f32 MaxLightDistance;
 		s32 LastSetLight;
 
 		enum E_CACHE_2D_ATTRIBUTES

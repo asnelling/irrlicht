@@ -380,10 +380,14 @@ void CTRTextureLightMap2_M4::scanline_bilinear2_min ()
 
 void CTRTextureLightMap2_M4::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
 {
-	if ( IT[0].lodLevel <= 2 )
-		drawTriangle_Mag ( a, b, c );
+	if (IT[0].lodFactor < 4)
+	{
+		drawTriangle_Mag(a, b, c);
+	}
 	else
-		drawTriangle_Min ( a, b, c );
+	{
+		drawTriangle_Min(a, b, c);
+	}
 }
 
 void CTRTextureLightMap2_M4::drawTriangle_Min ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )

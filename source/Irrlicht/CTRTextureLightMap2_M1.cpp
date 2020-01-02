@@ -627,6 +627,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTriangleRendererTextureLightMap2_M1(CBurningVideoDriver* driver)
 {
+	//ETR_TEXTURE_GOURAUD_LIGHTMAP_M1
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureLightMap2_M1(driver);
 	#else

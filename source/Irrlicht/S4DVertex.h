@@ -38,7 +38,7 @@ static inline f32 reciprocal_zero2(f32 x) { return x != 0.f ? 1.f / x : 0.f; }
 
 	inline f32 reciprocal_zero_no(const f32 x)
 	{
-		if ( fabs(x) <= 0.00001f ) __debugbreak();
+		if ( fabsf(x) <= 0.00001f ) __debugbreak();
 		return 1.f / x;
 	}
 #else
@@ -60,7 +60,7 @@ enum edge_test_flag
 //if any edge test flag is set result=1 else 0. ( pass height test for degenerate triangle )
 #define reciprocal_edge(x) ((x) != 0.f ? 1.f / (x):(~EdgeTestPass)&1)
 
-
+//! sVec2 used in BurningShader texture coordinates
 struct sVec2
 {
 	f32 x;
@@ -120,7 +120,7 @@ struct sVec2
 
 };
 
-
+//! sVec4 used in Driver,BurningShader, direction/color
 struct sVec4
 {
 	union
@@ -129,36 +129,9 @@ struct sVec4
 		struct { f32 a, r, g, b; };
 	};
 
-
 	sVec4 () {}
 	sVec4 ( f32 _x, f32 _y, f32 _z, f32 _w )
 		: x ( _x ), y ( _y ), z( _z ), w ( _w ){}
-
-	void set ( f32 _x, f32 _y, f32 _z, f32 _w )
-	{
-		x = _x;
-		y = _y;
-		z = _z;
-		w = _w;
-	}
-
-	void setA8R8G8B8 ( const u32 argb )
-	{
-		a = ( ( argb & 0xFF000000 ) >> 24 ) * ( 1.f / 255.f );
-		r = ( ( argb & 0x00FF0000 ) >> 16 ) * ( 1.f / 255.f );
-		g = ( ( argb & 0x0000FF00 ) >>  8 ) * ( 1.f / 255.f );
-		b = ( ( argb & 0x000000FF )       ) * ( 1.f / 255.f );
-	}
-
-
-	void setColorf ( const video::SColorf & color )
-	{
-		a = color.a;
-		r = color.r;
-		g = color.g;
-		b = color.b;
-	}
-
 
 	// f = a * t + b * ( 1 - t )
 	void interpolate(const sVec4& a, const sVec4& b, const f32 t)
@@ -169,54 +142,6 @@ struct sVec4
 		w = b.w + ( ( a.w - b.w ) * t );
 	}
 
-
-	REALINLINE f32 dot(const sVec4& other) const
-	{
-		return x*other.x + y*other.y + z*other.z + w*other.w;
-	}
-
-	REALINLINE f32 dot_xyz( const sVec4& other) const
-	{
-		return x*other.x + y*other.y + z*other.z;
-	}
-
-	REALINLINE f32 dot_minus_xyz( const sVec4& other) const
-	{
-		return -x*other.x + -y*other.y + -z*other.z;
-	}
-
-	f32 get_length_xyz () const
-	{
-		return core::squareroot ( x * x + y * y + z * z );
-	}
-
-	void normalize_xyz ()
-	{
-		//const f32 l = core::reciprocal_squareroot(x * x + y * y + z * z);
-		f32 l = x * x + y * y + z * z;
-		if (l > 0.000001f)
-		{
-			l = 1.f / sqrtf(l);
-			x *= l;
-			y *= l;
-			z *= l;
-		}
-		else
-		{
-			x = 0.f;
-			y = 0.f;
-			z = 1.f;
-		}
-	}
-/*
-	void project_xyz ()
-	{
-		w = reciprocal_zero ( w );
-		x *= w;
-		y *= w;
-		z *= w;
-	}
-*/
 	sVec4 operator-(const sVec4& other) const
 	{
 		return sVec4(x - other.x, y - other.y, z - other.z,w - other.w);
@@ -245,14 +170,6 @@ struct sVec4
 		return sVec4(x * other.x , y * other.y, z * other.z,w * other.w);
 	}
 
-	void mul ( const f32 s )
-	{
-		x *= s;
-		y *= s;
-		z *= s;
-		w *= s;
-	}
-
 	void operator*=(const sVec4 &other)
 	{
 		x *= other.x;
@@ -268,10 +185,81 @@ struct sVec4
 		z = other.z;
 		w = other.w;
 	}
+
+	//outside shader
+	void set(f32 _x, f32 _y, f32 _z, f32 _w)
+	{
+		x = _x;
+		y = _y;
+		z = _z;
+		w = _w;
+	}
+	void setA8R8G8B8(const u32 argb)
+	{
+		a = ((argb & 0xFF000000) >> 24) * (1.f / 255.f);
+		r = ((argb & 0x00FF0000) >> 16) * (1.f / 255.f);
+		g = ((argb & 0x0000FF00) >> 8 ) * (1.f / 255.f);
+		b = ((argb & 0x000000FF)      ) * (1.f / 255.f);
+	}
+
+	REALINLINE f32 dot(const sVec4& other) const
+	{
+		return x * other.x + y * other.y + z * other.z + w * other.w;
+	}
+
+	REALINLINE f32 dot_xyz(const sVec4& other) const
+	{
+		return x * other.x + y * other.y + z * other.z;
+	}
+
+	REALINLINE f32 dot_minus_xyz(const sVec4& other) const
+	{
+		return -x * other.x + -y * other.y + -z * other.z;
+	}
+
+	void mul_xyz(const f32 s)
+	{
+		x *= s;
+		y *= s;
+		z *= s;
+	}
+
+	f32 length_xyz() const
+	{
+		return sqrtf(x * x + y * y + z * z);
+	}
+
+	void normalize_dir_xyz()
+	{
+		//const f32 l = core::reciprocal_squareroot(x * x + y * y + z * z);
+		f32 l = x * x + y * y + z * z;
+/*
+		if (l > 0.0000001f)
+		{
+			l = 1.f / sqrtf(l);
+			x *= l;
+			y *= l;
+			z *= l;
+		}
+		else
+		{
+			x = 0.f;
+			y = 0.f;
+			z = 1.f;
+		}
+*/
+		l = l > 0.0000001f ? 1.f / sqrtf(l) : 1.f;
+		x *= l;
+		y *= l;
+		z *= l;
+
+	}
+
 };
 
 #include "irrpack.h"
 
+//! sVec3 used in BurningShader, packed direction
 struct sVec3
 {
 	f32 x, y, z;
@@ -310,12 +298,19 @@ struct sVec3
 		z += other.z;
 	}
 
-	void normalize_xyz(f32 len, f32 ofs)
+	void operator=(const sVec3& other)
+	{
+		x = other.x;
+		y = other.y;
+		z = other.z;
+	}
+
+	void normalize_pack_xyz(const f32 len, const f32 ofs)
 	{
 		//const f32 l = len * core::reciprocal_squareroot ( r * r + g * g + b * b );
 		f32 l = x * x + y * y + z * z;
 
-		l = l > 0.000001f ? len / sqrtf(l) : 0.f;
+		l = l > 0.0000001f ? len / sqrtf(l) : 0.f;
 		x = (x*l) + ofs;
 		y = (y*l) + ofs;
 		z = (z*l) + ofs;
@@ -324,6 +319,7 @@ struct sVec3
 
 #include "irrunpack.h"
 
+//!sVec4 is argb. sVec3Color is rgba
 struct sVec3Color
 {
 	f32 r, g, b,a;
@@ -384,12 +380,21 @@ struct sVec3Color
 
 };
 
-
+//internal BurningShaderFlag for a Vertex
 enum e4DVertexFlag
 {
-	VERTEX4D_INSIDE		= 0x0000003F,
-	VERTEX4D_CLIPMASK	= 0x0000003F,
-	VERTEX4D_PROJECTED	= 0x00000100,
+	VERTEX4D_CLIPMASK				= 0x0000003F,
+	VERTEX4D_CLIP_INSIDE_NEAR		= 0x00000001,
+	VERTEX4D_CLIP_INSIDE_FAR		= 0x00000002,
+	VERTEX4D_CLIP_INSIDE_LEFT		= 0x00000004,
+	VERTEX4D_CLIP_INSIDE_RIGHT		= 0x00000008,
+	VERTEX4D_CLIP_INSIDE_BOTTOM		= 0x00000010,
+	VERTEX4D_CLIP_INSIDE_TOP		= 0x00000020,
+	VERTEX4D_INSIDE					= 0x0000003F,
+
+	VERTEX4D_PROJECTED				= 0x00000100,
+	VERTEX4D_VAL_ZERO				= 0x00000200,
+	VERTEX4D_VAL_ONE				= 0x00000400,
 
 	VERTEX4D_FORMAT_MASK			= 0xFFFF0000,
 
@@ -411,11 +416,11 @@ enum e4DVertexFlag
 //! vertex layout
 enum e4DVertexType
 {
-	E4VT_STANDARD = 0, // EVT_STANDARD, video::S3DVertex.
-	E4VT_2TCOORDS = 1, // EVT_2TCOORDS, video::S3DVertex2TCoords.
-	E4VT_TANGENTS = 2, // EVT_TANGENTS, video::S3DVertexTangents
+	E4VT_STANDARD = 0,			// EVT_STANDARD, video::S3DVertex.
+	E4VT_2TCOORDS = 1,			// EVT_2TCOORDS, video::S3DVertex2TCoords.
+	E4VT_TANGENTS = 2,			// EVT_TANGENTS, video::S3DVertexTangents
 	E4VT_REFLECTION_MAP = 3,
-	E4VT_SHADOW = 4
+	E4VT_SHADOW = 4				// float * 3
 };
 
 enum e4DIndexType
@@ -468,7 +473,7 @@ struct s4DVertex_proxy
 */
 struct s4DVertex
 {
-	u32 flag;
+	u32 flag; // e4DVertexFlag
 
 	sVec4 Pos;
 #if BURNING_MATERIAL_MAX_TEXTURES > 0
@@ -488,10 +493,10 @@ struct s4DVertex
 	// f = a * t + b * ( 1 - t )
 	void interpolate(const s4DVertex& b, const s4DVertex& a, const f32 t)
 	{
-		u32 i;
-		u32 size;
-
 		Pos.interpolate ( a.Pos, b.Pos, t );
+
+		size_t i;
+		size_t size;
 
 #if BURNING_MATERIAL_MAX_TEXTURES > 0
 		size = (flag & VERTEX4D_FORMAT_MASK_TEXTURE) >> 16;
@@ -526,7 +531,7 @@ struct SAlignedVertex
 	SAlignedVertex ( u32 element )
 		: ElementSize ( element )
 	{
-		u32 byteSize = ((ElementSize << SIZEOF_S4DVERTEX_LOG2 ) + 4095) & ~4095; // + aligned;
+		u32 byteSize = align_next(ElementSize << SIZEOF_S4DVERTEX_LOG2, 4096);
 		mem = new u8 [ byteSize ];
 		data = (s4DVertex*) mem;
 	}
@@ -683,9 +688,9 @@ inline void getTexel_plain2 (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
 							const sVec4 &v
 							)
 {
-	r = tofix(v.y, FIX_POINT_F32_MUL);
-	g = tofix(v.z, FIX_POINT_F32_MUL);
-	b = tofix(v.w, FIX_POINT_F32_MUL);
+	r = tofix(v.r, FIX_POINT_F32_MUL);
+	g = tofix(v.g, FIX_POINT_F32_MUL);
+	b = tofix(v.b, FIX_POINT_F32_MUL);
 }
 
 /*
@@ -695,10 +700,10 @@ inline void getSample_color (	tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoin
 							const sVec4 &v
 							)
 {
-	a = tofix(v.x, FIX_POINT_F32_MUL);
-	r = tofix ( v.y, COLOR_MAX * FIX_POINT_F32_MUL);
-	g = tofix ( v.z, COLOR_MAX * FIX_POINT_F32_MUL);
-	b = tofix ( v.w, COLOR_MAX * FIX_POINT_F32_MUL);
+	a = tofix ( v.a, FIX_POINT_F32_MUL);
+	r = tofix ( v.r, COLOR_MAX * FIX_POINT_F32_MUL);
+	g = tofix ( v.g, COLOR_MAX * FIX_POINT_F32_MUL);
+	b = tofix ( v.b, COLOR_MAX * FIX_POINT_F32_MUL);
 }
 
 /*
@@ -706,22 +711,29 @@ inline void getSample_color (	tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoin
 */
 inline void getSample_color ( tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v )
 {
-	r = tofix ( v.y, COLOR_MAX * FIX_POINT_F32_MUL);
-	g = tofix ( v.z, COLOR_MAX * FIX_POINT_F32_MUL);
-	b = tofix ( v.w, COLOR_MAX * FIX_POINT_F32_MUL);
+	r = tofix ( v.r, COLOR_MAX * FIX_POINT_F32_MUL);
+	g = tofix ( v.g, COLOR_MAX * FIX_POINT_F32_MUL);
+	b = tofix ( v.b, COLOR_MAX * FIX_POINT_F32_MUL);
 }
 
 /*
-	load a color value
+	load a color value mulby controls [0;1] or [0;ColorMax]
 */
 inline void getSample_color (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
 								const sVec4 &v, const f32 mulby )
 {
-	r = tofix ( v.y, mulby);
-	g = tofix ( v.z, mulby);
-	b = tofix ( v.w, mulby);
+	r = tofix ( v.r, mulby);
+	g = tofix ( v.g, mulby);
+	b = tofix ( v.b, mulby);
 }
 
+inline void getSample_color(tFixPoint &a,tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v, const f32 mulby)
+{
+	a = tofix(v.a, mulby);
+	r = tofix(v.r, mulby);
+	g = tofix(v.g, mulby);
+	b = tofix(v.b, mulby);
+}
 
 
 }

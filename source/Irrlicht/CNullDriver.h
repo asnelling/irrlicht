@@ -48,7 +48,7 @@ namespace video
 		//! destructor
 		virtual ~CNullDriver();
 
-		virtual bool beginScene(u32 clearFlag, SColor clearColor = SColor(255,0,0,0), f32 clearDepth = 1.f, u32 clearStencil = 0,
+		virtual bool beginScene(u16 clearFlag, SColor clearColor = SColor(255,0,0,0), f32 clearDepth = 1.f, u8 clearStencil = 0,
 			const SExposedVideoData& videoData = SExposedVideoData(), core::rect<s32>* sourceRect = 0) _IRR_OVERRIDE_;
 
 		virtual bool endScene() _IRR_OVERRIDE_;
@@ -104,11 +104,11 @@ namespace video
 
 		virtual ITexture* addTextureCubemap(const irr::u32 sideLen, const io::path& name, ECOLOR_FORMAT format = ECF_A8R8G8B8) _IRR_OVERRIDE_;
 
-		virtual bool setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor = SColor(255,0,0,0),
-			f32 clearDepth = 1.f, u32 clearStencil = 0) _IRR_OVERRIDE_;
+		virtual bool setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor = SColor(255,0,0,0),
+			f32 clearDepth = 1.f, u8 clearStencil = 0) _IRR_OVERRIDE_;
 
-		virtual bool setRenderTarget(ITexture* texture, u32 clearFlag, SColor clearColor = SColor(255,0,0,0),
-			f32 clearDepth = 1.f, u32 clearStencil = 0) _IRR_OVERRIDE_;
+		virtual bool setRenderTarget(ITexture* texture, u16 clearFlag, SColor clearColor = SColor(255,0,0,0),
+			f32 clearDepth = 1.f, u8 clearStencil = 0) _IRR_OVERRIDE_;
 
 		//! sets a viewport
 		virtual void setViewPort(const core::rect<s32>& area) _IRR_OVERRIDE_;
@@ -130,13 +130,7 @@ namespace video
 
 		//! Draws a 3d line.
 		virtual void draw3DLine(const core::vector3df& start,
-			const core::vector3df& end, SColor color_start,SColor color_end) _IRR_OVERRIDE_;
-
-		//! Draws a 3d line. single color white,compatible with < 1.9 version
-		void draw3DLine(const core::vector3df& start,const core::vector3df& end,SColor color = SColor(255,255,255,255))
-		{
-			draw3DLine(start,end,color,color);
-		}
+			const core::vector3df& end, SColor color = SColor(255,255,255,255)) _IRR_OVERRIDE_;
 
 		//! Draws a 3d triangle.
 		virtual void draw3DTriangle(const core::triangle3df& triangle,
@@ -145,12 +139,6 @@ namespace video
 		//! Draws a 3d axis aligned box.
 		virtual void draw3DBox(const core::aabbox3d<f32>& box,
 			SColor color = SColor(255,255,255,255)) _IRR_OVERRIDE_;
-
-		//! Draws 3d axis aligned circles
-		virtual void draw3DCircle(const core::vector3df& center,const core::vector3df& radius,
-			int rings,int stripes,int segments,
-			SColor colorRing,SColor colorStripe,SColor colorRing180 //x,y,z
-			);
 
 		//! draws an 2d image
 		virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture) _IRR_OVERRIDE_;
@@ -613,7 +601,7 @@ namespace video
 		//! Returns a pointer to the mesh manipulator.
 		virtual scene::IMeshManipulator* getMeshManipulator() _IRR_OVERRIDE_;
 
-		virtual void clearBuffers(u32 flag, SColor color = SColor(255,0,0,0), f32 depth = 1.f, u32 stencil = 0) _IRR_OVERRIDE_;
+		virtual void clearBuffers(u16 flag, SColor color = SColor(255,0,0,0), f32 depth = 1.f, u8 stencil = 0) _IRR_OVERRIDE_;
 
 		//! Returns an image created from the last rendered frame.
 		virtual IImage* createScreenShot(video::ECOLOR_FORMAT format=video::ECF_UNKNOWN, video::E_RENDER_TARGET target=video::ERT_FRAME_BUFFER) _IRR_OVERRIDE_;
@@ -698,7 +686,11 @@ namespace video
 
 		virtual bool checkDriverReset() _IRR_OVERRIDE_ {return false;}
 
-		virtual void postEventFromUser(const void* sevent)  _IRR_OVERRIDE_ {}
+		//! Draws 3d axis aligned circles
+		virtual void draw3DCircle(const core::vector3df& center, const core::vector3df& radius,
+			int rings, int stripes, int segments,
+			SColor colorRing, SColor colorStripe, SColor colorRing180 //x,y,z
+		) _IRR_OVERRIDE_;
 
 	protected:
 

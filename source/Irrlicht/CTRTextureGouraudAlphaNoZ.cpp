@@ -95,7 +95,7 @@ private:
 	sScanConvertData scan;
 	sScanLineData line;
 
-	u32 AlphaRef;
+	tFixPoint AlphaRef;
 };
 
 //! constructor
@@ -117,7 +117,7 @@ void CTRTextureGouraudAlphaNoZ::setParam ( u32 index, f32 value)
 #ifdef BURNINGVIDEO_RENDERER_FAST
 	AlphaRef = core::floor32( value * 256.f );
 #else
-	AlphaRef = u32_to_fixPoint ( core::floor32( value * 256.f ) );
+	AlphaRef = tofix(value, FIXPOINT_COLOR_MAX);
 #endif
 }
 
@@ -275,7 +275,7 @@ void CTRTextureGouraudAlphaNoZ::scanline_bilinear ()
 							tofix ( line.t[0][0].y)
 						);
 #endif
-		if ( (tFixPointu) a0 > AlphaRef )
+		if ( a0 > AlphaRef )
 		{
 #ifdef WRITE_Z
 			z[i] = line.z[0];
@@ -296,7 +296,7 @@ void CTRTextureGouraudAlphaNoZ::scanline_bilinear ()
 
 			color_to_fix ( r1, g1, b1, dst[i] );
 
-			a0 >>= 8;
+			fix_color_norm(a0);
 
 			r2 = r1 + imulFix ( a0, r0 - r1 );
 			g2 = g1 + imulFix ( a0, g0 - g1 );
@@ -722,6 +722,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTRTextureGouraudAlphaNoZ(CBurningVideoDriver* driver)
 {
+	//ETR_TEXTURE_GOURAUD_ALPHA_NOZ
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureGouraudAlphaNoZ(driver);
 	#else

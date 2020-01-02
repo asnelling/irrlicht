@@ -34,7 +34,7 @@ CCameraSceneNode::CCameraSceneNode(ISceneNode* parent, ISceneManager* mgr, s32 i
 	{
 		Aspect = (f32)d->getCurrentRenderTargetSize().Width /
 			(f32)d->getCurrentRenderTargetSize().Height;
-		HasD3DStyleProjectionMatrix = d->getDriverType() != video::EDT_OPENGL;
+		HasD3DStyleProjectionMatrix = d->getDriverType() != video::EDT_OPENGL && d->getDriverType() != video::EDT_BURNINGSVIDEO;
 	}
 	else
 		Aspect = 4.0f / 3.0f;	// Aspect ratio.

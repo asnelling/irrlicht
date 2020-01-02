@@ -233,7 +233,7 @@ void CTRNormalMap::scanline_bilinear ()
 
 
 #ifdef IPOL_C0
-	tFixPoint r3, g3, b3;
+	tFixPoint a3,r3, g3, b3;
 #endif
 
 	for ( s32 i = 0; i <= dx; i++ )
@@ -255,6 +255,8 @@ void CTRNormalMap::scanline_bilinear ()
 
 
 #ifdef IPOL_C0
+			//getSample_color(a3,r3,g3,b3, line.c[0][0],inversew);
+			a3 = tofix ( line.c[0][0].x, inversew);
 			r3 = tofix ( line.c[0][0].y ,inversew );
 			g3 = tofix ( line.c[0][0].z ,inversew );
 			b3 = tofix ( line.c[0][0].w ,inversew );
@@ -274,6 +276,7 @@ void CTRNormalMap::scanline_bilinear ()
 #endif
 
 #endif
+			// diffuse map
 			getSample_texture ( r0, g0, b0, &IT[0], tx0, ty0 );
 
 			// normal map
@@ -330,8 +333,18 @@ void CTRNormalMap::scanline_bilinear ()
 			b2 = clampfix_maxcolor ( imulFix_tex4 ( b0, b1 ) );
 #endif
 
-
-			dst[i] = fix_to_color ( r2, g2, b2 );
+			//vertex alpha blend
+			if (a3 + 2 < FIX_POINT_ONE)
+			{
+				color_to_fix(r1, g1, b1, dst[i]);
+				r2 = r1 + imulFix(a3, r2 - r1);
+				g2 = g1 + imulFix(a3, g2 - g1);
+				b2 = b1 + imulFix(a3, b2 - b1);
+				dst[i] = fix_to_color(r2, g2, b2);
+			}
+			else
+			{
+				dst[i] = fix_to_color(r2, g2, b2);
 
 #ifdef WRITE_Z
 			z[i] = line.z[0];
@@ -339,6 +352,8 @@ void CTRNormalMap::scanline_bilinear ()
 #ifdef WRITE_W
 			z[i] = line.w[0];
 #endif
+			}
+
 		}
 
 #ifdef IPOL_Z

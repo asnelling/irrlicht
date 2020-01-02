@@ -540,21 +540,29 @@ inline u32 fixPointu_to_u32 (const tFixPointu x)
 	hints: compileflag /QIfist for msvc7. msvc 8.0 has smth different
 	others should use their favourite assembler..
 */
+#if 0
 static inline int f_round2(f32 f)
 {
 	f += (3<<22);
 	return IR(f) - 0x4b400000;
 }
+#endif
 
 /*
 	convert f32 to Fix Point.
 	multiply is needed anyway, so scale mulby
 */
+/*
 REALINLINE tFixPoint tofix0 (const f32 x, const f32 mulby = FIX_POINT_F32_MUL )
 {
 	return (tFixPoint) (x * mulby);
 }
+*/
 #define tofix(x,y) (tFixPoint)(x * y)
+
+
+//! normalize from fixed point Color Max to fixed point [0;1]
+#define fix_color_norm(x) x >>= COLOR_MAX_LOG2
 
 /*
 	Fix Point , Fix Point Multiply
@@ -623,11 +631,11 @@ REALINLINE tFixPoint imulFix_tex4(const tFixPoint x, const tFixPoint y)
 #endif
 
 /*!
-	clamp FixPoint to maxcolor in FixPoint, min(a,31)
+	clamp FixPoint to maxcolor in FixPoint, min(a,COLOR_MAX)
 */
 REALINLINE tFixPoint clampfix_maxcolor ( const tFixPoint a)
 {
-	tFixPoint c = (a - FIXPOINT_COLOR_MAX) >> 31;
+	register tFixPoint c = (a - FIXPOINT_COLOR_MAX) >> 31;
 	return (a & c) | ( FIXPOINT_COLOR_MAX & ~c);
 }
 
@@ -657,14 +665,16 @@ inline s32 roundFix ( const tFixPoint x )
 
 
 // x in [0;1[
+#if 0
 inline s32 f32_to_23Bits(const f32 x)
 {
 	f32 y = x + 1.f;
 	return IR(y) & 0x7FFFFF;	// last 23 bits
 }
+#endif
 
 /*!
-	return VideoSample from fixpoint
+	fixpoint to VideoSample xrgb
 */
 REALINLINE tVideoSample fix_to_color ( const tFixPoint r, const tFixPoint g, const tFixPoint b )
 {
@@ -676,7 +686,9 @@ REALINLINE tVideoSample fix_to_color ( const tFixPoint r, const tFixPoint g, con
 
 
 /*!
-	return VideoSample from fixpoint
+	fixpoint to VideoSample argb
+	a in [0;1]
+	rgb in [0;255] colormax
 */
 REALINLINE tVideoSample fix4_to_color ( const tFixPoint a, const tFixPoint r, const tFixPoint g, const tFixPoint b )
 {
@@ -772,6 +784,7 @@ struct fp24
 
 struct sInternalTexture
 {
+	//power-of-two
 	u32 textureXMask;
 	u32 textureYMask;
 
@@ -779,7 +792,7 @@ struct sInternalTexture
 	void *data;
 
 	video::CSoftwareTexture2 *Texture;
-	s32 lodLevel;
+	s32 lodFactor; // magnify/minify
 };
 
 
@@ -909,7 +922,7 @@ inline void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPo
 
 #else
 
-
+#if 0
 // get sample linear
 static REALINLINE void getSample_linear ( tFixPointu &r, tFixPointu &g, tFixPointu &b,
 								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
@@ -928,6 +941,7 @@ static REALINLINE void getSample_linear ( tFixPointu &r, tFixPointu &g, tFixPoin
 	g =	(t00 & MASK_G) >> SHIFT_G;
 	b =	(t00 & MASK_B);
 }
+#endif
 
 // get Sample bilinear
 static REALINLINE void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
@@ -946,8 +960,8 @@ static REALINLINE void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint
 	getSample_linear ( r01, g01, b01, t, tx,ty + FIX_POINT_ONE );
 	getSample_linear ( r11, g11, b11, t, tx + FIX_POINT_ONE,ty + FIX_POINT_ONE );
 #else
-	u32 o0, o1,o2,o3;
-	tVideoSample t00;
+	size_t o0,o1,o2,o3;
+	register tVideoSample t00;
 
 	o0 = ( ( (ty) & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	o1 = ( ( (ty+FIX_POINT_ONE) & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
@@ -1004,7 +1018,7 @@ static REALINLINE void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint
 
 }
 
-
+#if 0
 // get sample linear
 static REALINLINE void getSample_linear ( tFixPointu &a, tFixPointu &r, tFixPointu &g, tFixPointu &b,
 								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
@@ -1024,6 +1038,7 @@ static REALINLINE void getSample_linear ( tFixPointu &a, tFixPointu &r, tFixPoin
 	g =	(t00 & MASK_G) >> SHIFT_G;
 	b =	(t00 & MASK_B);
 }
+#endif
 
 // get Sample bilinear
 static REALINLINE void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,
@@ -1035,11 +1050,44 @@ static REALINLINE void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint
 	tFixPointu a01, r01,g01,b01;
 	tFixPointu a10, r10,g10,b10;
 	tFixPointu a11, r11,g11,b11;
-
+#if 0
 	getSample_linear ( a00, r00, g00, b00, t, tx,ty );
 	getSample_linear ( a10, r10, g10, b10, t, tx + FIX_POINT_ONE,ty );
 	getSample_linear ( a01, r01, g01, b01, t, tx,ty + FIX_POINT_ONE );
 	getSample_linear ( a11, r11, g11, b11, t, tx + FIX_POINT_ONE,ty + FIX_POINT_ONE );
+#else
+	size_t o0, o1, o2, o3;
+	register tVideoSample t00;
+
+	o0 = (((ty)& t->textureYMask) >> FIX_POINT_PRE) << t->pitchlog2;
+	o1 = (((ty + FIX_POINT_ONE) & t->textureYMask) >> FIX_POINT_PRE) << t->pitchlog2;
+	o2 = ((tx)& t->textureXMask) >> (FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY);
+	o3 = ((tx + FIX_POINT_ONE) & t->textureXMask) >> (FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY);
+
+	t00 = *((tVideoSample*)((u8*)t->data + (o0 | o2)));
+	a00 = (t00 & MASK_A) >> SHIFT_A;
+	r00 = (t00 & MASK_R) >> SHIFT_R;
+	g00 = (t00 & MASK_G) >> SHIFT_G;
+	b00 = (t00 & MASK_B);
+
+	t00 = *((tVideoSample*)((u8*)t->data + (o0 | o3)));
+	a10 = (t00 & MASK_A) >> SHIFT_A;
+	r10 = (t00 & MASK_R) >> SHIFT_R;
+	g10 = (t00 & MASK_G) >> SHIFT_G;
+	b10 = (t00 & MASK_B);
+
+	t00 = *((tVideoSample*)((u8*)t->data + (o1 | o2)));
+	a01 = (t00 & MASK_A) >> SHIFT_A;
+	r01 = (t00 & MASK_R) >> SHIFT_R;
+	g01 = (t00 & MASK_G) >> SHIFT_G;
+	b01 = (t00 & MASK_B);
+
+	t00 = *((tVideoSample*)((u8*)t->data + (o1 | o3)));
+	a11 = (t00 & MASK_A) >> SHIFT_A;
+	r11 = (t00 & MASK_R) >> SHIFT_R;
+	g11 = (t00 & MASK_G) >> SHIFT_G;
+	b11 = (t00 & MASK_B);
+#endif
 
 	const tFixPointu txFract = tx & FIX_POINT_FRACT_MASK;
 	const tFixPointu txFractInv = FIX_POINT_ONE - txFract;

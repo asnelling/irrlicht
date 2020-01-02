@@ -33,7 +33,7 @@
 #define CMP_W
 //#define WRITE_W
 
-//#define IPOL_C0
+#define IPOL_C0
 #define IPOL_T0
 //#define IPOL_T1
 
@@ -155,7 +155,7 @@ void CTRTextureGouraudAddNoZ2::scanline_bilinear ()
 	slopeW = (line.w[1] - line.w[0]) * invDeltaX;
 #endif
 #ifdef IPOL_C0
-	slopeC = (line.c[1] - line.c[0]) * invDeltaX;
+	slopeC = (line.c[0][1] - line.c[0][0]) * invDeltaX;
 #endif
 #ifdef IPOL_T0
 	slopeT[0] = (line.t[0][1] - line.t[0][0]) * invDeltaX;
@@ -173,7 +173,7 @@ void CTRTextureGouraudAddNoZ2::scanline_bilinear ()
 	line.w[0] += slopeW * subPixel;
 #endif
 #ifdef IPOL_C0
-	line.c[0] += slopeC * subPixel;
+	line.c[0][0] += slopeC * subPixel;
 #endif
 #ifdef IPOL_T0
 	line.t[0][0] += slopeT[0] * subPixel;
@@ -199,6 +199,10 @@ void CTRTextureGouraudAddNoZ2::scanline_bilinear ()
 	tFixPoint r0, g0, b0;
 	tFixPoint r1, g1, b1;
 
+#ifdef IPOL_C0
+	tFixPoint r2, g2, b2;
+#endif
+
 	for ( s32 i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_Z
@@ -214,14 +218,31 @@ void CTRTextureGouraudAddNoZ2::scanline_bilinear ()
 			tx0 = tofix ( line.t[0][0].x,inversew);
 			ty0 = tofix ( line.t[0][0].y,inversew);
 
-			getSample_texture ( r0, g0, b0, &IT[0], tx0,ty0 );
+			getSample_texture(r0, g0, b0, &IT[0], tx0, ty0);
 
-			color_to_fix ( r1, g1, b1, dst[i] );
+#ifdef IPOL_C0
+			getSample_color(r2, g2, b2, line.c[0][0], inversew);
+			r0 = imulFix(r2, r0);
+			g0 = imulFix(g2, g0);
+			b0 = imulFix(b2, b0);
+#endif
+			
+			if (r0 | g0 | b0)
+			{
+/*
+				color_to_fix(r1, g1, b1, dst[i]);
+				dst[i] = fix_to_color(clampfix_maxcolor(r0 + r1),
+					clampfix_maxcolor(g0 + g1),
+					clampfix_maxcolor(b0 + b1)
+				);
+*/
+				color_to_fix1(r1, g1, b1, dst[i]);
+				r1 = imulFix(r1, FIXPOINT_COLOR_MAX - r0);
+				g1 = imulFix(g1, FIXPOINT_COLOR_MAX - g0);
+				b1 = imulFix(b1, FIXPOINT_COLOR_MAX - b0);
+				dst[i] = fix_to_color(r0+r1, g0+g1, b0+b1);
 
-			dst[i] = fix_to_color ( clampfix_maxcolor ( r1 + (r0 >> 1 ) ),
-									clampfix_maxcolor ( g1 + (g0 >> 1 ) ),
-									clampfix_maxcolor ( b1 + (b0 >> 1) )
-								);
+			}
 
 #ifdef WRITE_Z
 			z[i] = line.z[0];
@@ -238,7 +259,7 @@ void CTRTextureGouraudAddNoZ2::scanline_bilinear ()
 		line.w[0] += slopeW;
 #endif
 #ifdef IPOL_C0
-		line.c[0] += slopeC;
+		line.c[0][0] += slopeC;
 #endif
 #ifdef IPOL_T0
 		line.t[0][0] += slopeT[0];
@@ -252,6 +273,9 @@ void CTRTextureGouraudAddNoZ2::scanline_bilinear ()
 
 void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
 {
+	//billboard discard
+	//if (a->Color[0].r <= 0.f) return;
+
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);
 	if ( F32_A_GREATER_B ( b->Pos.y , c->Pos.y ) ) swapVertexPointer(&b, &c);
@@ -294,8 +318,8 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 #ifdef IPOL_C0
-	scan.slopeC[0] = (c->Color[0] - a->Color[0]) * scan.invDeltaY[0];
-	scan.c[0] = a->Color[0];
+	scan.slopeC[0][0] = (c->Color[0] - a->Color[0]) * scan.invDeltaY[0];
+	scan.c[0][0] = a->Color[0];
 #endif
 
 #ifdef IPOL_T0
@@ -334,8 +358,8 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 #ifdef IPOL_C0
-		scan.slopeC[1] = (b->Color[0] - a->Color[0]) * scan.invDeltaY[1];
-		scan.c[1] = a->Color[0];
+		scan.slopeC[0][1] = (b->Color[0] - a->Color[0]) * scan.invDeltaY[1];
+		scan.c[0][1] = a->Color[0];
 #endif
 
 #ifdef IPOL_T0
@@ -370,8 +394,8 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 #ifdef IPOL_C0
-		scan.c[0] += scan.slopeC[0] * subPixel;
-		scan.c[1] += scan.slopeC[1] * subPixel;
+		scan.c[0][0] += scan.slopeC[0][0] * subPixel;
+		scan.c[0][1] += scan.slopeC[0][1] * subPixel;
 #endif
 
 #ifdef IPOL_T0
@@ -403,8 +427,8 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 #ifdef IPOL_C0
-			line.c[scan.left] = scan.c[0];
-			line.c[scan.right] = scan.c[1];
+			line.c[0][scan.left] = scan.c[0][0];
+			line.c[0][scan.right] = scan.c[0][1];
 #endif
 
 #ifdef IPOL_T0
@@ -434,8 +458,8 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 #ifdef IPOL_C0
-			scan.c[0] += scan.slopeC[0];
-			scan.c[1] += scan.slopeC[1];
+			scan.c[0][0] += scan.slopeC[0][0];
+			scan.c[0][1] += scan.slopeC[0][1];
 #endif
 
 #ifdef IPOL_T0
@@ -467,7 +491,7 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 			scan.w[0] = a->Pos.w + scan.slopeW[0] * temp[0];
 #endif
 #ifdef IPOL_C0
-			scan.c[0] = a->Color[0] + scan.slopeC[0] * temp[0];
+			scan.c[0][0] = a->Color[0] + scan.slopeC[0][0] * temp[0];
 #endif
 #ifdef IPOL_T0
 			scan.t[0][0] = a->Tex[0] + scan.slopeT[0][0] * temp[0];
@@ -493,8 +517,8 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 #ifdef IPOL_C0
-		scan.slopeC[1] = (c->Color[0] - b->Color[0]) * scan.invDeltaY[2];
-		scan.c[1] = b->Color[0];
+		scan.slopeC[0][1] = (c->Color[0] - b->Color[0]) * scan.invDeltaY[2];
+		scan.c[0][1] = b->Color[0];
 #endif
 
 #ifdef IPOL_T0
@@ -530,8 +554,8 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 #ifdef IPOL_C0
-		scan.c[0] += scan.slopeC[0] * subPixel;
-		scan.c[1] += scan.slopeC[1] * subPixel;
+		scan.c[0][0] += scan.slopeC[0][0] * subPixel;
+		scan.c[0][1] += scan.slopeC[0][1] * subPixel;
 #endif
 
 #ifdef IPOL_T0
@@ -563,8 +587,8 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 #ifdef IPOL_C0
-			line.c[scan.left] = scan.c[0];
-			line.c[scan.right] = scan.c[1];
+			line.c[0][scan.left] = scan.c[0][0];
+			line.c[0][scan.right] = scan.c[0][1];
 #endif
 
 #ifdef IPOL_T0
@@ -594,8 +618,8 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 #ifdef IPOL_C0
-			scan.c[0] += scan.slopeC[0];
-			scan.c[1] += scan.slopeC[1];
+			scan.c[0][0] += scan.slopeC[0][0];
+			scan.c[0][1] += scan.slopeC[0][1];
 #endif
 
 #ifdef IPOL_T0
@@ -626,6 +650,20 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTRTextureGouraudAddNoZ2(CBurningVideoDriver* driver)
 {
+	/*
+	ETR_TEXTURE_GOURAUD_ADD_NO_Z
+	
+	Irrlicht:
+		Material.MaterialType =	EMT_TRANSPARENT_ADD_COLOR;
+		Material.ZBuffer = ECFN_DISABLED;
+		-> need Material.ZWriteEnable off
+
+	OpenGL
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+	*/
+
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureGouraudAddNoZ2(driver);
 	#else

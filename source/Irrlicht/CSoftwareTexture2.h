@@ -42,12 +42,12 @@ public:
 		IMAGE_IS_LINEAR	 = 8,
 		TEXTURE_IS_LINEAR = 16,
 	};
-	CSoftwareTexture2(IImage* surface, const io::path& name, u32 flags /*eTex2Flags*/);
+	CSoftwareTexture2(IImage* surface, const io::path& name, u32 flags /*eTex2Flags*/, CBurningVideoDriver* driver);
 
 	//! destructor
 	virtual ~CSoftwareTexture2();
 
-	s32 getMipmapLevel(s32 newLevel ) const
+	s32 getMipmapLevel(s32 newLevel) const
 	{
 		if ( newLevel < 0 ) newLevel = 0;
 		else if ( newLevel >= SOFTWARE_DRIVER_2_MIPMAPPING_MAX ) newLevel = SOFTWARE_DRIVER_2_MIPMAPPING_MAX - 1;
@@ -61,7 +61,8 @@ public:
 	{
 		if (Flags & GEN_MIPMAP)
 		{
-			MipMapLOD = mipmapLevel; //getMipmapLevel
+			//called from outside. must test
+			MipMapLOD = getMipmapLevel(mipmapLevel);
 			Size = MipMap[MipMapLOD]->getDimension();
 			Pitch = MipMap[MipMapLOD]->getPitch();
 		}
@@ -103,8 +104,11 @@ public:
 
 private:
 	void calcDerivative();
+
+	//! controls MipmapSelection. relation between drawn area and image size
 	f32 MipMap0_Area;
 
+	CBurningVideoDriver* Driver;
 	CImage* MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
 
 	u32 MipMapLOD;

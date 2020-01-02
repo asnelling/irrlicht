@@ -200,7 +200,7 @@ void CTRTextureGouraudNoZ2::scanline_bilinear ( )
 
 	tFixPoint tx0;
 	tFixPoint ty0;
-
+	tFixPoint r0, g0, b0;
 
 	for ( s32 i = 0; i <= dx; ++i )
 	{
@@ -217,12 +217,11 @@ void CTRTextureGouraudNoZ2::scanline_bilinear ( )
 #endif
 			tx0 = tofix ( line.t[0][0].x,inversew);
 			ty0 = tofix ( line.t[0][0].y,inversew);
-			dst[i] = getTexel_plain ( &IT[0], tx0, ty0 );
+//			dst[i] = getTexel_plain ( &IT[0], tx0, ty0 );
 
-/*
-			getSample_texture ( r0, g0, b0, &IT[0], tx0, ty0 );
+			getSample_texture ( r0, g0, b0, IT+0, tx0, ty0 );
 			dst[i] = fix_to_color ( r0, g0, b0 );
-*/
+
 #ifdef WRITE_Z
 			z[i] = line.z[0];
 #endif

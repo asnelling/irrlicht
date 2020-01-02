@@ -283,7 +283,7 @@ void COpenGLDriver::createMaterialRenderers()
 	addAndDropMaterialRenderer(new COpenGLMaterialRenderer_ONETEXTURE_BLEND(this));
 }
 
-bool COpenGLDriver::beginScene(u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
+bool COpenGLDriver::beginScene(u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
 {
 	CNullDriver::beginScene(clearFlag, clearColor, clearDepth, clearStencil, videoData, sourceRect);
 
@@ -3068,7 +3068,7 @@ s32 COpenGLDriver::addDynamicLight(const SLight& light)
 
 void COpenGLDriver::assignHardwareLight(u32 lightIndex)
 {
-	setTransform(ETS_WORLD, core::IdentityMatrix);
+	setTransform(ETS_WORLD, core::matrix4());
 
 	s32 lidx;
 	for (lidx=GL_LIGHT0; lidx < GL_LIGHT0 + MaxLights; ++lidx)
@@ -3566,12 +3566,12 @@ void COpenGLDriver::draw3DBox( const core::aabbox3d<f32>& box, SColor color )
 
 //! Draws a 3d line.
 void COpenGLDriver::draw3DLine(const core::vector3df& start,
-				const core::vector3df& end, SColor color_start,SColor color_end)
+				const core::vector3df& end, SColor color)
 {
 	setRenderStates3DMode();
 
-	Quad2DVertices[0].Color = color_start;
-	Quad2DVertices[1].Color = color_end;
+	Quad2DVertices[0].Color = color;
+	Quad2DVertices[1].Color = color;
 
 	Quad2DVertices[0].Pos = core::vector3df((f32)start.X, (f32)start.Y, (f32)start.Z);
 	Quad2DVertices[1].Pos = core::vector3df((f32)end.X, (f32)end.Y, (f32)end.Z);
@@ -3823,7 +3823,7 @@ u32 COpenGLDriver::getMaximalPrimitiveCount() const
 	return 0x7fffffff;
 }
 
-bool COpenGLDriver::setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil)
+bool COpenGLDriver::setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil)
 {
 	if (target && target->getDriverType() != EDT_OPENGL)
 	{
@@ -3897,7 +3897,7 @@ bool COpenGLDriver::setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SCol
 }
 
 
-void COpenGLDriver::clearBuffers(u32 flag, SColor color, f32 depth, u32 stencil)
+void COpenGLDriver::clearBuffers(u16 flag, SColor color, f32 depth, u8 stencil)
 {
 	GLbitfield mask = 0;
 	u8 colorMask = 0;

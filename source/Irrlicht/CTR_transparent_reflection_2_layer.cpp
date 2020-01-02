@@ -31,7 +31,7 @@
 #define USE_ZBUFFER
 #define IPOL_W
 #define CMP_W
-#define WRITE_W
+//#define WRITE_W
 
 #define IPOL_C0
 #define IPOL_T0
@@ -197,7 +197,7 @@ void CTR_transparent_reflection_2_layer::scanline_bilinear (  )
 
 
 #ifdef IPOL_C0
-	tFixPoint a3;
+	tFixPoint a2;
 	tFixPoint r1, g1, b1;
 	tFixPoint r2, g2, b2;
 #endif
@@ -217,23 +217,31 @@ void CTR_transparent_reflection_2_layer::scanline_bilinear (  )
 #ifdef INVERSE_W
 			inversew = fix_inverse32 ( line.w[0] );
 #endif
-#ifdef IPOL_C0
-			a3 = tofix ( line.c[0][0].x,inversew );
-#endif
+
 			getSample_texture ( r0, g0, b0, &IT[0], tofix ( line.t[0][0].x,inversew), tofix ( line.t[0][0].y,inversew) );
-			getSample_texture ( r3, g3, b3, &IT[1], tofix ( line.t[0][1].x,inversew), tofix ( line.t[0][1].y,inversew) );
+			getSample_texture ( r3, g3, b3, &IT[1], tofix ( line.t[1][0].x,inversew), tofix ( line.t[1][0].y,inversew) );
 
 			r0 = imulFix_tex1(r0,r3);
 			g0 = imulFix_tex1(g0,g3);
 			b0 = imulFix_tex1(b0,b3);
 
 #ifdef IPOL_C0
+			getSample_color(a2,r2, g2, b2, line.c[0][0], inversew);
+			r0 = imulFix(r2, r0);
+			g0 = imulFix(g2, g0);
+			b0 = imulFix(b2, b0);
+#endif
+
+#ifdef IPOL_C0
+			dst[i] = fix_to_color(r0, g0, b0);
+/*
 			color_to_fix ( r1, g1, b1, dst[i] );
 
-			r2 = r1 + imulFix ( a3, r0 - r1 );
-			g2 = g1 + imulFix ( a3, g0 - g1 );
-			b2 = b1 + imulFix ( a3, b0 - b1 );
+			r2 = r1 + imulFix ( a2, r0 - r1 );
+			g2 = g1 + imulFix ( a2, g0 - g1 );
+			b2 = b1 + imulFix ( a2, b0 - b1 );
 			dst[i] = fix_to_color ( r2, g2, b2 );
+*/
 #else
 			dst[i] = fix_to_color ( r0, g0, b0 );
 #endif
@@ -642,6 +650,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTriangleRendererTexture_transparent_reflection_2_layer(CBurningVideoDriver* driver)
 {
+	//ETR_TRANSPARENT_REFLECTION_2_LAYER
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTR_transparent_reflection_2_layer(driver);
 	#else

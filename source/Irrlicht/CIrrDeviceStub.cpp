@@ -225,13 +225,8 @@ u32 CIrrDeviceStub::checkSuccessiveClicks(s32 mouseX, s32 mouseY, EMOUSE_INPUT_E
 //! send the event to the right receiver
 bool CIrrDeviceStub::postEventFromUser(const SEvent& event)
 {
-	//Transform Event (e.q Emulate Devices, like JoyStick should produce Mouse Events)
-	//SEvent event = event_org;
-
-	//Pass Event to Driver to react on User Input
-	if ( VideoDriver ) VideoDriver->postEventFromUser(&event);
-
 	bool absorbed = false;
+
 	if (UserReceiver)
 		absorbed = UserReceiver->OnEvent(event);
 

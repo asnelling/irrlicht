@@ -150,9 +150,10 @@ void CTRStencilShadow::fragmentShader()
 	xEnd = fill_convention_right( line.x[1] );
 
 	dx = xEnd - xStart;
-
 	if ( dx < 0 )
 		return;
+
+	SOFTWARE_DRIVER_2_CLIPCHECK;
 
 	// slopes
 	const f32 invDeltaX = reciprocal_zero2( line.x[1] - line.x[0] );
@@ -304,7 +305,6 @@ void CTRStencilShadow::drawTriangle ( const s4DVertex *a,const s4DVertex *b,cons
 #endif
 
 	// rasterize upper sub-triangle
-	//if ( (f32) 0.0 != scan.invDeltaY[1]  )
 	if ( F32_GREATER_0 ( scan.invDeltaY[1] )  )
 	{
 		// calculate slopes for top edge
@@ -703,6 +703,7 @@ namespace video
 //! creates a triangle renderer
 IBurningShader* createTRStencilShadow(CBurningVideoDriver* driver)
 {
+	//ETR_STENCIL_SHADOW
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRStencilShadow(driver);
 	#else

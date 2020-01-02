@@ -317,7 +317,7 @@ void CNullDriver::deleteAllTextures()
 	SharedDepthTextures.clear();
 }
 
-bool CNullDriver::beginScene(u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
+bool CNullDriver::beginScene(u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
 {
 	PrimitivesDrawn = 0;
 	return true;
@@ -733,12 +733,12 @@ ITexture* CNullDriver::createDeviceDependentTextureCubemap(const io::path& name,
 	return new SDummyTexture(name, ETT_CUBEMAP);
 }
 
-bool CNullDriver::setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil)
+bool CNullDriver::setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil)
 {
 	return false;
 }
 
-bool CNullDriver::setRenderTarget(ITexture* texture, u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil)
+bool CNullDriver::setRenderTarget(ITexture* texture, u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil)
 {
 	if (texture)
 	{
@@ -809,7 +809,7 @@ void CNullDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCoun
 
 //! Draws a 3d line.
 void CNullDriver::draw3DLine(const core::vector3df& start,
-				const core::vector3df& end, SColor color_start,SColor color_end)
+				const core::vector3df& end, SColor color)
 {
 }
 
@@ -857,33 +857,32 @@ void CNullDriver::draw3DBox(const core::aabbox3d<f32>& box, SColor color)
 	draw3DLine(edges[5], edges[4], color);
 }
 
-
 //! Draws a 3d axis aligned sphere
 /*
 	Each ring(slice) (of a sphere) and each stripe(stack) is drawn as a continuous line pair (n segment per 360 degree).
 */
 
-void CNullDriver::draw3DCircle(const core::vector3df& center,const core::vector3df& radius,
+void CNullDriver::draw3DCircle(const core::vector3df& center, const core::vector3df& radius,
 	int rings, int stripes, int segments,
-	SColor colorRing,SColor colorStripe,SColor colorRing180
+	SColor colorRing, SColor colorStripe, SColor colorRing180
 )
 {
 	//rings(slice) in xz
-	S3DVertex a,b;
+	S3DVertex a, b;
 	S3DVertex p0;
 
 	//todo: control tesselation size by screen projection size...
-	if ( segments < 1 ) segments = 1;
+	if (segments < 1) segments = 1;
 	const f32 angleSeg = core::PI*2.f / segments;
 
-	if ( rings )
+	if (rings)
 	{
 		a.Color = colorRing;
 		b.Color = colorRing;
 
-		if ( rings < 1 ) rings = 1;
+		if (rings < 1) rings = 1;
 		f32 angleZ = core::PI / rings;
-		for ( int g = 0; g < rings; ++g )
+		for (int g = 0; g < rings; ++g)
 		{
 			f32 xz = g * angleZ;
 			const f32 sxz = sinf(xz);
@@ -891,7 +890,7 @@ void CNullDriver::draw3DCircle(const core::vector3df& center,const core::vector3
 
 			a.Color = g & 1 ? colorRing : colorRing180;
 			b.Color = a.Color;
-			for ( int i = 0; i < segments; ++i )
+			for (int i = 0; i < segments; ++i)
 			{
 				f32 xy = i * angleSeg;
 				a.Normal.X = sinf(xy) * cxz;
@@ -900,42 +899,42 @@ void CNullDriver::draw3DCircle(const core::vector3df& center,const core::vector3
 				a.Pos.X = center.X + a.Normal.X * radius.X;
 				a.Pos.Y = center.Y + a.Normal.Y * radius.Y;
 				a.Pos.Z = center.Z + a.Normal.Z * radius.Z;
-				if ( 0 == i ) p0 = a;
-				else draw3DLine(a.Pos,b.Pos,a.Color,b.Color);
+				if (0 == i) p0 = a;
+				else draw3DLine(a.Pos, b.Pos, a.Color);// , b.Color);
 				b = a;
 			}
-			draw3DLine(a.Pos,p0.Pos,a.Color,p0.Color);
+			draw3DLine(a.Pos, p0.Pos, a.Color);// , p0.Color);
 		}
 	}
 
 	//stripe(stack) in y
-	if ( stripes )
+	if (stripes)
 	{
 		a.Color = colorStripe;
 		b.Color = colorStripe;
 
 		stripes += 1;
-		if ( stripes < 1 ) stripes = 1;
+		if (stripes < 1) stripes = 1;
 		const f32 angleStripe = core::PI / stripes;
 		const f32 angleStripeMinus180 = core::PI*-0.5f;
-		for ( int g = 1; g < stripes; ++g ) //no poles
+		for (int g = 1; g < stripes; ++g) //no poles
 		{
 			f32 xy = g * angleStripe - angleStripeMinus180;
 			f32 r_xz = cosf(xy);
 			a.Normal.Y = sinf(xy);
 			a.Pos.Y = center.Y + a.Normal.Y * radius.Y;
-			for ( int i = 0; i < segments; ++i )
+			for (int i = 0; i < segments; ++i)
 			{
 				f32 xz = i * angleSeg;
 				a.Normal.X = cosf(xz);
 				a.Normal.Z = sinf(xz);
 				a.Pos.X = center.X + a.Normal.X * r_xz * radius.X;
 				a.Pos.Z = center.Z + a.Normal.Z * r_xz * radius.Z;
-				if ( 0 == i ) p0 = a;
-				else draw3DLine(a.Pos,b.Pos,a.Color,b.Color);
+				if (0 == i) p0 = a;
+				else draw3DLine(a.Pos, b.Pos, a.Color);// , b.Color);
 				b = a;
 			}
-			draw3DLine(a.Pos,p0.Pos,a.Color,p0.Color);
+			draw3DLine(a.Pos, p0.Pos, a.Color);// , p0.Color);
 		}
 	}
 
@@ -2617,7 +2616,7 @@ s32 CNullDriver::addShaderMaterial(const c8* vertexShaderProgram,
 	s32 userData)
 {
 	os::Printer::log("Shader materials not implemented yet in this driver, sorry.");
-	return baseMaterial;
+	return -1;
 }
 
 
@@ -2724,7 +2723,7 @@ ITexture* CNullDriver::addRenderTargetTextureCubemap(const irr::u32 sideLen,
 	return 0;
 }
 
-void CNullDriver::clearBuffers(u32 flag, SColor color, f32 depth, u32 stencil)
+void CNullDriver::clearBuffers(u16 flag, SColor color, f32 depth, u8 stencil)
 {
 }
 

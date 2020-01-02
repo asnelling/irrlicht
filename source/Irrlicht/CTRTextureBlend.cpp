@@ -1100,7 +1100,7 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 		getSample_texture ( a0, r0, g0, b0, IT + 0, tofix ( line.t[0][0].x,iw),tofix ( line.t[0][0].y,iw) );
 		if ( a0 > 0 )
 		{
-		a0 >>= 8;
+			fix_color_norm(a0);
 
 		color_to_fix ( r1, g1, b1, dst[i] );
 
@@ -1114,7 +1114,7 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 								);
 
 /*
-		a0 >>= 8;
+		fix_color_norm(a0);
 		dst[i] = fix4_to_color ( a0,
 								imulFix ( imulFix ( r0, a0 ) + r1, r2 ),
 								imulFix ( imulFix ( g0, a0 ) + g1, g2 ),
@@ -1164,7 +1164,7 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 		getSample_texture ( a0, r0, g0, b0, IT + 0, tofix ( line.t[0][0].x,iw),tofix ( line.t[0][0].y,iw) );
 		if ( a0 > 0 )
 		{
-		a0 >>= 8;
+			fix_color_norm(a0);
 
 		color_to_fix ( r1, g1, b1, dst[i] );
 
@@ -1178,7 +1178,7 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 								);
 
 /*
-		a0 >>= 8;
+		fix_color_norm(a0);
 		dst[i] = fix4_to_color ( a0,
 								imulFix ( imulFix ( r0, a0 ) + r1, r2 ),
 								imulFix ( imulFix ( g0, a0 ) + g1, g2 ),

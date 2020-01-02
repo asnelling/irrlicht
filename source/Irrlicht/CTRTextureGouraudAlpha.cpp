@@ -95,7 +95,7 @@ private:
 	sScanConvertData scan;
 	sScanLineData line;
 
-	u32 AlphaRef;
+	tFixPoint AlphaRef;
 };
 
 //! constructor
@@ -115,9 +115,9 @@ CTRTextureGouraudAlpha2::CTRTextureGouraudAlpha2(CBurningVideoDriver* driver)
 void CTRTextureGouraudAlpha2::setParam ( u32 index, f32 value)
 {
 #ifdef BURNINGVIDEO_RENDERER_FAST
-	AlphaRef = core::floor32( value * 256.f );
+	AlphaRef = core::floor32(value * 256.f);
 #else
-	AlphaRef = u32_to_fixPoint ( core::floor32( value * 256.f ) );
+	AlphaRef = tofix(value, FIXPOINT_COLOR_MAX);
 #endif
 }
 
@@ -214,8 +214,7 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 	u32 dIndex = ( line.y & 3 ) << 2;
 
 #else
-	tFixPoint a0;
-	tFixPoint r0, g0, b0;
+	tFixPoint a0,r0, g0, b0;
 #endif
 
 #ifdef BURNINGVIDEO_RENDERER_FAST
@@ -279,7 +278,7 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 							tofix ( line.t[0][0].y)
 						);
 #endif
-		if ( (tFixPointu) a0 > AlphaRef )
+		if ( a0 > AlphaRef )
 		{
 #ifdef WRITE_Z
 			z[i] = line.z[0];
@@ -301,7 +300,7 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 
 			color_to_fix ( r1, g1, b1, dst[i] );
 
-			a0 >>= 8;
+			fix_color_norm(a0);
 
 			r2 = r1 + imulFix ( a0, r0 - r1 );
 			g2 = g1 + imulFix ( a0, g0 - g1 );
@@ -725,6 +724,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTRTextureGouraudAlpha(CBurningVideoDriver* driver)
 {
+	//ETR_TEXTURE_GOURAUD_ALPHA
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureGouraudAlpha2(driver);
 	#else

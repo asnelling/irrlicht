@@ -87,7 +87,7 @@ namespace video
 
 
 	//! sets the Texture
-	void IBurningShader::setTextureParam( u32 stage, video::CSoftwareTexture2* texture, s32 lodLevel)
+	void IBurningShader::setTextureParam( u32 stage, video::CSoftwareTexture2* texture, s32 lodFactor)
 	{
 		sInternalTexture *it = &IT[stage];
 
@@ -100,9 +100,11 @@ namespace video
 		{
 			it->Texture->grab();
 
-			// select mignify and magnify ( lodLevel )
-			it->lodLevel = it->Texture->getMipmapLevel(lodLevel); //core::s32_clamp ( lodLevel, 0, SOFTWARE_DRIVER_2_MIPMAPPING_MAX - 1 ); // + SOFTWARE_DRIVER_2_MIPMAPPING_LOD_BIAS
-			it->data = (tVideoSample*) it->Texture->lock(ETLM_READ_ONLY,it->lodLevel, 0);
+			// select mignify and magnify
+			it->lodFactor = lodFactor;
+			//only mipmap chain (means positive lodFactor)
+			u32 existing_level = it->Texture->getMipmapLevel(lodFactor);
+			it->data = (tVideoSample*) it->Texture->lock(ETLM_READ_ONLY, existing_level, 0);
 
 			// prepare for optimal fixpoint
 			it->pitchlog2 = s32_log2_s32 ( it->Texture->getPitch() );

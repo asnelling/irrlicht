@@ -105,7 +105,7 @@ namespace video
 	{
 		SMaterial org;
 
-		u32 Culling; //eCullFlag
+		size_t CullFlag; //eCullFlag
 
 		sVec3Color AmbientColor;
 		sVec3Color DiffuseColor;
@@ -171,7 +171,7 @@ namespace video
 		virtual void setRenderTarget(video::IImage* surface, const core::rect<s32>& viewPort);
 
 		//! sets the Texture
-		virtual void setTextureParam( u32 stage, video::CSoftwareTexture2* texture, s32 lodLevel);
+		virtual void setTextureParam( u32 stage, video::CSoftwareTexture2* texture, s32 lodFactor);
 		virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) = 0;
 		virtual void drawLine ( const s4DVertex *a,const s4DVertex *b);
 		virtual void drawPoint(const s4DVertex *a);

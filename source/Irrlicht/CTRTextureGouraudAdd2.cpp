@@ -652,6 +652,8 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTRTextureGouraudAdd2(CBurningVideoDriver* driver)
 {
+	//ETR_TEXTURE_GOURAUD_ADD
+
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureGouraudAdd2(driver);
 	#else

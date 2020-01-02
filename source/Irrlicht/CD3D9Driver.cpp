@@ -36,7 +36,7 @@ CD3D9Driver::CD3D9Driver(const SIrrlichtCreationParameters& params, io::IFileSys
 	DepthStencilSurface(0), WindowId(0), SceneSourceRect(0),
 	LastVertexType((video::E_VERTEX_TYPE)-1), VendorID(0),
 	MaxTextureUnits(0), MaxFixedPipelineTextureUnits(0), MaxUserClipPlanes(0),
-	LastSetLight(-1),
+	MaxLightDistance(0.f), LastSetLight(-1),
 	ColorFormat(ECF_A8R8G8B8), DeviceLost(false),
 	DriverWasReset(true), OcclusionQuerySupport(false),
 	AlphaToCoverageSupport(false), Params(params)
@@ -52,6 +52,7 @@ CD3D9Driver::CD3D9Driver(const SIrrlichtCreationParameters& params, io::IFileSys
 		CurrentTexture[i] = 0;
 		LastTextureMipMapsAvailable[i] = false;
 	}
+	MaxLightDistance = sqrtf(FLT_MAX);
 	// create sphere map matrix
 
 	SphereMapMatrixD3D9._11 = 0.5f; SphereMapMatrixD3D9._12 = 0.0f;
@@ -496,7 +497,7 @@ bool CD3D9Driver::initDriver(HWND hwnd, bool pureSoftware)
 	return true;
 }
 
-bool CD3D9Driver::beginScene(u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
+bool CD3D9Driver::beginScene(u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
 {
 	CNullDriver::beginScene(clearFlag, clearColor, clearDepth, clearStencil, videoData, sourceRect);
 	WindowId = (HWND)videoData.D3D9.HWnd;
@@ -767,7 +768,7 @@ ITexture* CD3D9Driver::createDeviceDependentTextureCubemap(const io::path& name,
 	return texture;
 }
 
-bool CD3D9Driver::setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil)
+bool CD3D9Driver::setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil)
 {
 	if (target && target->getDriverType() != EDT_DIRECT3D9)
 	{
@@ -2637,8 +2638,7 @@ s32 CD3D9Driver::addDynamicLight(const SLight& dl)
 	light.Position = *(D3DVECTOR*)((void*)(&dl.Position));
 	light.Direction = *(D3DVECTOR*)((void*)(&dl.Direction));
 
-	//don't use light range to be compatible with openGL (cutoff with dl.Radius is wrong)
-	light.Range = sqrtf(FLT_MAX);
+	light.Range = core::min_(dl.Radius, MaxLightDistance);
 	light.Falloff = dl.Falloff;
 
 	light.Diffuse = *(D3DCOLORVALUE*)((void*)(&dl.DiffuseColor));
@@ -2824,13 +2824,13 @@ void CD3D9Driver::setFog(SColor color, E_FOG_TYPE fogType, f32 start,
 
 //! Draws a 3d line.
 void CD3D9Driver::draw3DLine(const core::vector3df& start,
-	const core::vector3df& end, SColor color_start,SColor color_end)
+	const core::vector3df& end, SColor color)
 {
 	setVertexShader(EVT_STANDARD);
 	setRenderStates3DMode();
 	video::S3DVertex v[2];
-	v[0].Color = color_start;
-	v[1].Color = color_end;
+	v[0].Color = color;
+	v[1].Color = color;
 	v[0].Pos = start;
 	v[1].Pos = end;
 
@@ -3300,7 +3300,7 @@ ITexture* CD3D9Driver::addRenderTargetTextureCubemap(const irr::u32 sideLen,
 	return tex;
 }
 
-void CD3D9Driver::clearBuffers(u32 flag, SColor color, f32 depth, u32 stencil)
+void CD3D9Driver::clearBuffers(u16 flag, SColor color, f32 depth, u8 stencil)
 {
 	DWORD internalFlag = 0;
 

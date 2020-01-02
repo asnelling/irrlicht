@@ -166,14 +166,14 @@ namespace video
 		rectangle of the area to be presented. Set to null to present
 		everything. Note: not implemented in all devices.
 		\return False if failed. */
-		virtual bool beginScene(u32 clearFlag=(u32)(ECBF_COLOR|ECBF_DEPTH), SColor clearColor = SColor(255,0,0,0), f32 clearDepth = 1.f, u32 clearStencil = 0,
+		virtual bool beginScene(u16 clearFlag=(u16)(ECBF_COLOR|ECBF_DEPTH), SColor clearColor = SColor(255,0,0,0), f32 clearDepth = 1.f, u8 clearStencil = 0,
 			const SExposedVideoData& videoData=SExposedVideoData(), core::rect<s32>* sourceRect = 0) = 0;
 
 		//! Alternative beginScene implementation. Can't clear stencil buffer, but otherwise identical to other beginScene
 		bool beginScene(bool backBuffer, bool zBuffer, SColor color = SColor(255,0,0,0),
 			const SExposedVideoData& videoData = SExposedVideoData(), core::rect<s32>* sourceRect = 0)
 		{
-			u32 flag = 0;
+			u16 flag = 0;
 
 			if (backBuffer)
 				flag |= ECBF_COLOR;
@@ -536,8 +536,8 @@ namespace video
 		\param clearDepth The clear value for the depth buffer.
 		\param clearStencil The clear value for the stencil buffer.
 		\return True if successful and false if not. */
-		virtual bool setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor = SColor(255,0,0,0),
-			f32 clearDepth = 1.f, u32 clearStencil = 0) = 0;
+		virtual bool setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor = SColor(255,0,0,0),
+			f32 clearDepth = 1.f, u8 clearStencil = 0) = 0;
 
 		//! Sets a new render target.
 		/** This will only work if the driver supports the
@@ -568,15 +568,15 @@ namespace video
 		\param clearDepth The clear value for the depth buffer.
 		\param clearStencil The clear value for the stencil buffer.
 		\return True if successful and false if not. */
-		virtual bool setRenderTarget(ITexture* texture, u32 clearFlag=ECBF_COLOR|ECBF_DEPTH, SColor clearColor = SColor(255,0,0,0),
-			f32 clearDepth = 1.f, u32 clearStencil = 0) = 0;
+		virtual bool setRenderTarget(ITexture* texture, u16 clearFlag=ECBF_COLOR|ECBF_DEPTH, SColor clearColor = SColor(255,0,0,0),
+			f32 clearDepth = 1.f, u8 clearStencil = 0) = 0;
 
 		//! Sets a new render target.
 		//! Prefer to use the setRenderTarget function taking flags as parameter as this one can't clear the stencil buffer.
 		//! It's still offered for backward compatibility.
 		bool setRenderTarget(ITexture* texture, bool clearBackBuffer, bool clearZBuffer, SColor color = SColor(255,0,0,0))
 		{
-			u32 flag = 0;
+			u16 flag = 0;
 
 			if (clearBackBuffer)
 				flag |= ECBF_COLOR;
@@ -748,17 +748,9 @@ namespace video
 		Some drivers support line thickness set in the material.
 		\param start Start of the 3d line.
 		\param end End of the 3d line.
-		\param color_start Start Color of the line.
-		\param color_end End Color of the line. */
+		\param color Color of the line. */
 		virtual void draw3DLine(const core::vector3df& start,
-			const core::vector3df& end,SColor color_start,SColor color_end) =0;
-
-		//! Draws a 3d line. single color white,compatible with < 1.9 version
-		void draw3DLine(const core::vector3df& start,
-			const core::vector3df& end,SColor color = SColor(255,255,255,255))
-		{
-			draw3DLine(start,end,color,color);
-		}
+			const core::vector3df& end, SColor color = SColor(255,255,255,255)) =0;
 
 		//! Draws a 3d triangle.
 		/** This method calls drawVertexPrimitiveList for some triangles.
@@ -791,20 +783,6 @@ namespace video
 		\param color Color to use while drawing the box. */
 		virtual void draw3DBox(const core::aabbox3d<f32>& box,
 			SColor color = SColor(255,255,255,255)) =0;
-
-		//! Draws 3d axis aligned circles
-		/** 
-			Each ring(slice) (of a sphere) and each stripe(stack) is drawn as a continuous line pair (n segment per 360 degree).
-
-			White Sphere around bounding box: draw3DCircle(box.getCenter(),vector3df(box.getRadius),4,4,10,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF);
-			White Sphere inside bounding box: draw3DCircle(box.getCenter(),box.getExtent() / 2,4,4,10,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF);
-			red/green/blue Color Rings around axes: draw3DCircle(box.getCenter(),box.getExtent() / 2,2,1,10,0xFFEB1010,0xFF10EB10,0xFF1010EB);
-		*/
-		virtual void draw3DCircle(const core::vector3df& center,const core::vector3df& radius,
-			int rings,int stripes,int segments,
-			SColor colorRing,SColor colorStripe,SColor colorRing180 //x,y,z
-			) =0;
-
 
 		//! Draws a 2d image without any special effects
 		/** \param texture Pointer to texture to use.
@@ -1417,12 +1395,12 @@ namespace video
 		virtual scene::IMeshManipulator* getMeshManipulator() =0;
 
 		//! Clear the color, depth and/or stencil buffers.
-		virtual void clearBuffers(u32 flag, SColor color = SColor(255,0,0,0), f32 depth = 1.f, u32 stencil = 0) = 0;
+		virtual void clearBuffers(u16 flag, SColor color = SColor(255,0,0,0), f32 depth = 1.f, u8 stencil = 0) = 0;
 
 		//! Clear the color, depth and/or stencil buffers.
 		_IRR_DEPRECATED_ void clearBuffers(bool backBuffer, bool depthBuffer, bool stencilBuffer, SColor color)
 		{
-			u32 flag = 0;
+			u16 flag = 0;
 
 			if (backBuffer)
 				flag |= ECBF_COLOR;
@@ -1546,8 +1524,19 @@ namespace video
 		/**	\return True if the format is available, false if not. */
 		virtual bool queryTextureFormat(ECOLOR_FORMAT format) const = 0;
 
-		//!Pass Events to IVideoDriver. (const SEvent* event). Currently used in Burning only
-		virtual void postEventFromUser(const void* SEvent_event) = 0;
+		//! Draws 3d axis aligned circles
+		/**
+			Each ring(slice) (of a sphere) and each stripe(stack) is drawn as a continuous line pair (n segment per 360 degree).
+
+			White Sphere around bounding box: draw3DCircle(box.getCenter(),vector3df(box.getRadius),4,4,10,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF);
+			White Sphere inside bounding box: draw3DCircle(box.getCenter(),box.getExtent() / 2,4,4,10,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF);
+			red/green/blue Color Rings around axes: draw3DCircle(box.getCenter(),box.getExtent() / 2,2,1,10,0xFFEB1010,0xFF10EB10,0xFF1010EB);
+		*/
+		virtual void draw3DCircle(const core::vector3df& center, const core::vector3df& radius,
+			int rings, int stripes, int segments,
+			SColor colorRing, SColor colorStripe, SColor colorRing180 //x,y,z
+		) = 0;
+
 	};
 
 } // end namespace video

@@ -227,7 +227,7 @@ void CSoftwareDriver::setMaterial(const SMaterial& material)
 	}
 }
 
-bool CSoftwareDriver::beginScene(u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
+bool CSoftwareDriver::beginScene(u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil, const SExposedVideoData& videoData, core::rect<s32>* sourceRect)
 {
 	CNullDriver::beginScene(clearFlag, clearColor, clearDepth, clearStencil, videoData, sourceRect);
 	WindowId=videoData.D3D9.HWnd;
@@ -252,7 +252,12 @@ ITexture* CSoftwareDriver::createDeviceDependentTexture(const io::path& name, II
 	return texture;
 }
 
-bool CSoftwareDriver::setRenderTargetEx(IRenderTarget* target, u32 clearFlag, SColor clearColor, f32 clearDepth, u32 clearStencil)
+ITexture* CSoftwareDriver::createDeviceDependentTextureCubemap(const io::path& name, const core::array<IImage*>& image)
+{
+	return 0;
+}
+
+bool CSoftwareDriver::setRenderTargetEx(IRenderTarget* target, u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil)
 {
 	if (target && target->getDriverType() != EDT_SOFTWARE)
 	{
@@ -709,7 +714,7 @@ void CSoftwareDriver::drawClippedIndexedTriangleListT(const VERTEXTYPE* vertices
 
 //! Draws a 3d line.
 void CSoftwareDriver::draw3DLine(const core::vector3df& start,
-				const core::vector3df& end, SColor color_start,SColor color_end)
+				const core::vector3df& end, SColor color)
 {
 	core::vector3df vect = start.crossProduct(end);
 	vect.normalize();
@@ -717,10 +722,10 @@ void CSoftwareDriver::draw3DLine(const core::vector3df& start,
 
 	S3DVertex vtx[4];
 
-	vtx[0].Color = color_start;
-	vtx[1].Color = color_end;
-	vtx[2].Color = color_start;
-	vtx[3].Color = color_end;
+	vtx[0].Color = color;
+	vtx[1].Color = color;
+	vtx[2].Color = color;
+	vtx[3].Color = color;
 
 	vtx[0].Pos = start;
 	vtx[1].Pos = end;
@@ -903,7 +908,7 @@ ITexture* CSoftwareDriver::addRenderTargetTexture(const core::dimension2d<u32>& 
 	return tex;
 }
 
-void CSoftwareDriver::clearBuffers(u32 flag, SColor color, f32 depth, u32 stencil)
+void CSoftwareDriver::clearBuffers(u16 flag, SColor color, f32 depth, u8 stencil)
 {
 	if ((flag & ECBF_COLOR) && RenderTargetSurface)
 		RenderTargetSurface->fill(color);
@@ -941,11 +946,6 @@ u32 CSoftwareDriver::getMaximalPrimitiveCount() const
 bool CSoftwareDriver::queryTextureFormat(ECOLOR_FORMAT format) const
 {
 	return format == ECF_A1R5G5B5;
-}
-
-ITexture* CSoftwareDriver::createDeviceDependentTextureCubemap(const io::path& name, const core::array<IImage*>& image)
-{
-	return 0;
 }
 
 
