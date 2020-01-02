@@ -65,7 +65,7 @@ void CLightSceneNode::render()
 		driver->setTransform(video::ETS_WORLD, AbsoluteTransformation);
 		video::SMaterial m;
 		m.Lighting = false;
-		m.ZWriteEnable = false;
+		m.ZWriteEnable = video::EZW_OFF;
 		m.AntiAliasing = 0;
 		driver->setMaterial(m);
 
