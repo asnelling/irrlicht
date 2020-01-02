@@ -108,12 +108,12 @@ private:
 	//! controls MipmapSelection. relation between drawn area and image size
 	f32 MipMap0_Area;
 
-	CBurningVideoDriver* Driver;
 	CImage* MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
 
 	u32 MipMapLOD;
 	u32 Flags; //eTex2Flags
 	ECOLOR_FORMAT OriginalFormat;
+	CBurningVideoDriver* Driver;
 
 	CSoftwareTexture2_Bound TexBound[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
 

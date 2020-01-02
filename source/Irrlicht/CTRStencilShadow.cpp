@@ -205,6 +205,8 @@ void CTRStencilShadow::fragmentShader()
 			{
 			case StencilOp_INCR: stencil[i] += 1; break;
 			case StencilOp_DECR: stencil[i] -= 1; break;// core::s32_max(0, stencil[i] - 1); break;
+			default:
+			case StencilOp_KEEP: break;
 			}
 		}
 		else
@@ -214,6 +216,8 @@ void CTRStencilShadow::fragmentShader()
 			{
 			case StencilOp_INCR: stencil[i] += 1; break;
 			case StencilOp_DECR: stencil[i] -= 1; break;// core::s32_max(0, stencil[i] - 1); break;
+			default:
+			case StencilOp_KEEP: break;
 			}
 		}
 

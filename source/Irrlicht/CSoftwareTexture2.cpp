@@ -202,12 +202,12 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 		char buf[256];
 		const char* name = getName().getPath().c_str();
 		int filename = 0;
-		int ext = -1;
+		//int ext = -1;
 		i = 0;
 		while (name[i])
 		{
 			if (name[i] == '/' || name[i] == '\\') filename = i + 1;
-			if (name[i] == '.') ext = i;
+			//if (name[i] == '.') ext = i;
 			i += 1;
 		}
 		for (i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
