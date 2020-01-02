@@ -365,7 +365,7 @@ int main()
 	// add light 1 (more green)
 	scene::ILightSceneNode* light1 =
 		smgr->addLightSceneNode(0, core::vector3df(0,0,0),
-		video::SColorf(0.5f, 1.0f, 0.5f, 0.0f), 800.0f);
+		video::SColorf(0.5f, 1.0f, 0.5f, 0.0f), 400.0f);
 
 	// add fly circle animator to light 1
 	scene::ISceneNodeAnimator* anim =
@@ -398,7 +398,7 @@ int main()
 	// add light 2 (red)
 	scene::ISceneNode* light2 =
 		smgr->addLightSceneNode(0, core::vector3df(0,0,0),
-		video::SColorf(1.0f, 0.2f, 0.2f, 0.0f), 800.0f);
+		video::SColorf(1.0f, 0.2f, 0.2f, 0.0f), 400.0f);
 
 	// add fly circle animator to light 2
 	anim = smgr->createFlyCircleAnimator(core::vector3df(0,150,0), 200.0f,

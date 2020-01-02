@@ -105,10 +105,7 @@ void CDemo::run()
 
 			createParticleImpacts();
 
-			u16 clearFlag = video::ECBF_DEPTH;
-
-			if (timeForThisScene != -1)
-				clearFlag |= video::ECBF_COLOR;
+			u16 clearFlag = video::ECBF_DEPTH | video::ECBF_COLOR | (params.Stencilbuffer ? video::ECBF_STENCIL : 0);
 
 			driver->beginScene(clearFlag, backColor);
 
@@ -178,6 +175,13 @@ bool CDemo::OnEvent(const SEvent& event)
 			device->getVideoDriver()->writeImageToFile(image, "screenshot.pcx");
 			image->drop();
 		}
+	}
+	else
+	if (event.EventType == EET_KEY_INPUT_EVENT &&
+		event.KeyInput.Key == KEY_F8 &&
+		event.KeyInput.PressedDown == false)
+	{
+		skyboxNode->setVisible(!skyboxNode->isVisible());
 	}
 	else
 	if (device->getSceneManager()->getActiveCamera())
@@ -429,7 +433,7 @@ void CDemo::loadSceneData()
 			model1->setMaterialType(video::EMT_SPHERE_MAP);
 			//model1->setAutomaticCulling(scene::EAC_OFF); // avoid shadows not updating
 			scene::IShadowVolumeSceneNode * shadVol = model1->addShadowVolumeSceneNode();
-			shadVol->setOptimization(scene::ESV_NONE);	// Sydney has broken shadows otherwise
+			if (shadVol) shadVol->setOptimization(scene::ESV_NONE);	// Sydney has broken shadows otherwise
 		}
 
 		model2 = sm->addAnimatedMeshSceneNode(mesh);
@@ -443,7 +447,7 @@ void CDemo::loadSceneData()
 			model2->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
 			//model2->setAutomaticCulling(scene::EAC_OFF); // avoid shadows not updating
 			scene::IShadowVolumeSceneNode * shadVol = model2->addShadowVolumeSceneNode();
-			shadVol->setOptimization(scene::ESV_NONE);	// Sydney has broken shadows otherwise
+			if (shadVol) shadVol->setOptimization(scene::ESV_NONE);	// Sydney has broken shadows otherwise
 		}
 	}
 
@@ -584,7 +588,7 @@ void CDemo::createLoadingScreen()
 	const io::path mediaPath = getExampleMediaPath();
 
 	// irrlicht logo
-	device->getGUIEnvironment()->addImage(device->getVideoDriver()->getTexture(mediaPath + "irrlichtlogo2.png"),
+	device->getGUIEnvironment()->addImage(device->getVideoDriver()->getTexture(mediaPath + "irrlichtlogo3.png"),
 		core::position2d<s32>(5,5));
 
 	// loading text
