@@ -2985,6 +2985,11 @@ bool CBurningVideoDriver::queryTextureFormat(ECOLOR_FORMAT format) const
 	return format == BURNINGSHADER_COLOR_FORMAT;
 }
 
+bool CBurningVideoDriver::needsTransparentRenderPass(const irr::video::SMaterial& material) const
+{
+	return CNullDriver::needsTransparentRenderPass(material) || material.isTransparent();
+}
+
 
 } // end namespace video
 } // end namespace irr
