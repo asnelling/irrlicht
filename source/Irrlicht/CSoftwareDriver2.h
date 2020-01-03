@@ -212,7 +212,6 @@ namespace video
 		{
 			ETS_VIEW_PROJECTION = ETS_COUNT,
 			ETS_PROJ_MODEL_VIEW,
-			ETS_CLIPSCALE,
 			ETS_VIEW_INVERSE,
 			ETS_MODEL_VIEW,
 			ETS_NORMAL, //3x3
@@ -226,9 +225,14 @@ namespace video
 			ETF_IDENTITY = 2,
 			ETF_TEXGEN_CAMERA_SPHERE = 4,
 			ETF_TEXGEN_CAMERA_REFLECTION = 8,
+			ETF_TEXGEN_WRAP = 16,
+			ETF_TEXGEN_MASK = ETF_TEXGEN_CAMERA_SPHERE | ETF_TEXGEN_CAMERA_REFLECTION | ETF_TEXGEN_WRAP
 		};
-		u32 TransformationFlag[ETS_COUNT_BURNING]; // E_TRANSFORMATION_FLAG
 		core::matrix4 Transformation[ETS_COUNT_BURNING];
+		u32 TransformationFlag[ETS_COUNT_BURNING]; // E_TRANSFORMATION_FLAG
+
+		//ETS_CLIPSCALE, // moved outside to stay at 16 matrices
+		f32 Transformation_ETS_CLIPSCALE[4];
 		void transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO state);
 
 		// Vertex Cache
@@ -261,9 +265,10 @@ namespace video
 			f32 end, f32 density, bool pixelFog, bool rangeFog) _IRR_OVERRIDE_;
 
 
-		// holds transformed, clipped vertices
-		SAlignedVertex CurrentOut;
-		SAlignedVertex Temp;
+		// holds transformed, clipped vertices for a triangle. triangle expands on clipping
+		// Buffer is in in pairs of 4DVertex (0 ... ndc, 1 .. dc and projected)
+		SAligned4DVertex CurrentOut;
+		SAligned4DVertex Geometry_temp;
 
 		void ndc_2_dc_and_project ( s4DVertex* dest,const s4DVertex* source, const u32 vIn ) const;
 

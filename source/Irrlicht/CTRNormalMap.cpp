@@ -145,7 +145,7 @@ void CTRNormalMap::fragmentShader()
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
 #endif
 #ifdef IPOL_L0
-	sVec3 slopeL[BURNING_MATERIAL_MAX_TANGENT];
+	sVec3Pack slopeL[BURNING_MATERIAL_MAX_TANGENT];
 #endif
 
 	// apply top-left fill-convention, left

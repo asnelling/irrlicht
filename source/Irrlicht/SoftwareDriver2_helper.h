@@ -140,20 +140,6 @@ inline void memset16(void * dest, const u16 value, u32 bytesize)
 	}
 }
 
-/*
-	use biased loop counter
-	--> 0 byte copy is forbidden
-*/
-REALINLINE void memcpy32_small ( void * dest, const void *source, const size_t bytesize )
-{
-	register size_t c = bytesize >> 2;
-
-	do
-	{
-		((u32*) dest ) [ c-1 ] = ((u32*) source) [ c-1 ];
-	} while ( --c );
-
-}
 
 
 typedef union {	float f; u32 u; struct { unsigned int frac:23; unsigned exp:8; unsigned int sign:1; } fields; } ieee754;

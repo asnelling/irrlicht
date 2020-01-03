@@ -120,6 +120,68 @@ struct sVec2
 
 };
 
+#include "irrpack.h"
+
+//! sVec3Pack used in BurningShader, packed direction
+struct sVec3Pack
+{
+	f32 x, y, z;
+
+	sVec3Pack() {}
+	sVec3Pack(f32 _x, f32 _y, f32 _z)
+		: x(_x), y(_y), z(_z) {}
+
+	// f = a * t + b * ( 1 - t )
+	void interpolate(const sVec3Pack& v0, const sVec3Pack& v1, const f32 t)
+	{
+		x = v1.x + ((v0.x - v1.x) * t);
+		y = v1.y + ((v0.y - v1.y) * t);
+		z = v1.z + ((v0.z - v1.z) * t);
+	}
+
+	sVec3Pack operator-(const sVec3Pack& other) const
+	{
+		return sVec3Pack(x - other.x, y - other.y, z - other.z);
+	}
+
+	sVec3Pack operator+(const sVec3Pack& other) const
+	{
+		return sVec3Pack(x + other.x, y + other.y, z + other.z);
+	}
+
+	sVec3Pack operator*(const f32 s) const
+	{
+		return sVec3Pack(x * s, y * s, z * s);
+	}
+
+	void operator+=(const sVec3Pack& other)
+	{
+		x += other.x;
+		y += other.y;
+		z += other.z;
+	}
+
+	void operator=(const sVec3Pack& other)
+	{
+		x = other.x;
+		y = other.y;
+		z = other.z;
+	}
+
+	void normalize_pack_xyz(const f32 len, const f32 ofs)
+	{
+		//const f32 l = len * core::reciprocal_squareroot ( r * r + g * g + b * b );
+		f32 l = x * x + y * y + z * z;
+
+		l = l > 0.0000001f ? len / sqrtf(l) : 0.f;
+		x = (x*l) + ofs;
+		y = (y*l) + ofs;
+		z = (z*l) + ofs;
+	}
+}  PACK_STRUCT;
+
+#include "irrunpack.h"
+
 //! sVec4 used in Driver,BurningShader, direction/color
 struct sVec4
 {
@@ -132,6 +194,13 @@ struct sVec4
 	sVec4 () {}
 	sVec4 ( f32 _x, f32 _y, f32 _z, f32 _w )
 		: x ( _x ), y ( _y ), z( _z ), w ( _w ){}
+
+	sVec4(const sVec3Pack& other)
+	{
+		x = other.x;
+		y = other.y;
+		z = other.z;
+	}
 
 	// f = a * t + b * ( 1 - t )
 	void interpolate(const sVec4& a, const sVec4& b, const f32 t)
@@ -233,21 +302,6 @@ struct sVec4
 	{
 		//const f32 l = core::reciprocal_squareroot(x * x + y * y + z * z);
 		f32 l = x * x + y * y + z * z;
-/*
-		if (l > 0.0000001f)
-		{
-			l = 1.f / sqrtf(l);
-			x *= l;
-			y *= l;
-			z *= l;
-		}
-		else
-		{
-			x = 0.f;
-			y = 0.f;
-			z = 1.f;
-		}
-*/
 		l = l > 0.0000001f ? 1.f / sqrtf(l) : 1.f;
 		x *= l;
 		y *= l;
@@ -257,67 +311,6 @@ struct sVec4
 
 };
 
-#include "irrpack.h"
-
-//! sVec3 used in BurningShader, packed direction
-struct sVec3
-{
-	f32 x, y, z;
-
-	sVec3() {}
-	sVec3(f32 _x, f32 _y, f32 _z)
-		: x(_x), y(_y), z(_z) {}
-
-	// f = a * t + b * ( 1 - t )
-	void interpolate(const sVec3& v0, const sVec3& v1, const f32 t)
-	{
-		x = v1.x + ((v0.x - v1.x) * t);
-		y = v1.y + ((v0.y - v1.y) * t);
-		z = v1.z + ((v0.z - v1.z) * t);
-	}
-
-	sVec3 operator-(const sVec3& other) const
-	{
-		return sVec3(x - other.x, y - other.y, z - other.z);
-	}
-
-	sVec3 operator+(const sVec3& other) const
-	{
-		return sVec3(x + other.x, y + other.y, z + other.z);
-	}
-
-	sVec3 operator*(const f32 s) const
-	{
-		return sVec3(x * s, y * s, z * s);
-	}
-
-	void operator+=(const sVec3& other)
-	{
-		x += other.x;
-		y += other.y;
-		z += other.z;
-	}
-
-	void operator=(const sVec3& other)
-	{
-		x = other.x;
-		y = other.y;
-		z = other.z;
-	}
-
-	void normalize_pack_xyz(const f32 len, const f32 ofs)
-	{
-		//const f32 l = len * core::reciprocal_squareroot ( r * r + g * g + b * b );
-		f32 l = x * x + y * y + z * z;
-
-		l = l > 0.0000001f ? len / sqrtf(l) : 0.f;
-		x = (x*l) + ofs;
-		y = (y*l) + ofs;
-		z = (z*l) + ofs;
-	}
-}  PACK_STRUCT;
-
-#include "irrunpack.h"
 
 //!sVec4 is argb. sVec3Color is rgba
 struct sVec3Color
@@ -460,13 +453,12 @@ struct s4DVertex_proxy
 	sVec4 Color[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #if BURNING_MATERIAL_MAX_TANGENT > 0
-	sVec3 LightTangent[BURNING_MATERIAL_MAX_TANGENT];
+	sVec3Pack LightTangent[BURNING_MATERIAL_MAX_TANGENT];
 #endif
 };
 
 //ensure handcrafted sizeof(s4DVertex)
 #define SIZEOF_S4DVERTEX	64
-#define SIZEOF_S4DVERTEX_LOG2	6
 
 /*!
 	Internal BurningVideo Vertex
@@ -483,7 +475,7 @@ struct s4DVertex
 	sVec4 Color[ BURNING_MATERIAL_MAX_COLORS ];
 #endif
 #if BURNING_MATERIAL_MAX_TANGENT > 0
-	sVec3 LightTangent[BURNING_MATERIAL_MAX_TANGENT];
+	sVec3Pack LightTangent[BURNING_MATERIAL_MAX_TANGENT];
 #endif
 
 #if BURNING_MATERIAL_MAX_COLORS < 1 || BURNING_MATERIAL_MAX_TANGENT < 1
@@ -526,33 +518,67 @@ struct s4DVertex
 
 // ----------------- Vertex Cache ---------------------------
 
-struct SAlignedVertex
+// Buffer is used as pairs of S4DVertex (0 ... ndc, 1 .. dc and projected)
+struct SAligned4DVertex
 {
-	SAlignedVertex ( u32 element )
-		: ElementSize ( element )
+	SAligned4DVertex()
+		:data(0),mem(0), ElementSize(0)	{}
+
+	virtual ~SAligned4DVertex ()
 	{
-		u32 byteSize = align_next(ElementSize << SIZEOF_S4DVERTEX_LOG2, 4096);
-		mem = new u8 [ byteSize ];
-		data = (s4DVertex*) mem;
+		if (mem)
+		{
+			delete[] mem;
+			mem = 0;
+		}
 	}
 
-	virtual ~SAlignedVertex ()
+	void resize(size_t element)
 	{
-		delete [] mem;
+		if (element > ElementSize)
+		{
+			if (mem) delete[] mem;
+			size_t byteSize = align_next(element * SIZEOF_S4DVERTEX, 4096);
+			mem = new u8[byteSize];
+		}
+		ElementSize = element;
+		data = (s4DVertex*)mem;
 	}
 
-	s4DVertex *data;
-	u8 *mem;
-	u32 ElementSize;
+	s4DVertex* data;	//align to 16 byte
+	u8* mem;
+	size_t ElementSize;
 };
 
+//#define memcpy_s4DVertex_2(dst,src) memcpy(dst,src,SIZEOF_S4DVERTEX * 2)
+static inline void memcpy_s4DVertex_2(void* dst, const void *src)
+{
+	u32* dst32 = (u32*)dst;
+	const u32* src32 = (const u32*)src;
 
-// hold info for different Vertex Types
+	//test alignment
+#if 0
+	if (((size_t)dst & 0xC) | ((size_t)src & 0xC))
+	{
+		int g = 1;
+	}
+#endif
+	size_t len = SIZEOF_S4DVERTEX * 2;
+	while (len >= 4)
+	{
+		*dst32++ = *src32++;
+		len -= 4;
+	}
+}
+
+
+//! hold info for different Vertex Types
 struct SVSize
 {
-	u32 Format;
-	u32 Pitch;
-	u32 TexSize;
+	u32 Format;		// e4DVertexFlag VERTEX4D_FORMAT_MASK_TEXTURE
+	u32 Pitch;		// sizeof Vertex
+	u32 TexSize;	// amount Textures
+	u32 TexCooSize;	// sizeof TextureCoordinates
 };
 
 
@@ -563,18 +589,20 @@ struct SCacheInfo
 	u32 hit;
 };
 
-#define VERTEXCACHE_ELEMENT	16
+//must at least hold all possible vertices of primitive.
+#define VERTEXCACHE_ELEMENT	16			
 #define VERTEXCACHE_MISS 0xFFFFFFFF
 struct SVertexCache
 {
-	SVertexCache (): mem ( VERTEXCACHE_ELEMENT * 2 ) {}
+	SVertexCache () {}
+	~SVertexCache() {}
 
 	SCacheInfo info[VERTEXCACHE_ELEMENT];
 
 
 	// Transformed and lite, clipping state
 	// + Clipped, Projected
-	SAlignedVertex mem;
+	SAligned4DVertex mem;
 
 	// source
 	const void* vertices;
@@ -639,8 +667,8 @@ struct sScanConvertData
 #endif
 
 #if BURNING_MATERIAL_MAX_TANGENT > 0
-	sVec3 l[BURNING_MATERIAL_MAX_TANGENT][2];		// Light Tangent
-	sVec3 slopeL[BURNING_MATERIAL_MAX_TEXTURES][2];	// tanget slope along edges
+	sVec3Pack l[BURNING_MATERIAL_MAX_TANGENT][2];		// Light Tangent
+	sVec3Pack slopeL[BURNING_MATERIAL_MAX_TEXTURES][2];	// tanget slope along edges
 #endif
 };
 
@@ -665,7 +693,7 @@ struct sScanLineData
 #endif
 
 #if BURNING_MATERIAL_MAX_TANGENT > 0
-	sVec3 l[BURNING_MATERIAL_MAX_TANGENT][2];		// Light Tangent start, end
+	sVec3Pack l[BURNING_MATERIAL_MAX_TANGENT][2];		// Light Tangent start, end
 #endif
 };
 
