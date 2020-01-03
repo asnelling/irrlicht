@@ -47,6 +47,10 @@ namespace video
 		if ( Stencil )
 			Stencil->grab();
 
+		stencilOp[0] = StencilOp_KEEP;
+		stencilOp[1] = StencilOp_KEEP;
+		stencilOp[2] = StencilOp_KEEP;
+		AlphaRef = 0;
 	}
 
 

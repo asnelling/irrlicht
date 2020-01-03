@@ -106,6 +106,8 @@ namespace video
 		SMaterial org;
 
 		size_t CullFlag; //eCullFlag
+		u32 depth_write;
+		u32 depth_test;
 
 		sVec3Color AmbientColor;
 		sVec3Color DiffuseColor;
@@ -178,10 +180,7 @@ namespace video
 
 		void drawWireFrameTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c );
 
-		virtual void setParam ( u32 index, f32 value) {};
-		virtual void setZCompareFunc ( u32 func) {};
-
-		virtual void setMaterial ( const SBurningShaderMaterial &material ) {};
+		virtual void OnSetMaterial( const SBurningShaderMaterial& material ) {};
 
 		void pushEdgeTest(const int wireFrame,const int point,int save)
 		{
@@ -191,6 +190,13 @@ namespace video
 		void popEdgeTest() { EdgeTestPass = EdgeTestPass_stack; }
 		virtual bool canWireFrame () { return false; }
 		virtual bool canPointCloud() { return false; }
+
+		void setStencilOp(eStencilOp sfail, eStencilOp dpfail, eStencilOp dppass)
+		{
+			stencilOp[0] = sfail;
+			stencilOp[1] = dpfail;
+			stencilOp[2] = dppass;
+		}
 
 	protected:
 
@@ -208,6 +214,9 @@ namespace video
 		//draw degenerate triangle as line (left edge) drawTriangle -> holes,drawLine dda/bresenham
 		int EdgeTestPass; //edge_test_flag
 		int EdgeTestPass_stack;
+
+		eStencilOp stencilOp[4];
+		tFixPoint AlphaRef;
 
 	};
 

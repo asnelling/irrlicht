@@ -85,9 +85,7 @@ public:
 
 	//! draws an indexed triangle list
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
-
-	virtual void setParam ( u32 index, f32 value) _IRR_OVERRIDE_;
-
+	virtual void OnSetMaterial(const SBurningShaderMaterial& material) _IRR_OVERRIDE_;
 
 private:
 	void scanline_bilinear ();
@@ -95,7 +93,6 @@ private:
 	sScanConvertData scan;
 	sScanLineData line;
 
-	tFixPoint AlphaRef;
 };
 
 //! constructor
@@ -105,19 +102,17 @@ CTRTextureGouraudAlpha2::CTRTextureGouraudAlpha2(CBurningVideoDriver* driver)
 	#ifdef _DEBUG
 	setDebugName("CTRTextureGouraudAlpha2");
 	#endif
-
-	AlphaRef = 0;
 }
 
 
 /*!
 */
-void CTRTextureGouraudAlpha2::setParam ( u32 index, f32 value)
+void CTRTextureGouraudAlpha2::OnSetMaterial(const SBurningShaderMaterial& material)
 {
 #ifdef BURNINGVIDEO_RENDERER_FAST
-	AlphaRef = core::floor32(value * 256.f);
+	AlphaRef = core::floor32(material.org.MaterialTypeParam * 256.f);
 #else
-	AlphaRef = tofix(value, FIXPOINT_COLOR_MAX);
+	AlphaRef = tofix(material.org.MaterialTypeParam, FIXPOINT_COLOR_MAX);
 #endif
 }
 

@@ -85,7 +85,6 @@ public:
 
 	//! draws an indexed triangle list
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
-	virtual void setParam(u32 index, f32 value) _IRR_OVERRIDE_;
 
 private:
 	void fragmentShader();
@@ -93,7 +92,6 @@ private:
 	sScanConvertData scan;
 	sScanLineData line;
 
-	eStencilOp stencilOp[4];
 };
 
 //! constructor
@@ -103,20 +101,8 @@ CTRStencilShadow::CTRStencilShadow(CBurningVideoDriver* driver)
 	#ifdef _DEBUG
 	setDebugName("CTRStencilShadow");
 	#endif
-	stencilOp[0] = StencilOp_KEEP;
-	stencilOp[1] = StencilOp_KEEP;
-	stencilOp[2] = StencilOp_KEEP;
 }
 
-
-/*!
-*/
-void CTRStencilShadow::setParam ( u32 index, f32 value)
-{
-	// glStencilOp (sfail,dpfail,dppass)
-
-	if (index < 3) stencilOp[index] = (eStencilOp) (u32) value;
-}
 
 /*!
 */

@@ -86,9 +86,7 @@ public:
 	//! draws an indexed triangle list
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
 
-	virtual void setZCompareFunc ( u32 func) _IRR_OVERRIDE_;
-	virtual void setParam ( u32 index, f32 value) _IRR_OVERRIDE_;
-
+	virtual void OnSetMaterial(const SBurningShaderMaterial& material) _IRR_OVERRIDE_;
 
 private:
 	// fragment shader
@@ -123,21 +121,16 @@ CTRTextureBlend::CTRTextureBlend(CBurningVideoDriver* driver)
 
 /*!
 */
-void CTRTextureBlend::setZCompareFunc ( u32 func)
+void CTRTextureBlend::OnSetMaterial(const SBurningShaderMaterial& material)
 {
-	ZCompare = func;
-}
+	int showname = 0;
 
-/*!
-*/
-void CTRTextureBlend::setParam ( u32 index, f32 value)
-{
-	u8 showname = 0;
+	ZCompare = material.org.ZBuffer;
 
 	E_BLEND_FACTOR srcFact,dstFact;
 	E_MODULATE_FUNC modulate;
 	u32 alphaSrc;
-	unpack_textureBlendFunc ( srcFact, dstFact, modulate, alphaSrc, value );
+	unpack_textureBlendFunc ( srcFact, dstFact, modulate, alphaSrc, material.org.MaterialTypeParam);
 
 	fragmentShader = 0;
 

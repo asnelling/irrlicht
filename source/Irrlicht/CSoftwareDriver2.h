@@ -195,9 +195,6 @@ namespace video
 		video::IImage* RenderTargetSurface;
 		core::dimension2d<u32> RenderTargetSize;
 
-		//! selects the right triangle renderer based on the render states.
-		void setCurrentShader();
-
 		IBurningShader* CurrentShader;
 		IBurningShader* BurningShader[ETR2_COUNT];
 

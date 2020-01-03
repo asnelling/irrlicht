@@ -237,7 +237,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	EyeSpace.reset();
 
 	// select the right renderer
-	setCurrentShader();
+	setMaterial(Material.org);
 }
 
 
@@ -270,174 +270,6 @@ CBurningVideoDriver::~CBurningVideoDriver()
 		RenderTargetSurface->drop();
 }
 
-
-/*!
-	selects the right triangle renderer based on the render states.
-*/
-void CBurningVideoDriver::setCurrentShader()
-{
-	ITexture *texture0 = Material.org.getTexture(0);
-	ITexture *texture1 = Material.org.getTexture(1);
-
-	if ( BURNING_MATERIAL_MAX_TEXTURES < 1 ) texture0 = 0;
-	if ( BURNING_MATERIAL_MAX_TEXTURES < 2 ) texture1 = 0;
-
-	//todo: seperate depth test from depth write
-	bool zMaterialTest = Material.org.ZBuffer != ECFN_DISABLED &&
-						/*Material.org.ZWriteEnable != video::EZW_OFF &&*/
-						getWriteZBuffer(Material.org);
-
-	EBurningFFShader shader = zMaterialTest ? ETR_TEXTURE_GOURAUD : ETR_TEXTURE_GOURAUD_NOZ;
-
-	TransformationFlag[ ETS_TEXTURE_0] &= ~(ETF_TEXGEN_CAMERA_SPHERE|ETF_TEXGEN_CAMERA_REFLECTION);
-	EyeSpace.Flags &= ~TEXTURE_TRANSFORM;
-
-	switch ( Material.org.MaterialType )
-	{
-		case EMT_ONETEXTURE_BLEND:
-			shader = ETR_TEXTURE_BLEND;
-			break;
-
-		case EMT_TRANSPARENT_ALPHA_CHANNEL_REF:
-			Material.org.MaterialTypeParam = 0.5f;
-			// fall through
-		case EMT_TRANSPARENT_ALPHA_CHANNEL:
-			if ( texture0 && texture0->hasAlpha () )
-			{
-				shader = zMaterialTest ? ETR_TEXTURE_GOURAUD_ALPHA : ETR_TEXTURE_GOURAUD_ALPHA_NOZ;
-			}
-			else
-			{
-				shader = ETR_TEXTURE_GOURAUD_VERTEX_ALPHA;
-			}
-			break;
-
-		case EMT_TRANSPARENT_ADD_COLOR:
-			shader = zMaterialTest ? ETR_TEXTURE_GOURAUD_ADD : ETR_TEXTURE_GOURAUD_ADD_NO_Z;
-			break;
-
-		case EMT_TRANSPARENT_VERTEX_ALPHA:
-			shader = ETR_TEXTURE_GOURAUD_VERTEX_ALPHA;
-			break;
-
-		case EMT_LIGHTMAP:
-		case EMT_LIGHTMAP_LIGHTING:
-			if ( texture1 )
-				shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M1;
-			break;
-
-		case EMT_LIGHTMAP_M2:
-		case EMT_LIGHTMAP_LIGHTING_M2:
-			if ( texture1 )
-				shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M2;
-			break;
-
-		case EMT_LIGHTMAP_LIGHTING_M4:
-			if ( texture1 )
-				shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M4;
-			break;
-		case EMT_LIGHTMAP_M4:
-			if ( texture1 )
-				shader = ETR_TEXTURE_LIGHTMAP_M4;
-			break;
-
-		case EMT_LIGHTMAP_ADD:
-			if ( texture1 )
-				shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_ADD;
-			break;
-
-		case EMT_DETAIL_MAP:
-			if ( texture1 )
-				shader = ETR_TEXTURE_GOURAUD_DETAIL_MAP;
-			break;
-
-		case EMT_SPHERE_MAP:
-			TransformationFlag[ ETS_TEXTURE_0] |= ETF_TEXGEN_CAMERA_SPHERE;
-			EyeSpace.Flags |= TEXTURE_TRANSFORM;
-			break;
-		case EMT_REFLECTION_2_LAYER:
-			if ( texture1 )
-			{
-				shader = ETR_TRANSPARENT_REFLECTION_2_LAYER; // ETR_TEXTURE_GOURAUD_LIGHTMAP_M1;
-				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
-				EyeSpace.Flags |= TEXTURE_TRANSFORM;
-			}
-			break;
-
-		case EMT_TRANSPARENT_REFLECTION_2_LAYER:
-			if ( texture1 )
-			{
-				shader = ETR_TRANSPARENT_REFLECTION_2_LAYER;
-				TransformationFlag[ ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
-				EyeSpace.Flags |= TEXTURE_TRANSFORM;
-			}
-			break;
-
-		case EMT_NORMAL_MAP_SOLID:
-		case EMT_NORMAL_MAP_TRANSPARENT_ADD_COLOR:
-		case EMT_NORMAL_MAP_TRANSPARENT_VERTEX_ALPHA:
-			shader = ETR_NORMAL_MAP_SOLID;
-			EyeSpace.Flags |= TEXTURE_TRANSFORM;
-			break;
-		case EMT_PARALLAX_MAP_SOLID:
-		case EMT_PARALLAX_MAP_TRANSPARENT_ADD_COLOR:
-		case EMT_PARALLAX_MAP_TRANSPARENT_VERTEX_ALPHA:
-			shader = ETR_NORMAL_MAP_SOLID;
-			EyeSpace.Flags |= TEXTURE_TRANSFORM;
-			break;
-
-		default:
-			break;
-
-	}
-
-	if ( !texture0 )
-	{
-		shader = zMaterialTest ? ETR_GOURAUD : ETR_GOURAUD_NOZ;
-	}
-
-	if ( Material.org.Wireframe )
-	{
-		IBurningShader* candidate = BurningShader[shader];
-		if ( !candidate || (candidate && !candidate->canWireFrame()))
-		{
-			shader = ETR_TEXTURE_GOURAUD_WIRE;
-		}
-	}
-
-	if (Material.org.PointCloud)
-	{
-		IBurningShader* candidate = BurningShader[shader];
-		if (!candidate || (candidate && !candidate->canPointCloud()))
-		{
-			shader = ETR_TEXTURE_GOURAUD_WIRE;
-		}
-	}
-
-	//shader = ETR_REFERENCE;
-
-	// switchToTriangleRenderer
-	CurrentShader = BurningShader[shader];
-	if ( CurrentShader )
-	{
-		CurrentShader->setZCompareFunc ( Material.org.ZBuffer );
-		CurrentShader->setRenderTarget(RenderTargetSurface, ViewPort);
-		CurrentShader->setMaterial ( Material );
-		CurrentShader->pushEdgeTest( Material.org.Wireframe, Material.org.PointCloud,0 );
-
-		switch ( shader )
-		{
-			case ETR_TEXTURE_GOURAUD_ALPHA:
-			case ETR_TEXTURE_GOURAUD_ALPHA_NOZ:
-			case ETR_TEXTURE_BLEND:
-				CurrentShader->setParam ( 0, Material.org.MaterialTypeParam );
-				break;
-			default:
-			break;
-		}
-	}
-
-}
 
 
 //! queries the features of the driver, returns true if feature is available
@@ -2056,8 +1888,150 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 
 #endif
 
-	setCurrentShader();
+	//setCurrentShader
+	
+	ITexture *texture0 = Material.org.getTexture(0);
+	ITexture *texture1 = Material.org.getTexture(1);
+
+	if (BURNING_MATERIAL_MAX_TEXTURES < 1) texture0 = 0;
+	if (BURNING_MATERIAL_MAX_TEXTURES < 2) texture1 = 0;
+
+	//todo: seperate depth test from depth write
+	Material.depth_write = getWriteZBuffer(Material.org);
+	Material.depth_test = Material.org.ZBuffer != ECFN_DISABLED && Material.depth_write;
+
+	EBurningFFShader shader = Material.depth_test ? ETR_TEXTURE_GOURAUD : ETR_TEXTURE_GOURAUD_NOZ;
+
+	TransformationFlag[ETS_TEXTURE_0] &= ~(ETF_TEXGEN_CAMERA_SPHERE | ETF_TEXGEN_CAMERA_REFLECTION);
+	EyeSpace.Flags &= ~TEXTURE_TRANSFORM;
+
+	switch (Material.org.MaterialType)
+	{
+	case EMT_ONETEXTURE_BLEND:
+		shader = ETR_TEXTURE_BLEND;
+		break;
+
+	case EMT_TRANSPARENT_ALPHA_CHANNEL_REF:
+		Material.org.MaterialTypeParam = 0.5f;
+		// fall through
+	case EMT_TRANSPARENT_ALPHA_CHANNEL:
+		if (texture0 && texture0->hasAlpha())
+		{
+			shader = Material.depth_test ? ETR_TEXTURE_GOURAUD_ALPHA : ETR_TEXTURE_GOURAUD_ALPHA_NOZ;
+		}
+		else
+		{
+			shader = ETR_TEXTURE_GOURAUD_VERTEX_ALPHA;
+		}
+		break;
+
+	case EMT_TRANSPARENT_ADD_COLOR:
+		shader = Material.depth_test ? ETR_TEXTURE_GOURAUD_ADD : ETR_TEXTURE_GOURAUD_ADD_NO_Z;
+		break;
+
+	case EMT_TRANSPARENT_VERTEX_ALPHA:
+		shader = ETR_TEXTURE_GOURAUD_VERTEX_ALPHA;
+		break;
+
+	case EMT_LIGHTMAP:
+	case EMT_LIGHTMAP_LIGHTING:
+		if (texture1)
+			shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M1;
+		break;
+
+	case EMT_LIGHTMAP_M2:
+	case EMT_LIGHTMAP_LIGHTING_M2:
+		if (texture1)
+			shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M2;
+		break;
+
+	case EMT_LIGHTMAP_LIGHTING_M4:
+		if (texture1)
+			shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_M4;
+		break;
+	case EMT_LIGHTMAP_M4:
+		if (texture1)
+			shader = ETR_TEXTURE_LIGHTMAP_M4;
+		break;
+
+	case EMT_LIGHTMAP_ADD:
+		if (texture1)
+			shader = ETR_TEXTURE_GOURAUD_LIGHTMAP_ADD;
+		break;
+
+	case EMT_DETAIL_MAP:
+		if (texture1)
+			shader = ETR_TEXTURE_GOURAUD_DETAIL_MAP;
+		break;
+
+	case EMT_SPHERE_MAP:
+		TransformationFlag[ETS_TEXTURE_0] |= ETF_TEXGEN_CAMERA_SPHERE;
+		EyeSpace.Flags |= TEXTURE_TRANSFORM;
+		break;
+	case EMT_REFLECTION_2_LAYER:
+	case EMT_TRANSPARENT_REFLECTION_2_LAYER:
+		if (texture1)
+		{
+			shader = ETR_TRANSPARENT_REFLECTION_2_LAYER;
+			TransformationFlag[ETS_TEXTURE_1] |= ETF_TEXGEN_CAMERA_REFLECTION;
+			EyeSpace.Flags |= TEXTURE_TRANSFORM;
+		}
+		break;
+
+	case EMT_NORMAL_MAP_SOLID:
+	case EMT_NORMAL_MAP_TRANSPARENT_ADD_COLOR:
+	case EMT_NORMAL_MAP_TRANSPARENT_VERTEX_ALPHA:
+		shader = ETR_NORMAL_MAP_SOLID;
+		EyeSpace.Flags |= TEXTURE_TRANSFORM;
+		break;
+	case EMT_PARALLAX_MAP_SOLID:
+	case EMT_PARALLAX_MAP_TRANSPARENT_ADD_COLOR:
+	case EMT_PARALLAX_MAP_TRANSPARENT_VERTEX_ALPHA:
+		shader = ETR_NORMAL_MAP_SOLID;
+		EyeSpace.Flags |= TEXTURE_TRANSFORM;
+		break;
+
+	default:
+		break;
+
+	}
+
+	if (!texture0)
+	{
+		shader = Material.depth_test ? ETR_GOURAUD : ETR_GOURAUD_NOZ;
+	}
+
+	if (Material.org.Wireframe)
+	{
+		IBurningShader* candidate = BurningShader[shader];
+		if (!candidate || (candidate && !candidate->canWireFrame()))
+		{
+			shader = ETR_TEXTURE_GOURAUD_WIRE;
+		}
+	}
+
+	if (Material.org.PointCloud)
+	{
+		IBurningShader* candidate = BurningShader[shader];
+		if (!candidate || (candidate && !candidate->canPointCloud()))
+		{
+			shader = ETR_TEXTURE_GOURAUD_WIRE;
+		}
+	}
+
+	//shader = ETR_REFERENCE;
+
+	// switchToTriangleRenderer
+	CurrentShader = BurningShader[shader];
+	if (CurrentShader)
+	{
+		CurrentShader->setRenderTarget(RenderTargetSurface, ViewPort);
+		CurrentShader->OnSetMaterial(Material);
+		CurrentShader->pushEdgeTest(Material.org.Wireframe, Material.org.PointCloud, 0);
+	}
+
 }
+
 
 
 
@@ -2850,23 +2824,15 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 		Material.org.FrontfaceCulling = true;
 		Material.CullFlag = CULL_FRONT | CULL_INVISIBLE;
 
-		CurrentShader->setParam ( 0, StencilOp_KEEP);
-		CurrentShader->setParam ( 1, StencilOp_INCR);
-		CurrentShader->setParam ( 2, StencilOp_KEEP);
+		CurrentShader->setStencilOp( StencilOp_KEEP, StencilOp_INCR, StencilOp_KEEP);
 		drawVertexPrimitiveList (triangles.const_pointer(), count, 0, count/3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
-		//glStencilOp(GL_KEEP, GL_INCR, GL_KEEP);
-		//glDrawArrays(GL_TRIANGLES,0,count);
 
 		Material.org.BackfaceCulling = true;
 		Material.org.FrontfaceCulling = false;
 		Material.CullFlag = CULL_BACK | CULL_INVISIBLE;
 
-		CurrentShader->setParam ( 0, StencilOp_KEEP);
-		CurrentShader->setParam ( 1, StencilOp_DECR);
-		CurrentShader->setParam ( 2, StencilOp_KEEP);
+		CurrentShader->setStencilOp( StencilOp_KEEP, StencilOp_DECR, StencilOp_KEEP);
 		drawVertexPrimitiveList (triangles.const_pointer(), count, 0, count/3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
-		//glStencilOp(GL_KEEP, GL_DECR, GL_KEEP);
-		//glDrawArrays(GL_TRIANGLES,0,count);
 	}
 	else // zpass
 	{
@@ -2874,23 +2840,15 @@ void CBurningVideoDriver::drawStencilShadowVolume(const core::array<core::vector
 		Material.org.FrontfaceCulling = false;
 		Material.CullFlag = CULL_BACK | CULL_INVISIBLE;
 
-		CurrentShader->setParam ( 0, StencilOp_KEEP);
-		CurrentShader->setParam ( 1, StencilOp_KEEP);
-		CurrentShader->setParam ( 2, StencilOp_INCR);
+		CurrentShader->setStencilOp( StencilOp_KEEP, StencilOp_KEEP, StencilOp_INCR);
 		drawVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
-		//glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		//glDrawArrays(GL_TRIANGLES,0,count);
 
 		Material.org.BackfaceCulling = false;
 		Material.org.FrontfaceCulling = true;
 		Material.CullFlag = CULL_FRONT | CULL_INVISIBLE;
 
-		CurrentShader->setParam ( 0, StencilOp_KEEP);
-		CurrentShader->setParam ( 1, StencilOp_KEEP);
-		CurrentShader->setParam ( 2, StencilOp_DECR);
+		CurrentShader->setStencilOp(StencilOp_KEEP, StencilOp_KEEP, StencilOp_DECR);
 		drawVertexPrimitiveList(triangles.const_pointer(), count, 0, count / 3, (video::E_VERTEX_TYPE) E4VT_SHADOW, scene::EPT_TRIANGLES, (video::E_INDEX_TYPE) E4IT_NONE);
-		//glStencilOp(GL_KEEP, GL_KEEP, decr);
-		//glDrawArrays(GL_TRIANGLES,0,count);
 	}
 	//glDisable(GL_DEPTH_CLAMP);
 

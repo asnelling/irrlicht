@@ -31,7 +31,7 @@
 #define USE_ZBUFFER
 #define IPOL_W
 #define CMP_W
-//#define WRITE_W
+#define WRITE_W
 
 #define IPOL_C0
 #define IPOL_T0
@@ -83,10 +83,12 @@ public:
 
 	//! draws an indexed triangle list
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c );
-
+	virtual void OnSetMaterial(const SBurningShaderMaterial& material) _IRR_OVERRIDE_;
 
 private:
-	void scanline_bilinear ();
+	void fragmentShader();
+
+	E_MATERIAL_TYPE MaterialType;
 	sScanConvertData scan;
 	sScanLineData line;
 
@@ -101,11 +103,15 @@ CTR_transparent_reflection_2_layer::CTR_transparent_reflection_2_layer(CBurningV
 	#endif
 }
 
+void CTR_transparent_reflection_2_layer::OnSetMaterial(const SBurningShaderMaterial& material)
+{
+	MaterialType = material.org.MaterialType;
 
+}
 
 /*!
 */
-void CTR_transparent_reflection_2_layer::scanline_bilinear (  )
+void CTR_transparent_reflection_2_layer::fragmentShader()
 {
 	tVideoSample *dst;
 
@@ -193,64 +199,50 @@ void CTR_transparent_reflection_2_layer::scanline_bilinear (  )
 	f32 inversew = FIX_POINT_F32_MUL;
 
 	tFixPoint r0, g0, b0;
-	tFixPoint r3, g3, b3;
-
+	tFixPoint r1, g1, b1;
 
 #ifdef IPOL_C0
-	tFixPoint a2;
-	tFixPoint r1, g1, b1;
-	tFixPoint r2, g2, b2;
+	tFixPoint a1;
 #endif
 
-
-	for ( s32 i = 0; i <= dx; ++i )
+	switch(MaterialType) {
+	default:
+	case EMT_REFLECTION_2_LAYER:
+	for (s32 i = 0; i <= dx; ++i)
 	{
 #ifdef CMP_Z
-		if ( line.z[0] < z[i] )
+		if (line.z[0] < z[i])
 #endif
 #ifdef CMP_W
-		if ( line.w[0] >= z[i] )
+		if (line.w[0] >= z[i])
 #endif
-
 		{
 
 #ifdef INVERSE_W
-			inversew = fix_inverse32 ( line.w[0] );
+		inversew = fix_inverse32(line.w[0]);
 #endif
 
-			getSample_texture ( r0, g0, b0, &IT[0], tofix ( line.t[0][0].x,inversew), tofix ( line.t[0][0].y,inversew) );
-			getSample_texture ( r3, g3, b3, &IT[1], tofix ( line.t[1][0].x,inversew), tofix ( line.t[1][0].y,inversew) );
+		getSample_texture(r0, g0, b0, &IT[0], tofix(line.t[0][0].x, inversew), tofix(line.t[0][0].y, inversew));
+		getSample_texture(r1, g1, b1, &IT[1], tofix(line.t[1][0].x, inversew), tofix(line.t[1][0].y, inversew));
 
-			r0 = imulFix_tex1(r0,r3);
-			g0 = imulFix_tex1(g0,g3);
-			b0 = imulFix_tex1(b0,b3);
+		r0 = imulFix_tex1(r0, r1);
+		g0 = imulFix_tex1(g0, g1);
+		b0 = imulFix_tex1(b0, b1);
 
 #ifdef IPOL_C0
-			getSample_color(a2,r2, g2, b2, line.c[0][0], inversew);
-			r0 = imulFix(r2, r0);
-			g0 = imulFix(g2, g0);
-			b0 = imulFix(b2, b0);
+		getSample_color(a1, r1, g1, b1, line.c[0][0], inversew);
+		r0 = imulFix(r1, r0);
+		g0 = imulFix(g1, g0);
+		b0 = imulFix(b1, b0);
 #endif
 
-#ifdef IPOL_C0
-			dst[i] = fix_to_color(r0, g0, b0);
-/*
-			color_to_fix ( r1, g1, b1, dst[i] );
-
-			r2 = r1 + imulFix ( a2, r0 - r1 );
-			g2 = g1 + imulFix ( a2, g0 - g1 );
-			b2 = b1 + imulFix ( a2, b0 - b1 );
-			dst[i] = fix_to_color ( r2, g2, b2 );
-*/
-#else
-			dst[i] = fix_to_color ( r0, g0, b0 );
-#endif
+		dst[i] = fix_to_color(r0, g0, b0);
 
 #ifdef WRITE_Z
-			z[i] = line.z[0];
+		z[i] = line.z[0];
 #endif
 #ifdef WRITE_W
-			z[i] = line.w[0];
+		z[i] = line.w[0];
 #endif
 		}
 
@@ -270,6 +262,76 @@ void CTR_transparent_reflection_2_layer::scanline_bilinear (  )
 		line.t[1][0] += slopeT[1];
 #endif
 	}
+	break;
+
+	case EMT_TRANSPARENT_REFLECTION_2_LAYER:
+	for (s32 i = 0; i <= dx; ++i)
+	{
+#ifdef CMP_Z
+	if (line.z[0] < z[i])
+#endif
+#ifdef CMP_W
+	if (line.w[0] >= z[i])
+#endif
+	{
+
+#ifdef INVERSE_W
+		inversew = fix_inverse32(line.w[0]);
+#endif
+
+		getSample_texture(r0, g0, b0, &IT[0], tofix(line.t[0][0].x, inversew), tofix(line.t[0][0].y, inversew));
+		getSample_texture(r1, g1, b1, &IT[1], tofix(line.t[1][0].x, inversew), tofix(line.t[1][0].y, inversew));
+
+		r0 = imulFix_tex1(r0, r1);
+		g0 = imulFix_tex1(g0, g1);
+		b0 = imulFix_tex1(b0, b1);
+
+#ifdef IPOL_C0
+		getSample_color(a1, r1, g1, b1, line.c[0][0], inversew);
+		r0 = imulFix(r1, r0);
+		g0 = imulFix(g1, g0);
+		b0 = imulFix(b1, b0);
+
+		//vertex alpha blend EMT_TRANSPARENT_REFLECTION_2_LAYER
+		if (a1 + 2 < FIX_POINT_ONE)
+		{
+			color_to_fix(r1, g1, b1, dst[i]);
+			r0 = r1 + imulFix(a1, r0 - r1);
+			g0 = g1 + imulFix(a1, g0 - g1);
+			b0 = b1 + imulFix(a1, b0 - b1);
+		}
+#endif
+
+		dst[i] = fix_to_color(r0, g0, b0);
+
+#ifdef WRITE_Z
+		//z[i] = line.z[0];
+#endif
+#ifdef WRITE_W
+		//z[i] = line.w[0];
+#endif
+	}
+
+#ifdef IPOL_Z
+	line.z[0] += slopeZ;
+#endif
+#ifdef IPOL_W
+	line.w[0] += slopeW;
+#endif
+#ifdef IPOL_C0
+	line.c[0][0] += slopeC;
+#endif
+#ifdef IPOL_T0
+	line.t[0][0] += slopeT[0];
+#endif
+#ifdef IPOL_T1
+	line.t[1][0] += slopeT[1];
+#endif
+	}
+	break;
+
+	}
+
 
 }
 
@@ -441,7 +503,7 @@ void CTR_transparent_reflection_2_layer::drawTriangle ( const s4DVertex *a,const
 #endif
 
 			// render a scanline
-			scanline_bilinear ();
+			fragmentShader();
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];
@@ -601,7 +663,7 @@ void CTR_transparent_reflection_2_layer::drawTriangle ( const s4DVertex *a,const
 #endif
 
 			// render a scanline
-			scanline_bilinear ();
+			fragmentShader();
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];
@@ -650,7 +712,10 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTriangleRendererTexture_transparent_reflection_2_layer(CBurningVideoDriver* driver)
 {
-	//ETR_TRANSPARENT_REFLECTION_2_LAYER
+	/*
+	ETR_TRANSPARENT_REFLECTION_2_LAYER 
+	Irrlicht EMT_REFLECTION_2_LAYER,EMT_TRANSPARENT_REFLECTION_2_LAYER
+	*/
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTR_transparent_reflection_2_layer(driver);
 	#else
