@@ -173,7 +173,7 @@ void CTRStencilShadow::fragmentShader()
 
 
 #ifdef INVERSE_W
-	f32 inversew;
+	f32 inversew = FIX_POINT_F32_MUL;
 #endif
 
 	s32 i;

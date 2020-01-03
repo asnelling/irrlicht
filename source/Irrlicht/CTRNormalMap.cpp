@@ -95,7 +95,7 @@ public:
 
 
 private:
-	void scanline_bilinear ();
+	void fragmentShader();
 
 	sScanConvertData scan;
 	sScanLineData line;
@@ -115,7 +115,7 @@ CTRNormalMap::CTRNormalMap(CBurningVideoDriver* driver)
 
 /*!
 */
-void CTRNormalMap::scanline_bilinear ()
+void CTRNormalMap::fragmentShader()
 {
 	tVideoSample *dst;
 
@@ -215,7 +215,7 @@ void CTRNormalMap::scanline_bilinear ()
 #endif
 
 
-	f32 inversew;
+	f32 inversew = FIX_POINT_F32_MUL;
 
 	tFixPoint tx0, tx1;
 	tFixPoint ty0, ty1;
@@ -228,8 +228,6 @@ void CTRNormalMap::scanline_bilinear ()
 	tFixPoint lx, ly, lz;
 #endif
 	tFixPoint ndotl;
-
-	sVec3 light;
 
 
 #ifdef IPOL_C0
@@ -286,15 +284,6 @@ void CTRNormalMap::scanline_bilinear ()
 			g1 = ( g1 - FIX_POINT_HALF_COLOR) >> (COLOR_MAX_LOG2-1);
 			b1 = ( b1 - FIX_POINT_HALF_COLOR) >> (COLOR_MAX_LOG2-1);
 
-/*
-			sVec3 l = line.l[0][0] * inversew;
-			l.setLength( 2.f );
-
-			lx = tofix ( l.x - 0.5f );
-			ly = tofix ( l.y - 0.5f );
-			lz = tofix ( l.z - 0.5f );
-*/
-
 #ifdef IPOL_L0
 			lx = tofix ( line.l[0][0].x, inversew );
 			ly = tofix ( line.l[0][0].y, inversew );
@@ -322,11 +311,6 @@ void CTRNormalMap::scanline_bilinear ()
 			b2 = clampfix_maxcolor ( clampfix_mincolor ( imulFix ( b0 + a4, b3 ) ) );
 */
 
-/*
-			r2 = clampfix_maxcolor ( imulFix_tex1 ( r2, r1 ) );
-			g2 = clampfix_maxcolor ( imulFix_tex1 ( g2, g1 ) );
-			b2 = clampfix_maxcolor ( imulFix_tex1 ( b2, b1 ) );
-*/
 #else
 			r2 = clampfix_maxcolor ( imulFix_tex4 ( r0, r1 ) );
 			g2 = clampfix_maxcolor ( imulFix_tex4 ( g0, g1 ) );
@@ -590,7 +574,7 @@ void CTRNormalMap::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4
 #endif
 
 			// render a scanline
-			scanline_bilinear ();
+			fragmentShader ();
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];
@@ -796,7 +780,7 @@ void CTRNormalMap::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4
 #endif
 
 			// render a scanline
-			scanline_bilinear ();
+			fragmentShader();
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];

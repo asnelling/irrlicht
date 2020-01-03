@@ -629,7 +629,7 @@ struct sScanConvertData
 #endif
 
 #if BURNING_MATERIAL_MAX_COLORS > 0
-	sVec4 c[BURNING_MATERIAL_MAX_COLORS][2];			// color
+	sVec4 c[BURNING_MATERIAL_MAX_COLORS][2];		// color
 	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS][2];	// color slope along edges
 #endif
 

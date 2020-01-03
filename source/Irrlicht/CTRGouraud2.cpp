@@ -195,7 +195,7 @@ void CTRGouraud2::scanline_bilinear ()
 	tFixPoint r0, g0, b0;
 
 #ifdef INVERSE_W
-	f32 inversew;
+	f32 inversew = FIX_POINT_F32_MUL;
 #endif
 
 #endif
