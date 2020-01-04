@@ -245,7 +245,7 @@ void CTRNormalMap::fragmentShader()
 		{
 #ifdef INVERSE_W
 			inversew = fix_inverse32 ( line.w[0] );
-
+#endif
 			tx0 = tofix ( line.t[0][0].x,inversew);
 			ty0 = tofix ( line.t[0][0].y,inversew);
 			tx1 = tofix ( line.t[1][0].x,inversew);
@@ -260,20 +260,6 @@ void CTRNormalMap::fragmentShader()
 			b3 = tofix ( line.c[0][0].w ,inversew );
 #endif
 
-#else
-			inversew = FIX_POINT_F32_MUL;
-			tx0 = tofix(line.t[0][0].x, inversew);
-			ty0 = tofix(line.t[0][0].y, inversew);
-			tx1 = tofix(line.t[1][0].x, inversew);
-			ty1 = tofix(line.t[1][0].y, inversew);
-
-#ifdef IPOL_C0
-			r3 = tofix ( line.c[0][0].y );
-			g3 = tofix ( line.c[0][0].z );
-			b3 = tofix ( line.c[0][0].w );
-#endif
-
-#endif
 			// diffuse map
 			getSample_texture ( r0, g0, b0, &IT[0], tx0, ty0 );
 
@@ -310,14 +296,7 @@ void CTRNormalMap::fragmentShader()
 			g2 = clampfix_maxcolor ( clampfix_mincolor ( imulFix ( g0 + a4, g3 ) ) );
 			b2 = clampfix_maxcolor ( clampfix_mincolor ( imulFix ( b0 + a4, b3 ) ) );
 */
-
-#else
-			r2 = clampfix_maxcolor ( imulFix_tex4 ( r0, r1 ) );
-			g2 = clampfix_maxcolor ( imulFix_tex4 ( g0, g1 ) );
-			b2 = clampfix_maxcolor ( imulFix_tex4 ( b0, b1 ) );
-#endif
-
-			//vertex alpha blend
+			//vertex alpha blend ( and omit depthwrite)
 			if (a3 + 2 < FIX_POINT_ONE)
 			{
 				color_to_fix(r1, g1, b1, dst[i]);
@@ -331,12 +310,20 @@ void CTRNormalMap::fragmentShader()
 				dst[i] = fix_to_color(r2, g2, b2);
 
 #ifdef WRITE_Z
-			z[i] = line.z[0];
+				z[i] = line.z[0];
 #endif
 #ifdef WRITE_W
-			z[i] = line.w[0];
+				z[i] = line.w[0];
 #endif
 			}
+
+
+#else
+			r2 = clampfix_maxcolor ( imulFix_tex4 ( r0, r1 ) );
+			g2 = clampfix_maxcolor ( imulFix_tex4 ( g0, g1 ) );
+			b2 = clampfix_maxcolor ( imulFix_tex4 ( b0, b1 ) );
+			dst[i] = fix_to_color(r2, g2, b2);
+#endif
 
 		}
 

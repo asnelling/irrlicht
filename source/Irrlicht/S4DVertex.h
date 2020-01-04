@@ -458,7 +458,7 @@ struct s4DVertex_proxy
 };
 
 //ensure handcrafted sizeof(s4DVertex)
-#define SIZEOF_S4DVERTEX	64
+#define sizeof_s4DVertex	64
 
 /*!
 	Internal BurningVideo Vertex
@@ -479,7 +479,7 @@ struct s4DVertex
 #endif
 
 #if BURNING_MATERIAL_MAX_COLORS < 1 || BURNING_MATERIAL_MAX_TANGENT < 1
-	u8 __align [ SIZEOF_S4DVERTEX - sizeof (s4DVertex_proxy) ];
+	u8 __align [sizeof_s4DVertex - sizeof (s4DVertex_proxy) ];
 #endif
 
 	// f = a * t + b * ( 1 - t )
@@ -519,6 +519,9 @@ struct s4DVertex
 // ----------------- Vertex Cache ---------------------------
 
 // Buffer is used as pairs of S4DVertex (0 ... ndc, 1 .. dc and projected)
+typedef s4DVertex s4DVertexPair;
+#define sizeof_s4DVertexPairRel 2
+
 struct SAligned4DVertex
 {
 	SAligned4DVertex()
@@ -538,7 +541,7 @@ struct SAligned4DVertex
 		if (element > ElementSize)
 		{
 			if (mem) delete[] mem;
-			size_t byteSize = align_next(element * SIZEOF_S4DVERTEX, 4096);
+			size_t byteSize = align_next(element * sizeof_s4DVertex, 4096);
 			mem = new u8[byteSize];
 		}
 		ElementSize = element;
@@ -550,8 +553,8 @@ struct SAligned4DVertex
 	size_t ElementSize;
 };
 
-//#define memcpy_s4DVertex_2(dst,src) memcpy(dst,src,SIZEOF_S4DVERTEX * 2)
-static inline void memcpy_s4DVertex_2(void* dst, const void *src)
+//#define memcpy_s4DVertexPair(dst,src) memcpy(dst,src,sizeof_s4DVertex * 2)
+static inline void memcpy_s4DVertexPair(void* dst, const void *src)
 {
 	u32* dst32 = (u32*)dst;
 	const u32* src32 = (const u32*)src;
@@ -563,7 +566,7 @@ static inline void memcpy_s4DVertex_2(void* dst, const void *src)
 		int g = 1;
 	}
 #endif
-	size_t len = SIZEOF_S4DVERTEX * 2;
+	size_t len = sizeof_s4DVertex * sizeof_s4DVertexPairRel;
 	while (len >= 4)
 	{
 		*dst32++ = *src32++;
@@ -577,7 +580,7 @@ struct SVSize
 {
 	u32 Format;		// e4DVertexFlag VERTEX4D_FORMAT_MASK_TEXTURE
 	u32 Pitch;		// sizeof Vertex
-	u32 TexSize;	// amount Textures
+	size_t TexSize;	// amount Textures
 	u32 TexCooSize;	// sizeof TextureCoordinates
 };
 

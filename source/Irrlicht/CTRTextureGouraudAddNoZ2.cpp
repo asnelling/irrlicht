@@ -39,32 +39,32 @@
 
 // apply global override
 #ifndef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
-	#undef INVERSE_W
-	#ifndef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
-		#undef IPOL_W
-	#endif
+#undef INVERSE_W
 #endif
 
 #ifndef SOFTWARE_DRIVER_2_SUBTEXEL
-	#undef SUBTEXEL
+#undef SUBTEXEL
 #endif
 
 #if BURNING_MATERIAL_MAX_COLORS < 1
-	#undef IPOL_C0
+#undef IPOL_C0
 #endif
 
 #if !defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) && defined ( USE_ZBUFFER )
-	#define IPOL_Z
+#ifndef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
+#undef IPOL_W
+#endif
+#define IPOL_Z
 
-	#ifdef CMP_W
-		#undef CMP_W
-		#define CMP_Z
-	#endif
+#ifdef CMP_W
+#undef CMP_W
+#define CMP_Z
+#endif
 
-	#ifdef WRITE_W
-		#undef WRITE_W
-		#define WRITE_Z
-	#endif
+#ifdef WRITE_W
+#undef WRITE_W
+#define WRITE_Z
+#endif
 
 #endif
 
@@ -87,7 +87,7 @@ public:
 
 
 private:
-	void scanline_bilinear ();
+	void fragmentShader();
 	sScanConvertData scan;
 	sScanLineData line;
 
@@ -106,7 +106,7 @@ CTRTextureGouraudAddNoZ2::CTRTextureGouraudAddNoZ2(CBurningVideoDriver* driver)
 
 /*!
 */
-void CTRTextureGouraudAddNoZ2::scanline_bilinear ()
+void CTRTextureGouraudAddNoZ2::fragmentShader()
 {
 	tVideoSample *dst;
 
@@ -212,7 +212,7 @@ void CTRTextureGouraudAddNoZ2::scanline_bilinear ()
 		if ( line.w[0] >= z[i] )
 #endif
 		{
-#ifdef IPOL_W
+#ifdef INVERSE_W
 			inversew = fix_inverse32 ( line.w[0] );
 #endif
 			tx0 = tofix ( line.t[0][0].x,inversew);
@@ -442,7 +442,7 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 			// render a scanline
-			scanline_bilinear ();
+			fragmentShader();
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];
@@ -602,7 +602,7 @@ void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex
 #endif
 
 			// render a scanline
-			scanline_bilinear ( );
+			fragmentShader( );
 
 			scan.x[0] += scan.slopeX[0];
 			scan.x[1] += scan.slopeX[1];

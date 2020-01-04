@@ -105,7 +105,7 @@ private:
 	sScanConvertData scan;
 	sScanLineData line;
 
-	u32 ZCompare;
+	E_COMPARISON_FUNC depth_func;
 };
 
 //! constructor
@@ -116,7 +116,7 @@ CTRTextureBlend::CTRTextureBlend(CBurningVideoDriver* driver)
 	setDebugName("CTRTextureBlend");
 	#endif
 
-	ZCompare = 1;
+	depth_func = ECFN_LESSEQUAL;
 }
 
 /*!
@@ -125,7 +125,7 @@ void CTRTextureBlend::OnSetMaterial(const SBurningShaderMaterial& material)
 {
 	int showname = 0;
 
-	ZCompare = material.org.ZBuffer;
+	depth_func = (E_COMPARISON_FUNC)material.org.ZBuffer;
 
 	E_BLEND_FACTOR srcFact,dstFact;
 	E_MODULATE_FUNC modulate;
@@ -309,9 +309,9 @@ void CTRTextureBlend::fragment_dst_color_src_alpha ()
 
 	s32 i;
 
-	switch ( ZCompare )
+	switch (depth_func)
 	{
-	case 1:
+	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_W
@@ -437,7 +437,6 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 	xEnd = fill_convention_right( line.x[1] );
 
 	dx = xEnd - xStart;
-
 	if ( dx < 0 )
 		return;
 
@@ -492,11 +491,15 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 	tFixPoint a0, r0, g0, b0;
 	tFixPoint     r1, g1, b1;
 
+#ifdef IPOL_C0
+	tFixPoint a2,r2, g2, b2;
+#endif
+
 	s32 i;
 
-	switch ( ZCompare )
+	switch (depth_func)
 	{
-	case 1:
+	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_W
@@ -504,9 +507,9 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 #endif
 
 		{
-
+			//solves example 08. todo: depth_write. 
 #ifdef WRITE_W
-			z[i] = line.w[0];
+		//z[i] = line.w[0];
 #endif
 
 #ifdef INVERSE_W
@@ -514,13 +517,21 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 #endif
 
 		getSample_texture ( a0, r0, g0, b0, &IT[0],	tofix ( line.t[0][0].x,iw),	tofix ( line.t[0][0].y,iw) );
-		color_to_fix ( r1, g1, b1, dst[i] );
 
-//		u32 check = imulFix_tex1( r0, r1 );
-		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex1( r0, r1 ) + imulFix_tex1( r1, a0 ) ),
-								clampfix_maxcolor ( imulFix_tex1( g0, g1 ) + imulFix_tex1( g1, a0 ) ),
-								clampfix_maxcolor ( imulFix_tex1( b0, b1 ) + imulFix_tex1( b1, a0 ) )
+#ifdef IPOL_C0
+		getSample_color(a2,r2, g2, b2, line.c[0][0], iw);
+		//a0 = imulFix(a0, a2); why is vertex color enabled and not vertex_alpha?
+		r0 = imulFix(r0, r2);
+		g0 = imulFix(g0, g2);
+		b0 = imulFix(b0, b2);
+#endif
+
+		color_to_fix ( r1, g1, b1, dst[i] );
+		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex1( r0, r0 ) + imulFix_tex1( r1, a0 ) ),
+								clampfix_maxcolor ( imulFix_tex1( g0, g0 ) + imulFix_tex1( g1, a0 ) ),
+								clampfix_maxcolor ( imulFix_tex1( b0, b0 ) + imulFix_tex1( b1, a0 ) )
 							);
+
 		}
 
 #ifdef IPOL_W
@@ -677,9 +688,9 @@ void CTRTextureBlend::fragment_one_one_minus_src_alpha()
 #endif
 	s32 i;
 
-	switch ( ZCompare )
+	switch (depth_func)
 	{
-	case 1:
+	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_W
@@ -876,9 +887,9 @@ void CTRTextureBlend::fragment_one_minus_dst_alpha_one ()
 #endif
 	s32 i;
 
-	switch ( ZCompare )
+	switch (depth_func)
 	{
-	case 1:
+	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_W
@@ -1074,9 +1085,9 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 #endif
 	s32 i;
 
-	switch ( ZCompare )
+	switch (depth_func)
 	{
-	case 1:
+	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_W
@@ -1303,9 +1314,9 @@ void CTRTextureBlend::fragment_dst_color_one_minus_dst_alpha ()
 #endif
 	s32 i;
 
-	switch ( ZCompare )
+	switch (depth_func)
 	{
-	case 1:
+	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_W
@@ -1501,9 +1512,9 @@ void CTRTextureBlend::fragment_dst_color_zero ()
 #endif
 	s32 i;
 
-	switch ( ZCompare )
+	switch (depth_func)
 	{
-	case 1:
+	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_W
@@ -1697,9 +1708,9 @@ void CTRTextureBlend::fragment_dst_color_one ()
 #endif
 	s32 i;
 
-	switch ( ZCompare )
+	switch (depth_func)
 	{
-	case 1:
+	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_W
@@ -1896,9 +1907,9 @@ void CTRTextureBlend::fragment_zero_one_minus_scr_color ()
 #endif
 	s32 i;
 
-	switch ( ZCompare )
+	switch (depth_func)
 	{
-	case 1:
+	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
 #ifdef CMP_W

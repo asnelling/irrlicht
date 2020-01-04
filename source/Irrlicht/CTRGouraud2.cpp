@@ -84,7 +84,7 @@ public:
 
 	//! draws an indexed triangle list
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
-	virtual bool canWireFrame () { return true; }
+	//virtual bool canWireFrame () { return true; }
 
 protected:
 	virtual void scanline_bilinear ();
@@ -634,6 +634,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTriangleRendererGouraud2(CBurningVideoDriver* driver)
 {
+	// ETR_GOURAUD
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRGouraud2(driver);
 	#else

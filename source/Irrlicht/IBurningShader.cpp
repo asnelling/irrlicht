@@ -91,7 +91,7 @@ namespace video
 
 
 	//! sets the Texture
-	void IBurningShader::setTextureParam( u32 stage, video::CSoftwareTexture2* texture, s32 lodFactor)
+	void IBurningShader::setTextureParam( const size_t stage, video::CSoftwareTexture2* texture, s32 lodFactor)
 	{
 		sInternalTexture *it = &IT[stage];
 

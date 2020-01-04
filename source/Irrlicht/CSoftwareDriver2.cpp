@@ -15,7 +15,7 @@
 #include "CBlit.h"
 
 
-#define MAT_TEXTURE(tex) ( (video::CSoftwareTexture2*) Material.org.getTexture ( tex ) )
+#define MAT_TEXTURE(tex) ( (video::CSoftwareTexture2*) Material.org.getTexture ( (u32)tex ) )
 
 
 namespace irr
@@ -248,28 +248,46 @@ CBurningVideoDriver::~CBurningVideoDriver()
 {
 	// delete Backbuffer
 	if (BackBuffer)
+	{
 		BackBuffer->drop();
+		BackBuffer = 0;
+	}
 
 	// delete triangle renderers
 
 	for (s32 i=0; i<ETR2_COUNT; ++i)
 	{
 		if (BurningShader[i])
+		{
 			BurningShader[i]->drop();
+			BurningShader[i] = 0;
+		}
 	}
 
 	// delete Additional buffer
 	if (StencilBuffer)
+	{
 		StencilBuffer->drop();
+		StencilBuffer = 0;
+	}
 
 	if (DepthBuffer)
+	{
 		DepthBuffer->drop();
+		DepthBuffer = 0;
+	}
 
 	if (RenderTargetTexture)
+	{
 		RenderTargetTexture->drop();
+		RenderTargetTexture = 0;
+	}
 
 	if (RenderTargetSurface)
+	{
 		RenderTargetSurface->drop();
+		RenderTargetSurface = 0;
+	}
 }
 
 
@@ -593,10 +611,10 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 /*!
 	texcoo in current mipmap dimension (CurrentOut.data)
 */
-inline void CBurningVideoDriver::select_polygon_mipmap_clipped( s4DVertex *v, u32 vIn, u32 tex, const CSoftwareTexture2_Bound& b ) const
+inline void CBurningVideoDriver::select_polygon_mipmap_clipped( s4DVertex* v, const size_t vIn, const size_t tex, const CSoftwareTexture2_Bound& b ) const
 {
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
-	for ( u32 g = 0; g != vIn; g += 2 )
+	for ( size_t g = 0; g != vIn; g += sizeof_s4DVertexPairRel)
 	{
 #if defined(Tweak_Burning)
 		(v + g + 1 )->Tex[tex].x	= (v + g + 0)->Tex[tex].x * ( v + g + 1 )->Pos.w * (b.w+Tweak.tex_w_add) + (b.cx+Tweak.tex_cx_add);
@@ -607,7 +625,7 @@ inline void CBurningVideoDriver::select_polygon_mipmap_clipped( s4DVertex *v, u3
 #endif
 	}
 #else
-	for ( u32 g = 0; g != vIn; g += 2 )
+	for (size_t g = 0; g != vIn; g += sizeof_s4DVertexPairRel)
 	{
 		(v + g + 1 )->Tex[tex].x	= (v + g + 0)->Tex[tex].x * b.w;
 		(v + g + 1 )->Tex[tex].y	= (v + g + 0)->Tex[tex].y * b.h;
@@ -619,7 +637,7 @@ inline void CBurningVideoDriver::select_polygon_mipmap_clipped( s4DVertex *v, u3
 /*!
 	texcoo in current mipmap dimension (face, already clipped)
 */
-inline void CBurningVideoDriver::select_polygon_mipmap_inside( s4DVertex* v[], u32 tex, const CSoftwareTexture2_Bound& b ) const
+inline void CBurningVideoDriver::select_polygon_mipmap_inside( s4DVertex* v[], const size_t tex, const CSoftwareTexture2_Bound& b ) const
 {
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
 #if defined(Tweak_Burning)
@@ -773,13 +791,14 @@ REALINLINE u32 CBurningVideoDriver::clipToFrustumTest ( const s4DVertex* v  ) co
 
 #endif // _MSC_VER
 
-u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * source, u32 inCount, const sVec4 &plane )
+// source and dest are
+size_t CBurningVideoDriver::clipToHyperPlane (s4DVertexPair* dest, const s4DVertexPair* source, size_t inCount, const sVec4 &plane )
 {
-	u32 outCount = 0;
-	s4DVertex * out = dest;
+	size_t outCount = 0;
+	s4DVertex* out = dest;
 
-	const s4DVertex * a;
-	const s4DVertex * b = source;
+	const s4DVertex* a;
+	const s4DVertex* b = source;
 
 	f32 bDotPlane;
 
@@ -796,7 +815,7 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 		a = source + index;
 #endif
 */
-	for( u32 i = 0; i < inCount; ++i)
+	for(size_t i = 0; i < inCount; ++i)
 	{
 		a = source + (i == inCount-1 ? 0 : (i+1)*2);
 
@@ -808,28 +827,27 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 			{
 				// intersect line segment with plane
 				out->interpolate ( *b, *a, bDotPlane / (b->Pos - a->Pos).dot( plane ) );
-				out += 2;
+				out += sizeof_s4DVertexPairRel;
 				outCount += 1;
 			}
 
 			// copy current to out
 			//*out = *a;
-			memcpy_s4DVertex_2( out, a);
+			memcpy_s4DVertexPair( out, a);
 			b = out;
 
-			out += 2;
+			out += sizeof_s4DVertexPairRel;
 			outCount += 1;
 		}
 		else
 		{
 			// current point outside
-
 			if ( F32_LOWER_EQUAL_0 (  bDotPlane ) )
 			{
 				// previous was inside
 				// intersect line segment with plane
 				out->interpolate ( *b, *a, bDotPlane / (b->Pos - a->Pos).dot( plane ) );
-				out += 2;
+				out += sizeof_s4DVertexPairRel;
 				outCount += 1;
 			}
 			// pointer
@@ -837,7 +855,6 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 		}
 
 		bDotPlane = b->Pos.dot( plane );
-
 	}
 
 	return outCount;
@@ -845,9 +862,9 @@ u32 CBurningVideoDriver::clipToHyperPlane ( s4DVertex * dest, const s4DVertex * 
 
 
 //pointer alias
-u32 CBurningVideoDriver::clipToFrustum ( s4DVertex* v0, s4DVertex* v1, const u32 vIn )
+size_t CBurningVideoDriver::clipToFrustum ( s4DVertex* v0, s4DVertex* v1, const size_t vIn )
 {
-	u32 vOut = vIn;
+	size_t vOut = vIn;
 
 	vOut = clipToHyperPlane ( v1, v0, vOut, NDCPlane[0] ); if ( vOut < vIn ) return vOut;
 	vOut = clipToHyperPlane ( v0, v1, vOut, NDCPlane[1] ); if ( vOut < vIn ) return vOut;
@@ -873,13 +890,11 @@ u32 CBurningVideoDriver::clipToFrustum ( s4DVertex* v0, s4DVertex* v1, const u32
 	replace w/w by 1/w
 */
 //aliasing problems! [dest = source + 1]
-inline void CBurningVideoDriver::ndc_2_dc_and_project ( s4DVertex* dest,const s4DVertex *source, const u32 vIn ) const
+inline void CBurningVideoDriver::ndc_2_dc_and_project (s4DVertexPair* dest,const s4DVertexPair *source, const size_t vIn ) const
 {
-	u32 g;
-
 	const f32* dc = Transformation_ETS_CLIPSCALE;
 
-	for ( g = 0; g != vIn; g += 2 )
+	for ( size_t g = 0; g != vIn; g += sizeof_s4DVertexPairRel)
 	{
 		if ( dest[g].flag & VERTEX4D_PROJECTED )
 			continue;
@@ -936,7 +951,7 @@ REALINLINE f32 CBurningVideoDriver::screenarea_clipped ( const s4DVertex *v ) co
 
 /*!
 */
-REALINLINE f32 CBurningVideoDriver::texelarea_clipped ( const s4DVertex *v, int tex ) const
+REALINLINE f32 CBurningVideoDriver::texelarea_clipped ( const s4DVertex *v, const size_t tex ) const
 {
 	f32 z;
 
@@ -953,11 +968,18 @@ REALINLINE f32 CBurningVideoDriver::screenarea_inside( s4DVertex* const v[] ) co
 {
 	return	( (( v[1] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) * ( (v[2] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) ) -
 			( (( v[1] + 1 )->Pos.y - (v[0] + 1 )->Pos.y ) * ( (v[2] + 1 )->Pos.x - (v[0] + 1 )->Pos.x ) );
+/*
+	float signedArea = 0;
+	for (int k = 1; k < output->count; k++) {
+		signedArea += (output->vertices[k - 1].values[0] * output->vertices[k - 0].values[1]);
+		signedArea -= (output->vertices[k - 0].values[0] * output->vertices[k - 1].values[1]);
+	}
+*/
 }
 
 /*!
 */
-REALINLINE f32 CBurningVideoDriver::texelarea_inside ( s4DVertex* const v[], int tex ) const
+REALINLINE f32 CBurningVideoDriver::texelarea_inside ( s4DVertex* const v[], const size_t tex ) const
 {
 /*
 	sVec2 a(v[1]->Tex[tex].x - v[0]->Tex[tex].x,v[1]->Tex[tex].y - v[0]->Tex[tex].y);
@@ -991,15 +1013,15 @@ void CBurningVideoDriver::VertexCache_map_source_format()
 	u32 s0 = sizeof(s4DVertex);
 	u32 s1 = sizeof(s4DVertex_proxy);
 
-	if ( s1 <= SIZEOF_S4DVERTEX/2 )
+	if ( s1 <= sizeof_s4DVertex /2 )
 	{
 		os::Printer::log ( "BurningVideo vertex format unnecessary to large", ELL_WARNING );
 	}
 
-	if ( s0 != SIZEOF_S4DVERTEX)
+	if ( s0 != sizeof_s4DVertex)
 	{
 		os::Printer::log ( "BurningVideo vertex format compile problem", ELL_ERROR );
-		_IRR_DEBUG_BREAK_IF(s0 != SIZEOF_S4DVERTEX);
+		_IRR_DEBUG_BREAK_IF(s0 != sizeof_s4DVertex);
 	}
 
 	vSize[E4VT_STANDARD].Format = VERTEX4D_FORMAT_TEXTURE_1 | VERTEX4D_FORMAT_COLOR_1;
@@ -1091,6 +1113,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 	{
 		//GL_DEPTH_CLAMP,EVDF_DEPTH_CLAMP
 		if ( dest->Pos.z > dest->Pos.w) dest->Pos.z = dest->Pos.w;
+
 		goto clipandproject;
 	}
 
@@ -1369,7 +1392,7 @@ clipandproject:
 	// to DC Space, project homogenous vertex
 	if ( (dest[0].flag & VERTEX4D_CLIPMASK ) == VERTEX4D_INSIDE )
 	{
-		ndc_2_dc_and_project ( dest+1, dest,2 );
+		ndc_2_dc_and_project ( dest+1, dest,1*sizeof_s4DVertexPairRel );
 	}
 
 }
@@ -1678,8 +1701,8 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	f32 dc_area;
 	s32 lodLevel;
 	u32 i;
-	u32 g;
-	u32 m;
+	size_t g;
+	size_t m;
 	video::CSoftwareTexture2* tex;
 
 	for ( i = 0; i < primitiveCount; ++i )
@@ -1734,9 +1757,9 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 		}
 
 		// else if not complete inside clipping necessary
-		memcpy_s4DVertex_2( CurrentOut.data + 0, face[0] );
-		memcpy_s4DVertex_2( CurrentOut.data + 2, face[1] );
-		memcpy_s4DVertex_2( CurrentOut.data + 4, face[2] );
+		memcpy_s4DVertexPair( CurrentOut.data + 0, face[0] );
+		memcpy_s4DVertexPair( CurrentOut.data + 2, face[1] );
+		memcpy_s4DVertexPair( CurrentOut.data + 4, face[2] );
 
 		//clear clipping & projected flags
 		const u32 flag = CurrentOut.data->flag & VERTEX4D_FORMAT_MASK;
@@ -1746,12 +1769,12 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 			Geometry_temp.data[g].flag = flag;
 		}
 
-		u32 vOut;
-		vOut = clipToFrustum ( CurrentOut.data, Geometry_temp.data, 3 );
-		if ( vOut < 3 )
+		size_t vOut;
+		vOut = clipToFrustum ( CurrentOut.data, Geometry_temp.data, VertexCache.primitiveHasVertex);
+		if ( vOut < VertexCache.primitiveHasVertex)
 			continue;
 
-		vOut <<= 1;
+		vOut *= sizeof_s4DVertexPairRel;
 
 		// to DC Space, project homogenous vertex
 		ndc_2_dc_and_project ( CurrentOut.data + 1, CurrentOut.data, vOut );
@@ -1761,8 +1784,9 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 #if defined(Tweak_Burning)
 		const size_t sign = dc_area < -Tweak.AreaMinDrawSize ? CULL_BACK : dc_area > Tweak.AreaMinDrawSize ? CULL_FRONT : CULL_INVISIBLE;
 #else
-		const size_t sign = dc_area < -0.01f ? CULL_BACK : dc_area > 0.01f ? CULL_FRONT : CULL_INVISIBLE;
+		const size_t sign = dc_area < -0.00001f ? CULL_BACK : dc_area > 0.00001f ? CULL_FRONT : CULL_INVISIBLE;
 #endif
+		//geometric clipping has problem with invisible on very small Triangles
 		if ( Material.CullFlag & sign )
 			continue;
 
@@ -1783,7 +1807,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 
 
 		// re-tesselate ( triangle-fan, 0-1-2,0-2-3.. )
-		for ( g = 0; g <= vOut - 6; g += 2 )
+		for ( g = 0; g <= vOut - 6; g += sizeof_s4DVertexPairRel)
 		{
 			// rasterize
 			CurrentShader->drawWireFrameTriangle ( CurrentOut.data + 0 + 1,
@@ -2307,6 +2331,73 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 
 #endif
 
+//#define SOFTWARE_DRIVER_2_2D_OLD
+//#define SOFTWARE_DRIVER_2_2D_AS_3D
+
+#if defined(SOFTWARE_DRIVER_2_2D_OLD)
+//! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
+void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
+	const core::rect<s32>& sourceRect,
+	const core::rect<s32>* clipRect, SColor color,
+	bool useAlphaChannelOfTexture)
+{
+	if (texture)
+	{
+		if (texture->getDriverType() != EDT_BURNINGSVIDEO)
+		{
+			os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);
+			return;
+		}
+
+#if 0
+		// 2d methods don't use viewPort
+		core::position2di dest = destPos;
+		core::recti clip = ViewPort;
+		if (ViewPort.getSize().Width != ScreenSize.Width)
+		{
+			dest.X = ViewPort.UpperLeftCorner.X + core::round32_fast(destPos.X*ViewPort.getWidth() / (f32)ScreenSize.Width);
+			dest.Y = ViewPort.UpperLeftCorner.Y + core::round32_fast(destPos.Y*ViewPort.getHeight() / (f32)ScreenSize.Height);
+			if (clipRect)
+			{
+				clip.constrainTo(*clipRect);
+			}
+			clipRect = &clip;
+		}
+#endif
+		if (useAlphaChannelOfTexture)
+			((CSoftwareTexture2*)texture)->getImage()->copyToWithAlpha(
+				RenderTargetSurface, destPos, sourceRect, color, clipRect);
+		else
+			((CSoftwareTexture2*)texture)->getImage()->copyTo(
+				RenderTargetSurface, destPos, sourceRect, clipRect);
+	}
+}
+
+
+//! Draws a part of the texture into the rectangle.
+void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::rect<s32>& destRect,
+	const core::rect<s32>& sourceRect, const core::rect<s32>* clipRect,
+	const video::SColor* const colors, bool useAlphaChannelOfTexture)
+{
+	if (texture)
+	{
+		if (texture->getDriverType() != EDT_BURNINGSVIDEO)
+		{
+			os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);
+			return;
+		}
+		CImage* img = ((CSoftwareTexture2*)texture)->getImage();
+		if (useAlphaChannelOfTexture)
+			StretchBlit(BLITTER_TEXTURE_ALPHA_BLEND, RenderTargetSurface, clipRect,&destRect,
+				img, &sourceRect, &texture->getOriginalSize(), (colors ? colors[0].color : 0));
+		else
+			StretchBlit(BLITTER_TEXTURE, RenderTargetSurface, clipRect,&destRect,
+				img, &sourceRect, &texture->getOriginalSize(),(colors ? colors[0].color : 0));
+	}
+}
+
+#else
+
 
 //setup a quad
 #if defined SOFTWARE_DRIVER_2_2D_AS_3D
@@ -2407,6 +2498,23 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 
 #else // SOFTWARE_DRIVER_2_2D_AS_3D
 
+//! draws an 2d image
+// is void CNullDriver::draw2DImage
+
+// called by Demo::CMainMenu::CNullDriver
+void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture)
+{
+	if (!texture)
+		return;
+
+	draw2DImage(texture, destPos,
+		core::rect<s32>(core::position2d<s32>(0, 0),core::dimension2di(texture->getOriginalSize())),
+		0,
+		SColor(255, 255, 255, 255),
+		useAlphaChannelOfTexture
+	);
+}
+
 //! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
 					 const core::rect<s32>& sourceRect,
@@ -2414,12 +2522,20 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 					 bool useAlphaChannelOfTexture)
 {
 	if (!texture) return;
-
-	CImage* img = ((CSoftwareTexture2*)texture)->getImage();
-	eBlitter op = useAlphaChannelOfTexture ? (color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
-	if (texture->getOriginalSize() == texture->getSize() )
+	if (texture->getDriverType() != EDT_BURNINGSVIDEO)
 	{
-		Blit(op, RenderTargetSurface, clipRect, &destPos, img, &sourceRect,&texture->getOriginalSize(),color.color);
+		os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);
+		return;
+	}
+
+	//simplify blitter
+	eBlitter op = useAlphaChannelOfTexture ? (color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
+	const core::dimension2d<u32>& o = texture->getOriginalSize();
+	CImage* img = ((CSoftwareTexture2*)texture)->getImage();
+
+	if (o == texture->getSize() )
+	{
+		Blit(op, RenderTargetSurface, clipRect, &destPos, img, &sourceRect,&o,color.color);
 	}
 	else
 	{
@@ -2466,12 +2582,14 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 
 #endif // SOFTWARE_DRIVER_2_2D_AS_3D
 
+#endif // defined(SOFTWARE_DRIVER_2_2D_OLD)
+
 //!Draws an 2d rectangle with a gradient.
 void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
 	const core::rect<s32>* clip)
 {
-#if defined SOFTWARE_DRIVER_2_2D_AS_3D || 1
+#if defined(SOFTWARE_DRIVER_2_2D_AS_3D) && !defined(SOFTWARE_DRIVER_2_2D_OLD)
 	core::rect<s32> pos = position;
 	if (clip) pos.clipAgainst(*clip);
 	if (!pos.isValid()) return;
@@ -2515,13 +2633,13 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 #endif
 
 	u32 i;
-	for ( i = 0; i < 8; i += 2 )
+	for ( i = 0; i < 8; i += sizeof_s4DVertexPairRel)
 	{
 		v[i + 0].flag = clipToFrustumTest ( v + i ) | vSize[VertexCache.vType].Format;
 		v[i + 1].flag = v[i + 0].flag;
 		if ( (v[i].flag & VERTEX4D_INSIDE ) == VERTEX4D_INSIDE )
 		{
-			ndc_2_dc_and_project ( v + i + 1, v + i, 2 );
+			ndc_2_dc_and_project ( v + i + 1, v + i, 1 * sizeof_s4DVertexPairRel );
 		}
 	}
 
@@ -2547,29 +2665,29 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 		}
 		// Todo: all vertices are clipped in 2d..
 		// is this true ?
-		u32 vOut = 6;
-		memcpy_s4DVertex_2( CurrentOut.data + 0, face[0] );
-		memcpy_s4DVertex_2( CurrentOut.data + 2, face[1] );
-		memcpy_s4DVertex_2( CurrentOut.data + 4, face[2] );
+		size_t vOut = 6;
+		memcpy_s4DVertexPair( CurrentOut.data + 0, face[0] );
+		memcpy_s4DVertexPair( CurrentOut.data + 2, face[1] );
+		memcpy_s4DVertexPair( CurrentOut.data + 4, face[2] );
 
 		//clear clipping & projected flags
 		const u32 flag = CurrentOut.data->flag & VERTEX4D_FORMAT_MASK;
-		for ( u32 g = 0; g != CurrentOut.ElementSize; ++g )
+		for ( size_t g = 0; g != CurrentOut.ElementSize; ++g )
 		{
 			CurrentOut.data[g].flag = flag;
 			Geometry_temp.data[g].flag = flag;
 		}
 
-		vOut = clipToFrustum ( CurrentOut.data, Geometry_temp.data, 3 );
-		if ( vOut < 3 )
+		vOut = clipToFrustum ( CurrentOut.data, Geometry_temp.data, VertexCache.primitiveHasVertex);
+		if ( vOut < VertexCache.primitiveHasVertex)
 			continue;
 
-		vOut <<= 1;
+		vOut *= sizeof_s4DVertexPairRel;
 		// to DC Space, project homogenous vertex
 		ndc_2_dc_and_project ( CurrentOut.data + 1, CurrentOut.data, vOut );
 
 		// re-tesselate ( triangle-fan, 0-1-2,0-2-3.. )
-		for ( u32 g = 0; g <= vOut - 6; g += 2 )
+		for ( size_t g = 0; g <= vOut - 6; g += sizeof_s4DVertexPairRel)
 		{
 			// rasterize
 			render->drawTriangle ( CurrentOut.data + 1, CurrentOut.data + g + 3, CurrentOut.data + g + 5 );
@@ -2676,6 +2794,9 @@ void CBurningVideoDriver::draw3DLine(const core::vector3df& start,
 	const core::vector3df& end, SColor color_start)
 {
 	SColor color_end = color_start;
+	
+	VertexCache.primitiveHasVertex = 2;
+
 	s4DVertex* v = CurrentOut.data;
 
 	transform_calc(ETS_PROJ_MODEL_VIEW);
@@ -2687,8 +2808,8 @@ void CBurningVideoDriver::draw3DLine(const core::vector3df& start,
 	v[2].Color[0].setA8R8G8B8 ( color_end.color );
 #endif
 
-	u32 g;
-	u32 vOut;
+	size_t g;
+	size_t vOut;
 
 	// no clipping flags
 	for ( g = 0; g != CurrentOut.ElementSize; ++g )
@@ -2698,11 +2819,11 @@ void CBurningVideoDriver::draw3DLine(const core::vector3df& start,
 	}
 
 	// vertices count per line
-	vOut = clipToFrustum ( v, Geometry_temp.data, 2 );
-	if ( vOut < 2 )
+	vOut = clipToFrustum ( v, Geometry_temp.data, VertexCache.primitiveHasVertex);
+	if ( vOut < VertexCache.primitiveHasVertex)
 		return;
 
-	vOut <<= 1;
+	vOut *= sizeof_s4DVertexPairRel;
 
 	// to DC Space, project homogenous vertex
 	ndc_2_dc_and_project ( v + 1, v, vOut );
@@ -2725,9 +2846,9 @@ void CBurningVideoDriver::draw3DLine(const core::vector3df& start,
 	shader->pushEdgeTest(1,0,1);
 	shader->setRenderTarget(RenderTargetSurface, ViewPort);
 
-	for ( g = 0; g <= vOut - 4; g += 2 )
+	for ( g = 0; g <= vOut - 4; g += sizeof_s4DVertexPairRel)
 	{
-		shader->drawLine ( v + 1 + g, v + 1 + g + 2 );
+		shader->drawLine ( v + 1 + g, v + 1 + g + sizeof_s4DVertexPairRel);
 	}
 
 	shader->popEdgeTest();

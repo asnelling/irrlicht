@@ -81,10 +81,11 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 			//image->copyToScalingBoxFilter ( MipMap[0],0, false );
 			Resample_subSampling(BLITTER_TEXTURE,MipMap[0],0,image,0);
 		}
-
+		// if Original Size is used for calculation ( 2D position, font) it will be wrong
+		//OriginalSize = optSize;
 	}
 
-	//select mimap 0
+	//select highest mipmap 0
 	MipMapLOD = 0;
 	calcDerivative();
 
@@ -133,8 +134,8 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 	{
 		const core::dimension2du& upperDim = MipMap[i-1]->getDimension();
 		//isotropic
-		newSize.Width = core::s32_max (SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Width >> SOFTWARE_DRIVER_2_MIPMAPPING_SCALE );
-		newSize.Height = core::s32_max (SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Height >> SOFTWARE_DRIVER_2_MIPMAPPING_SCALE );
+		newSize.Width = core::s32_max (SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Width >> 1 );
+		newSize.Height = core::s32_max (SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Height >> 1 );
 		if ( upperDim == newSize )
 			break;
 
@@ -438,6 +439,7 @@ static inline int clipTest(absrect2 &o, const core::rect<s32>* a, const absrect2
 }
 
 //! stretches srcRect src to dstRect dst, applying a sliding window box filter in linear color space (sRGB->linear->sRGB)
+// todo: texture jumps (mip selection problem)
 void Resample_subSampling(eBlitter op, video::IImage* dst, const core::rect<s32>* dstRect,
 	const video::IImage* src, const core::rect<s32>* srcRect)
 {

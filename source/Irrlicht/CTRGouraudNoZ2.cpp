@@ -28,7 +28,7 @@
 #define SUBTEXEL
 #define INVERSE_W
 
-//#define USE_ZBUFFER
+#define USE_ZBUFFER
 #define IPOL_W
 //#define CMP_W
 //#define WRITE_W

@@ -241,7 +241,7 @@ void CTRTextureGouraudAlphaNoZ::scanline_bilinear ()
 											d + tofix ( line.t[0][0].y,inversew)
 											);
 
-		const u32 alpha = ( argb >> 24 );
+		const tFixPoint alpha = ( argb >> 24 );
 		if ( alpha > AlphaRef )
 		{
 #ifdef WRITE_Z

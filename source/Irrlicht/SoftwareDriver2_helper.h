@@ -580,7 +580,11 @@ REALINLINE tFixPoint imulFix2(const tFixPoint x, const tFixPoint y)
 */
 REALINLINE tFixPoint imulFix_tex1(const tFixPoint x, const tFixPoint y)
 {
+#ifdef SOFTWARE_DRIVER_2_32BIT
 	return ( ( (tFixPointu) x >> 2 ) * ( (tFixPointu) y >> 2 ) ) >> (tFixPointu) ( FIX_POINT_PRE + 4 );
+#else
+	return (x * y) >> (FIX_POINT_PRE + 5);
+#endif
 }
 
 /*

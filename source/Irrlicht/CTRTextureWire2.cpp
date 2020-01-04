@@ -110,6 +110,7 @@ CTRTextureWire2::CTRTextureWire2(CBurningVideoDriver* driver)
 
 
 /*!
+	2d line
 */
 void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int renderZero) const
 {
@@ -186,7 +187,7 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int re
 #endif
 
 #ifdef INVERSE_W
-	f32 inversew;
+	f32 inversew = FIX_POINT_F32_MUL;
 #endif
 
 	tVideoSample color;
@@ -223,8 +224,14 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int re
 #endif
 
 #ifdef IPOL_C0
-			inversew = reciprocal_zero_no ( dataW );
-			getSample_color ( r0, g0, b0, C * inversew );
+#ifdef INVERSE_W
+			inversew = reciprocal_zero_no(dataW);
+			getSample_color(r0, g0, b0, C * inversew);
+#else
+			getSample_color(r0, g0, b0, C);
+#endif
+
+
 			color = fix_to_color ( r0, g0, b0 );
 #endif
 			*dst = color;
@@ -316,6 +323,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTriangleRendererTextureGouraudWire2(CBurningVideoDriver* driver)
 {
+	//ETR_TEXTURE_GOURAUD_WIRE
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureWire2(driver);
 	#else

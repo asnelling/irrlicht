@@ -110,7 +110,7 @@ private:
 
 	CImage* MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
 
-	u32 MipMapLOD;
+	u32 MipMapLOD; // 0 .. original Texture pot -SOFTWARE_DRIVER_2_MIPMAPPING_MAX
 	u32 Flags; //eTex2Flags
 	ECOLOR_FORMAT OriginalFormat;
 	CBurningVideoDriver* Driver;
