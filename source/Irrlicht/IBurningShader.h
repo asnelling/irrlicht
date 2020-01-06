@@ -68,17 +68,13 @@ namespace video
 			Global_AmbientLight.set ( 0.f );
 
 			Flags = 0;
-			campos.x = 0.f;
-			campos.y = 0.f;
-			campos.z = 0.f;
-			campos.w = 1.f;
 		}
 		core::array<SBurningShaderLight> Light;
 		sVec3Color Global_AmbientLight;
 		sVec3Color FogColor;
 
-		sVec4 campos; //Camera Position in eye Space
-		sVec4 vertex4; //eye coordinate position of vertex
+		//sVec4 campos; //Camera Position in eye Space (0,0,0,1)
+		//sVec4 vertex4; //eye coordinate position of vertex
 		sVec4 normal3; //transformed normal
 
 		sVec4 vertex3; //eye coordinate position of vertex projected

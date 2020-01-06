@@ -87,6 +87,18 @@ public:
 	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
 	virtual void OnSetMaterial(const SBurningShaderMaterial& material) _IRR_OVERRIDE_;
 
+#if defined(PATCH_SUPERTUX_8_0_1)
+	tFixPoint AlphaRef;
+	virtual void setParam(u32 index, f32 value)
+	{
+		SBurningShaderMaterial material;
+		material.org.ZBuffer = 0;
+		material.org.MaterialTypeParam = value;
+		OnSetMaterial(material);
+	}
+
+#endif
+
 
 private:
 	void scanline_bilinear ();

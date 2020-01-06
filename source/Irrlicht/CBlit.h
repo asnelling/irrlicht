@@ -473,7 +473,7 @@ static void executeBlit_TextureCopy_x_to_x( const SBlitJob * job )
 	const u32 h = job->height;
 	if (job->stretch)
 	{
-		//assume 32bit.. 
+		//assume 32bit..
 		const u32 *src = static_cast<const u32*>(job->src);
 		u32 *dst = static_cast<u32*>(job->dst);
 
@@ -484,12 +484,12 @@ static void executeBlit_TextureCopy_x_to_x( const SBlitJob * job )
 		float src_y = 0.f;
 		for ( u32 dy = 0; dy < h; ++dy,src_y += hscale )
 		{
-			src = (u32*) ( (u8*) (job->src) + job->srcPitch*((int) src_y) );
+			src = (u32*) ( (u8*) (job->src) + job->srcPitch*((u32) src_y) );
 
 			src_x = 0.f;
 			for ( u32 dx = 0; dx < w; ++dx,src_x += wscale )
 			{
-				dst[dx] = src[(int)src_x];
+				dst[dx] = src[(u32)src_x];
 			}
 			dst = (u32*) ( (u8*) (dst) + job->dstPitch );
 		}
@@ -848,20 +848,25 @@ static void executeBlit_TextureBlend_32_to_32( const SBlitJob * job )
 
 	if (job->stretch)
 	{
-		const float wscale = 1.f/job->x_stretch;
-		const float hscale = 1.f/job->y_stretch;
-		for ( u32 dy = 0; dy < h; ++dy )
+		//assume 32bit..
+		const u32 *src = static_cast<const u32*>(job->src);
+		u32 *dst = static_cast<u32*>(job->dst);
+
+		const float wscale = 1.f / job->x_stretch;
+		const float hscale = 1.f / job->y_stretch;
+
+		float src_x = 0.f;
+		float src_y = 0.f;
+		for (u32 dy = 0; dy < h; ++dy, src_y += hscale)
 		{
-			const u32 src_y = (u32)(dy*hscale);
-			src = (u32*) ( (u8*) (job->src) + job->srcPitch*src_y );
+			src = (u32*)((u8*)(job->src) + job->srcPitch*((u32)src_y));
 
-			for ( u32 dx = 0; dx < w; ++dx )
+			src_x = 0.f;
+			for (u32 dx = 0; dx < w; ++dx, src_x += wscale)
 			{
-				const u32 src_x = (u32)(dx*wscale);
-				dst[dx] = PixelBlend32( dst[dx], src[src_x] );
+				dst[dx] = PixelBlend32(dst[dx],src[(u32)src_x]);
 			}
-
-			dst = (u32*) ( (u8*) (dst) + job->dstPitch );
+			dst = (u32*)((u8*)(dst)+job->dstPitch);
 		}
 	}
 	else
@@ -919,13 +924,12 @@ static void executeBlit_TextureBlendColor_32_to_32( const SBlitJob * job )
 		float src_y = 0.f;
 		for ( u32 dy = 0; dy < h; ++dy,src_y += hscale )
 		{
-			const u32 src_y = (u32)(dy*hscale);
-			src = (u32*) ( (u8*) (job->src) + job->srcPitch*((int) src_y) );
+			src = (u32*) ( (u8*) (job->src) + job->srcPitch*((u32) src_y) );
 
 			src_x = 0.f;
 			for ( u32 dx = 0; dx < w; ++dx,src_x += wscale )
 			{
-				dst[dx] = PixelBlend32( dst[dx], PixelMul32_2( src[(int)src_x], job->argb ) );
+				dst[dx] = PixelBlend32( dst[dx], PixelMul32_2( src[(u32)src_x], job->argb ) );
 			}
 			dst = (u32*) ( (u8*) (dst) + job->dstPitch );
 		}
@@ -1373,10 +1377,10 @@ static s32 StretchBlit(eBlitter operation,
 
 	//scale gui needs destRect/srcRect. direct call assumes stretching.
 	//still confused to match this with openGL.. pass unit test
-	int dst_w = destRect->getWidth();
-	int dst_h = destRect->getHeight();
-	int src_w = destClipping ? srcRect->getWidth() : job.Source.x1-job.Source.x0;
-	int src_h = destClipping ? srcRect->getHeight() : job.Source.y1-job.Source.y0;
+	const int dst_w = destRect->getWidth();
+	const int dst_h = destRect->getHeight();
+	const int src_w = destClipping ? srcRect->getWidth() : job.Source.x1-job.Source.x0;
+	const int src_h = destClipping ? srcRect->getHeight() : job.Source.y1-job.Source.y0;
 
 	job.stretch = dst_w != src_w || dst_h != src_h;
 	job.x_stretch = src_w ? (float)dst_w / (float)src_w : 1.f;

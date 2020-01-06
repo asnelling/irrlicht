@@ -107,14 +107,12 @@ private:
 
 	//! controls MipmapSelection. relation between drawn area and image size
 	f32 MipMap0_Area;
-
-	CImage* MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
-
 	u32 MipMapLOD; // 0 .. original Texture pot -SOFTWARE_DRIVER_2_MIPMAPPING_MAX
 	u32 Flags; //eTex2Flags
 	ECOLOR_FORMAT OriginalFormat;
 	CBurningVideoDriver* Driver;
 
+	CImage* MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
 	CSoftwareTexture2_Bound TexBound[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
 
 };
@@ -136,9 +134,9 @@ protected:
 	CBurningVideoDriver* Driver;
 };
 
-
 } // end namespace video
 } // end namespace irr
 
-#endif
+#endif // __C_SOFTWARE_2_TEXTURE_H_INCLUDED__
+
 

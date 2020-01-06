@@ -19,7 +19,7 @@ namespace video
 
 //! constructor
 CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 flags, CBurningVideoDriver* driver)
-	: ITexture(name, ETT_2D), MipMapLOD(0), Flags ( flags ), OriginalFormat(video::ECF_UNKNOWN),Driver(driver)
+	: ITexture(name, ETT_2D), MipMap0_Area(0.f),MipMapLOD(0), Flags ( flags ), OriginalFormat(video::ECF_UNKNOWN),Driver(driver)
 {
 	#ifdef _DEBUG
 	setDebugName("CSoftwareTexture2");
@@ -128,29 +128,47 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 	}
 
 	core::dimension2d<u32> newSize;
-	//core::dimension2d<u32> origSize = Size;
 
-	for (i=1; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
+	//deactivated outside mipdata until TA knows how to handle this.
+	if (0 == data || 1)
 	{
-		const core::dimension2du& upperDim = MipMap[i-1]->getDimension();
-		//isotropic
-		newSize.Width = core::s32_max (SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Width >> 1 );
-		newSize.Height = core::s32_max (SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Height >> 1 );
-		if ( upperDim == newSize )
-			break;
-
-		//deactivated until TA knows how to handle this
-#if 0
-		origSize.Width = core::s32_max(1, origSize.Width >> 1);
-		origSize.Height = core::s32_max(1, origSize.Height >> 1);
-
-		if (data)
+		for (i = 1; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
 		{
+			const core::dimension2du& upperDim = MipMap[i - 1]->getDimension();
+			//isotropic
+			newSize.Width = core::s32_max(SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Width >> 1);
+			newSize.Height = core::s32_max(SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Height >> 1);
+			if (upperDim == newSize)
+				break;
+
+			MipMap[i] = new CImage(BURNINGSHADER_COLOR_FORMAT, newSize);
+			MipMap[i]->set_sRGB(MipMap[i - 1]->get_sRGB());
+			//MipMap[i]->fill ( 0 );
+			//MipMap[i-1]->copyToScalingBoxFilter( MipMap[i], 0, false );
+			Resample_subSampling(BLITTER_TEXTURE, MipMap[i], 0, MipMap[i - 1], 0);
+		}
+	}
+	else
+	{
+		core::dimension2d<u32> origSize = Size;
+
+		for (i = 1; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
+		{
+			const core::dimension2du& upperDim = MipMap[i - 1]->getDimension();
+			//isotropic
+			newSize.Width = core::s32_max(SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Width >> 1);
+			newSize.Height = core::s32_max(SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE, upperDim.Height >> 1);
+			if (upperDim == newSize)
+				break;
+
+			origSize.Width = core::s32_max(1, origSize.Width >> 1);
+			origSize.Height = core::s32_max(1, origSize.Height >> 1);
+
 			if (OriginalFormat != BURNINGSHADER_COLOR_FORMAT)
 			{
 				IImage* tmpImage = new CImage(OriginalFormat, origSize, data, true, false);
 				MipMap[i] = new CImage(BURNINGSHADER_COLOR_FORMAT, newSize);
-				if (origSize==newSize)
+				if (origSize == newSize)
 					tmpImage->copyTo(MipMap[i]);
 				else
 					tmpImage->copyToScalingBoxFilter(MipMap[i]);
@@ -158,7 +176,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 			}
 			else
 			{
-				if (origSize==newSize)
+				if (origSize == newSize)
 					MipMap[i] = new CImage(BURNINGSHADER_COLOR_FORMAT, newSize, data, false);
 				else
 				{
@@ -168,16 +186,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 					tmpImage->drop();
 				}
 			}
-			data = (u8*)data +origSize.getArea()*IImage::getBitsPerPixelFromFormat(OriginalFormat)/8;
-		}
-		else
-#endif
-		{
-			MipMap[i] = new CImage(BURNINGSHADER_COLOR_FORMAT, newSize);
-			MipMap[i]->set_sRGB(MipMap[i-1]->get_sRGB());
-			//MipMap[i]->fill ( 0 );
-			//MipMap[i-1]->copyToScalingBoxFilter( MipMap[i], 0, false );
-			Resample_subSampling(BLITTER_TEXTURE,MipMap[i],0,MipMap[i-1],0);
+			data = (u8*)data + origSize.getArea()*IImage::getBitsPerPixelFromFormat(OriginalFormat) / 8;
 		}
 	}
 
@@ -192,7 +201,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 
 		if ( MipMap[i] )
 		{
-			core::rect<s32> p (MipMap[i]->getDimension());
+			core::rect<s32> p (core::position2di(0,0),MipMap[i]->getDimension());
 			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, 0,(color[i&15] & 0x00FFFFFF ) | 0x88000000);
 		}
 	}
@@ -251,7 +260,6 @@ void CSoftwareTexture2::calcDerivative()
 	}
 
 }
-
 
 
 /* Software Render Target 2 */

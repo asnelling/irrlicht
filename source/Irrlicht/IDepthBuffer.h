@@ -21,7 +21,7 @@ namespace video
 		virtual ~IDepthBuffer() {};
 
 		//! clears the zbuffer
-		virtual void clear() = 0;
+		virtual void clear(f32 value) = 0;
 
 		//! sets the new size of the zbuffer
 		virtual void setSize(const core::dimension2d<u32>& size) = 0;
@@ -51,22 +51,22 @@ namespace video
 		//! destructor
 		virtual ~IStencilBuffer() {};
 
-		//! clears the zbuffer
-		virtual void clear() = 0;
+		//! clears the stencil buffer
+		virtual void clear(u32 value) = 0;
 
 		//! sets the new size of the zbuffer
 		virtual void setSize(const core::dimension2d<u32>& size) = 0;
 
-		//! returns the size of the zbuffer
+		//! returns the size of the stencil buffer
 		virtual const core::dimension2d<u32>& getSize() const = 0;
 
-		//! locks the zbuffer
+		//! locks the stencil buffer
 		virtual void* lock() = 0;
 
-		//! unlocks the zbuffer
+		//! unlocks the stencil buffer
 		virtual void unlock() = 0;
 
-		//! returns pitch of depthbuffer (in bytes)
+		//! returns pitch of stencil buffer (in bytes)
 		virtual u32 getPitch() const = 0;
 
 	};

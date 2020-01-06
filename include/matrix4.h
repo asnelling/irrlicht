@@ -253,7 +253,6 @@ namespace core
 
 			//! An alternate transform vector method, reading from and writing to an array of 4 floats
 			void transformVec4(T *out, const T * in) const;
-			void rotateVec4(T *out, const T* in) const;
 
 			//! Translate a vector by the translation part of this matrix.
 			/** This operation is performed as if the vector was 4d with the 4th component =1 */
@@ -291,7 +290,6 @@ namespace core
 			/** \param out: where result matrix is written to.
 			\return Returns false if there is no inverse matrix. */
 			bool getInverse(CMatrix4<T>& out) const;
-			bool transposed_inverse(CMatrix4<T>& out) const;
 
 			//! Builds a right-handed perspective projection matrix based on a field of view
 			//\param zClipFromZero: Clipping of z can be projected from 0 to w when true (D3D style) and from -w to w when false (OGL style).
@@ -355,7 +353,6 @@ namespace core
 			\param to: vector to rotate to
 			 */
 			CMatrix4<T>& buildRotateFromTo(const core::vector3df& from, const core::vector3df& to);
-			void buildRotateFromToUnit(const core::vector3df& from, const core::vector3df& to);
 
 			//! Builds a combined matrix which translates to a center before rotation and translates from origin afterwards
 			/** \param center Position to rotate around
@@ -1041,17 +1038,8 @@ namespace core
 	template <class T>
 	inline CMatrix4<T>& CMatrix4<T>::makeIdentity()
 	{
-#if 0
 		memset(M, 0, 16*sizeof(T));
 		M[0] = M[5] = M[10] = M[15] = (T)1;
-#else
-		register T* m = M;
-		*m++=1;*m++=0;*m++=0;*m++=0;
-		*m++=0;*m++=1;*m++=0;*m++=0;
-		*m++=0;*m++=0;*m++=1;*m++=0;
-		*m++=0;*m++=0;*m++=0;*m=1;
-#endif
-
 #if defined ( USE_MATRIX_TEST )
 		definitelyIdentityMatrix=true;
 #endif
@@ -1241,21 +1229,15 @@ namespace core
 	}
 
 	template <class T>
-	inline void CMatrix4<T>::transformVec4(T *out, const T* in) const
+	inline void CMatrix4<T>::transformVec4(T *out, const T * in) const
 	{
-		out[0] = in[0]*M[0] + in[1]*M[4] + in[2]*M[8]  + in[3]*M[12];
-		out[1] = in[0]*M[1] + in[1]*M[5] + in[2]*M[9]  + in[3]*M[13];
+		out[0] = in[0]*M[0] + in[1]*M[4] + in[2]*M[8] + in[3]*M[12];
+		out[1] = in[0]*M[1] + in[1]*M[5] + in[2]*M[9] + in[3]*M[13];
 		out[2] = in[0]*M[2] + in[1]*M[6] + in[2]*M[10] + in[3]*M[14];
 		out[3] = in[0]*M[3] + in[1]*M[7] + in[2]*M[11] + in[3]*M[15];
 	}
 
-	template <class T>
-	inline void CMatrix4<T>::rotateVec4(T *out, const T* in) const
-	{
-		out[0] = in[0]*M[0] + in[1]*M[4] + in[2]*M[8];
-		out[1] = in[0]*M[1] + in[1]*M[5] + in[2]*M[9];
-		out[2] = in[0]*M[2] + in[1]*M[6] + in[2]*M[10];
-	}
+
 	//! Transforms a plane by this matrix
 	template <class T>
 	inline void CMatrix4<T>::transformPlane( core::plane3d<f32> &plane) const
@@ -1466,49 +1448,6 @@ namespace core
 #if defined ( USE_MATRIX_TEST )
 		out.definitelyIdentityMatrix = definitelyIdentityMatrix;
 #endif
-		return true;
-	}
-
-	template <class T>
-	inline bool CMatrix4<T>::transposed_inverse(CMatrix4<T>& out) const
-	{
-		const T* m = M;
-
-		f64 d = (m[0] * m[5] - m[1] * m[4]) * (m[10] * m[15] - m[11] * m[14]) -
-			(m[0] * m[6] - m[2] * m[4]) * (m[9] * m[15] - m[11] * m[13]) +
-			(m[0] * m[7] - m[3] * m[4]) * (m[9] * m[14] - m[10] * m[13]) +
-			(m[1] * m[6] - m[2] * m[5]) * (m[8] * m[15] - m[11] * m[12]) -
-			(m[1] * m[7] - m[3] * m[5]) * (m[8] * m[14] - m[10] * m[12]) +
-			(m[2] * m[7] - m[3] * m[6]) * (m[8] * m[13] - m[9] * m[12]);
-
-		if( fabs( d ) < DBL_MIN )
-		{
-			out.makeIdentity();
-			return false;
-		}
-
-		d = 1.0 / d;
-		T* o = out.pointer();
-		o[0] =(T)(d*(m[5] *(m[10]*m[15]-m[11]*m[14])+m[6] *(m[11]*m[13]-m[9] *m[15])+m[7] *(m[9] *m[14]-m[10]*m[13])));
-		o[4] =(T)(d*(m[9] *(m[2] *m[15]-m[3] *m[14])+m[10]*(m[3] *m[13]-m[1] *m[15])+m[11]*(m[1] *m[14]-m[2] *m[13])));
-		o[8] =(T)(d*(m[13]*(m[2] *m[7] -m[3] *m[6]) +m[14]*(m[3] *m[5] -m[1] *m[7]) +m[15]*(m[1] *m[6] -m[2] *m[5])));
-		o[12]=(T)(d*(m[1] *(m[7] *m[10]-m[6] *m[11])+m[2] *(m[5] *m[11]-m[7] *m[9]) +m[3] *(m[6] *m[9] -m[5] *m[10])));
-
-		o[1] =(T)(d*(m[6] *(m[8] *m[15]-m[11]*m[12])+m[7] *(m[10]*m[12]-m[8] *m[14])+m[4] *(m[11]*m[14]-m[10]*m[15])));
-		o[5] =(T)(d*(m[10]*(m[0] *m[15]-m[3] *m[12])+m[11]*(m[2] *m[12]-m[0] *m[14])+m[8] *(m[3] *m[14]-m[2] *m[15])));
-		o[9] =(T)(d*(m[14]*(m[0] *m[7] -m[3] *m[4]) +m[15]*(m[2] *m[4] -m[0] *m[6]) +m[12]*(m[3] *m[6] -m[2] *m[7])));
-		o[13]=(T)(d*(m[2] *(m[7] *m[8] -m[4] *m[11])+m[3] *(m[4] *m[10]-m[6] *m[8]) +m[0] *(m[6] *m[11]-m[7] *m[10])));
-
-		o[2] =(T)(d*(m[7] *(m[8] *m[13]-m[9] *m[12])+m[4] *(m[9] *m[15]-m[11]*m[13])+m[5] *(m[11]*m[12]-m[8] *m[15])));
-		o[6] =(T)(d*(m[11]*(m[0] *m[13]-m[1] *m[12])+m[8] *(m[1] *m[15]-m[3] *m[13])+m[9] *(m[3] *m[12]-m[0] *m[15])));
-		o[10]=(T)(d*(m[15]*(m[0] *m[5] -m[1] *m[4]) +m[12]*(m[1] *m[7] -m[3] *m[5]) +m[13]*(m[3] *m[4] -m[0] *m[7])));
-		o[14]=(T)(d*(m[3] *(m[5] *m[8] -m[4] *m[9]) +m[0] *(m[7] *m[9] -m[5] *m[11])+m[1] *(m[4] *m[11]-m[7] *m[8])));
-
-		o[3] =(T)(d*(m[4] *(m[10]*m[13]-m[9] *m[14])+m[5] *(m[8] *m[14]-m[10]*m[12])+m[6] *(m[9] *m[12]-m[8] *m[13])));
-		o[7] =(T)(d*(m[8] *(m[2] *m[13]-m[1] *m[14])+m[9] *(m[0] *m[14]-m[2] *m[12])+m[10]*(m[1] *m[12]-m[0] *m[13])));
-		o[11]=(T)(d*(m[12]*(m[2] *m[5] -m[1] *m[6]) +m[13]*(m[0] *m[6] -m[2] *m[4]) +m[14]*(m[1] *m[4] -m[0] *m[5])));
-		o[15]=(T)(d*(m[0] *(m[5] *m[10]-m[6] *m[9]) +m[1] *(m[6] *m[8] -m[4] *m[10])+m[2] *(m[4] *m[9] -m[5] *m[8])));
-
 		return true;
 	}
 
@@ -1765,9 +1704,9 @@ namespace core
 
 		M[8] = 0;
 		M[9] = 0;
-		// M[10] 
+		// M[10]
 		M[11] = 0;
-		
+
 		M[12] = 0;
 		M[13] = 0;
 		// M[14]
@@ -1811,12 +1750,12 @@ namespace core
 
 		M[8] = 0;
 		M[9] = 0;
-		// M[10] 
+		// M[10]
 		M[11] = 0;
 
 		M[12] = 0;
 		M[13] = 0;
-		// M[14] 
+		// M[14]
 		M[15] = 1;
 
 		if ( zClipFromZero )
@@ -2129,70 +2068,45 @@ namespace core
 		core::vector3df t(to);
 		f.normalize();
 		t.normalize();
-		buildRotateFromToUnit(f,t);
-		return *this;
-	}
 
-	//! Builds a matrix that rotates from one vector to another
-	/** \param from: vector to rotate from (must be unit vector)
-		\param to: vector to rotate to (must be unit vector)
-	*/
-	template <class T>
-	inline void CMatrix4<T>::buildRotateFromToUnit(const core::vector3df& from, const core::vector3df& to)
-	{
 		// axis multiplication by sin
-		core::vector3df vs(to.crossProduct(from));
+		core::vector3df vs(t.crossProduct(f));
 
 		// axis of rotation
-		core::vector3df v(from); //vs normalized
-		//since from&to can be the same, division by zero must be checked
-		{
-			T l = vs.X*vs.X + vs.Y*vs.Y + vs.Z*vs.Z;
-			if ((T)fabs(l)> (T)0.000001)
-			{
-				l = (T) 1.0 / (T)sqrt(l);
-				v.X = vs.X * l;
-				v.Y = vs.Y * l;
-				v.Z = vs.Z * l;
-			}
-			else
-			{
-#if defined ( USE_MATRIX_TEST )
-				definitelyIdentityMatrix=1;
-#endif
-			}
-		}
-
+		core::vector3df v(vs);
+		v.normalize();
 
 		// cosinus angle
-		T ca = from.dotProduct(to);
+		T ca = f.dotProduct(t);
 
 		core::vector3df vt(v * (1 - ca));
 
-		M[0]  = vt.X * v.X + ca;
-		M[5]  = vt.Y * v.Y + ca;
+		M[0] = vt.X * v.X + ca;
+		M[5] = vt.Y * v.Y + ca;
 		M[10] = vt.Z * v.Z + ca;
 
 		vt.X *= v.Y;
 		vt.Z *= v.X;
 		vt.Y *= v.Z;
 
-		M[1]  = vt.X - vs.Z;
-		M[2]  = vt.Z + vs.Y;
-		M[3]  = 0;
+		M[1] = vt.X - vs.Z;
+		M[2] = vt.Z + vs.Y;
+		M[3] = 0;
 
-		M[4]  = vt.X + vs.Z;
-		M[6]  = vt.Y - vs.X;
-		M[7]  = 0;
+		M[4] = vt.X + vs.Z;
+		M[6] = vt.Y - vs.X;
+		M[7] = 0;
 
-		M[8]  = vt.Z - vs.Y;
-		M[9]  = vt.Y + vs.X;
+		M[8] = vt.Z - vs.Y;
+		M[9] = vt.Y + vs.X;
 		M[11] = 0;
 
 		M[12] = 0;
 		M[13] = 0;
 		M[14] = 0;
 		M[15] = 1;
+
+		return *this;
 	}
 
 	//! Builds a matrix which rotates a source vector to a look vector over an arbitrary axis

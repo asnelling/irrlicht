@@ -72,11 +72,11 @@ namespace irr
 
 //! a more useful memset for pixel. dest must be aligned at least to 4 byte
 // (standard memset only works with 8-bit values)
-inline void memset32(void * dest, const u32 value, u32 bytesize)
+inline void memset32(void * dest, const u32 value, size_t bytesize)
 {
 	u32 * d = (u32*) dest;
 
-	u32 i;
+	size_t i;
 
 	// loops unrolled to reduce the number of increments by factor ~8.
 	i = bytesize >> (2 + 3);
@@ -107,11 +107,11 @@ inline void memset32(void * dest, const u32 value, u32 bytesize)
 
 //! a more useful memset for pixel. dest must be aligned at least to 2 byte
 // (standard memset only works with 8-bit values)
-inline void memset16(void * dest, const u16 value, u32 bytesize)
+inline void memset16(void * dest, const u16 value, size_t bytesize)
 {
 	u16 * d = (u16*) dest;
 
-	u32 i;
+	size_t i;
 
 	// loops unrolled to reduce the number of increments by factor ~8.
 	i = bytesize >> (1 + 3);
@@ -547,8 +547,6 @@ REALINLINE tFixPoint tofix0 (const f32 x, const f32 mulby = FIX_POINT_F32_MUL )
 #define tofix(x,y) (tFixPoint)(x * y)
 
 
-//! normalize from fixed point Color Max to fixed point [0;1]
-#define fix_color_norm(x) x >>= COLOR_MAX_LOG2
 
 /*
 	Fix Point , Fix Point Multiply

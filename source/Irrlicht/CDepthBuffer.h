@@ -23,7 +23,7 @@ namespace video
 		virtual ~CDepthBuffer();
 
 		//! clears the zbuffer
-		virtual void clear() _IRR_OVERRIDE_;
+		virtual void clear(f32 value=1.f) _IRR_OVERRIDE_;
 
 		//! sets the new size of the zbuffer
 		virtual void setSize(const core::dimension2d<u32>& size) _IRR_OVERRIDE_;
@@ -61,7 +61,7 @@ namespace video
 		virtual ~CStencilBuffer();
 
 		//! clears the zbuffer
-		virtual void clear() _IRR_OVERRIDE_;
+		virtual void clear(u32 value=0) _IRR_OVERRIDE_;
 
 		//! sets the new size of the zbuffer
 		virtual void setSize(const core::dimension2d<u32>& size) _IRR_OVERRIDE_;

@@ -40,14 +40,14 @@ CDepthBuffer::~CDepthBuffer()
 
 
 //! clears the zbuffer
-void CDepthBuffer::clear()
+void CDepthBuffer::clear(f32 value)
 {
 	core::inttofloat zMaxValue;
 
 #ifdef SOFTWARE_DRIVER_2_USE_WBUFFER
-	zMaxValue.f = 0.f;
+	zMaxValue.f = 1.f-value;
 #else
-	zMaxValue.f = 1.f;
+	zMaxValue.f = value;
 #endif
 
 	memset32 ( Buffer, zMaxValue.u, TotalSize );
@@ -55,7 +55,7 @@ void CDepthBuffer::clear()
 
 
 
-//! sets the new size of the zbuffer
+//! sets the new size of the buffer
 void CDepthBuffer::setSize(const core::dimension2d<u32>& size)
 {
 	if (size == Size)
@@ -73,7 +73,7 @@ void CDepthBuffer::setSize(const core::dimension2d<u32>& size)
 
 
 
-//! returns the size of the zbuffer
+//! returns the size of the buffer
 const core::dimension2d<u32>& CDepthBuffer::getSize() const
 {
 	return Size;
@@ -106,15 +106,15 @@ CStencilBuffer::~CStencilBuffer()
 
 
 
-//! clears the zbuffer
-void CStencilBuffer::clear()
+//! clears the buffer
+void CStencilBuffer::clear(u32 value)
 {
-	memset32 ( Buffer, 0, TotalSize );
+	memset32 ( Buffer, value, TotalSize );
 }
 
 
 
-//! sets the new size of the zbuffer
+//! sets the new size of the buffer
 void CStencilBuffer::setSize(const core::dimension2d<u32>& size)
 {
 	if (size == Size)
@@ -132,7 +132,7 @@ void CStencilBuffer::setSize(const core::dimension2d<u32>& size)
 
 
 
-//! returns the size of the zbuffer
+//! returns the size of the buffer
 const core::dimension2d<u32>& CStencilBuffer::getSize() const
 {
 	return Size;

@@ -17,49 +17,6 @@ namespace irr
 namespace video
 {
 
-// null check necessary (burningvideo only)
-#define reciprocal_zero(x) ((x) != 0.f ? 1.f / (x):0.f)
-static inline f32 reciprocal_zero2(f32 x) { return x != 0.f ? 1.f / x : 0.f; }
-#define reciprocal_one(x) ((x) != 0.f ? 1.f / (x):1.f)
-
-#define fill_convention_left(x) (s32) ceilf(x)
-#define fill_convention_right(x) ((s32) ceilf(x))-1
-#define fill_convention_none(x) (s32) (x)
-//#define fill_convention_left(x) 65536 - int(65536.0f - x)
-//#define fill_convention_right(x) 65535 - int(65536.0f - x)
-
-
-//Check coordinates are in render target/window space
-//#define SOFTWARE_DRIVER_2_DO_CLIPCHECK
-#if defined (SOFTWARE_DRIVER_2_DO_CLIPCHECK) && defined(_WIN32)
-	#define SOFTWARE_DRIVER_2_CLIPCHECK      if( xStart < 0 || xStart + dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
-	#define SOFTWARE_DRIVER_2_CLIPCHECK_REF  if( pShader.xStart < 0 || pShader.xStart + pShader.dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
-	#define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE if( aposx < 0 || aposx >= (s32)RenderTarget->getDimension().Width || aposy < 0 || aposy >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
-
-	inline f32 reciprocal_zero_no(const f32 x)
-	{
-		if ( fabsf(x) <= 0.00001f ) __debugbreak();
-		return 1.f / x;
-	}
-#else
-	#define SOFTWARE_DRIVER_2_CLIPCHECK
-	#define SOFTWARE_DRIVER_2_CLIPCHECK_REF
-	#define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE
-
-	#define reciprocal_zero_no(x) 1.f/x
-#endif
-
-//!scanline renderer emulate line
-enum edge_test_flag
-{
-	edge_test_pass = 1,		//! not wireframe
-	edge_test_left = 0,
-	edge_test_first_line = 2,
-	edge_test_point = 4
-};
-//if any edge test flag is set result=1 else 0. ( pass height test for degenerate triangle )
-#define reciprocal_edge(x) ((x) != 0.f ? 1.f / (x):(~EdgeTestPass)&1)
-
 //! sVec2 used in BurningShader texture coordinates
 struct sVec2
 {
@@ -567,11 +524,25 @@ static inline void memcpy_s4DVertexPair(void* dst, const void *src)
 	}
 #endif
 	size_t len = sizeof_s4DVertex * sizeof_s4DVertexPairRel;
+	while (len >= 32)
+	{
+		*dst32++ = *src32++;
+		*dst32++ = *src32++;
+		*dst32++ = *src32++;
+		*dst32++ = *src32++;
+		*dst32++ = *src32++;
+		*dst32++ = *src32++;
+		*dst32++ = *src32++;
+		*dst32++ = *src32++;
+		len -= 32;
+	}
+/*
 	while (len >= 4)
 	{
 		*dst32++ = *src32++;
 		len -= 4;
 	}
+*/
 }
 
 
@@ -715,7 +686,7 @@ struct sPixelShaderData
 /*
 	load a color value
 */
-inline void getTexel_plain2 (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
+REALINLINE void getTexel_plain2 (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
 							const sVec4 &v
 							)
 {
@@ -727,7 +698,7 @@ inline void getTexel_plain2 (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
 /*
 	load a color value
 */
-inline void getSample_color (	tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,
+REALINLINE void getSample_color (	tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,
 							const sVec4 &v
 							)
 {
@@ -740,7 +711,7 @@ inline void getSample_color (	tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoin
 /*
 	load a color value
 */
-inline void getSample_color ( tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v )
+REALINLINE void getSample_color ( tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v )
 {
 	r = tofix ( v.r, COLOR_MAX * FIX_POINT_F32_MUL);
 	g = tofix ( v.g, COLOR_MAX * FIX_POINT_F32_MUL);
@@ -750,7 +721,7 @@ inline void getSample_color ( tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVe
 /*
 	load a color value mulby controls [0;1] or [0;ColorMax]
 */
-inline void getSample_color (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
+REALINLINE void getSample_color (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
 								const sVec4 &v, const f32 mulby )
 {
 	r = tofix ( v.r, mulby);
@@ -758,7 +729,7 @@ inline void getSample_color (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
 	b = tofix ( v.b, mulby);
 }
 
-inline void getSample_color(tFixPoint &a,tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v, const f32 mulby)
+REALINLINE void getSample_color(tFixPoint &a,tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v, const f32 mulby)
 {
 	a = tofix(v.a, mulby);
 	r = tofix(v.r, mulby);

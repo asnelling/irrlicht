@@ -2667,7 +2667,7 @@ void CSceneManager::drawMesh(const char* name, const core::vector3df& pos, const
 	if ( 0 == driver ) return;
 
 	core::matrix4 m1(core::matrix4::EM4CONST_NOTHING);
-	m1.buildRotateFromToUnit(core::vector3df(0.f,1.f,0.f), dir );
+	m1.buildRotateFromTo(core::vector3df(0.f,1.f,0.f), dir );
 	m1.setTranslation(pos);
 
 	core::matrix4 m2;

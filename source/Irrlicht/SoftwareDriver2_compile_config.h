@@ -96,6 +96,8 @@
 	#define SOFTWARE_DRIVER_2_MIPMAPPING_MIN_SIZE   1
 #endif
 
+#define SOFTWARE_DRIVER_2_MIPMAPPING_LOD_BIAS	0
+
 #ifndef REALINLINE
 	#ifdef _MSC_VER
 		#define REALINLINE __forceinline
@@ -104,4 +106,58 @@
 	#endif
 #endif
 
+
+// null check necessary (burningvideo only)
+#define reciprocal_zero(x) ((x) != 0.f ? 1.f / (x):0.f)
+static inline float reciprocal_zero2(float x) { return x != 0.f ? 1.f / x : 0.f; }
+#define reciprocal_one(x) ((x) != 0.f ? 1.f / (x):1.f)
+
+#define fill_convention_left(x) (s32) ceilf(x)
+#define fill_convention_right(x) ((s32) ceilf(x))-1
+#define fill_convention_none(x) (s32) (x)
+//#define fill_convention_left(x) 65536 - int(65536.0f - x)
+//#define fill_convention_right(x) 65535 - int(65536.0f - x)
+
+
+//Check coordinates are in render target/window space
+//#define SOFTWARE_DRIVER_2_DO_CLIPCHECK
+#if defined (SOFTWARE_DRIVER_2_DO_CLIPCHECK) && defined(_WIN32)
+#define SOFTWARE_DRIVER_2_CLIPCHECK      if( xStart < 0 || xStart + dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
+#define SOFTWARE_DRIVER_2_CLIPCHECK_REF  if( pShader.xStart < 0 || pShader.xStart + pShader.dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
+#define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE if( aposx < 0 || aposx >= (s32)RenderTarget->getDimension().Width || aposy < 0 || aposy >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
+
+inline f32 reciprocal_zero_no(const f32 x)
+{
+	if (fabsf(x) <= 0.00001f) __debugbreak();
+	return 1.f / x;
+}
+#else
+#define SOFTWARE_DRIVER_2_CLIPCHECK
+#define SOFTWARE_DRIVER_2_CLIPCHECK_REF
+#define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE
+
+#define reciprocal_zero_no(x) 1.f/x
 #endif
+
+//!scanline renderer emulate line
+enum edge_test_flag
+{
+	edge_test_pass = 1,		//! not wireframe
+	edge_test_left = 0,
+	edge_test_first_line = 2,
+	edge_test_point = 4
+};
+//if any edge test flag is set result=1 else 0. ( pass height test for degenerate triangle )
+#define reciprocal_edge(x) ((x) != 0.f ? 1.f / (x):(~EdgeTestPass)&1)
+
+//! normalize from fixed point Color Max to fixed point [0;1]
+#define fix_color_norm(x) x >>= COLOR_MAX_LOG2
+
+#if defined(PATCH_SUPERTUX_8_0_1)
+#define getData lock
+#define snprintf_irr sprintf_s
+#define BURNING_MATERIAL_MAX_COLORS 1
+#endif
+
+
+#endif // __S_VIDEO_2_SOFTWARE_COMPILE_CONFIG_H_INCLUDED__

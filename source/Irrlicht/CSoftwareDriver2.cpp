@@ -17,6 +17,125 @@
 
 #define MAT_TEXTURE(tex) ( (video::CSoftwareTexture2*) Material.org.getTexture ( (u32)tex ) )
 
+// Matrix now here
+namespace irr
+{
+namespace core
+{
+
+// difference to CMatrix4<T>::getInverse . higher precision in determinant. return identity on failure
+template <class T>
+bool mat44_inverse(CMatrix4<T>& out, const CMatrix4<T>& M)
+{
+	const T* m = M.pointer();
+
+	f64 d =
+		(m[0] * m[5] - m[1] * m[4]) * (m[10] * m[15] - m[11] * m[14]) -
+		(m[0] * m[6] - m[2] * m[4]) * (m[9] * m[15] - m[11] * m[13]) +
+		(m[0] * m[7] - m[3] * m[4]) * (m[9] * m[14] - m[10] * m[13]) +
+		(m[1] * m[6] - m[2] * m[5]) * (m[8] * m[15] - m[11] * m[12]) -
+		(m[1] * m[7] - m[3] * m[5]) * (m[8] * m[14] - m[10] * m[12]) +
+		(m[2] * m[7] - m[3] * m[6]) * (m[8] * m[13] - m[9] * m[12]);
+
+	if (fabs(d) < DBL_MIN)
+	{
+		out.makeIdentity();
+		return false;
+	}
+
+	d = 1.0 / d;
+	T* o = out.pointer();
+	o[0] = (T)(d*(m[5] * (m[10] * m[15] - m[11] * m[14]) + m[6] * (m[11] * m[13] - m[9] * m[15]) + m[7] * (m[9] * m[14] - m[10] * m[13])));
+	o[1] = (T)(d*(m[9] * (m[2] * m[15] - m[3] * m[14]) + m[10] * (m[3] * m[13] - m[1] * m[15]) + m[11] * (m[1] * m[14] - m[2] * m[13])));
+	o[2] = (T)(d*(m[13] * (m[2] * m[7] - m[3] * m[6]) + m[14] * (m[3] * m[5] - m[1] * m[7]) + m[15] * (m[1] * m[6] - m[2] * m[5])));
+	o[3] = (T)(d*(m[1] * (m[7] * m[10] - m[6] * m[11]) + m[2] * (m[5] * m[11] - m[7] * m[9]) + m[3] * (m[6] * m[9] - m[5] * m[10])));
+
+	o[4] = (T)(d*(m[6] * (m[8] * m[15] - m[11] * m[12]) + m[7] * (m[10] * m[12] - m[8] * m[14]) + m[4] * (m[11] * m[14] - m[10] * m[15])));
+	o[5] = (T)(d*(m[10] * (m[0] * m[15] - m[3] * m[12]) + m[11] * (m[2] * m[12] - m[0] * m[14]) + m[8] * (m[3] * m[14] - m[2] * m[15])));
+	o[6] = (T)(d*(m[14] * (m[0] * m[7] - m[3] * m[4]) + m[15] * (m[2] * m[4] - m[0] * m[6]) + m[12] * (m[3] * m[6] - m[2] * m[7])));
+	o[7] = (T)(d*(m[2] * (m[7] * m[8] - m[4] * m[11]) + m[3] * (m[4] * m[10] - m[6] * m[8]) + m[0] * (m[6] * m[11] - m[7] * m[10])));
+
+	o[8] = (T)(d*(m[7] * (m[8] * m[13] - m[9] * m[12]) + m[4] * (m[9] * m[15] - m[11] * m[13]) + m[5] * (m[11] * m[12] - m[8] * m[15])));
+	o[9] = (T)(d*(m[11] * (m[0] * m[13] - m[1] * m[12]) + m[8] * (m[1] * m[15] - m[3] * m[13]) + m[9] * (m[3] * m[12] - m[0] * m[15])));
+	o[10] = (T)(d*(m[15] * (m[0] * m[5] - m[1] * m[4]) + m[12] * (m[1] * m[7] - m[3] * m[5]) + m[13] * (m[3] * m[4] - m[0] * m[7])));
+	o[11] = (T)(d*(m[3] * (m[5] * m[8] - m[4] * m[9]) + m[0] * (m[7] * m[9] - m[5] * m[11]) + m[1] * (m[4] * m[11] - m[7] * m[8])));
+
+	o[12] = (T)(d*(m[4] * (m[10] * m[13] - m[9] * m[14]) + m[5] * (m[8] * m[14] - m[10] * m[12]) + m[6] * (m[9] * m[12] - m[8] * m[13])));
+	o[13] = (T)(d*(m[8] * (m[2] * m[13] - m[1] * m[14]) + m[9] * (m[0] * m[14] - m[2] * m[12]) + m[10] * (m[1] * m[12] - m[0] * m[13])));
+	o[14] = (T)(d*(m[12] * (m[2] * m[5] - m[1] * m[6]) + m[13] * (m[0] * m[6] - m[2] * m[4]) + m[14] * (m[1] * m[4] - m[0] * m[5])));
+	o[15] = (T)(d*(m[0] * (m[5] * m[10] - m[6] * m[9]) + m[1] * (m[6] * m[8] - m[4] * m[10]) + m[2] * (m[4] * m[9] - m[5] * m[8])));
+
+	return true;
+}
+
+template <class T>
+bool mat44_transposed_inverse(CMatrix4<T>& out, const CMatrix4<T>& M)
+{
+	const T* m = M.pointer();
+
+	f64 d =
+		(m[0] * m[5] - m[1] * m[4]) * (m[10] * m[15] - m[11] * m[14]) -
+		(m[0] * m[6] - m[2] * m[4]) * (m[9] * m[15] - m[11] * m[13]) +
+		(m[0] * m[7] - m[3] * m[4]) * (m[9] * m[14] - m[10] * m[13]) +
+		(m[1] * m[6] - m[2] * m[5]) * (m[8] * m[15] - m[11] * m[12]) -
+		(m[1] * m[7] - m[3] * m[5]) * (m[8] * m[14] - m[10] * m[12]) +
+		(m[2] * m[7] - m[3] * m[6]) * (m[8] * m[13] - m[9] * m[12]);
+
+	if (fabs(d) < DBL_MIN)
+	{
+		out.makeIdentity();
+		return false;
+	}
+
+	d = 1.0 / d;
+	T* o = out.pointer();
+	o[0] = (T)(d*(m[5] * (m[10] * m[15] - m[11] * m[14]) + m[6] * (m[11] * m[13] - m[9] * m[15]) + m[7] * (m[9] * m[14] - m[10] * m[13])));
+	o[4] = (T)(d*(m[9] * (m[2] * m[15] - m[3] * m[14]) + m[10] * (m[3] * m[13] - m[1] * m[15]) + m[11] * (m[1] * m[14] - m[2] * m[13])));
+	o[8] = (T)(d*(m[13] * (m[2] * m[7] - m[3] * m[6]) + m[14] * (m[3] * m[5] - m[1] * m[7]) + m[15] * (m[1] * m[6] - m[2] * m[5])));
+	o[12] = (T)(d*(m[1] * (m[7] * m[10] - m[6] * m[11]) + m[2] * (m[5] * m[11] - m[7] * m[9]) + m[3] * (m[6] * m[9] - m[5] * m[10])));
+
+	o[1] = (T)(d*(m[6] * (m[8] * m[15] - m[11] * m[12]) + m[7] * (m[10] * m[12] - m[8] * m[14]) + m[4] * (m[11] * m[14] - m[10] * m[15])));
+	o[5] = (T)(d*(m[10] * (m[0] * m[15] - m[3] * m[12]) + m[11] * (m[2] * m[12] - m[0] * m[14]) + m[8] * (m[3] * m[14] - m[2] * m[15])));
+	o[9] = (T)(d*(m[14] * (m[0] * m[7] - m[3] * m[4]) + m[15] * (m[2] * m[4] - m[0] * m[6]) + m[12] * (m[3] * m[6] - m[2] * m[7])));
+	o[13] = (T)(d*(m[2] * (m[7] * m[8] - m[4] * m[11]) + m[3] * (m[4] * m[10] - m[6] * m[8]) + m[0] * (m[6] * m[11] - m[7] * m[10])));
+
+	o[2] = (T)(d*(m[7] * (m[8] * m[13] - m[9] * m[12]) + m[4] * (m[9] * m[15] - m[11] * m[13]) + m[5] * (m[11] * m[12] - m[8] * m[15])));
+	o[6] = (T)(d*(m[11] * (m[0] * m[13] - m[1] * m[12]) + m[8] * (m[1] * m[15] - m[3] * m[13]) + m[9] * (m[3] * m[12] - m[0] * m[15])));
+	o[10] = (T)(d*(m[15] * (m[0] * m[5] - m[1] * m[4]) + m[12] * (m[1] * m[7] - m[3] * m[5]) + m[13] * (m[3] * m[4] - m[0] * m[7])));
+	o[14] = (T)(d*(m[3] * (m[5] * m[8] - m[4] * m[9]) + m[0] * (m[7] * m[9] - m[5] * m[11]) + m[1] * (m[4] * m[11] - m[7] * m[8])));
+
+	o[3] = (T)(d*(m[4] * (m[10] * m[13] - m[9] * m[14]) + m[5] * (m[8] * m[14] - m[10] * m[12]) + m[6] * (m[9] * m[12] - m[8] * m[13])));
+	o[7] = (T)(d*(m[8] * (m[2] * m[13] - m[1] * m[14]) + m[9] * (m[0] * m[14] - m[2] * m[12]) + m[10] * (m[1] * m[12] - m[0] * m[13])));
+	o[11] = (T)(d*(m[12] * (m[2] * m[5] - m[1] * m[6]) + m[13] * (m[0] * m[6] - m[2] * m[4]) + m[14] * (m[1] * m[4] - m[0] * m[5])));
+	o[15] = (T)(d*(m[0] * (m[5] * m[10] - m[6] * m[9]) + m[1] * (m[6] * m[8] - m[4] * m[10]) + m[2] * (m[4] * m[9] - m[5] * m[8])));
+
+	return true;
+}
+
+template <class T>
+inline void transformVec3Vec4(const CMatrix4<T>& m, T *out, const T* in)
+{
+	const T* M = m.pointer();
+
+	out[0] = in[0] * M[0] + in[1] * M[4] + in[2] * M[8] + in[3] * M[12];
+	out[1] = in[0] * M[1] + in[1] * M[5] + in[2] * M[9] + in[3] * M[13];
+	out[2] = in[0] * M[2] + in[1] * M[6] + in[2] * M[10] + in[3] * M[14];
+	out[3] = in[0] * M[3] + in[1] * M[7] + in[2] * M[11] + in[3] * M[15];
+}
+
+template <class T>
+inline void rotateVec3Vec4(const CMatrix4<T>& m, T *out, const T* in)
+{
+	const T* M = m.pointer();
+
+	out[0] = in[0] * M[0] + in[1] * M[4] + in[2] * M[8];
+	out[1] = in[0] * M[1] + in[1] * M[5] + in[2] * M[9];
+	out[2] = in[0] * M[2] + in[1] * M[6] + in[2] * M[10];
+}
+
+} // end namespace video
+} // end namespace irr
+
 
 namespace irr
 {
@@ -348,7 +467,6 @@ IRenderTarget* CBurningVideoDriver::addRenderTarget()
 }
 
 
-
 //matrix multiplication
 void CBurningVideoDriver::transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO state)
 {
@@ -398,7 +516,7 @@ void CBurningVideoDriver::transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO st
 			}
 			break;
 		case ETS_VIEW_INVERSE:
-			Transformation[ ETS_VIEW ].getInverse(Transformation[state]);
+			mat44_inverse(Transformation[state],Transformation[ETS_VIEW]);
 			break;
 
 		case ETS_VIEW_PROJECTION:
@@ -415,7 +533,7 @@ void CBurningVideoDriver::transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO st
 			}
 			break;
 		case ETS_NORMAL:
-			Transformation[ETS_MODEL_VIEW].transposed_inverse(Transformation[state]);
+			mat44_transposed_inverse(Transformation[state], Transformation[ETS_MODEL_VIEW]);
 			break;
 		default:
 			break;
@@ -531,7 +649,6 @@ bool CBurningVideoDriver::setRenderTargetEx(IRenderTarget* target, u16 clearFlag
 
 	return true;
 }
-
 
 //! sets a render target
 void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
@@ -731,8 +848,8 @@ const sVec4 CBurningVideoDriver::NDCPlane[6] =
 
 REALINLINE u32 CBurningVideoDriver::clipToFrustumTest ( const s4DVertex* v  ) const
 {
-	f32 test[6];
-	u32 flag;
+	register size_t flag;
+	f32 test[8];
 	const f32 w = - v->Pos.w;
 
 	// a conditional move is needed....FCOMI ( but we don't have it )
@@ -745,14 +862,23 @@ REALINLINE u32 CBurningVideoDriver::clipToFrustumTest ( const s4DVertex* v  ) co
 	test[3] = -v->Pos.x + w;
 	test[4] =  v->Pos.y + w;
 	test[5] = -v->Pos.y + w;
+	
+	const u32* a = F32_AS_U32_POINTER(test);
+	flag =  (a[0]             ) >> 31;
+	flag |= (a[1] & 0x80000000) >> 30;
+	flag |= (a[2] & 0x80000000) >> 29;
+	flag |= (a[3] & 0x80000000) >> 28;
+	flag |= (a[4] & 0x80000000) >> 27;
+	flag |= (a[5] & 0x80000000) >> 26;
 
+/*
 	flag  = (IR ( test[0] )              ) >> 31;
 	flag |= (IR ( test[1] ) & 0x80000000 ) >> 30;
 	flag |= (IR ( test[2] ) & 0x80000000 ) >> 29;
 	flag |= (IR ( test[3] ) & 0x80000000 ) >> 28;
 	flag |= (IR ( test[4] ) & 0x80000000 ) >> 27;
 	flag |= (IR ( test[5] ) & 0x80000000 ) >> 26;
-
+*/
 /*
 	flag  = F32_LOWER_EQUAL_0 ( test[0] );
 	flag |= F32_LOWER_EQUAL_0 ( test[1] ) << 1;
@@ -761,7 +887,7 @@ REALINLINE u32 CBurningVideoDriver::clipToFrustumTest ( const s4DVertex* v  ) co
 	flag |= F32_LOWER_EQUAL_0 ( test[4] ) << 4;
 	flag |= F32_LOWER_EQUAL_0 ( test[5] ) << 5;
 */
-	return flag;
+	return (u32) flag;
 }
 
 #else
@@ -1123,15 +1249,16 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 	// vertex normal in light(eye) space
 	if ( Material.org.Lighting || (EyeSpace.Flags & TEXTURE_TRANSFORM) )
 	{
-		Transformation[ETS_MODEL_VIEW].transformVect ( &EyeSpace.vertex4.x, base->Pos );
+		sVec4 vertex4; //eye coordinate position of vertex
+		Transformation[ETS_MODEL_VIEW].transformVect ( &vertex4.x, base->Pos );
 		Transformation[ETS_NORMAL].rotateVect(&EyeSpace.normal3.x,base->Normal);
 		if ( EyeSpace.Flags & NORMALIZE_NORMALS )
 			EyeSpace.normal3.normalize_dir_xyz();
 
-		f32 iw = reciprocal_zero(EyeSpace.vertex4.w);
-		EyeSpace.vertex3.x = EyeSpace.vertex4.x * iw;
-		EyeSpace.vertex3.y = EyeSpace.vertex4.y * iw;
-		EyeSpace.vertex3.z = EyeSpace.vertex4.z * iw;
+		f32 iw = reciprocal_zero(vertex4.w);
+		EyeSpace.vertex3.x = vertex4.x * iw;
+		EyeSpace.vertex3.y = vertex4.y * iw;
+		EyeSpace.vertex3.z = vertex4.z * iw;
 
 	}
 
@@ -1926,8 +2053,8 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 	//which means ETS_VIEW
 	setTransform(ETS_WORLD,irr::core::IdentityMatrix);
 	transform_calc(ETS_MODEL_VIEW);
-	Transformation[ETS_MODEL_VIEW].transformVec4 ( &l.pos4.x, &l.pos.x );
-	Transformation[ETS_MODEL_VIEW].rotateVec4 ( &l.spotDirection4.x, &l.spotDirection.x );
+	transformVec3Vec4(Transformation[ETS_MODEL_VIEW], &l.pos4.x, &l.pos.x );
+	rotateVec3Vec4(Transformation[ETS_MODEL_VIEW], &l.spotDirection4.x, &l.spotDirection.x );
 	EyeSpace.Light.push_back ( l );
 
 	return EyeSpace.Light.size() - 1;
@@ -2334,6 +2461,21 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 //#define SOFTWARE_DRIVER_2_2D_OLD
 //#define SOFTWARE_DRIVER_2_2D_AS_3D
 
+//! draws an 2d image
+// is void CNullDriver::draw2DImage (called by Demo::CMainMenu::CNullDriver)
+void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture)
+{
+	if (!texture)
+		return;
+
+	draw2DImage(texture, destPos,
+		core::rect<s32>(core::position2d<s32>(0, 0), core::dimension2di(texture->getOriginalSize())),
+		0,
+		SColor(255, 255, 255, 255),
+		useAlphaChannelOfTexture
+	);
+}
+
 #if defined(SOFTWARE_DRIVER_2_2D_OLD)
 //! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
@@ -2386,13 +2528,13 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 			os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);
 			return;
 		}
-		CImage* img = ((CSoftwareTexture2*)texture)->getImage();
-		if (useAlphaChannelOfTexture)
-			StretchBlit(BLITTER_TEXTURE_ALPHA_BLEND, RenderTargetSurface, clipRect,&destRect,
-				img, &sourceRect, &texture->getOriginalSize(), (colors ? colors[0].color : 0));
-		else
-			StretchBlit(BLITTER_TEXTURE, RenderTargetSurface, clipRect,&destRect,
-				img, &sourceRect, &texture->getOriginalSize(),(colors ? colors[0].color : 0));
+
+		u32 argb = (colors ? colors[0].color : 0xFFFFFFFF);
+		eBlitter op = useAlphaChannelOfTexture ?
+			argb == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND : BLITTER_TEXTURE_ALPHA_COLOR_BLEND : BLITTER_TEXTURE;
+
+		StretchBlit(op, RenderTargetSurface, clipRect, &destRect,
+			((CSoftwareTexture2*)texture)->getImage(), &sourceRect, &texture->getOriginalSize(), argb);
 	}
 }
 
@@ -2498,22 +2640,6 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 
 #else // SOFTWARE_DRIVER_2_2D_AS_3D
 
-//! draws an 2d image
-// is void CNullDriver::draw2DImage
-
-// called by Demo::CMainMenu::CNullDriver
-void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture)
-{
-	if (!texture)
-		return;
-
-	draw2DImage(texture, destPos,
-		core::rect<s32>(core::position2d<s32>(0, 0),core::dimension2di(texture->getOriginalSize())),
-		0,
-		SColor(255, 255, 255, 255),
-		useAlphaChannelOfTexture
-	);
-}
 
 //! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
@@ -2919,10 +3045,10 @@ void CBurningVideoDriver::clearBuffers(u16 flag, SColor color, f32 depth, u8 ste
 		RenderTargetSurface->fill(color);
 
 	if ((flag & ECBF_DEPTH) && DepthBuffer)
-		DepthBuffer->clear();
+		DepthBuffer->clear(depth);
 
 	if ((flag & ECBF_STENCIL) && StencilBuffer)
-		StencilBuffer->clear();
+		StencilBuffer->clear(stencil);
 }
 
 
@@ -2983,7 +3109,7 @@ ITexture* CBurningVideoDriver::createDeviceDependentTextureCubemap(const io::pat
 //! call.
 u32 CBurningVideoDriver::getMaximalPrimitiveCount() const
 {
-	return 0xFFFFFFFF;
+	return 0x7FFFFFFF;
 }
 
 
@@ -3091,7 +3217,7 @@ void CBurningVideoDriver::drawStencilShadow(bool clearStencilBuffer, video::SCol
 	}
 
 	if ( clearStencilBuffer )
-		StencilBuffer->clear();
+		StencilBuffer->clear(0);
 }
 
 
@@ -3108,7 +3234,7 @@ bool CBurningVideoDriver::queryTextureFormat(ECOLOR_FORMAT format) const
 
 bool CBurningVideoDriver::needsTransparentRenderPass(const irr::video::SMaterial& material) const
 {
-	return CNullDriver::needsTransparentRenderPass(material) || material.isTransparent();
+	return	CNullDriver::needsTransparentRenderPass(material) || material.isTransparent();
 }
 
 

@@ -76,17 +76,32 @@ namespace irr
 namespace video
 {
 
-class CTRTextureBlend : public IBurningShader
-{
-public:
+	class CTRTextureBlend : public IBurningShader
+	{
+	public:
 
-	//! constructor
-	CTRTextureBlend(CBurningVideoDriver* driver);
+		//! constructor
+		CTRTextureBlend(CBurningVideoDriver* driver);
 
-	//! draws an indexed triangle list
-	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
+		//! draws an indexed triangle list
+		virtual void drawTriangle(const s4DVertex *a, const s4DVertex *b, const s4DVertex *c) _IRR_OVERRIDE_;
+		virtual void OnSetMaterial(const SBurningShaderMaterial& material) _IRR_OVERRIDE_;
 
-	virtual void OnSetMaterial(const SBurningShaderMaterial& material) _IRR_OVERRIDE_;
+#if defined(PATCH_SUPERTUX_8_0_1)
+
+		virtual void setZCompareFunc(u32 func)
+		{
+			depth_func = (E_COMPARISON_FUNC)func;
+		}
+		virtual void setParam(u32 index, f32 value)
+		{
+			SBurningShaderMaterial material;
+			material.org.ZBuffer = depth_func;
+			material.org.MaterialTypeParam = value;
+			OnSetMaterial(material);
+	}
+
+#endif
 
 private:
 	// fragment shader
@@ -100,6 +115,7 @@ private:
 	void fragment_one_one_minus_src_alpha ();
 	void fragment_one_minus_dst_alpha_one();
 	void fragment_src_alpha_one();
+	void fragment_src_alpha_one_minus_src_alpha();
 
 	tFragmentShader fragmentShader;
 	sScanConvertData scan;
@@ -117,6 +133,7 @@ CTRTextureBlend::CTRTextureBlend(CBurningVideoDriver* driver)
 	#endif
 
 	depth_func = ECFN_LESSEQUAL;
+	fragmentShader = &CTRTextureBlend::fragment_dst_color_zero;
 }
 
 /*!
@@ -126,6 +143,7 @@ void CTRTextureBlend::OnSetMaterial(const SBurningShaderMaterial& material)
 	int showname = 0;
 
 	depth_func = (E_COMPARISON_FUNC)material.org.ZBuffer;
+	AlphaRef = 0; // tofix(material.org.MaterialTypeParam, FIXPOINT_COLOR_MAX);
 
 	E_BLEND_FACTOR srcFact,dstFact;
 	E_MODULATE_FUNC modulate;
@@ -138,43 +156,39 @@ void CTRTextureBlend::OnSetMaterial(const SBurningShaderMaterial& material)
 	{
 		fragmentShader = &CTRTextureBlend::fragment_dst_color_zero;
 	}
-	else
-	if ( srcFact == EBF_DST_COLOR && dstFact == EBF_ONE )
+	else if ( srcFact == EBF_DST_COLOR && dstFact == EBF_ONE )
 	{
 		fragmentShader = &CTRTextureBlend::fragment_dst_color_one;
 	}
-	else
-	if ( srcFact == EBF_DST_COLOR && dstFact == EBF_SRC_ALPHA)
+	else if ( srcFact == EBF_DST_COLOR && dstFact == EBF_SRC_ALPHA)
 	{
 		fragmentShader = &CTRTextureBlend::fragment_dst_color_src_alpha;
 	}
-	else
-	if ( srcFact == EBF_DST_COLOR && dstFact == EBF_ONE_MINUS_DST_ALPHA)
+	else if ( srcFact == EBF_DST_COLOR && dstFact == EBF_ONE_MINUS_DST_ALPHA)
 	{
 		fragmentShader = &CTRTextureBlend::fragment_dst_color_one_minus_dst_alpha;
 	}
-	else
-	if ( srcFact == EBF_ZERO && dstFact == EBF_ONE_MINUS_SRC_COLOR )
+	else if ( srcFact == EBF_ZERO && dstFact == EBF_ONE_MINUS_SRC_COLOR )
 	{
 		fragmentShader = &CTRTextureBlend::fragment_zero_one_minus_scr_color;
 	}
-	else
-	if ( srcFact == EBF_ONE && dstFact == EBF_ONE_MINUS_SRC_ALPHA)
+	else if ( srcFact == EBF_ONE && dstFact == EBF_ONE_MINUS_SRC_ALPHA)
 	{
 		fragmentShader = &CTRTextureBlend::fragment_one_one_minus_src_alpha;
 	}
-	else
-	if ( srcFact == EBF_ONE_MINUS_DST_ALPHA && dstFact == EBF_ONE )
+	else if ( srcFact == EBF_ONE_MINUS_DST_ALPHA && dstFact == EBF_ONE )
 	{
 		fragmentShader = &CTRTextureBlend::fragment_one_minus_dst_alpha_one;
 	}
-	else
-	if ( srcFact == EBF_SRC_ALPHA && dstFact == EBF_ONE )
+	else if ( srcFact == EBF_SRC_ALPHA && dstFact == EBF_ONE )
 	{
 		fragmentShader = &CTRTextureBlend::fragment_src_alpha_one;
 	}
-	else
-	if ( srcFact == EBF_SRC_COLOR && dstFact == EBF_SRC_ALPHA )
+	else if (srcFact == EBF_SRC_ALPHA && dstFact == EBF_ONE_MINUS_SRC_ALPHA)
+	{
+		fragmentShader = &CTRTextureBlend::fragment_src_alpha_one_minus_src_alpha;
+	}
+	else if ( srcFact == EBF_SRC_COLOR && dstFact == EBF_SRC_ALPHA )
 	{
 		fragmentShader = &CTRTextureBlend::fragment_src_color_src_alpha;
 	}
@@ -206,7 +220,7 @@ void CTRTextureBlend::OnSetMaterial(const SBurningShaderMaterial& material)
 	{
 		char buf[128];
 		snprintf_irr ( buf, 128, "missing shader: %s %s",n[srcFact], n[dstFact] );
-		os::Printer::log( buf, ELL_INFORMATION );
+		os::Printer::log( buf, ELL_WARNING);
 
 		lsrcFact = srcFact;
 		ldstFact = dstFact;
@@ -1213,6 +1227,162 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 		line.c[0][0] += slopeC[0];
 #endif
 	}break;
+	} // zcompare
+
+}
+
+
+/*!
+*/
+void CTRTextureBlend::fragment_src_alpha_one_minus_src_alpha()
+{
+	tVideoSample *dst;
+
+#ifdef USE_ZBUFFER
+	fp24 *z;
+#endif
+
+	s32 xStart;
+	s32 xEnd;
+	s32 dx;
+
+
+#ifdef SUBTEXEL
+	f32 subPixel;
+#endif
+
+#ifdef IPOL_Z
+	f32 slopeZ;
+#endif
+#ifdef IPOL_W
+	fp24 slopeW;
+#endif
+#ifdef IPOL_C0
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
+#endif
+#ifdef IPOL_T0
+	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
+#endif
+
+	// apply top-left fill-convention, left
+	xStart = fill_convention_left(line.x[0]);
+	xEnd = fill_convention_right(line.x[1]);
+
+	dx = xEnd - xStart;
+	if (dx < 0)
+		return;
+
+	// slopes
+	const f32 invDeltaX = reciprocal_zero2(line.x[1] - line.x[0]);
+
+#ifdef IPOL_Z
+	slopeZ = (line.z[1] - line.z[0]) * invDeltaX;
+#endif
+#ifdef IPOL_W
+	slopeW = (line.w[1] - line.w[0]) * invDeltaX;
+#endif
+#ifdef IPOL_C0
+	slopeC[0] = (line.c[0][1] - line.c[0][0]) * invDeltaX;
+#endif
+#ifdef IPOL_T0
+	slopeT[0] = (line.t[0][1] - line.t[0][0]) * invDeltaX;
+#endif
+#ifdef IPOL_T1
+	slopeT[1] = (line.t[1][1] - line.t[1][0]) * invDeltaX;
+#endif
+
+#ifdef SUBTEXEL
+	subPixel = ((f32)xStart) - line.x[0];
+#ifdef IPOL_Z
+	line.z[0] += slopeZ * subPixel;
+#endif
+#ifdef IPOL_W
+	line.w[0] += slopeW * subPixel;
+#endif
+#ifdef IPOL_C0
+	line.c[0][0] += slopeC[0] * subPixel;
+#endif
+#ifdef IPOL_T0
+	line.t[0][0] += slopeT[0] * subPixel;
+#endif
+#ifdef IPOL_T1
+	line.t[1][0] += slopeT[1] * subPixel;
+#endif
+#endif
+
+	SOFTWARE_DRIVER_2_CLIPCHECK;
+	dst = (tVideoSample*)RenderTarget->getData() + (line.y * RenderTarget->getDimension().Width) + xStart;
+
+#ifdef USE_ZBUFFER
+	z = (fp24*)DepthBuffer->lock() + (line.y * RenderTarget->getDimension().Width) + xStart;
+#endif
+
+
+	f32 iw = FIX_POINT_F32_MUL;
+
+	tFixPoint a0, r0, g0, b0;
+	tFixPoint     r1, g1, b1;
+
+#ifdef IPOL_C0
+	tFixPoint a2, r2, g2, b2;
+#endif
+
+	s32 i;
+
+	switch (depth_func)
+	{
+	default:
+	case ECFN_LESSEQUAL:
+		for (i = 0; i <= dx; ++i)
+		{
+#ifdef CMP_W
+			if (line.w[0] >= z[i])
+#endif
+
+			{
+#ifdef WRITE_W
+		//z[i] = line.w[0];
+#endif
+
+#ifdef INVERSE_W
+				iw = fix_inverse32(line.w[0]);
+#endif
+
+				getSample_texture(a0, r0, g0, b0, &IT[0], tofix(line.t[0][0].x, iw), tofix(line.t[0][0].y, iw));
+				if (a0 > AlphaRef)
+				{
+#ifdef IPOL_C0
+					getSample_color(a2, r2, g2, b2, line.c[0][0], iw);
+					//a0 = imulFix(a0, a2); why is vertex color enabled and not vertex_alpha?
+					r0 = imulFix(r0, r2);
+					g0 = imulFix(g0, g2);
+					b0 = imulFix(b0, b2);
+#endif
+
+					color_to_fix(r1, g1, b1, dst[i]);
+
+					fix_color_norm(a0);
+
+					r2 = r1 + imulFix(a0, r0 - r1);
+					g2 = g1 + imulFix(a0, g0 - g1);
+					b2 = b1 + imulFix(a0, b0 - b1);
+					dst[i] = fix4_to_color(a0, r2, g2, b2);
+				}
+
+			}
+
+#ifdef IPOL_W
+			line.w[0] += slopeW;
+#endif
+#ifdef IPOL_T0
+			line.t[0][0] += slopeT[0];
+#endif
+#ifdef IPOL_C0
+			line.c[0][0] += slopeC[0];
+#endif
+		}
+		break;
+
 	} // zcompare
 
 }

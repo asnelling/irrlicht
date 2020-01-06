@@ -13,6 +13,7 @@
 #include "irrString.h"
 #include "SIrrCreationParameters.h"
 
+
 namespace irr
 {
 namespace video
