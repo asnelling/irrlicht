@@ -586,10 +586,10 @@ struct SVertexCache
 	u32 indexCount;
 	u32 indicesIndex;
 	u32 indicesRun;
+	u32 indicesPitch;
 
 	// primitives consist of x vertices
 	u32 primitiveHasVertex;
-	u32 primitivePitch;
 
 	e4DVertexType vType;		//E_VERTEX_TYPE
 	scene::E_PRIMITIVE_TYPE pType;		//scene::E_PRIMITIVE_TYPE

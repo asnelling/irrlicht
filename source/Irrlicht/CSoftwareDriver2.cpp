@@ -112,15 +112,27 @@ bool mat44_transposed_inverse(CMatrix4<T>& out, const CMatrix4<T>& M)
 	return true;
 }
 
+// void CMatrix4<T>::transformVec4(T *out, const T * in) const
 template <class T>
-inline void transformVec3Vec4(const CMatrix4<T>& m, T *out, const T* in)
+inline void transformVec4Vec4(const CMatrix4<T>& m, T *out, const T* in)
 {
 	const T* M = m.pointer();
 
-	out[0] = in[0] * M[0] + in[1] * M[4] + in[2] * M[8] + in[3] * M[12];
-	out[1] = in[0] * M[1] + in[1] * M[5] + in[2] * M[9] + in[3] * M[13];
+	out[0] = in[0] * M[0] + in[1] * M[4] + in[2] * M[8]  + in[3] * M[12];
+	out[1] = in[0] * M[1] + in[1] * M[5] + in[2] * M[9]  + in[3] * M[13];
 	out[2] = in[0] * M[2] + in[1] * M[6] + in[2] * M[10] + in[3] * M[14];
 	out[3] = in[0] * M[3] + in[1] * M[7] + in[2] * M[11] + in[3] * M[15];
+}
+
+// void CMatrix4<T>::transformVect(T *out, const core::vector3df &in) const
+template <class T>
+inline void transformVec3Vec4(const CMatrix4<T>& m,T *out, const core::vector3df &in)
+{
+	const T* M = m.pointer();
+	out[0] = in.X*M[0] + in.Y*M[4] + in.Z*M[8]  + M[12];
+	out[1] = in.X*M[1] + in.Y*M[5] + in.Z*M[9]  + M[13];
+	out[2] = in.X*M[2] + in.Y*M[6] + in.Z*M[10] + M[14];
+	out[3] = in.X*M[3] + in.Y*M[7] + in.Z*M[11] + M[15];
 }
 
 template <class T>
@@ -131,6 +143,7 @@ inline void rotateVec3Vec4(const CMatrix4<T>& m, T *out, const T* in)
 	out[0] = in[0] * M[0] + in[1] * M[4] + in[2] * M[8];
 	out[1] = in[0] * M[1] + in[1] * M[5] + in[2] * M[9];
 	out[2] = in[0] * M[2] + in[1] * M[6] + in[2] * M[10];
+	//out[3] = 0.f;
 }
 
 } // end namespace video
@@ -1251,14 +1264,16 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 	{
 		sVec4 vertex4; //eye coordinate position of vertex
 		Transformation[ETS_MODEL_VIEW].transformVect ( &vertex4.x, base->Pos );
-		Transformation[ETS_NORMAL].rotateVect(&EyeSpace.normal3.x,base->Normal);
-		if ( EyeSpace.Flags & NORMALIZE_NORMALS )
-			EyeSpace.normal3.normalize_dir_xyz();
 
 		f32 iw = reciprocal_zero(vertex4.w);
 		EyeSpace.vertex3.x = vertex4.x * iw;
 		EyeSpace.vertex3.y = vertex4.y * iw;
 		EyeSpace.vertex3.z = vertex4.z * iw;
+		EyeSpace.vertex3.w = iw;
+
+		Transformation[ETS_NORMAL].rotateVect(&EyeSpace.normal3.x, base->Normal);
+		if (EyeSpace.Flags & NORMALIZE_NORMALS)
+			EyeSpace.normal3.normalize_dir_xyz();
 
 	}
 
@@ -1678,7 +1693,7 @@ void CBurningVideoDriver::VertexCache_get(s4DVertex ** face)
 		break;
 	}
 
-	VertexCache.indicesRun += VertexCache.primitivePitch;
+	VertexCache.indicesRun += VertexCache.indicesPitch;
 }
 
 
@@ -1720,64 +1735,64 @@ void CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCo
 
 	VertexCache.pType = pType;
 	VertexCache.primitiveHasVertex = 3;
-	VertexCache.primitivePitch = 1;
+	VertexCache.indicesPitch = 1;
 	switch ( VertexCache.pType )
 	{
 		// most types here will not work as expected, only triangles/triangle_fan
 		// is known to work.
 		case scene::EPT_POINTS:
 			VertexCache.indexCount = primitiveCount;
-			VertexCache.primitivePitch = 1;
+			VertexCache.indicesPitch = 1;
 			VertexCache.primitiveHasVertex = 1;
 			break;
 		case scene::EPT_LINE_STRIP:
 			VertexCache.indexCount = primitiveCount+1;
-			VertexCache.primitivePitch = 1;
+			VertexCache.indicesPitch = 1;
 			VertexCache.primitiveHasVertex = 2;
 			break;
 		case scene::EPT_LINE_LOOP:
 			VertexCache.indexCount = primitiveCount+1;
-			VertexCache.primitivePitch = 1;
+			VertexCache.indicesPitch = 1;
 			VertexCache.primitiveHasVertex = 2;
 			break;
 		case scene::EPT_LINES:
 			VertexCache.indexCount = 2*primitiveCount;
-			VertexCache.primitivePitch = 2;
+			VertexCache.indicesPitch = 2;
 			VertexCache.primitiveHasVertex = 2;
 			break;
 		case scene::EPT_TRIANGLE_STRIP:
 			VertexCache.indexCount = primitiveCount+2;
-			VertexCache.primitivePitch = 1;
+			VertexCache.indicesPitch = 1;
 			VertexCache.primitiveHasVertex = 3;
 			break;
 		case scene::EPT_TRIANGLES:
 			VertexCache.indexCount = primitiveCount + primitiveCount + primitiveCount;
-			VertexCache.primitivePitch = 3;
+			VertexCache.indicesPitch = 3;
 			VertexCache.primitiveHasVertex = 3;
 			break;
 		case scene::EPT_TRIANGLE_FAN:
 			VertexCache.indexCount = primitiveCount + 2;
-			VertexCache.primitivePitch = 1;
+			VertexCache.indicesPitch = 1;
 			VertexCache.primitiveHasVertex = 3;
 			break;
 		case scene::EPT_QUAD_STRIP:
 			VertexCache.indexCount = 2*primitiveCount + 2;
-			VertexCache.primitivePitch = 2;
+			VertexCache.indicesPitch = 2;
 			VertexCache.primitiveHasVertex = 4;
 			break;
 		case scene::EPT_QUADS:
 			VertexCache.indexCount = 4*primitiveCount;
-			VertexCache.primitivePitch = 4;
+			VertexCache.indicesPitch = 4;
 			VertexCache.primitiveHasVertex = 4;
 			break;
 		case scene::EPT_POLYGON:
 			VertexCache.indexCount = primitiveCount+1;
-			VertexCache.primitivePitch = 1;
+			VertexCache.indicesPitch = 1;
 			VertexCache.primitiveHasVertex = primitiveCount;
 			break;
 		case scene::EPT_POINT_SPRITES:
 			VertexCache.indexCount = primitiveCount;
-			VertexCache.primitivePitch = 1;
+			VertexCache.indicesPitch = 1;
 			VertexCache.primitiveHasVertex = 1;
 			break;
 	}
@@ -1998,20 +2013,19 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			l.pos.z = dl.Position.Z;
 			l.pos.w = 0.f;
 
-			l.spotDirection.x = -nDirection.x;
-			l.spotDirection.y = -nDirection.y;
-			l.spotDirection.z = -nDirection.z;
-			l.spotDirection.w = 0.f;
-
 			l.constantAttenuation = 1.f;
 			l.linearAttenuation = 0.f;
 			l.quadraticAttenuation = 0.f;
 
+			l.spotDirection.x = -nDirection.x;
+			l.spotDirection.y = -nDirection.y;
+			l.spotDirection.z = -nDirection.z;
+			l.spotDirection.w = 0.f;
 			l.spotCosCutoff = -1.f;
 			l.spotCosInnerCutoff = 1.f;
 			l.spotExponent = 0.f;
-
 			break;
+
 		case ELT_POINT:
 			l.pos.x = dl.Position.X;
 			l.pos.y = dl.Position.Y;
@@ -2022,6 +2036,10 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			l.linearAttenuation = dl.Attenuation.Y;
 			l.quadraticAttenuation = dl.Attenuation.Z;
 
+			l.spotDirection.x = -nDirection.x;
+			l.spotDirection.y = -nDirection.y;
+			l.spotDirection.z = -nDirection.z;
+			l.spotDirection.w = 0.f;
 			l.spotCosCutoff = -1.f;
 			l.spotCosInnerCutoff = 1.f;
 			l.spotExponent = 0.f;
@@ -2033,15 +2051,14 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 			l.pos.z = dl.Position.Z;
 			l.pos.w = 1.f;
 
-			l.spotDirection.x = nDirection.x;
-			l.spotDirection.y = nDirection.y;
-			l.spotDirection.z = nDirection.z;
-			l.spotDirection.w = 0.0f;
-
 			l.constantAttenuation = dl.Attenuation.X;
 			l.linearAttenuation = dl.Attenuation.Y;
 			l.quadraticAttenuation = dl.Attenuation.Z;
 
+			l.spotDirection.x = nDirection.x;
+			l.spotDirection.y = nDirection.y;
+			l.spotDirection.z = nDirection.z;
+			l.spotDirection.w = 0.0f;
 			l.spotCosCutoff = cosf(dl.OuterCone * 2.0f * core::DEGTORAD * 0.5f);
 			l.spotCosInnerCutoff = cosf(dl.InnerCone * 2.0f * core::DEGTORAD * 0.5f);
 			l.spotExponent = dl.Falloff;
@@ -2053,7 +2070,7 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 	//which means ETS_VIEW
 	setTransform(ETS_WORLD,irr::core::IdentityMatrix);
 	transform_calc(ETS_MODEL_VIEW);
-	transformVec3Vec4(Transformation[ETS_MODEL_VIEW], &l.pos4.x, &l.pos.x );
+	transformVec4Vec4(Transformation[ETS_MODEL_VIEW], &l.pos4.x, &l.pos.x );
 	rotateVec3Vec4(Transformation[ETS_MODEL_VIEW], &l.spotDirection4.x, &l.spotDirection.x );
 	EyeSpace.Light.push_back ( l );
 
@@ -2094,6 +2111,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	for (u32 m = 0; m < BURNING_MATERIAL_MAX_TEXTURES /*&& m < vSize[VertexCache.vType].TexSize*/; ++m)
 	{
 		setTransform((E_TRANSFORMATION_STATE) (ETS_TEXTURE_0 + m),material.getTextureMatrix(m));
+		TransformationFlag[ETS_TEXTURE_0+m] &= ~ETF_TEXGEN_MASK;
 	}
 #endif
 
@@ -2125,8 +2143,6 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 
 	EBurningFFShader shader = Material.depth_test ? ETR_TEXTURE_GOURAUD : ETR_TEXTURE_GOURAUD_NOZ;
 
-	TransformationFlag[ETS_TEXTURE_0] &= ~ETF_TEXGEN_MASK;
-	TransformationFlag[ETS_TEXTURE_1] &= ~ETF_TEXGEN_MASK;
 	EyeSpace.Flags &= ~TEXTURE_TRANSFORM;
 
 	switch (Material.org.MaterialType)
@@ -2460,9 +2476,10 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 
 //#define SOFTWARE_DRIVER_2_2D_OLD
 //#define SOFTWARE_DRIVER_2_2D_AS_3D
+#define SOFTWARE_DRIVER_2_2D_NEW
 
 //! draws an 2d image
-// is void CNullDriver::draw2DImage (called by Demo::CMainMenu::CNullDriver)
+// is copy of void CNullDriver::draw2DImage
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture)
 {
 	if (!texture)
@@ -2537,18 +2554,91 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 			((CSoftwareTexture2*)texture)->getImage(), &sourceRect, &texture->getOriginalSize(), argb);
 	}
 }
+#endif
 
-#else
 
-
-//setup a quad
-#if defined SOFTWARE_DRIVER_2_2D_AS_3D
-
+#if defined(SOFTWARE_DRIVER_2_2D_NEW)
 //! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
 					 const core::rect<s32>& sourceRect,
 					 const core::rect<s32>* clipRect, SColor color,
 					 bool useAlphaChannelOfTexture)
+{
+	if (!texture) return;
+	if (texture->getDriverType() != EDT_BURNINGSVIDEO)
+	{
+		os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);
+		return;
+	}
+
+	//simplify blitter
+	eBlitter op = useAlphaChannelOfTexture ? (color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
+	const core::dimension2d<u32>& o = texture->getOriginalSize();
+	CImage* img = ((CSoftwareTexture2*)texture)->getImage();
+
+	if (o == texture->getSize() )
+	{
+		Blit(op, RenderTargetSurface, clipRect, &destPos, img, &sourceRect,&o,color.color);
+	}
+	else
+	{
+		core::rect<s32> destRect(destPos,sourceRect.getSize());
+		SColor c[4] = { color,color,color,color };
+		//StretchBlit(op,RenderTargetSurface, 0,&destRect, img,&sourceRect,&texture->getOriginalSize(),color.color);
+		draw2DImage(texture,destRect,sourceRect,0,c,useAlphaChannelOfTexture);
+	}
+
+}
+
+
+//! Draws a part of the texture into the rectangle.
+void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::rect<s32>& destRect,
+		const core::rect<s32>& sourceRect, const core::rect<s32>* clipRect,
+		const video::SColor* const colors, bool useAlphaChannelOfTexture)
+{
+	if (!texture) return;
+	if (texture->getDriverType() != EDT_BURNINGSVIDEO)
+	{
+		os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);
+		return;
+	}
+
+	if ( OverrideMaterial2DEnabled ) {}
+
+	CImage* img = ((CSoftwareTexture2*)texture)->getImage();
+	u32 argb = (colors ? colors[0].color : 0xFFFFFFFF);
+	eBlitter op = useAlphaChannelOfTexture ? (argb == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
+	if ( op == BLITTER_TEXTURE )
+	{
+		core::rect<s32> src(sourceRect);
+		const core::dimension2d<u32>& o = texture->getOriginalSize();
+		const core::dimension2d<u32>& w = texture->getSize();
+		if ( o != w)
+		{
+			src.UpperLeftCorner.X = (sourceRect.UpperLeftCorner.X*w.Width)/o.Width;
+			src.UpperLeftCorner.Y = (sourceRect.UpperLeftCorner.Y*w.Height)/o.Height;
+			src.LowerRightCorner.X = (sourceRect.LowerRightCorner.X*w.Width)/o.Width;
+			src.LowerRightCorner.Y = (sourceRect.LowerRightCorner.Y*w.Height)/o.Height;
+		}
+		Resample_subSampling(op,RenderTargetSurface,&destRect,img,&src);
+	}
+	else
+	{
+		StretchBlit(op,RenderTargetSurface, clipRect,&destRect, img,&sourceRect,&texture->getOriginalSize(),argb);
+	}
+}
+
+#endif // SOFTWARE_DRIVER_2_2D_NEW
+
+
+//setup a quad
+#if defined(SOFTWARE_DRIVER_2_2D_AS_3D)
+
+//! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
+void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
+	const core::rect<s32>& sourceRect,
+	const core::rect<s32>* clipRect, SColor color,
+	bool useAlphaChannelOfTexture)
 {
 	if (!texture)
 		return;
@@ -2561,19 +2651,19 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 	if (clipRect)
 	{
 		targetRect.clipAgainst(*clipRect);
-		if ( targetRect.getWidth() < 0 || targetRect.getHeight() < 0 )
+		if (targetRect.getWidth() < 0 || targetRect.getHeight() < 0)
 			return;
 	}
 
 	const core::dimension2d<u32>& renderTargetSize = getCurrentRenderTargetSize();
-	targetRect.clipAgainst( core::rect<s32>(0,0, (s32)renderTargetSize.Width, (s32)renderTargetSize.Height) );
-	if ( targetRect.getWidth() < 0 || targetRect.getHeight() < 0 )
-			return;
+	targetRect.clipAgainst(core::rect<s32>(0, 0, (s32)renderTargetSize.Width, (s32)renderTargetSize.Height));
+	if (targetRect.getWidth() < 0 || targetRect.getHeight() < 0)
+		return;
 
 	// ok, we've clipped everything.
 	// now draw it.
 	const core::dimension2d<s32> sourceSize(targetRect.getSize());
-	const core::position2d<s32> sourcePos(sourceRect.UpperLeftCorner + (targetRect.UpperLeftCorner-destPos));
+	const core::position2d<s32> sourcePos(sourceRect.UpperLeftCorner + (targetRect.UpperLeftCorner - destPos));
 
 	const core::dimension2d<u32>& tex_orgsize = texture->getOriginalSize();
 	const f32 invW = 1.f / static_cast<f32>(tex_orgsize.Width);
@@ -2588,7 +2678,7 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 	disableTextures(1);
 	if (!CacheHandler->getTextureCache().set(0, texture))
 		return;
-	setRenderStates2DMode(color.getAlpha()<255, true, useAlphaChannelOfTexture);
+	setRenderStates2DMode(color.getAlpha() < 255, true, useAlphaChannelOfTexture);
 
 	Quad2DVertices[0].Color = color;
 	Quad2DVertices[1].Color = color;
@@ -2632,90 +2722,43 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 
 //! Draws a part of the texture into the rectangle.
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::rect<s32>& destRect,
-		const core::rect<s32>& sourceRect, const core::rect<s32>* clipRect,
-		const video::SColor* const colors, bool useAlphaChannelOfTexture)
+	const core::rect<s32>& sourceRect, const core::rect<s32>* clipRect,
+	const video::SColor* const colors, bool useAlphaChannelOfTexture)
 {
-}
-
-
-#else // SOFTWARE_DRIVER_2_2D_AS_3D
-
-
-//! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
-void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
-					 const core::rect<s32>& sourceRect,
-					 const core::rect<s32>* clipRect, SColor color,
-					 bool useAlphaChannelOfTexture)
-{
-	if (!texture) return;
-	if (texture->getDriverType() != EDT_BURNINGSVIDEO)
-	{
-		os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);
-		return;
-	}
-
-	//simplify blitter
-	eBlitter op = useAlphaChannelOfTexture ? (color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
-	const core::dimension2d<u32>& o = texture->getOriginalSize();
-	CImage* img = ((CSoftwareTexture2*)texture)->getImage();
-
-	if (o == texture->getSize() )
-	{
-		Blit(op, RenderTargetSurface, clipRect, &destPos, img, &sourceRect,&o,color.color);
-	}
-	else
-	{
-		core::rect<s32> destRect(destPos,sourceRect.getSize());
-		SColor c[4] = { color,color,color,color };
-		//StretchBlit(op,RenderTargetSurface, 0,&destRect, img,&sourceRect,&texture->getOriginalSize(),color.color);
-		draw2DImage(texture,destRect,sourceRect,0,c,useAlphaChannelOfTexture);
-	}
-
-}
-
-
-//! Draws a part of the texture into the rectangle.
-void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::rect<s32>& destRect,
-		const core::rect<s32>& sourceRect, const core::rect<s32>* clipRect,
-		const video::SColor* const colors, bool useAlphaChannelOfTexture)
-{
-	if (!texture) return;
-
-	if ( OverrideMaterial2DEnabled ) {}
-
-	CImage* img = ((CSoftwareTexture2*)texture)->getImage();
-	u32 argb = (colors ? colors[0].color : 0xFFFFFFFF);
-	eBlitter op = useAlphaChannelOfTexture ? (argb == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
-	if ( op == BLITTER_TEXTURE )
-	{
-		core::rect<s32> src(sourceRect);
-		const core::dimension2d<u32>& o = texture->getOriginalSize();
-		const core::dimension2d<u32>& w = texture->getSize();
-		if ( o != w)
-		{
-			src.UpperLeftCorner.X = (sourceRect.UpperLeftCorner.X*w.Width)/o.Width;
-			src.UpperLeftCorner.Y = (sourceRect.UpperLeftCorner.Y*w.Height)/o.Height;
-			src.LowerRightCorner.X = (sourceRect.LowerRightCorner.X*w.Width)/o.Width;
-			src.LowerRightCorner.Y = (sourceRect.LowerRightCorner.Y*w.Height)/o.Height;
-		}
-		Resample_subSampling(op,RenderTargetSurface,&destRect,img,&src);
-	}
-	else
-	{
-		StretchBlit(op,RenderTargetSurface, clipRect,&destRect, img,&sourceRect,&texture->getOriginalSize(),argb);
-	}
 }
 
 #endif // SOFTWARE_DRIVER_2_2D_AS_3D
 
-#endif // defined(SOFTWARE_DRIVER_2_2D_OLD)
+//! draw an 2d rectangle 1:1 niko
+void CBurningVideoDriver::draw2DRectangle(SColor color, const core::rect<s32>& pos,
+	const core::rect<s32>* clip)
+{
+	if (clip)
+	{
+		core::rect<s32> p(pos);
+
+		p.clipAgainst(*clip);
+
+		if (!p.isValid())
+			return;
+
+		drawRectangle(RenderTargetSurface, p, color);
+	}
+	else
+	{
+		if (!pos.isValid())
+			return;
+
+		drawRectangle(RenderTargetSurface, pos, color);
+	}
+}
 
 //!Draws an 2d rectangle with a gradient.
 void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
 	const core::rect<s32>* clip)
 {
-#if defined(SOFTWARE_DRIVER_2_2D_AS_3D) && !defined(SOFTWARE_DRIVER_2_2D_OLD)
+#if defined(SOFTWARE_DRIVER_2_2D_AS_3D) || defined(SOFTWARE_DRIVER_2_2D_NEW)
 	core::rect<s32> pos = position;
 	if (clip) pos.clipAgainst(*clip);
 	if (!pos.isValid()) return;
@@ -2734,7 +2777,7 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 
 	VertexCache.indicesIndex = 0;
 	VertexCache.indicesRun = 0;
-	VertexCache.primitivePitch = 1;
+	VertexCache.indicesPitch = 1;
 	VertexCache.primitiveHasVertex = 3;
 
 	VertexCache.info[0].index = 0;
@@ -2832,39 +2875,14 @@ void CBurningVideoDriver::draw2DLine(const core::position2d<s32>& start,
 					const core::position2d<s32>& end,
 					SColor color)
 {
-	drawLine(BackBuffer, start, end, color );
+	drawLine(RenderTargetSurface, start, end, color );
 }
 
 
 //! Draws a pixel
 void CBurningVideoDriver::drawPixel(u32 x, u32 y, const SColor & color)
 {
-	BackBuffer->setPixel(x, y, color, true);
-}
-
-
-//! draw an 2d rectangle
-void CBurningVideoDriver::draw2DRectangle(SColor color, const core::rect<s32>& pos,
-									 const core::rect<s32>* clip)
-{
-	if (clip)
-	{
-		core::rect<s32> p(pos);
-
-		p.clipAgainst(*clip);
-
-		if(!p.isValid())
-			return;
-
-		drawRectangle(BackBuffer, p, color);
-	}
-	else
-	{
-		if(!pos.isValid())
-			return;
-
-		drawRectangle(BackBuffer, pos, color);
-	}
+	RenderTargetSurface->setPixel(x, y, color, true);
 }
 
 

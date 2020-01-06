@@ -641,7 +641,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTRGouraudAlphaNoZ2(CBurningVideoDriver* driver)
 {
-	//ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT 2D
+	//ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT  - draw2DRectangle Gradient
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRGouraudAlphaNoZ2(driver);
 	#else
