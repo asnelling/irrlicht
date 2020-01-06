@@ -121,7 +121,6 @@ bool CImageWriterPNG::writeImage(io::IWriteFile* file, IImage* image,u32 param) 
 				image->getDimension().Width, image->getDimension().Height,
 				8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
 				PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-			break;
 	}
 
 	s32 lineWidth = image->getDimension().Width;
@@ -164,7 +163,10 @@ bool CImageWriterPNG::writeImage(io::IWriteFile* file, IImage* image,u32 param) 
 		break;
 		// TODO: Error handling in case of unsupported color format
 	default:
-		break;
+		os::Printer::log("CImageWriterPNG does not support image format", ColorFormatNames[image->getColorFormat()], ELL_WARNING);
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		delete [] tmpImage;
+		return false;
 	}
 
 	// Create array of pointers to rows in image data
