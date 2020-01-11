@@ -179,6 +179,15 @@ namespace video
 		virtual void postEventFromUser(const void* sevent)  _IRR_OVERRIDE_;
 #endif
 
+		//! Adds a new material renderer to the VideoDriver, using pixel and/or
+		//! vertex shaders to render geometry.
+		virtual s32 addShaderMaterial(const c8* vertexShaderProgram,
+			const c8* pixelShaderProgram,
+			IShaderConstantSetCallBack* callback,
+			E_MATERIAL_TYPE baseMaterial,
+			s32 userData) _IRR_OVERRIDE_;
+
+
 	protected:
 
 		void saveBuffer();
@@ -243,10 +252,10 @@ namespace video
 		void transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO state);
 
 		// Vertex Cache
-		SVSize vSize[8];
+		SVSize vSize[E4VT_COUNT];
 		SVertexCache VertexCache;
 
-		void VertexCache_reset (const void* vertices, u32 vertexCount,
+		int VertexCache_reset (const void* vertices, u32 vertexCount,
 					const void* indices, u32 indexCount,
 					E_VERTEX_TYPE vType,scene::E_PRIMITIVE_TYPE pType,
 					E_INDEX_TYPE iType);
@@ -259,7 +268,7 @@ namespace video
 
 		// culling & clipping
 		size_t clipToHyperPlane (s4DVertexPair* dest, const s4DVertexPair* source, size_t inCount, const sVec4 &plane );
-		u32 clipToFrustumTest ( const s4DVertex * v  ) const;
+		size_t clipToFrustumTest ( const s4DVertex * v  ) const;
 		size_t clipToFrustum ( s4DVertex* source, s4DVertex* temp, const size_t vIn );
 
 
@@ -280,14 +289,16 @@ namespace video
 		void ndc_2_dc_and_project (s4DVertexPair* dest,const s4DVertexPair* source, const size_t vIn ) const;
 
 		//const is misleading. **v is const that true, but not *v..
-		f32 screenarea_inside ( s4DVertex* const v[] ) const;
-		f32 texelarea_inside ( s4DVertex* const v[], const size_t tex ) const;
+		int face_sort(s4DVertexPair* face[]) const;
+		f32 screenarea_inside (const s4DVertexPair* const face[] ) const;
+		s32 lodFactor_inside ( const s4DVertexPair* const face[], const size_t tex, f32 dc_area ) const;
 		void select_polygon_mipmap_inside ( s4DVertex* source[], const size_t tex, const CSoftwareTexture2_Bound& b ) const;
 
-		f32 screenarea_clipped(const s4DVertex *v0) const;
-		void select_polygon_mipmap_clipped(s4DVertex *source, const size_t vIn, const size_t tex, const CSoftwareTexture2_Bound& b) const;
-		f32 texelarea_clipped(const s4DVertex *v0, const size_t tex) const;
-
+#if 0
+		f32 screenarea_clipped_first(const s4DVertexPair *v) const;
+		s32 lodFactor_clipped_first(const s4DVertexPair *v0, const size_t tex, f32 dc_area) const;
+		void select_polygon_mipmap_clipped(s4DVertexPair *source, const size_t vIn, const size_t tex, const CSoftwareTexture2_Bound& b) const;
+#endif
 
 		SBurningShaderEyeSpace EyeSpace;
 		SBurningShaderMaterial Material;

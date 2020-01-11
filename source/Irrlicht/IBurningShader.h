@@ -194,7 +194,8 @@ namespace video
 			stencilOp[2] = dppass;
 		}
 
-	protected:
+
+	//protected:
 
 		CBurningVideoDriver *Driver;
 

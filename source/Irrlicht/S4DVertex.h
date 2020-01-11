@@ -370,7 +370,9 @@ enum e4DVertexType
 	E4VT_2TCOORDS = 1,			// EVT_2TCOORDS, video::S3DVertex2TCoords.
 	E4VT_TANGENTS = 2,			// EVT_TANGENTS, video::S3DVertexTangents
 	E4VT_REFLECTION_MAP = 3,
-	E4VT_SHADOW = 4				// float * 3
+	E4VT_SHADOW = 4,			// float * 3
+	E4VT_NO_TEXTURE = 5,		// runtime if texture missing
+	E4VT_COUNT
 };
 
 enum e4DIndexType
@@ -478,6 +480,8 @@ struct s4DVertex
 // Buffer is used as pairs of S4DVertex (0 ... ndc, 1 .. dc and projected)
 typedef s4DVertex s4DVertexPair;
 #define sizeof_s4DVertexPairRel 2
+#define s4DVertex_ofs(index)  ((index)*sizeof_s4DVertexPairRel)
+#define s4DVertex_proj(index) ((index)*sizeof_s4DVertexPairRel) + 1
 
 struct SAligned4DVertex
 {
@@ -549,10 +553,10 @@ static inline void memcpy_s4DVertexPair(void* dst, const void *src)
 //! hold info for different Vertex Types
 struct SVSize
 {
-	u32 Format;		// e4DVertexFlag VERTEX4D_FORMAT_MASK_TEXTURE
-	u32 Pitch;		// sizeof Vertex
+	size_t Format;		// e4DVertexFlag VERTEX4D_FORMAT_MASK_TEXTURE
+	size_t Pitch;		// sizeof Vertex
 	size_t TexSize;	// amount Textures
-	u32 TexCooSize;	// sizeof TextureCoordinates
+	size_t TexCooSize;	// sizeof TextureCoordinates
 };
 
 
@@ -617,7 +621,7 @@ struct sScanConvertData
 	u32 left;			// major edge left/right
 	u32 right;			// !left
 
-	f32 invDeltaY[4];	// inverse edge delta y
+	f32 invDeltaY[4];	// inverse edge delta for screen space sorted triangle 
 
 	f32 x[2];			// x coordinate
 	f32 slopeX[2];		// x slope along edges

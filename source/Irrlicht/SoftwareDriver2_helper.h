@@ -142,18 +142,36 @@ inline void memset16(void * dest, const u16 value, size_t bytesize)
 
 
 
-typedef union {	float f; u32 u; struct { unsigned int frac:23; unsigned exp:8; unsigned int sign:1; } fields; } ieee754;
+//IEEE Standard for Floating - Point Arithmetic(IEEE 754)
+typedef union {
+	float f;
+	unsigned int u;
+	struct { unsigned int frac:23; unsigned exp:8; unsigned int sign:1; } fields;
+	struct { unsigned int frac_exp:31; } abs;
+} ieee754;
 
 
-// integer log2 of a float ieee 754. TODO: non ieee floating point
+// integer log2 of a float ieee 754. log(2)=0 returning
 static inline s32 s32_log2_f32( f32 f)
 {
-	ieee754 _log2; _log2.f = f; return _log2.fields.exp - 127; //u32 x = IR ( f ); return ((x & 0x7F800000) >> 23) - 127;
+	//u32 x = IR ( f ); return ((x & 0x7F800000) >> 23) - 127;
+	ieee754 _log2;
+	_log2.f = f;
+	return _log2.fields.exp ? _log2.fields.exp - 127 : 10000000; /*denormal very high number*/
 }
 
+// integer log2 of an integer. returning 0 as denormal
 static inline s32 s32_log2_s32(u32 in)
 {
-	ieee754 _log2; _log2.f = (f32) in; return _log2.fields.exp - 127; //return s32_log2_f32( (f32) x);
+	s32 ret = 0;
+	while (in > 1)
+	{
+		in >>= 1;
+		ret++;
+	}
+	return ret;
+	//return s32_log2_f32( (f32) x);
+	//ieee754 _log2;_log2.f = (f32) in; return _log2.fields.exp - 127; 
 }
 
 static inline s32 s32_abs(s32 x)
@@ -773,11 +791,11 @@ struct fp24
 struct sInternalTexture
 {
 	//power-of-two
-	u32 textureXMask;
-	u32 textureYMask;
+	void* data; //tVideoSample* Texture->lock(miplevel)
+	size_t textureXMask;
+	size_t textureYMask;
 
-	u32 pitchlog2;
-	void *data;
+	size_t pitchlog2;
 
 	video::CSoftwareTexture2 *Texture;
 	s32 lodFactor; // magnify/minify
@@ -786,9 +804,9 @@ struct sInternalTexture
 
 
 // get video sample plain
-static inline tVideoSample getTexel_plain ( const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty )
+static inline tVideoSample getTexel_plain ( const sInternalTexture* t, const tFixPointu tx, const tFixPointu ty )
 {
-	u32 ofs;
+	size_t ofs;
 
 	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
@@ -799,10 +817,10 @@ static inline tVideoSample getTexel_plain ( const sInternalTexture * t, const tF
 
 // get video sample to fix
 inline void getTexel_fix ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
-						const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
+						const sInternalTexture* t, const tFixPointu tx, const tFixPointu ty
 								)
 {
-	u32 ofs;
+	size_t ofs;
 
 	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
@@ -821,7 +839,7 @@ inline void getTexel_fix ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
 static REALINLINE void getTexel_fix ( tFixPoint &a,
 			const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty)
 {
-	u32 ofs;
+	size_t ofs;
 
 	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
@@ -852,7 +870,7 @@ static inline void getSample_texture_dither (	tFixPoint &r, tFixPoint &g, tFixPo
 	const tFixPointu _ntx = (tx + dithermask [ index ] ) & t->textureXMask;
 	const tFixPointu _nty = (ty + dithermask [ index ] ) & t->textureYMask;
 
-	u32 ofs;
+	size_t ofs;
 	ofs = ( ( _nty ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	ofs |= ( _ntx ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
 
@@ -876,7 +894,7 @@ inline void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
 						const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
 								)
 {
-	u32 ofs;
+	size_t ofs;
 
 	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
@@ -893,7 +911,7 @@ inline void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPo
 						const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
 								)
 {
-	u32 ofs;
+	size_t ofs;
 
 	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
@@ -916,7 +934,7 @@ static REALINLINE void getSample_linear ( tFixPointu &r, tFixPointu &g, tFixPoin
 								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
 								)
 {
-	u32 ofs;
+	size_t ofs;
 
 	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
@@ -1012,7 +1030,7 @@ static REALINLINE void getSample_linear ( tFixPointu &a, tFixPointu &r, tFixPoin
 								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
 								)
 {
-	u32 ofs;
+	size_t ofs;
 
 	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
@@ -1030,7 +1048,7 @@ static REALINLINE void getSample_linear ( tFixPointu &a, tFixPointu &r, tFixPoin
 
 // get Sample bilinear
 static REALINLINE void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,
-								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
+								const sInternalTexture* t, const tFixPointu tx, const tFixPointu ty
 								)
 {
 

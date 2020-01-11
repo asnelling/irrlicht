@@ -42,7 +42,7 @@ CDepthBuffer::~CDepthBuffer()
 //! clears the zbuffer
 void CDepthBuffer::clear(f32 value)
 {
-	core::inttofloat zMaxValue;
+	ieee754 zMaxValue;
 
 #ifdef SOFTWARE_DRIVER_2_USE_WBUFFER
 	zMaxValue.f = 1.f-value;

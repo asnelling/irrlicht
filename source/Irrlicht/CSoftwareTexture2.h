@@ -47,7 +47,7 @@ public:
 	//! destructor
 	virtual ~CSoftwareTexture2();
 
-	s32 getMipmapLevel(s32 newLevel) const
+	u32 getMipmapLevel(s32 newLevel) const
 	{
 		if ( newLevel < 0 ) newLevel = 0;
 		else if ( newLevel >= SOFTWARE_DRIVER_2_MIPMAPPING_MAX ) newLevel = SOFTWARE_DRIVER_2_MIPMAPPING_MAX - 1;
@@ -78,11 +78,16 @@ public:
 	//! compare the area drawn with the area of the texture
 	f32 getLODFactor( const f32 texArea ) const
 	{
-		return MipMap0_Area * texArea;
+		return MipMap0_Area[0]* MipMap0_Area[1] * 0.5f * texArea;
 		//return MipMap[0]->getImageDataSizeInPixels () * texArea;
 	}
 
-	//! returns unoptimized surface (misleading name)
+	const u32* getMipMap0_Area() const
+	{
+		return MipMap0_Area;
+	}
+
+	//! returns unoptimized surface (misleading name. burning can scale down originalimage)
 	virtual CImage* getImage() const
 	{
 		return MipMap[0];
@@ -106,7 +111,6 @@ private:
 	void calcDerivative();
 
 	//! controls MipmapSelection. relation between drawn area and image size
-	f32 MipMap0_Area;
 	u32 MipMapLOD; // 0 .. original Texture pot -SOFTWARE_DRIVER_2_MIPMAPPING_MAX
 	u32 Flags; //eTex2Flags
 	ECOLOR_FORMAT OriginalFormat;
@@ -114,7 +118,7 @@ private:
 
 	CImage* MipMap[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
 	CSoftwareTexture2_Bound TexBound[SOFTWARE_DRIVER_2_MIPMAPPING_MAX];
-
+	u32 MipMap0_Area[2];
 };
 
 /*!

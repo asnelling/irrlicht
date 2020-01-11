@@ -19,7 +19,7 @@ namespace video
 
 //! constructor
 CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 flags, CBurningVideoDriver* driver)
-	: ITexture(name, ETT_2D), MipMap0_Area(0.f),MipMapLOD(0), Flags ( flags ), OriginalFormat(video::ECF_UNKNOWN),Driver(driver)
+	: ITexture(name, ETT_2D),MipMapLOD(0), Flags ( flags ), OriginalFormat(video::ECF_UNKNOWN),Driver(driver)
 {
 	#ifdef _DEBUG
 	setDebugName("CSoftwareTexture2");
@@ -33,7 +33,8 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	ColorFormat = BURNINGSHADER_COLOR_FORMAT;
 	IsRenderTarget = (Flags & IS_RENDERTARGET) != 0;
 	HasMipMaps = (Flags & GEN_MIPMAP) != 0;
-	MipMap0_Area = 0.f;
+	MipMap0_Area[0] = 1;
+	MipMap0_Area[1] = 1;
 	for ( size_t i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i ) MipMap[i] = 0;
 	if (!image) return;
 
@@ -86,9 +87,6 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	}
 
 	//select highest mipmap 0
-	MipMapLOD = 0;
-	calcDerivative();
-
 	regenerateMipMapLevels(image->getMipMapsData());
 }
 
@@ -112,9 +110,6 @@ CSoftwareTexture2::~CSoftwareTexture2()
 //! modifying the texture
 void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 {
-	if (!hasMipMaps())
-		return;
-
 	int i;
 
 	// release
@@ -130,7 +125,7 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 	core::dimension2d<u32> newSize;
 
 	//deactivated outside mipdata until TA knows how to handle this.
-	if (0 == data || 1)
+	if (HasMipMaps && (0 == data || 1))
 	{
 		for (i = 1; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
 		{
@@ -143,12 +138,12 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 
 			MipMap[i] = new CImage(BURNINGSHADER_COLOR_FORMAT, newSize);
 			MipMap[i]->set_sRGB(MipMap[i - 1]->get_sRGB());
-			//MipMap[i]->fill ( 0 );
+			//MipMap[i]->fill ( 0xFFFF4040 );
 			//MipMap[i-1]->copyToScalingBoxFilter( MipMap[i], 0, false );
-			Resample_subSampling(BLITTER_TEXTURE, MipMap[i], 0, MipMap[i - 1], 0);
+			Resample_subSampling(BLITTER_TEXTURE, MipMap[i], 0, MipMap[0], 0);
 		}
 	}
-	else
+	else if (HasMipMaps && data)
 	{
 		core::dimension2d<u32> origSize = Size;
 
@@ -192,17 +187,27 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 
 
 	//visualize mipmap
-	for (i=0; i < 0 && i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
+	for (i=1; i < 0 && i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i)
 	{
-		static u32 color[] = { 0x30bf7f00,0x3040bf00,0x30bf00bf,0x3000bf00,
+/*
+		static u32 color[] = { 
+			0x30bf7f00,0x3040bf00,0x30bf00bf,0x3000bf00,
 			0x300080bf,0x30bf4000,0x300040bf,0x307f00bf,
 			0x30bf0000,0x3000bfbf,0x304000bf,0x307fbf00,
-			0x8000bf7f,0x80bf0040,0x80bfbf00,0x800000bf };
+			0x8000bf7f,0x80bf0040,0x80bfbf00,0x800000bf
+		};
+*/
+		static u32 color[] = { 
+			0xFFFFFFFF,0xFFFF0000,0xFF00FF00,0xFF0000FF,
+			0xFF0000FF,0xFF0000FF,0xFF0000FF,0xFF0000FF,
+			0xFF0000FF,0xFF0000FF,0xFF0000FF,0xFF0000FF,
+			0xFF0000FF,0xFF0000FF,0xFF0000FF,0xFFFF00FF
+		};
 
 		if ( MipMap[i] )
 		{
 			core::rect<s32> p (core::position2di(0,0),MipMap[i]->getDimension());
-			Blit(BLITTER_COLOR_ALPHA, MipMap[i], 0, 0, 0, &p, 0,(color[i&15] & 0x00FFFFFF ) | 0x88000000);
+			Blit(BLITTER_TEXTURE_ALPHA_COLOR_BLEND, MipMap[i], 0, 0, MipMap[i], &p, 0,(color[i&15] & 0x00FFFFFF) | 0xFF000000);
 		}
 	}
 
@@ -235,27 +240,39 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 
 void CSoftwareTexture2::calcDerivative()
 {
-	const core::dimension2du& dim = MipMap[0]->getDimension();
-	MipMap0_Area = dim.Width * dim.Height * 0.5f;
-
 	//reset current MipMap
-	Size = MipMap[MipMapLOD]->getDimension();
-	Pitch = MipMap[MipMapLOD]->getPitch();
+	MipMapLOD = 0;
+	if (MipMap[0])
+	{
+		const core::dimension2du& dim = MipMap[0]->getDimension();
+		MipMap0_Area[0] = dim.Width;
+		MipMap0_Area[1] = dim.Height; // screensize of a triangle
+
+		Size = dim; // MipMap[MipMapLOD]->getDimension();
+		Pitch = MipMap[MipMapLOD]->getPitch();
+	}
 
 	//preCalc mipmap texel center boundaries
 	for ( s32 i = 0; i < SOFTWARE_DRIVER_2_MIPMAPPING_MAX; ++i )
 	{
 		CSoftwareTexture2_Bound& b = TexBound[i];
-		if ( MipMap[i] )
+		if (MipMap[i])
 		{
 			const core::dimension2du& dim = MipMap[i]->getDimension();
 			//f32 u = 1.f / dim.Width;
 			//f32 v = 1.f / dim.Height;
 
+			b.w = dim.Width - 1.f;
+			b.h = dim.Height - 1.f;
 			b.cx = 0.f; //u*0.005f;
 			b.cy = 0.f; //v*0.005f;
-			b.w = dim.Width -1.f;
-			b.h = dim.Height-1.f;
+		}
+		else
+		{
+			b.w = 0.f;
+			b.h = 0.f;
+			b.cx = 0.f;
+			b.cy = 0.f;
 		}
 	}
 
@@ -398,19 +415,19 @@ int linear_to_srgb_8bit(const float x) {
 
 u32 linear_to_srgb_8bit(const float v)
 {
-	core::inttofloat c;
+	ieee754 c;
 	c.f = v;
 	const register size_t x = c.u;
 	const u32 *table = (u32*)srgb_8bit_to_linear_float;
 	register u32 y = 0;
 	y += table[y + 128] <= x ? 128 : 0;
-	y += table[y + 64] <= x ? 64 : 0;
-	y += table[y + 32] <= x ? 32 : 0;
-	y += table[y + 16] <= x ? 16 : 0;
-	y += table[y + 8] <= x ? 8 : 0;
-	y += table[y + 4] <= x ? 4 : 0;
-	y += table[y + 2] <= x ? 2 : 0;
-	y += table[y + 1] <= x ? 1 : 0;
+	y += table[y +  64] <= x ?  64 : 0;
+	y += table[y +  32] <= x ?  32 : 0;
+	y += table[y +  16] <= x ?  16 : 0;
+	y += table[y +   8] <= x ?   8 : 0;
+	y += table[y +   4] <= x ?   4 : 0;
+	y += table[y +   2] <= x ?   2 : 0;
+	y += table[y +   1] <= x ?   1 : 0;
 
 	return y;
 }
@@ -481,14 +498,14 @@ void Resample_subSampling(eBlitter op, video::IImage* dst, const core::rect<s32>
 	{
 		f[1] = f[3];
 		f[3] = sc.y0 + (dy + 1 - dc.y0)*scale[1];
-		if (f[3] >= sc.y1) f[3] = sc.y1 - 0.1f; //todo:1.f/dim should be enough
+		if (f[3] >= sc.y1) f[3] = sc.y1 - 0.001f; //todo:1.f/dim should be enough
 
 		f[2] = (float)sc.x0;
 		for (int dx = dc.x0; dx < dc.x1; ++dx)
 		{
 			f[0] = f[2];
 			f[2] = sc.x0 + (dx + 1 - dc.x0)*scale[0];
-			if (f[2] >= sc.x1) f[2] = sc.x1 - 0.1f;
+			if (f[2] >= sc.x1) f[2] = sc.x1 - 0.001f;
 
 			//accumulate linear color
 			sum[0] = 0.f;
