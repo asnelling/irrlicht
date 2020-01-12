@@ -49,12 +49,13 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 		os::Printer::log("Texture compression not available.", ELL_ERROR);
 	}
 
-	core::dimension2d<u32> optSize(
-			OriginalSize.getOptimalSize(0 != (Flags & NP2_SIZE),
-			false,
-			SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE == 0,// trueOriginalSize.Width < 256 || OriginalSize.Height < 256,
-			SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE)
-		);
+	core::dimension2d<u32> optSize(	OriginalSize.getOptimalSize(
+			(Flags & ALLOW_NPOT) ? 0 : 1, // requirePowerOfTwo
+			false, // requireSquare
+			(Flags & ALLOW_NPOT) ? 1 : SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE == 0, // larger
+			(Flags & ALLOW_NPOT) ? 0 : SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE // maxValue
+		)
+	);
 
 	if (OriginalSize == optSize)
 	{

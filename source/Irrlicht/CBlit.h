@@ -915,6 +915,9 @@ static void executeBlit_TextureBlendColor_32_to_32( const SBlitJob * job )
 	const u32 *src = (u32*) job->src;
 	u32 *dst = (u32*) job->dst;
 
+	tFixPoint c[4];
+	color_to_fix1(c, job->argb);
+
 	if (job->stretch)
 	{
 		const float wscale = 1.f/job->x_stretch;
@@ -929,7 +932,8 @@ static void executeBlit_TextureBlendColor_32_to_32( const SBlitJob * job )
 			src_x = 0.f;
 			for ( u32 dx = 0; dx < w; ++dx,src_x += wscale )
 			{
-				dst[dx] = PixelBlend32( dst[dx], PixelMul32_2( src[(u32)src_x], job->argb ) );
+				//dst[dx] = PixelBlend32( dst[dx], PixelMul32_2( src[(u32)src_x], job->argb ) );
+				PixelBlend32_2(dst + dx, src + (size_t)src_x, c);
 			}
 			dst = (u32*) ( (u8*) (dst) + job->dstPitch );
 		}
@@ -941,7 +945,8 @@ static void executeBlit_TextureBlendColor_32_to_32( const SBlitJob * job )
 		{
 			for ( u32 dx = 0; dx != w; ++dx )
 			{
-				dst[dx] = PixelBlend32( dst[dx], PixelMul32_2( src[dx], job->argb ) );
+				//dst[dx] = PixelBlend32( dst[dx], PixelMul32_2( src[dx], job->argb ) );
+				PixelBlend32_2(dst + dx, src + dx, c);
 			}
 			src = (u32*) ( (u8*) (src) + job->srcPitch );
 			dst = (u32*) ( (u8*) (dst) + job->dstPitch );

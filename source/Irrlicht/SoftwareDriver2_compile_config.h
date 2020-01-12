@@ -151,12 +151,13 @@ enum edge_test_flag
 #define reciprocal_edge(x) ((x) != 0.f ? 1.f / (x):(~EdgeTestPass)&1)
 
 //! normalize from fixed point Color Max to fixed point [0;1]
-#define fix_color_norm(x) x >>= COLOR_MAX_LOG2
+#define fix_color_norm(x) x = (x+1) >> COLOR_MAX_LOG2
 
 #if defined(PATCH_SUPERTUX_8_0_1)
 #define getData lock
 #define snprintf_irr sprintf_s
 #define BURNING_MATERIAL_MAX_COLORS 1
+#define _IRR_OVERRIDE_ /**/
 #endif
 
 

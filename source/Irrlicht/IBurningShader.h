@@ -18,7 +18,9 @@
 #include "SLight.h"
 #include "SMaterial.h"
 #include "os.h"
-
+#include "IMaterialRenderer.h"
+#include "IMaterialRendererServices.h"
+#include "IGPUProgrammingServices.h"
 
 namespace irr
 {
@@ -56,6 +58,7 @@ namespace video
 		FOG			= 0x10,
 		NORMALIZE_NORMALS	= 0x20,
 		TEXTURE_TRANSFORM	= 0x40,
+		LIGHT_LOCAL_VIEWER	= 0x80
 	};
 
 	struct SBurningShaderEyeSpace
@@ -67,7 +70,7 @@ namespace video
 			Light.set_used ( 0 );
 			Global_AmbientLight.set ( 0.f );
 
-			Flags = 0;
+			Flags = LIGHT_LOCAL_VIEWER;
 		}
 		core::array<SBurningShaderLight> Light;
 		sVec3Color Global_AmbientLight;
@@ -157,10 +160,31 @@ namespace video
 
 
 	class CBurningVideoDriver;
-	class IBurningShader : public virtual IReferenceCounted
+	class IBurningShader : public IMaterialRenderer, public IMaterialRendererServices
 	{
 	public:
+		//! Constructor
 		IBurningShader(CBurningVideoDriver* driver);
+
+		//! Constructor
+		IBurningShader(
+			CBurningVideoDriver* driver,
+			s32& outMaterialTypeNr,
+			const c8* vertexShaderProgram = 0,
+			const c8* vertexShaderEntryPointName = 0,
+			E_VERTEX_SHADER_TYPE vsCompileTarget = video::EVST_VS_1_1,
+			const c8* pixelShaderProgram = 0,
+			const c8* pixelShaderEntryPointName = 0,
+			E_PIXEL_SHADER_TYPE psCompileTarget = video::EPST_PS_1_1,
+			const c8* geometryShaderProgram = 0,
+			const c8* geometryShaderEntryPointName = "main",
+			E_GEOMETRY_SHADER_TYPE gsCompileTarget = EGST_GS_4_0,
+			scene::E_PRIMITIVE_TYPE inType = scene::EPT_TRIANGLES,
+			scene::E_PRIMITIVE_TYPE outType = scene::EPT_TRIANGLE_STRIP,
+			u32 verticesOut = 0,
+			IShaderConstantSetCallBack* callback = 0,
+			E_MATERIAL_TYPE baseMaterial = EMT_SOLID,
+			s32 userData = 0);
 
 		//! destructor
 		virtual ~IBurningShader();
@@ -170,7 +194,7 @@ namespace video
 
 		//! sets the Texture
 		virtual void setTextureParam( const size_t stage, video::CSoftwareTexture2* texture, s32 lodFactor);
-		virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) = 0;
+		virtual void drawTriangle(const s4DVertex *a, const s4DVertex *b, const s4DVertex *c) {};
 		virtual void drawLine ( const s4DVertex *a,const s4DVertex *b);
 		virtual void drawPoint(const s4DVertex *a);
 
@@ -194,10 +218,47 @@ namespace video
 			stencilOp[2] = dppass;
 		}
 
+		//IMaterialRenderer
 
-	//protected:
+		virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
+			bool resetAllRenderstates, IMaterialRendererServices* services) _IRR_OVERRIDE_;
+
+		virtual bool OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype) _IRR_OVERRIDE_;
+
+		virtual void OnUnsetMaterial() _IRR_OVERRIDE_;
+
+		//! Returns if the material is transparent.
+		virtual bool isTransparent() const _IRR_OVERRIDE_;
+
+		//! Access the callback provided by the users when creating shader materials
+		virtual IShaderConstantSetCallBack* getShaderConstantSetCallBack() const _IRR_OVERRIDE_;
+
+		// implementations for the render services
+		virtual void setBasicRenderStates(const SMaterial& material, const SMaterial& lastMaterial, bool resetAllRenderstates) _IRR_OVERRIDE_;
+		virtual s32 getVertexShaderConstantID(const c8* name) _IRR_OVERRIDE_;
+		virtual s32 getPixelShaderConstantID(const c8* name) _IRR_OVERRIDE_;
+		virtual void setVertexShaderConstant(const f32* data, s32 startRegister, s32 constantAmount = 1) _IRR_OVERRIDE_;
+		virtual void setPixelShaderConstant(const f32* data, s32 startRegister, s32 constantAmount = 1) _IRR_OVERRIDE_;
+		virtual bool setVertexShaderConstant(s32 index, const f32* floats, int count) _IRR_OVERRIDE_;
+		virtual bool setVertexShaderConstant(s32 index, const s32* ints, int count) _IRR_OVERRIDE_;
+		virtual bool setPixelShaderConstant(s32 index, const f32* floats, int count) _IRR_OVERRIDE_;
+		virtual bool setPixelShaderConstant(s32 index, const s32* ints, int count) _IRR_OVERRIDE_;
+		virtual IVideoDriver* getVideoDriver() _IRR_OVERRIDE_;
+
+	protected:
 
 		CBurningVideoDriver *Driver;
+		IShaderConstantSetCallBack* CallBack;
+		E_MATERIAL_TYPE BaseMaterial;
+		s32 UserData;
+
+		struct SUniformInfo
+		{
+			c8 name[32];
+			int type;
+			int location;
+		};
+		core::array<SUniformInfo> UniformInfo;
 
 		video::CImage* RenderTarget;
 		CDepthBuffer* DepthBuffer;

@@ -515,18 +515,42 @@ struct SAligned4DVertex
 };
 
 //#define memcpy_s4DVertexPair(dst,src) memcpy(dst,src,sizeof_s4DVertex * 2)
-static inline void memcpy_s4DVertexPair(void* dst, const void *src)
+static REALINLINE void memcpy_s4DVertexPair(void* dst, const void *src)
 {
-	u32* dst32 = (u32*)dst;
-	const u32* src32 = (const u32*)src;
-
-	//test alignment
+	//test alignment -> if already in aligned data
 #if 0
 	if (((size_t)dst & 0xC) | ((size_t)src & 0xC))
 	{
 		int g = 1;
 	}
 #endif
+
+#if (sizeof_s4DVertex * sizeof_s4DVertexPairRel == 128)
+	u64* dst64 = (u64*)dst;
+	const u64* src64 = (const u64*)src;
+
+	dst64[0] = src64[0];
+	dst64[1] = src64[1];
+	dst64[2] = src64[2];
+	dst64[3] = src64[3];
+	dst64[4] = src64[4];
+	dst64[5] = src64[5];
+	dst64[6] = src64[6];
+	dst64[7] = src64[7];
+
+	dst64[8] = src64[8];
+	dst64[9] = src64[9];
+	dst64[10] = src64[10];
+	dst64[11] = src64[11];
+	dst64[12] = src64[12];
+	dst64[13] = src64[13];
+	dst64[14] = src64[14];
+	dst64[15] = src64[15];
+
+#else
+	u32* dst32 = (u32*)dst;
+	const u32* src32 = (const u32*)src;
+
 	size_t len = sizeof_s4DVertex * sizeof_s4DVertexPairRel;
 	while (len >= 32)
 	{
@@ -547,6 +571,7 @@ static inline void memcpy_s4DVertexPair(void* dst, const void *src)
 		len -= 4;
 	}
 */
+#endif
 }
 
 

@@ -38,7 +38,7 @@ public:
 	{
 		GEN_MIPMAP	     = 1,
 		IS_RENDERTARGET  = 2,
-		NP2_SIZE	     = 4,
+		ALLOW_NPOT		= 4,		//allow non power of two
 		IMAGE_IS_LINEAR	 = 8,
 		TEXTURE_IS_LINEAR = 16,
 	};

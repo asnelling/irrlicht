@@ -18,7 +18,7 @@ namespace irr
 {
 namespace video
 {
-	class CBurningVideoDriver : public CNullDriver
+	class CBurningVideoDriver : public CNullDriver, public IMaterialRendererServices
 	{
 	public:
 
@@ -187,6 +187,47 @@ namespace video
 			E_MATERIAL_TYPE baseMaterial,
 			s32 userData) _IRR_OVERRIDE_;
 
+		//! Adds a new material renderer to the VideoDriver, based on a high level shading
+		//! language. Currently only HLSL in D3D9 is supported.
+		virtual s32 addHighLevelShaderMaterial(
+			const c8* vertexShaderProgram,
+			const c8* vertexShaderEntryPointName = 0,
+			E_VERTEX_SHADER_TYPE vsCompileTarget = EVST_VS_1_1,
+			const c8* pixelShaderProgram = 0,
+			const c8* pixelShaderEntryPointName = 0,
+			E_PIXEL_SHADER_TYPE psCompileTarget = EPST_PS_1_1,
+			const c8* geometryShaderProgram = 0,
+			const c8* geometryShaderEntryPointName = "main",
+			E_GEOMETRY_SHADER_TYPE gsCompileTarget = EGST_GS_4_0,
+			scene::E_PRIMITIVE_TYPE inType = scene::EPT_TRIANGLES,
+			scene::E_PRIMITIVE_TYPE outType = scene::EPT_TRIANGLE_STRIP,
+			u32 verticesOut = 0,
+			IShaderConstantSetCallBack* callback = 0,
+			E_MATERIAL_TYPE baseMaterial = video::EMT_SOLID,
+			s32 userData = 0) _IRR_OVERRIDE_;
+
+		//IMaterialRendererService
+
+		virtual void setBasicRenderStates(const SMaterial& material,
+			const SMaterial& lastMaterial,
+			bool resetAllRenderstates) _IRR_OVERRIDE_;
+
+		//! Return an index constant for the vertex shader based on a name.
+		virtual s32 getVertexShaderConstantID(const c8* name) _IRR_OVERRIDE_;
+		virtual bool setVertexShaderConstant(s32 index, const f32* floats, int count) _IRR_OVERRIDE_;
+		virtual bool setVertexShaderConstant(s32 index, const s32* ints, int count) _IRR_OVERRIDE_;
+		virtual void setVertexShaderConstant(const f32* data, s32 startRegister, s32 constantAmount) _IRR_OVERRIDE_;
+
+		//! Return an index constant for the pixel shader based on a name.
+		virtual s32 getPixelShaderConstantID(const c8* name) _IRR_OVERRIDE_;
+		virtual bool setPixelShaderConstant(s32 index, const f32* floats, int count) _IRR_OVERRIDE_;
+		virtual bool setPixelShaderConstant(s32 index, const s32* ints, int count) _IRR_OVERRIDE_;
+		virtual void setPixelShaderConstant(const f32* data, s32 startRegister, s32 constantAmount) _IRR_OVERRIDE_;
+
+		//! Get pointer to the IVideoDriver interface
+		/** \return Pointer to the IVideoDriver interface */
+		virtual IVideoDriver* getVideoDriver() _IRR_OVERRIDE_;
+
 
 	protected:
 
@@ -292,7 +333,7 @@ namespace video
 		int face_sort(s4DVertexPair* face[]) const;
 		f32 screenarea_inside (const s4DVertexPair* const face[] ) const;
 		s32 lodFactor_inside ( const s4DVertexPair* const face[], const size_t tex, f32 dc_area ) const;
-		void select_polygon_mipmap_inside ( s4DVertex* source[], const size_t tex, const CSoftwareTexture2_Bound& b ) const;
+		void select_polygon_mipmap_inside ( s4DVertex* face[], const size_t tex, const CSoftwareTexture2_Bound& b ) const;
 
 #if 0
 		f32 screenarea_clipped_first(const s4DVertexPair *v) const;

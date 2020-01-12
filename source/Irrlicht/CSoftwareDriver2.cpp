@@ -463,6 +463,17 @@ bool CBurningVideoDriver::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 		on = 0;
 		break;
 
+	case EVDF_ARB_FRAGMENT_PROGRAM_1:
+	case EVDF_ARB_VERTEX_PROGRAM_1:
+		on = 1;
+		break;
+#if defined(PATCH_SUPERTUX_8_0_1)
+	case EVDF_TEXTURE_NPOT:
+	case EVDF_ARB_GLSL:
+		on = 1;
+		break;
+#endif
+
 	default:
 		on = 0;
 		break;
@@ -1127,7 +1138,8 @@ REALINLINE s32 CBurningVideoDriver::lodFactor_inside(const s4DVertexPair* const 
 		if (t[1].abs.frac_exp > _max.u) _max.u = t[1].abs.frac_exp;
 		if (t[2].abs.frac_exp > _max.u) _max.u = t[2].abs.frac_exp;
 		if (t[3].abs.frac_exp > _max.u) _max.u = t[3].abs.frac_exp;
-		signedArea.u = _max.fields.exp ? _max.u : F32_VALUE_1;
+
+		signedArea.u = _max.fields.exp ? _max.u : ieee754_one;
 
 /*
 		//dot,length
@@ -1145,12 +1157,19 @@ REALINLINE s32 CBurningVideoDriver::lodFactor_inside(const s4DVertexPair* const 
 	}
 
 	//only guessing: take more detail (lower mipmap) in light+bump textures
-	f32 texelspace = d[0] * d[1] * (m ? 0.25f : 0.4f);
+	f32 texelspace = d[0] * d[1] * (m ? 0.5f : 0.5f);
 
 	ieee754 ratio;
 	ratio.f = (signedArea.f * texelspace) * dc_area;
 	ratio.fields.sign = 0;
 
+	//log2(0)==denormal [ use high lod] [ only if dc_area == 0 checked outside ]
+#if 0
+	if (ratio.fields.exp == 0)
+	{
+		int g = 1;
+	}
+#endif
 	//log2
 	return (ratio.fields.exp & 0x80) ? ratio.fields.exp - 127 : 0; /*denormal very high lod*/
 
@@ -1166,37 +1185,37 @@ REALINLINE s32 CBurningVideoDriver::lodFactor_inside(const s4DVertexPair* const 
 	texcoo in current mipmap dimension (face, already clipped)
 	-> want to help fixpoint
 */
-inline void CBurningVideoDriver::select_polygon_mipmap_inside(s4DVertex* v[], const size_t tex, const CSoftwareTexture2_Bound& b) const
+inline void CBurningVideoDriver::select_polygon_mipmap_inside(s4DVertex* face[], const size_t tex, const CSoftwareTexture2_Bound& b) const
 {
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
 #if defined(Tweak_Burning)
-	(v[0] + 1)->Tex[tex].x = v[0]->Tex[tex].x * (v[0] + 1)->Pos.w * (b.w + Tweak.tex_w_add) + (b.cx + Tweak.tex_cx_add);
-	(v[0] + 1)->Tex[tex].y = v[0]->Tex[tex].y * (v[0] + 1)->Pos.w * (b.h + Tweak.tex_h_add) + (b.cy + Tweak.tex_cy_add);
+	(face[0] + 1)->Tex[tex].x = face[0]->Tex[tex].x * (face[0] + 1)->Pos.w * (b.w + Tweak.tex_w_add) + (b.cx + Tweak.tex_cx_add);
+	(face[0] + 1)->Tex[tex].y = face[0]->Tex[tex].y * (face[0] + 1)->Pos.w * (b.h + Tweak.tex_h_add) + (b.cy + Tweak.tex_cy_add);
 
-	(v[1] + 1)->Tex[tex].x = v[1]->Tex[tex].x * (v[1] + 1)->Pos.w * (b.w + Tweak.tex_w_add) + (b.cx + Tweak.tex_cx_add);
-	(v[1] + 1)->Tex[tex].y = v[1]->Tex[tex].y * (v[1] + 1)->Pos.w * (b.h + Tweak.tex_h_add) + (b.cy + Tweak.tex_cy_add);
+	(face[1] + 1)->Tex[tex].x = face[1]->Tex[tex].x * (face[1] + 1)->Pos.w * (b.w + Tweak.tex_w_add) + (b.cx + Tweak.tex_cx_add);
+	(face[1] + 1)->Tex[tex].y = face[1]->Tex[tex].y * (face[1] + 1)->Pos.w * (b.h + Tweak.tex_h_add) + (b.cy + Tweak.tex_cy_add);
 
-	(v[2] + 1)->Tex[tex].x = v[2]->Tex[tex].x * (v[2] + 1)->Pos.w * (b.w + Tweak.tex_w_add) + (b.cx + Tweak.tex_cx_add);
-	(v[2] + 1)->Tex[tex].y = v[2]->Tex[tex].y * (v[2] + 1)->Pos.w * (b.h + Tweak.tex_h_add) + (b.cy + Tweak.tex_cy_add);
+	(face[2] + 1)->Tex[tex].x = face[2]->Tex[tex].x * (face[2] + 1)->Pos.w * (b.w + Tweak.tex_w_add) + (b.cx + Tweak.tex_cx_add);
+	(face[2] + 1)->Tex[tex].y = face[2]->Tex[tex].y * (face[2] + 1)->Pos.w * (b.h + Tweak.tex_h_add) + (b.cy + Tweak.tex_cy_add);
 #else
-	(v[0] + 1)->Tex[tex].x = v[0]->Tex[tex].x * (v[0] + 1)->Pos.w * b.w + b.cx;
-	(v[0] + 1)->Tex[tex].y = v[0]->Tex[tex].y * (v[0] + 1)->Pos.w * b.h + b.cy;
+	(face[0] + 1)->Tex[tex].x = face[0]->Tex[tex].x * (face[0] + 1)->Pos.w * b.w + b.cx;
+	(face[0] + 1)->Tex[tex].y = face[0]->Tex[tex].y * (face[0] + 1)->Pos.w * b.h + b.cy;
 
-	(v[1] + 1)->Tex[tex].x = v[1]->Tex[tex].x * (v[1] + 1)->Pos.w * b.w + b.cx;
-	(v[1] + 1)->Tex[tex].y = v[1]->Tex[tex].y * (v[1] + 1)->Pos.w * b.h + b.cy;
+	(face[1] + 1)->Tex[tex].x = face[1]->Tex[tex].x * (face[1] + 1)->Pos.w * b.w + b.cx;
+	(face[1] + 1)->Tex[tex].y = face[1]->Tex[tex].y * (face[1] + 1)->Pos.w * b.h + b.cy;
 
-	(v[2] + 1)->Tex[tex].x = v[2]->Tex[tex].x * (v[2] + 1)->Pos.w * b.w + b.cx;
-	(v[2] + 1)->Tex[tex].y = v[2]->Tex[tex].y * (v[2] + 1)->Pos.w * b.h + b.cy;
+	(face[2] + 1)->Tex[tex].x = face[2]->Tex[tex].x * (face[2] + 1)->Pos.w * b.w + b.cx;
+	(face[2] + 1)->Tex[tex].y = face[2]->Tex[tex].y * (face[2] + 1)->Pos.w * b.h + b.cy;
 #endif
 #else
-	(v[0] + 1)->Tex[tex].x = v[0]->Tex[tex].x * b.w;
-	(v[0] + 1)->Tex[tex].y = v[0]->Tex[tex].y * b.h;
+	(face[0] + 1)->Tex[tex].x = face[0]->Tex[tex].x * b.w;
+	(face[0] + 1)->Tex[tex].y = face[0]->Tex[tex].y * b.h;
 
-	(v[1] + 1)->Tex[tex].x = v[1]->Tex[tex].x * b.w;
-	(v[1] + 1)->Tex[tex].y = v[1]->Tex[tex].y * b.h;
+	(face[1] + 1)->Tex[tex].x = face[1]->Tex[tex].x * b.w;
+	(face[1] + 1)->Tex[tex].y = face[1]->Tex[tex].y * b.h;
 
-	(v[2] + 1)->Tex[tex].x = v[2]->Tex[tex].x * b.w;
-	(v[2] + 1)->Tex[tex].y = v[2]->Tex[tex].y * b.h;
+	(face[2] + 1)->Tex[tex].x = face[2]->Tex[tex].x * b.w;
+	(face[2] + 1)->Tex[tex].y = face[2]->Tex[tex].y * b.h;
 #endif
 
 }
@@ -1994,6 +2013,11 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	if (VertexCache_reset(vertices, vertexCount, indexList, primitiveCount, vType, pType, iType))
 		return;
 
+	if (static_cast<u32>(Material.org.MaterialType) < MaterialRenderers.size())
+	{
+		MaterialRenderers[Material.org.MaterialType].Renderer->OnRender(this, video::EVT_STANDARD);
+	}
+
 	//Matrices needed for this primitive
 	transform_calc(ETS_PROJ_MODEL_VIEW);
 	if ( Material.org.Lighting || (EyeSpace.Flags & TEXTURE_TRANSFORM) )
@@ -2011,11 +2035,11 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	video::CSoftwareTexture2* tex;
 
 	size_t vOut;
+	size_t vertex_from_clipper; // from VertexCache or CurrentOut
 
 	for ( u32 primitive_run = 0; primitive_run < primitiveCount; ++primitive_run)
 	{
 		VertexCache_get(face);
-		size_t vertex_from_clipper = 0;
 
 		// if primitive fully outside or outside on same side
 		if (((face[0]->flag | face[1]->flag | face[2]->flag) & VERTEX4D_CLIPMASK)
@@ -2024,12 +2048,14 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 		{
 			continue;
 			vOut = 0;
+			vertex_from_clipper = 0;
 		}
 		else
 		// if primitive fully inside
 		if ( ( face[0]->flag & face[1]->flag & face[2]->flag & VERTEX4D_CLIPMASK ) == VERTEX4D_INSIDE )
 		{
 			vOut = VertexCache.primitiveHasVertex;
+			vertex_from_clipper = 0;
 		}
 		else
 		{
@@ -2048,12 +2074,10 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 			}
 
 			vOut = clipToFrustum(CurrentOut.data, Geometry_temp.data, VertexCache.primitiveHasVertex);
+			vertex_from_clipper = 1;
 
 			// to DC Space, project homogenous vertex
 			ndc_2_dc_and_project(CurrentOut.data + 1, CurrentOut.data, vOut*sizeof_s4DVertexPairRel);
-
-			//switch source vertex
-			vertex_from_clipper = 1;
 		}
 
 		// re-tesselate ( triangle-fan, 0-1-2,0-2-3.. )
@@ -2085,6 +2109,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 
 				tex = MAT_TEXTURE(m);
 				CurrentShader->setTextureParam(m, tex, lodFactor[m]);
+				//currently shader receives texture coordinate as Pixelcoo of 1 Texture
 				select_polygon_mipmap_inside(face, m, tex->getTexBound());
 			}
 
@@ -3217,7 +3242,7 @@ ITexture* CBurningVideoDriver::addRenderTargetTexture(const core::dimension2d<u3
 		const io::path& name, const ECOLOR_FORMAT format)
 {
 	IImage* img = createImage(BURNINGSHADER_COLOR_FORMAT, size);
-	ITexture* tex = new CSoftwareTexture2(img, name, CSoftwareTexture2::IS_RENDERTARGET | CSoftwareTexture2::NP2_SIZE,this);
+	ITexture* tex = new CSoftwareTexture2(img, name, CSoftwareTexture2::IS_RENDERTARGET,this);
 	img->drop();
 	addTexture(tex);
 	tex->drop();
@@ -3275,7 +3300,7 @@ ITexture* CBurningVideoDriver::createDeviceDependentTexture(const io::path& name
 {
 	CSoftwareTexture2* texture = new CSoftwareTexture2(image, name,
 		(getTextureCreationFlag(ETCF_CREATE_MIP_MAPS) ? CSoftwareTexture2::GEN_MIPMAP : 0) |
-		(getTextureCreationFlag(ETCF_ALLOW_NON_POWER_2) ? 0 : CSoftwareTexture2::NP2_SIZE) |
+		(getTextureCreationFlag(ETCF_ALLOW_NON_POWER_2) ? CSoftwareTexture2::ALLOW_NPOT : 0) |
 		(getTextureCreationFlag(ETCF_IMAGE_IS_LINEAR) ? CSoftwareTexture2::IMAGE_IS_LINEAR : 0) |
 		(getTextureCreationFlag(ETCF_TEXTURE_IS_LINEAR) ? CSoftwareTexture2::TEXTURE_IS_LINEAR : 0),
 		this
@@ -3431,6 +3456,93 @@ s32 CBurningVideoDriver::addShaderMaterial(const c8* vertexShaderProgram,
 	return baseMaterial;
 }
 
+//! Adds a new material renderer to the VideoDriver, based on a high level shading language.
+s32 CBurningVideoDriver::addHighLevelShaderMaterial(
+	const c8* vertexShaderProgram,
+	const c8* vertexShaderEntryPointName,
+	E_VERTEX_SHADER_TYPE vsCompileTarget,
+	const c8* pixelShaderProgram,
+	const c8* pixelShaderEntryPointName,
+	E_PIXEL_SHADER_TYPE psCompileTarget,
+	const c8* geometryShaderProgram,
+	const c8* geometryShaderEntryPointName,
+	E_GEOMETRY_SHADER_TYPE gsCompileTarget,
+	scene::E_PRIMITIVE_TYPE inType,
+	scene::E_PRIMITIVE_TYPE outType,
+	u32 verticesOut,
+	IShaderConstantSetCallBack* callback,
+	E_MATERIAL_TYPE baseMaterial,
+	s32 userData
+	)
+{
+	s32 materialID = -1;
+
+	IBurningShader* shader = new IBurningShader(
+		this, materialID,
+		vertexShaderProgram, vertexShaderEntryPointName, vsCompileTarget,
+		pixelShaderProgram, pixelShaderEntryPointName, psCompileTarget,
+		geometryShaderProgram, geometryShaderEntryPointName, gsCompileTarget,
+		inType, outType, verticesOut,
+		callback, baseMaterial, userData);
+
+	shader->drop();
+
+	return materialID;
+}
+
+
+void CBurningVideoDriver::setBasicRenderStates(const SMaterial& material,
+	const SMaterial& lastMaterial,
+	bool resetAllRenderstates)
+{
+}
+
+//! Return an index constant for the vertex shader based on a name.
+s32 CBurningVideoDriver::getVertexShaderConstantID(const c8* name)
+{
+	return -1;
+}
+
+bool CBurningVideoDriver::setVertexShaderConstant(s32 index, const f32* floats, int count)
+{
+	return true;
+}
+
+bool CBurningVideoDriver::setVertexShaderConstant(s32 index, const s32* ints, int count)
+{
+	return true;
+}
+
+void CBurningVideoDriver::setVertexShaderConstant(const f32* data, s32 startRegister, s32 constantAmount)
+{
+}
+
+//! Return an index constant for the pixel shader based on a name.
+s32 CBurningVideoDriver::getPixelShaderConstantID(const c8* name)
+{
+	return -1;
+}
+
+bool CBurningVideoDriver::setPixelShaderConstant(s32 index, const f32* floats, int count)
+{
+	return false;
+}
+
+bool CBurningVideoDriver::setPixelShaderConstant(s32 index, const s32* ints, int count)
+{
+	return false;
+}
+
+void CBurningVideoDriver::setPixelShaderConstant(const f32* data, s32 startRegister, s32 constantAmount = 1)
+{
+}
+
+//! Get pointer to the IVideoDriver interface
+/** \return Pointer to the IVideoDriver interface */
+IVideoDriver* CBurningVideoDriver::getVideoDriver()
+{
+	return this;
+}
 
 } // end namespace video
 } // end namespace irr
