@@ -269,11 +269,11 @@ namespace video
 		{
 			ETS_VIEW_PROJECTION = ETS_COUNT,
 			ETS_PROJ_MODEL_VIEW,
-			ETS_VIEW_INVERSE,
 			ETS_MODEL_VIEW,
-			ETS_NORMAL, //3x3
+			ETS_NORMAL, //3x3 ModelView Tansposed Inverse
 
-			ETS_COUNT_BURNING
+			//ETS_VIEW_INVERSE,
+			ETS_COUNT_BURNING = 16
 		};
 
 		enum E_TRANSFORMATION_FLAG
@@ -341,6 +341,7 @@ namespace video
 		void select_polygon_mipmap_clipped(s4DVertexPair *source, const size_t vIn, const size_t tex, const CSoftwareTexture2_Bound& b) const;
 #endif
 
+		void getCameraPosWorldSpace();
 		SBurningShaderEyeSpace EyeSpace;
 		SBurningShaderMaterial Material;
 

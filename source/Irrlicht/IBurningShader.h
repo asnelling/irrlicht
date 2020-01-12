@@ -31,20 +31,21 @@ namespace video
 	struct SBurningShaderLight
 	{
 		//SLight org;
-		bool LightIsOn;
+
+		sVec4 pos;	//light position input
+		sVec4 pos4; //light position Model*View (Identity*View)
 
 		E_LIGHT_TYPE Type;
 		f32 linearAttenuation;
 		f32 constantAttenuation;
 		f32 quadraticAttenuation;
-		sVec4 pos;
-		sVec4 pos4;
 
 		sVec4 spotDirection;
 		sVec4 spotDirection4;
 		f32 spotCosCutoff;
 		f32 spotCosInnerCutoff;
 		f32 spotExponent;
+		bool LightIsOn;
 
 		sVec3Color AmbientColor;
 		sVec3Color DiffuseColor;
@@ -76,11 +77,11 @@ namespace video
 		sVec3Color Global_AmbientLight;
 		sVec3Color FogColor;
 
-		//sVec4 campos; //Camera Position in eye Space (0,0,0,1)
+		//sVec4 cam_eye_pos; //Camera Position in eye Space (0,0,0,1)
+		//sVec4 cam_world_pos; //Camera Position in world Space
 		//sVec4 vertex4; //eye coordinate position of vertex
-		sVec4 normal3; //transformed normal
-
-		sVec4 vertex3; //eye coordinate position of vertex projected
+		sVec4 normal; //transformed normal
+		sVec4 vertex; //eye coordinate position of vertex projected
 
 		u32 Flags; // eTransformLightFlags
 	};
@@ -103,6 +104,8 @@ namespace video
 	struct SBurningShaderMaterial
 	{
 		SMaterial org;
+		SMaterial lastMaterial;
+		bool resetRenderStates;
 
 		size_t CullFlag; //eCullFlag
 		u32 depth_write;
@@ -156,6 +159,35 @@ namespace video
 		ETR_INVALID,
 
 		ETR2_COUNT
+	};
+
+	typedef enum
+	{
+		BL_VERTEX_PROGRAM = 1,
+		BL_FRAGMENT_PROGRAM = 2,
+		BL_TYPE_FLOAT = 4,
+		BL_TYPE_INT = 8,
+
+		BL_VERTEX_FLOAT = (BL_VERTEX_PROGRAM | BL_TYPE_FLOAT),
+		BL_VERTEX_INT = (BL_VERTEX_PROGRAM | BL_TYPE_INT),
+		BL_FRAGMENT_FLOAT = (BL_FRAGMENT_PROGRAM | BL_TYPE_FLOAT),
+		BL_FRAGMENT_INT = (BL_FRAGMENT_PROGRAM | BL_TYPE_INT),
+
+		BL_ACTIVE_UNIFORM_MAX_LENGTH = 28
+	} EBurningUniformFlags;
+
+	struct BurningUniform
+	{
+		c8 name[BL_ACTIVE_UNIFORM_MAX_LENGTH];
+		u32 type; //EBurningUniformFlags
+		//int location; // UniformLocation is index
+		f32 data[16];	// simple LocalParameter
+
+		bool operator==(const BurningUniform& other) const
+		{
+			return tiny_istoken(name, other.name);
+		}
+
 	};
 
 
@@ -252,13 +284,9 @@ namespace video
 		E_MATERIAL_TYPE BaseMaterial;
 		s32 UserData;
 
-		struct SUniformInfo
-		{
-			c8 name[32];
-			int type;
-			int location;
-		};
-		core::array<SUniformInfo> UniformInfo;
+		core::array<BurningUniform> UniformInfo;
+		s32 getShaderConstantID(EBurningUniformFlags program, const c8* name);
+		bool setShaderConstantID(EBurningUniformFlags flags, s32 index, const void* data, size_t u32_count);
 
 		video::CImage* RenderTarget;
 		CDepthBuffer* DepthBuffer;

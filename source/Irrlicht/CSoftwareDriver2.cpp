@@ -23,51 +23,6 @@ namespace irr
 namespace core
 {
 
-// difference to CMatrix4<T>::getInverse . higher precision in determinant. return identity on failure
-template <class T>
-bool mat44_inverse(CMatrix4<T>& out, const CMatrix4<T>& M)
-{
-	const T* m = M.pointer();
-
-	f64 d =
-		(m[0] * m[5] - m[1] * m[4]) * (m[10] * m[15] - m[11] * m[14]) -
-		(m[0] * m[6] - m[2] * m[4]) * (m[9] * m[15] - m[11] * m[13]) +
-		(m[0] * m[7] - m[3] * m[4]) * (m[9] * m[14] - m[10] * m[13]) +
-		(m[1] * m[6] - m[2] * m[5]) * (m[8] * m[15] - m[11] * m[12]) -
-		(m[1] * m[7] - m[3] * m[5]) * (m[8] * m[14] - m[10] * m[12]) +
-		(m[2] * m[7] - m[3] * m[6]) * (m[8] * m[13] - m[9] * m[12]);
-
-	if (fabs(d) < DBL_MIN)
-	{
-		out.makeIdentity();
-		return false;
-	}
-
-	d = 1.0 / d;
-	T* o = out.pointer();
-	o[0] = (T)(d*(m[5] * (m[10] * m[15] - m[11] * m[14]) + m[6] * (m[11] * m[13] - m[9] * m[15]) + m[7] * (m[9] * m[14] - m[10] * m[13])));
-	o[1] = (T)(d*(m[9] * (m[2] * m[15] - m[3] * m[14]) + m[10] * (m[3] * m[13] - m[1] * m[15]) + m[11] * (m[1] * m[14] - m[2] * m[13])));
-	o[2] = (T)(d*(m[13] * (m[2] * m[7] - m[3] * m[6]) + m[14] * (m[3] * m[5] - m[1] * m[7]) + m[15] * (m[1] * m[6] - m[2] * m[5])));
-	o[3] = (T)(d*(m[1] * (m[7] * m[10] - m[6] * m[11]) + m[2] * (m[5] * m[11] - m[7] * m[9]) + m[3] * (m[6] * m[9] - m[5] * m[10])));
-
-	o[4] = (T)(d*(m[6] * (m[8] * m[15] - m[11] * m[12]) + m[7] * (m[10] * m[12] - m[8] * m[14]) + m[4] * (m[11] * m[14] - m[10] * m[15])));
-	o[5] = (T)(d*(m[10] * (m[0] * m[15] - m[3] * m[12]) + m[11] * (m[2] * m[12] - m[0] * m[14]) + m[8] * (m[3] * m[14] - m[2] * m[15])));
-	o[6] = (T)(d*(m[14] * (m[0] * m[7] - m[3] * m[4]) + m[15] * (m[2] * m[4] - m[0] * m[6]) + m[12] * (m[3] * m[6] - m[2] * m[7])));
-	o[7] = (T)(d*(m[2] * (m[7] * m[8] - m[4] * m[11]) + m[3] * (m[4] * m[10] - m[6] * m[8]) + m[0] * (m[6] * m[11] - m[7] * m[10])));
-
-	o[8] = (T)(d*(m[7] * (m[8] * m[13] - m[9] * m[12]) + m[4] * (m[9] * m[15] - m[11] * m[13]) + m[5] * (m[11] * m[12] - m[8] * m[15])));
-	o[9] = (T)(d*(m[11] * (m[0] * m[13] - m[1] * m[12]) + m[8] * (m[1] * m[15] - m[3] * m[13]) + m[9] * (m[3] * m[12] - m[0] * m[15])));
-	o[10] = (T)(d*(m[15] * (m[0] * m[5] - m[1] * m[4]) + m[12] * (m[1] * m[7] - m[3] * m[5]) + m[13] * (m[3] * m[4] - m[0] * m[7])));
-	o[11] = (T)(d*(m[3] * (m[5] * m[8] - m[4] * m[9]) + m[0] * (m[7] * m[9] - m[5] * m[11]) + m[1] * (m[4] * m[11] - m[7] * m[8])));
-
-	o[12] = (T)(d*(m[4] * (m[10] * m[13] - m[9] * m[14]) + m[5] * (m[8] * m[14] - m[10] * m[12]) + m[6] * (m[9] * m[12] - m[8] * m[13])));
-	o[13] = (T)(d*(m[8] * (m[2] * m[13] - m[1] * m[14]) + m[9] * (m[0] * m[14] - m[2] * m[12]) + m[10] * (m[1] * m[12] - m[0] * m[13])));
-	o[14] = (T)(d*(m[12] * (m[2] * m[5] - m[1] * m[6]) + m[13] * (m[0] * m[6] - m[2] * m[4]) + m[14] * (m[1] * m[4] - m[0] * m[5])));
-	o[15] = (T)(d*(m[0] * (m[5] * m[10] - m[6] * m[9]) + m[1] * (m[6] * m[8] - m[4] * m[10]) + m[2] * (m[4] * m[9] - m[5] * m[8])));
-
-	return true;
-}
-
 template <class T>
 bool mat44_transposed_inverse(CMatrix4<T>& out, const CMatrix4<T>& M)
 {
@@ -112,6 +67,53 @@ bool mat44_transposed_inverse(CMatrix4<T>& out, const CMatrix4<T>& M)
 	return true;
 }
 
+#if 0
+// difference to CMatrix4<T>::getInverse . higher precision in determinant. return identity on failure
+template <class T>
+bool mat44_inverse(CMatrix4<T>& out, const CMatrix4<T>& M)
+{
+	const T* m = M.pointer();
+
+	f64 d =
+		(m[0] * m[5] - m[1] * m[4]) * (m[10] * m[15] - m[11] * m[14]) -
+		(m[0] * m[6] - m[2] * m[4]) * (m[9] * m[15] - m[11] * m[13]) +
+		(m[0] * m[7] - m[3] * m[4]) * (m[9] * m[14] - m[10] * m[13]) +
+		(m[1] * m[6] - m[2] * m[5]) * (m[8] * m[15] - m[11] * m[12]) -
+		(m[1] * m[7] - m[3] * m[5]) * (m[8] * m[14] - m[10] * m[12]) +
+		(m[2] * m[7] - m[3] * m[6]) * (m[8] * m[13] - m[9] * m[12]);
+
+	if (fabs(d) < DBL_MIN)
+	{
+		out.makeIdentity();
+		return false;
+	}
+
+	d = 1.0 / d;
+	T* o = out.pointer();
+	o[0] = (T)(d*(m[5] * (m[10] * m[15] - m[11] * m[14]) + m[6] * (m[11] * m[13] - m[9] * m[15]) + m[7] * (m[9] * m[14] - m[10] * m[13])));
+	o[1] = (T)(d*(m[9] * (m[2] * m[15] - m[3] * m[14]) + m[10] * (m[3] * m[13] - m[1] * m[15]) + m[11] * (m[1] * m[14] - m[2] * m[13])));
+	o[2] = (T)(d*(m[13] * (m[2] * m[7] - m[3] * m[6]) + m[14] * (m[3] * m[5] - m[1] * m[7]) + m[15] * (m[1] * m[6] - m[2] * m[5])));
+	o[3] = (T)(d*(m[1] * (m[7] * m[10] - m[6] * m[11]) + m[2] * (m[5] * m[11] - m[7] * m[9]) + m[3] * (m[6] * m[9] - m[5] * m[10])));
+
+	o[4] = (T)(d*(m[6] * (m[8] * m[15] - m[11] * m[12]) + m[7] * (m[10] * m[12] - m[8] * m[14]) + m[4] * (m[11] * m[14] - m[10] * m[15])));
+	o[5] = (T)(d*(m[10] * (m[0] * m[15] - m[3] * m[12]) + m[11] * (m[2] * m[12] - m[0] * m[14]) + m[8] * (m[3] * m[14] - m[2] * m[15])));
+	o[6] = (T)(d*(m[14] * (m[0] * m[7] - m[3] * m[4]) + m[15] * (m[2] * m[4] - m[0] * m[6]) + m[12] * (m[3] * m[6] - m[2] * m[7])));
+	o[7] = (T)(d*(m[2] * (m[7] * m[8] - m[4] * m[11]) + m[3] * (m[4] * m[10] - m[6] * m[8]) + m[0] * (m[6] * m[11] - m[7] * m[10])));
+
+	o[8] = (T)(d*(m[7] * (m[8] * m[13] - m[9] * m[12]) + m[4] * (m[9] * m[15] - m[11] * m[13]) + m[5] * (m[11] * m[12] - m[8] * m[15])));
+	o[9] = (T)(d*(m[11] * (m[0] * m[13] - m[1] * m[12]) + m[8] * (m[1] * m[15] - m[3] * m[13]) + m[9] * (m[3] * m[12] - m[0] * m[15])));
+	o[10] = (T)(d*(m[15] * (m[0] * m[5] - m[1] * m[4]) + m[12] * (m[1] * m[7] - m[3] * m[5]) + m[13] * (m[3] * m[4] - m[0] * m[7])));
+	o[11] = (T)(d*(m[3] * (m[5] * m[8] - m[4] * m[9]) + m[0] * (m[7] * m[9] - m[5] * m[11]) + m[1] * (m[4] * m[11] - m[7] * m[8])));
+
+	o[12] = (T)(d*(m[4] * (m[10] * m[13] - m[9] * m[14]) + m[5] * (m[8] * m[14] - m[10] * m[12]) + m[6] * (m[9] * m[12] - m[8] * m[13])));
+	o[13] = (T)(d*(m[8] * (m[2] * m[13] - m[1] * m[14]) + m[9] * (m[0] * m[14] - m[2] * m[12]) + m[10] * (m[1] * m[12] - m[0] * m[13])));
+	o[14] = (T)(d*(m[12] * (m[2] * m[5] - m[1] * m[6]) + m[13] * (m[0] * m[6] - m[2] * m[4]) + m[14] * (m[1] * m[4] - m[0] * m[5])));
+	o[15] = (T)(d*(m[0] * (m[5] * m[10] - m[6] * m[9]) + m[1] * (m[6] * m[8] - m[4] * m[10]) + m[2] * (m[4] * m[9] - m[5] * m[8])));
+
+	return true;
+}
+#endif
+
 // void CMatrix4<T>::transformVec4(T *out, const T * in) const
 template <class T>
 inline void transformVec4Vec4(const CMatrix4<T>& m, T *out, const T* in)
@@ -126,7 +128,7 @@ inline void transformVec4Vec4(const CMatrix4<T>& m, T *out, const T* in)
 
 // void CMatrix4<T>::transformVect(T *out, const core::vector3df &in) const
 template <class T>
-inline void transformVec3Vec4(const CMatrix4<T>& m,T *out, const core::vector3df &in)
+inline void transformVec3Vec4(const core::CMatrix4<T>& m,T *out, const core::vector3df &in)
 {
 	const T* M = m.pointer();
 	out[0] = in.X*M[0] + in.Y*M[4] + in.Z*M[8]  + M[12];
@@ -136,14 +138,14 @@ inline void transformVec3Vec4(const CMatrix4<T>& m,T *out, const core::vector3df
 }
 
 template <class T>
-inline void rotateVec3Vec4(const CMatrix4<T>& m, T *out, const T* in)
+inline void rotateVec3Vec4(const core::CMatrix4<T>& m, T *out, const T* in)
 {
 	const T* M = m.pointer();
 
 	out[0] = in[0] * M[0] + in[1] * M[4] + in[2] * M[8];
 	out[1] = in[0] * M[1] + in[1] * M[5] + in[2] * M[9];
 	out[2] = in[0] * M[2] + in[1] * M[6] + in[2] * M[10];
-	//out[3] = 0.f;
+	out[3] = 0.f;
 }
 
 } // end namespace video
@@ -267,11 +269,6 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	#endif
 
 	VertexCache_map_source_format();
-	VertexCache.mem.resize(VERTEXCACHE_ELEMENT * 2);
-	CurrentOut.resize(VERTEXCACHE_ELEMENT * 2);
-	Geometry_temp.resize(VERTEXCACHE_ELEMENT * 2);
-
-	memset ( TransformationFlag, 0, sizeof ( TransformationFlag ) );
 
 	// create backbuffer
 	BackBuffer = new CImage(BURNINGSHADER_COLOR_FORMAT, params.WindowSize);
@@ -335,7 +332,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	// add the same renderer for all solid types
 	CSoftware2MaterialRenderer_SOLID* smr = new CSoftware2MaterialRenderer_SOLID( this);
 	CSoftware2MaterialRenderer_TRANSPARENT_ADD_COLOR* tmr = new CSoftware2MaterialRenderer_TRANSPARENT_ADD_COLOR( this);
-	CSoftware2MaterialRenderer_UNSUPPORTED * umr = new CSoftware2MaterialRenderer_UNSUPPORTED ( this );
+	//CSoftware2MaterialRenderer_UNSUPPORTED * umr = new CSoftware2MaterialRenderer_UNSUPPORTED ( this );
 
 	//!TODO: addMaterialRenderer depends on pushing order....
 	addMaterialRenderer ( smr ); // EMT_SOLID
@@ -365,7 +362,7 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 
 	smr->drop ();
 	tmr->drop ();
-	umr->drop ();
+	//umr->drop ();
 
 	// select render target
 	setRenderTargetImage(BackBuffer);
@@ -510,9 +507,9 @@ void CBurningVideoDriver::transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO st
 		case ETS_VIEW_PROJECTION:
 			ok = TransformationFlag[ETS_VIEW] & TransformationFlag[ETS_PROJECTION] & ETF_VALID;
 			break;
-		case ETS_VIEW_INVERSE:
-			ok = TransformationFlag[ETS_VIEW] & ETF_VALID;
-			break;
+		//case ETS_VIEW_INVERSE:
+		//	ok = TransformationFlag[ETS_VIEW] & ETF_VALID;
+		//	break;
 		case ETS_MODEL_VIEW:
 			ok = TransformationFlag[ETS_WORLD] & TransformationFlag[ETS_VIEW] & ETF_VALID;
 			break;
@@ -542,9 +539,10 @@ void CBurningVideoDriver::transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO st
 				Transformation[state].setbyproduct_nocheck(Transformation[ETS_VIEW_PROJECTION],Transformation[ETS_WORLD]);
 			}
 			break;
-		case ETS_VIEW_INVERSE:
-			mat44_inverse(Transformation[state],Transformation[ETS_VIEW]);
-			break;
+
+		//case ETS_VIEW_INVERSE:
+		//	mat44_inverse(Transformation[state],Transformation[ETS_VIEW]);
+		//	break;
 
 		case ETS_VIEW_PROJECTION:
 			Transformation[state].setbyproduct_nocheck (Transformation[ETS_PROJECTION],Transformation[ETS_VIEW]);
@@ -593,7 +591,7 @@ void CBurningVideoDriver::setTransform(E_TRANSFORMATION_STATE state, const core:
 		case ETS_VIEW:
 			TransformationFlag[ETS_PROJ_MODEL_VIEW] &= ~ETF_VALID;
 			TransformationFlag[ETS_VIEW_PROJECTION] &= ~ETF_VALID;
-			TransformationFlag[ETS_VIEW_INVERSE] &= ~ETF_VALID;
+			//TransformationFlag[ETS_VIEW_INVERSE] &= ~ETF_VALID;
 			TransformationFlag[ETS_MODEL_VIEW] &= ~ETF_VALID;
 			TransformationFlag[ETS_NORMAL] &= ~ETF_VALID;
 			break;
@@ -693,7 +691,7 @@ void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
 		RenderTargetSize = RenderTargetSurface->getDimension();
 	}
 
-	setViewPort(core::rect<s32>(0,0,RenderTargetSize.Width,RenderTargetSize.Height));
+	setViewPort(core::recti(RenderTargetSize));
 
 	if (DepthBuffer)
 		DepthBuffer->setSize(RenderTargetSize);
@@ -1377,6 +1375,17 @@ void CBurningVideoDriver::VertexCache_map_source_format()
 			flag = (flag & ~VERTEX4D_FORMAT_MASK_TANGENT) | (BURNING_MATERIAL_MAX_TANGENT << 24);
 		}
 	}
+
+	VertexCache.mem.resize(VERTEXCACHE_ELEMENT * 2);
+	VertexCache.vType = E4VT_STANDARD;
+
+	CurrentOut.resize(VERTEXCACHE_ELEMENT * 2);
+	Geometry_temp.resize(VERTEXCACHE_ELEMENT * 2);
+	
+	memset(TransformationFlag, 0, sizeof(TransformationFlag));
+	memset(Transformation_ETS_CLIPSCALE, 0, sizeof(Transformation_ETS_CLIPSCALE));
+
+	Material.resetRenderStates = true;
 }
 
 
@@ -1426,14 +1435,14 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 		Transformation[ETS_MODEL_VIEW].transformVect ( &vertex4.x, base->Pos );
 
 		f32 iw = reciprocal_zero(vertex4.w);
-		EyeSpace.vertex3.x = vertex4.x * iw;
-		EyeSpace.vertex3.y = vertex4.y * iw;
-		EyeSpace.vertex3.z = vertex4.z * iw;
-		EyeSpace.vertex3.w = iw;
+		EyeSpace.vertex.x = vertex4.x * iw;
+		EyeSpace.vertex.y = vertex4.y * iw;
+		EyeSpace.vertex.z = vertex4.z * iw;
+		EyeSpace.vertex.w = iw;
 
-		Transformation[ETS_NORMAL].rotateVect(&EyeSpace.normal3.x, base->Normal);
+		Transformation[ETS_NORMAL].rotateVect(&EyeSpace.normal.x, base->Normal);
 		if (EyeSpace.Flags & NORMALIZE_NORMALS)
-			EyeSpace.normal3.normalize_dir_xyz();
+			EyeSpace.normal.normalize_dir_xyz();
 
 	}
 
@@ -1519,16 +1528,16 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			// texgen
 			if ( TransformationFlag[ETS_TEXTURE_0+t] & ETF_TEXGEN_CAMERA_SPHERE )
 			{
-				u.x = EyeSpace.vertex3.x;
-				u.y = EyeSpace.vertex3.y;
-				u.z = EyeSpace.vertex3.z;
+				u.x = EyeSpace.vertex.x;
+				u.y = EyeSpace.vertex.y;
+				u.z = EyeSpace.vertex.z;
 				u.normalize_dir_xyz();
 
 				//reflect(u,N) u - 2.0 * dot(N, u) * N
-				f32 dot = -2.f * EyeSpace.normal3.dot_xyz(u);
-				r.x = u.x + dot * EyeSpace.normal3.x;
-				r.y = u.y + dot * EyeSpace.normal3.y;
-				r.z = u.z + dot * EyeSpace.normal3.z;
+				f32 dot = -2.f * EyeSpace.normal.dot_xyz(u);
+				r.x = u.x + dot * EyeSpace.normal.x;
+				r.y = u.y + dot * EyeSpace.normal.y;
+				r.z = u.z + dot * EyeSpace.normal.z;
 
 				//openGL
 /*
@@ -1544,16 +1553,16 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			else
 			if ( TransformationFlag[ETS_TEXTURE_0+t] & ETF_TEXGEN_CAMERA_REFLECTION )
 			{
-				u.x = EyeSpace.vertex3.x;
-				u.y = EyeSpace.vertex3.y;
-				u.z = EyeSpace.vertex3.z;
+				u.x = EyeSpace.vertex.x;
+				u.y = EyeSpace.vertex.y;
+				u.z = EyeSpace.vertex.z;
 				u.normalize_dir_xyz();
 
 				//reflect(u,N) u - 2.0 * dot(N, u) * N
-				f32 dot = -2.f * EyeSpace.normal3.dot_xyz(u);
-				r.x = u.x + dot * EyeSpace.normal3.x;
-				r.y = u.y + dot * EyeSpace.normal3.y;
-				r.z = u.z + dot * EyeSpace.normal3.z;
+				f32 dot = -2.f * EyeSpace.normal.dot_xyz(u);
+				r.x = u.x + dot * EyeSpace.normal.x;
+				r.y = u.y + dot * EyeSpace.normal.y;
+				r.z = u.z + dot * EyeSpace.normal.z;
 
 				//openGL
 /*
@@ -1643,9 +1652,9 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			if ( !light.LightIsOn )
 				continue;
 
-			vp.x = light.pos4.x - EyeSpace.vertex3.x;
-			vp.y = light.pos4.y - EyeSpace.vertex3.y;
-			vp.z = light.pos4.z - EyeSpace.vertex3.z;
+			vp.x = light.pos4.x - EyeSpace.vertex.x;
+			vp.y = light.pos4.y - EyeSpace.vertex.y;
+			vp.z = light.pos4.z - EyeSpace.vertex.z;
 	
 			//vp.normalize_xyz();
 
@@ -2013,9 +2022,9 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 	if (VertexCache_reset(vertices, vertexCount, indexList, primitiveCount, vType, pType, iType))
 		return;
 
-	if (static_cast<u32>(Material.org.MaterialType) < MaterialRenderers.size())
+	if ((u32)Material.org.MaterialType < MaterialRenderers.size())
 	{
-		MaterialRenderers[Material.org.MaterialType].Renderer->OnRender(this, video::EVT_STANDARD);
+		MaterialRenderers[Material.org.MaterialType].Renderer->OnRender(this, vType);
 	}
 
 	//Matrices needed for this primitive
@@ -2188,8 +2197,6 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 	l.SpecularColor.setColorf ( dl.SpecularColor );
 
 	//should always be valid?
-	//core::vector3df nDirection = dl.Direction;
-	//nDirection.normalize();
 	sVec4 nDirection;
 	nDirection.x = dl.Direction.X;
 	nDirection.y = dl.Direction.Y;
@@ -2264,10 +2271,33 @@ s32 CBurningVideoDriver::addDynamicLight(const SLight& dl)
 	transform_calc(ETS_MODEL_VIEW);
 	transformVec4Vec4(Transformation[ETS_MODEL_VIEW], &l.pos4.x, &l.pos.x );
 	rotateVec3Vec4(Transformation[ETS_MODEL_VIEW], &l.spotDirection4.x, &l.spotDirection.x );
-	EyeSpace.Light.push_back ( l );
 
+	EyeSpace.Light.push_back ( l );
 	return EyeSpace.Light.size() - 1;
 }
+
+#if 0
+/*!
+	Camera Position in World Space
+*/
+void CBurningVideoDriver::getCameraPosWorldSpace()
+{
+	transform_calc(ETS_VIEW_INVERSE);
+
+	const f32 *M = Transformation[ETS_VIEW_INVERSE].pointer();
+
+	/*	The  viewpoint is at (0., 0., 0.) in eye space.
+		Turning this into a vector [0 0 0 1] and multiply it by
+		the inverse of the view matrix, the resulting vector is the
+		object space location of the camera.
+	*/
+
+	EyeSpace.camworldpos.x = M[12];
+	EyeSpace.camworldpos.y = M[13];
+	EyeSpace.camworldpos.z = M[14];
+	EyeSpace.camworldpos.w = 1.f;
+}
+#endif
 
 //! Turns a dynamic light on or off
 void CBurningVideoDriver::turnLightOn(s32 lightIndex, bool turnOn)
@@ -2413,14 +2443,20 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	case EMT_NORMAL_MAP_SOLID:
 	case EMT_NORMAL_MAP_TRANSPARENT_ADD_COLOR:
 	case EMT_NORMAL_MAP_TRANSPARENT_VERTEX_ALPHA:
-		shader = ETR_NORMAL_MAP_SOLID;
-		EyeSpace.Flags |= TEXTURE_TRANSFORM;
+		if (texture1)
+		{
+			shader = ETR_NORMAL_MAP_SOLID;
+			EyeSpace.Flags |= TEXTURE_TRANSFORM;
+		}
 		break;
 	case EMT_PARALLAX_MAP_SOLID:
 	case EMT_PARALLAX_MAP_TRANSPARENT_ADD_COLOR:
 	case EMT_PARALLAX_MAP_TRANSPARENT_VERTEX_ALPHA:
-		shader = ETR_NORMAL_MAP_SOLID;
-		EyeSpace.Flags |= TEXTURE_TRANSFORM;
+		if (texture1)
+		{
+			shader = ETR_NORMAL_MAP_SOLID;
+			EyeSpace.Flags |= TEXTURE_TRANSFORM;
+		}
 		break;
 
 	default:
@@ -2462,6 +2498,26 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 		CurrentShader->pushEdgeTest(Material.org.Wireframe, Material.org.PointCloud, 0);
 	}
 
+	// unset old material
+	u32 mi;
+	mi = (u32)Material.lastMaterial.MaterialType;
+	if (mi != Material.org.MaterialType && mi < MaterialRenderers.size())
+		MaterialRenderers[mi].Renderer->OnUnsetMaterial();
+
+	// set new material.
+	mi = (u32)Material.org.MaterialType;
+	if (mi < MaterialRenderers.size())
+		MaterialRenderers[mi].Renderer->OnSetMaterial(
+			Material.org, Material.lastMaterial, Material.resetRenderStates, this);
+
+	Material.lastMaterial = Material.org;
+	Material.resetRenderStates = false;
+
+/*
+	mi = (u32)Material.org.MaterialType;
+	if (mi < MaterialRenderers.size())
+		MaterialRenderers[mi].Renderer->OnRender(this, (video::E_VERTEX_TYPE)VertexCache.vType);
+*/
 }
 
 
@@ -2527,7 +2583,7 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 		case ELT_DIRECTIONAL:
 
 			//angle between normal and light vector
-			dot = EyeSpace.normal3.dot_xyz(light.spotDirection4);
+			dot = EyeSpace.normal.dot_xyz(light.spotDirection4);
 
 			// accumulate ambient
 			ambient.add_rgb(light.AmbientColor);
@@ -2539,9 +2595,9 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 
 		case ELT_POINT:
 			// surface to light
-			vp.x = light.pos4.x - EyeSpace.vertex3.x;
-			vp.y = light.pos4.y - EyeSpace.vertex3.y;
-			vp.z = light.pos4.z - EyeSpace.vertex3.z;
+			vp.x = light.pos4.x - EyeSpace.vertex.x;
+			vp.y = light.pos4.y - EyeSpace.vertex.y;
+			vp.z = light.pos4.z - EyeSpace.vertex.z;
 
 			distance = vp.length_xyz();
 
@@ -2559,7 +2615,7 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 
 			//angle between normal and light vector
 			vp.mul_xyz(reciprocal_zero(distance)); //normalize
-			dot = EyeSpace.normal3.dot_xyz(vp);
+			dot = EyeSpace.normal.dot_xyz(vp);
 			if (dot <= 0.f) continue;
 
 			// diffuse component
@@ -2568,9 +2624,9 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 			if (!(EyeSpace.Flags & SPECULAR))
 				continue;
 			/*
-			lightHalf.x = vp.x + EyeSpace.campos.x;
-			lightHalf.y = vp.y + EyeSpace.campos.y;
-			lightHalf.z = vp.z + EyeSpace.campos.z;
+			lightHalf.x = vp.x + EyeSpace.cam_eye_pos.x;
+			lightHalf.y = vp.y + EyeSpace.cam_eye_pos.y;
+			lightHalf.z = vp.z + EyeSpace.cam_eye_pos.z;
 			lightHalf.normalize_xyz();
 
 			dot = EyeSpace.normal3.dot_xyz ( lightHalf );
@@ -2584,9 +2640,9 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 
 		case ELT_SPOT:
 			// surface to light
-			vp.x = light.pos4.x - EyeSpace.vertex3.x;
-			vp.y = light.pos4.y - EyeSpace.vertex3.y;
-			vp.z = light.pos4.z - EyeSpace.vertex3.z;
+			vp.x = light.pos4.x - EyeSpace.vertex.x;
+			vp.y = light.pos4.y - EyeSpace.vertex.y;
+			vp.z = light.pos4.z - EyeSpace.vertex.z;
 
 			distance = vp.length_xyz();
 
@@ -2610,7 +2666,7 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 
 			// build diffuse reflection
 			//angle between normal and light vector
-			dot = EyeSpace.normal3.dot_xyz(vp);
+			dot = EyeSpace.normal.dot_xyz(vp);
 			if (dot < 0.f) continue;
 
 			// diffuse component
@@ -2619,9 +2675,9 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 			if (!(EyeSpace.Flags & SPECULAR))
 				continue;
 			/*
-			lightHalf.x = vp.x + EyeSpace.campos.x;
-			lightHalf.y = vp.y + EyeSpace.campos.y;
-			lightHalf.z = vp.z + EyeSpace.campos.z;
+			lightHalf.x = vp.x + EyeSpace.cam_eye_pos.x;
+			lightHalf.y = vp.y + EyeSpace.cam_eye_pos.y;
+			lightHalf.z = vp.z + EyeSpace.cam_eye_pos.z;
 			lightHalf.normalize_xyz();
 
 			dot = EyeSpace.normal3.dot_xyz ( lightHalf );
@@ -3261,7 +3317,7 @@ void CBurningVideoDriver::clearBuffers(u16 flag, SColor color, f32 depth, u8 ste
 		StencilBuffer->clear(stencil);
 }
 
-
+#if 0
 void CBurningVideoDriver::saveBuffer()
 {
 	static int shotCount = 0;
@@ -3279,6 +3335,7 @@ void CBurningVideoDriver::saveBuffer()
 	}
 	shotCount += 1;
 }
+#endif
 
 //! Returns an image created from the last rendered frame.
 IImage* CBurningVideoDriver::createScreenShot(video::ECOLOR_FORMAT format, video::E_RENDER_TARGET target)
@@ -3444,7 +3501,7 @@ bool CBurningVideoDriver::queryTextureFormat(ECOLOR_FORMAT format) const
 
 bool CBurningVideoDriver::needsTransparentRenderPass(const irr::video::SMaterial& material) const
 {
-	return	CNullDriver::needsTransparentRenderPass(material) || material.isTransparent();
+	return CNullDriver::needsTransparentRenderPass(material) || material.isAlphaBlendOperation(); // || material.isTransparent();
 }
 
 s32 CBurningVideoDriver::addShaderMaterial(const c8* vertexShaderProgram,
@@ -3453,7 +3510,19 @@ s32 CBurningVideoDriver::addShaderMaterial(const c8* vertexShaderProgram,
 	E_MATERIAL_TYPE baseMaterial,
 	s32 userData)
 {
-	return baseMaterial;
+	s32 materialID = -1;
+
+	IBurningShader* shader = new IBurningShader(
+		this, materialID,
+		vertexShaderProgram, 0, video::EVST_VS_1_1,
+		pixelShaderProgram, 0, video::EPST_PS_1_1,
+		0, 0, EGST_GS_4_0,
+		scene::EPT_TRIANGLES, scene::EPT_TRIANGLE_STRIP, 0,
+		callback, baseMaterial, userData);
+
+	shader->drop();
+
+	return materialID;
 }
 
 //! Adds a new material renderer to the VideoDriver, based on a high level shading language.

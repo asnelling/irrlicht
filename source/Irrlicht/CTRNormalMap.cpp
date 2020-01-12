@@ -319,9 +319,9 @@ void CTRNormalMap::fragmentShader()
 
 
 #else
-			r2 = clampfix_maxcolor ( imulFix_tex4 ( r0, r1 ) );
-			g2 = clampfix_maxcolor ( imulFix_tex4 ( g0, g1 ) );
-			b2 = clampfix_maxcolor ( imulFix_tex4 ( b0, b1 ) );
+			r2 = imulFix_tex4 ( r0, r1 );
+			g2 = imulFix_tex4 ( g0, g1 );
+			b2 = imulFix_tex4 ( b0, b1 );
 			dst[i] = fix_to_color(r2, g2, b2);
 #endif
 

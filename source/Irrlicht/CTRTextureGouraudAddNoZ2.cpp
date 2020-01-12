@@ -227,21 +227,14 @@ void CTRTextureGouraudAddNoZ2::fragmentShader()
 			b0 = imulFix(b2, b0);
 #endif
 			
+			//glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
 			if (r0 | g0 | b0)
 			{
-/*
 				color_to_fix(r1, g1, b1, dst[i]);
-				dst[i] = fix_to_color(clampfix_maxcolor(r0 + r1),
-					clampfix_maxcolor(g0 + g1),
-					clampfix_maxcolor(b0 + b1)
-				);
-*/
-				color_to_fix1(r1, g1, b1, dst[i]);
-				r1 = imulFix(r1, FIXPOINT_COLOR_MAX - r0);
-				g1 = imulFix(g1, FIXPOINT_COLOR_MAX - g0);
-				b1 = imulFix(b1, FIXPOINT_COLOR_MAX - b0);
+				r1 = imulFix_tex1(r1, FIXPOINT_COLOR_MAX - r0);
+				g1 = imulFix_tex1(g1, FIXPOINT_COLOR_MAX - g0);
+				b1 = imulFix_tex1(b1, FIXPOINT_COLOR_MAX - b0);
 				dst[i] = fix_to_color(r0+r1, g0+g1, b0+b1);
-
 			}
 
 #ifdef WRITE_Z

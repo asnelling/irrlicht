@@ -235,18 +235,14 @@ void CTRGTextureLightMap2_M4::scanline_bilinear ()
 			g2 = imulFix ( g0, g3 );
 			b2 = imulFix ( b0, b3 );
 
-			r2 = clampfix_maxcolor ( imulFix_tex4 ( r2, r1 ) );
-			g2 = clampfix_maxcolor ( imulFix_tex4 ( g2, g1 ) );
-			b2 = clampfix_maxcolor ( imulFix_tex4 ( b2, b1 ) );
-/*
-			r2 = r3 << 8;
-			g2 = g3 << 8;
-			b2 = b3 << 8;
-*/
+			r2 = imulFix_tex4 ( r2, r1 );
+			g2 = imulFix_tex4 ( g2, g1 );
+			b2 = imulFix_tex4 ( b2, b1 );
+
 #else
-			r2 = clampfix_maxcolor ( imulFix_tex4 ( r0, r1 ) );
-			g2 = clampfix_maxcolor ( imulFix_tex4 ( g0, g1 ) );
-			b2 = clampfix_maxcolor ( imulFix_tex4 ( b0, b1 ) );
+			r2 = imulFix_tex4 ( r0, r1 );
+			g2 = imulFix_tex4 ( g0, g1 );
+			b2 = imulFix_tex4 ( b0, b1 );
 #endif
 
 

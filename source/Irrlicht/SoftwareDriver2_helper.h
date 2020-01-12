@@ -141,6 +141,8 @@ inline void memset16(void * dest, const u16 value, size_t bytesize)
 }
 
 
+// byte-align structures
+#include "irrpack.h"
 
 //IEEE Standard for Floating - Point Arithmetic(IEEE 754)
 typedef union {
@@ -148,7 +150,10 @@ typedef union {
 	unsigned int u;
 	struct { unsigned int frac:23; unsigned exp:8; unsigned int sign:1; } fields;
 	struct { unsigned int frac_exp:31; } abs;
-} ieee754;
+} ieee754 PACK_STRUCT;
+
+// Default alignment
+#include "irrunpack.h"
 
 // 0.5f as integer
 #define ieee754_zero_dot_5	0x3f000000
@@ -519,10 +524,13 @@ typedef u32 tFixPointu;
 
 #if FIX_POINT_PRE == 10 && COLOR_MAX == 255
 	#define FIX_POINT_HALF_COLOR	0x1FE00
+	#define FIX_POINT_COLOR_ERROR	4
 #elif FIX_POINT_PRE == 10 && COLOR_MAX == 31
 	#define FIX_POINT_HALF_COLOR	0x3E00
+	#define FIX_POINT_COLOR_ERROR	32
 #else
 	#define FIX_POINT_HALF_COLOR	( (tFixPoint) ( ((f32) COLOR_MAX / 2.f * FIX_POINT_F32_MUL ) ) )
+	#define FIX_POINT_COLOR_ERROR	(1<<(FIX_POINT_PRE-COLOR_MAX_LOG2))
 #endif
 
 
@@ -606,14 +614,14 @@ REALINLINE tFixPoint imulFix2(const tFixPoint x, const tFixPoint y)
 
 
 /*
-	Multiply x * y * 1
+	Multiply x * y * 1 FIXPOINT_COLOR_MAX
 */
 REALINLINE tFixPoint imulFix_tex1(const tFixPoint x, const tFixPoint y)
 {
 #ifdef SOFTWARE_DRIVER_2_32BIT
-	return ( ( (tFixPointu) x >> 2 ) * ( (tFixPointu) y >> 2 ) ) >> (tFixPointu) ( FIX_POINT_PRE + 4 );
+	return (((tFixPointu)x >> 2)*(((tFixPointu)y + FIX_POINT_ONE) >> 2)) >> (tFixPointu) (FIX_POINT_PRE + 4);
 #else
-	return (x * y) >> (FIX_POINT_PRE + 5);
+	return (x * (y+ FIX_POINT_ONE)) >> (FIX_POINT_PRE + 5);
 #endif
 }
 
@@ -626,16 +634,18 @@ REALINLINE tFixPoint imulFix_tex2(const tFixPoint x, const tFixPoint y)
 }
 
 /*
-	Multiply x * y * 4
+	Multiply x * y * 4 clamp
 */
 
 REALINLINE tFixPoint imulFix_tex4(const tFixPoint x, const tFixPoint y)
 {
 #ifdef SOFTWARE_DRIVER_2_32BIT
-	return ( ( (tFixPointu) x >> 2 ) * ( (tFixPointu) y >> 2 ) ) >> (tFixPointu) ( FIX_POINT_PRE + 2 );
+	register tFixPoint a = (((tFixPointu)x >> 2)*(((tFixPointu)y + FIX_POINT_ONE) >> 2)) >> (tFixPointu)(FIX_POINT_PRE + 2);
 #else
-	return ( x * y) >> ( FIX_POINT_PRE + ( VIDEO_SAMPLE_GRANULARITY * 3 ) );
+	register tFixPoint a = (x * (y + FIX_POINT_ONE)) >> (FIX_POINT_PRE + 3);
 #endif
+	register tFixPoint mask = (a - FIXPOINT_COLOR_MAX) >> 31;
+	return (a & mask) | (FIXPOINT_COLOR_MAX & ~mask);
 }
 
 
@@ -658,8 +668,6 @@ REALINLINE tFixPoint clampfix_maxcolor ( const tFixPoint a)
 	register tFixPoint c = (a - FIXPOINT_COLOR_MAX) >> 31;
 	return (a & c) | ( FIXPOINT_COLOR_MAX & ~c);
 }
-
-
 
 
 /*!
@@ -749,9 +757,9 @@ inline void color_to_fix1 ( tFixPoint &r, tFixPoint &g, tFixPoint &b, const tVid
 	(tFixPointu&) b =	(t00 & MASK_B) << ( FIX_POINT_PRE - COLOR_MAX_LOG2 );
 
 	//0..255 -> 0..256 | c += c >= 0.5 ? 1 : 0
-	r += (r & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
-	g += (g & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
-	b += (b & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
+	r += (r & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
+	g += (g & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
+	b += (b & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
 }
 
 /*!
@@ -765,10 +773,10 @@ inline void color_to_fix1 ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint 
 	(tFixPointu&) b =	(t00 & MASK_B) << ( FIX_POINT_PRE - COLOR_MAX_LOG2 );
 
 	//0..255 -> 0..256 | c += c >= 0.5 ? 1 : 0
-	a += (a & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
-	r += (r & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
-	g += (g & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
-	b += (b & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
+	a += (a & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
+	r += (r & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
+	g += (g & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
+	b += (b & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
 
 }
 
@@ -794,10 +802,10 @@ inline void color_to_fix1(tFixPoint c[4], const tVideoSample t00)
 	c[3] = (t00 & MASK_B) << (FIX_POINT_PRE - COLOR_MAX_LOG2);
 
 	//0..255 -> 0..256 | c += c >= 0.5 ? 1 : 0
-	c[0] += (c[0] & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
-	c[1] += (c[1] & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
-	c[2] += (c[2] & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
-	c[3] += (c[3] & (1 << (FIX_POINT_PRE - 1))) ? 4 : 0;
+	c[0] += (c[0] & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
+	c[1] += (c[1] & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
+	c[2] += (c[2] & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
+	c[3] += (c[3] & FIX_POINT_ZERO_DOT_FIVE) ? FIX_POINT_COLOR_ERROR : 0;
 
 }
 
@@ -1251,6 +1259,31 @@ inline s32 intervall_intersect_test( const sIntervall& a, const sIntervall& b)
 {
 	return core::s32_min( a.end, b.end ) - core::s32_max( a.start, b.start );
 }
+
+// strings
+static inline void tiny_strncpy(char* to, const char* from, const size_t count)
+{
+	for (size_t r = 0; r < count && (*to = *from) != '\0'; ++from, ++to, ++r);
+	*to = '\0';
+}
+
+#define tiny_strcpy(a, b) tiny_strncpy(a,b,sizeof(a)-1)
+
+
+// tiny_isequal = !strncmp(a,b,sizeof(a)-1)
+static inline int tiny_isequal(const char *s1, const char *s2, size_t n)
+{
+	do {
+		if (*s1 != *s2++) return 0;
+		if (*s1++ == 0)
+			break;
+	} while (--n != 0);
+	return 1;
+}
+
+#define tiny_istoken(a, b) tiny_isequal(a,b,sizeof(a)-1) != 0
+//! Size of a static C-style array.
+#define array_size(_arr)  ((sizeof(_arr)/sizeof(*_arr)))
 
 
 } // end namespace irr

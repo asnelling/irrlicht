@@ -206,10 +206,14 @@ void IBurningShader::drawWireFrameTriangle ( const s4DVertex *a,const s4DVertex 
 void IBurningShader::OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 	bool resetAllRenderstates, IMaterialRendererServices* services)
 {
-	Driver->setBasicRenderStates(material, lastMaterial, resetAllRenderstates);
+	services->setBasicRenderStates(material, lastMaterial, resetAllRenderstates);
 	if (CallBack)
 		CallBack->OnSetMaterial(material);
 
+}
+
+void IBurningShader::OnUnsetMaterial()
+{
 }
 
 bool IBurningShader::OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE vtxtype)
@@ -220,9 +224,6 @@ bool IBurningShader::OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE 
 	return true;
 }
 
-void IBurningShader::OnUnsetMaterial()
-{
-}
 
 //! Returns if the material is transparent.
 bool IBurningShader::isTransparent() const
@@ -243,50 +244,119 @@ void IBurningShader::setBasicRenderStates(const SMaterial& material, const SMate
 	Driver->setBasicRenderStates(material, lastMaterial, resetAllRenderstates);
 }
 
+s32 IBurningShader::getShaderConstantID(EBurningUniformFlags flags,const c8* name)
+{
+	if (!name || !name[0])
+		return -1;
+
+	BurningUniform add;
+	tiny_strcpy(add.name, name);
+	add.type = flags;
+
+	s32 index = UniformInfo.linear_search(add);
+	if (index < 0)
+	{
+		UniformInfo.push_back(add);
+		index = UniformInfo.size() - 1;
+	}
+
+	return index;
+}
+
+const char* tiny_itoa(s32 value, int base)
+{
+	static char b[32];
+	int p = 31;
+
+	//int sign = 0;
+	//if (value < 0) { sign = 1; value = -value; }
+
+	b[p] = '\0';
+	do {
+		b[--p] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[value%base];
+		value /= base;
+	} while (value && p > 0);
+
+	//if (sign && p > 0) { b[--p] = '-'; }
+
+	return b + p;
+}
+
+bool IBurningShader::setShaderConstantID(EBurningUniformFlags flags, s32 index, const void* data, size_t u32_count)
+{
+	if ((u32)index >= UniformInfo.size())
+		return false;
+#if 0
+	BurningUniform add;
+	while ((u32)index >= UniformInfo.size())
+	{
+		tiny_strcpy(add.name, tiny_itoa(UniformInfo.size(),10));
+		add.type = flags;
+		UniformInfo.push_back(add);
+	}
+#endif
+
+	BurningUniform& use = UniformInfo[index];
+	use.type = flags;
+
+	const u32* s = (u32*)data;
+	u32* d = (u32*)use.data;
+
+	if (!s) u32_count = 0;
+	if (u32_count > array_size(use.data)) u32_count = array_size(use.data);
+	for (size_t i = 0; i < u32_count; ++i)
+	{
+		d[i] = s[i];
+	}
+
+	return true;
+}
+
+
 s32 IBurningShader::getVertexShaderConstantID(const c8* name)
 {
-	return getPixelShaderConstantID(name);
+	return getShaderConstantID(BL_VERTEX_PROGRAM, name);
 }
 
 s32 IBurningShader::getPixelShaderConstantID(const c8* name)
 {
-	for (u32 i = 0; i < UniformInfo.size(); ++i)
-	{
-		if (UniformInfo[i].name == name)
-			return i;
-	}
-
-	return -1;
+	return getShaderConstantID(BL_FRAGMENT_PROGRAM, name);
 }
 
 void IBurningShader::setVertexShaderConstant(const f32* data, s32 startRegister, s32 constantAmount)
 {
-	os::Printer::log("Cannot set constant, please use high level shader call instead.", ELL_WARNING);
+	c8 name[BL_ACTIVE_UNIFORM_MAX_LENGTH];
+	tiny_strcpy(name, tiny_itoa(startRegister, 10));
+
+	setShaderConstantID(BL_VERTEX_FLOAT, getShaderConstantID(BL_VERTEX_PROGRAM,name), data, constantAmount);
 }
 
 void IBurningShader::setPixelShaderConstant(const f32* data, s32 startRegister, s32 constantAmount)
 {
-	os::Printer::log("Cannot set constant, use high level shader call.", ELL_WARNING);
+	c8 name[BL_ACTIVE_UNIFORM_MAX_LENGTH];
+	tiny_strcpy(name, tiny_itoa(startRegister, 10));
+
+	setShaderConstantID(BL_FRAGMENT_FLOAT, getShaderConstantID(BL_FRAGMENT_PROGRAM, name), data, constantAmount);
 }
 
 bool IBurningShader::setVertexShaderConstant(s32 index, const f32* floats, int count)
 {
-	return setPixelShaderConstant(index, floats, count);
+	return setShaderConstantID(BL_VERTEX_FLOAT, index, floats, count);
 }
 
 bool IBurningShader::setVertexShaderConstant(s32 index, const s32* ints, int count)
 {
-	return setPixelShaderConstant(index, ints, count);
+	return setShaderConstantID(BL_VERTEX_INT, index, ints, count);
 }
 
 bool IBurningShader::setPixelShaderConstant(s32 index, const f32* floats, int count)
 {
-	return false;
+	return setShaderConstantID(BL_FRAGMENT_FLOAT, index, floats, count);
 }
 
 bool IBurningShader::setPixelShaderConstant(s32 index, const s32* ints, int count)
 {
-	return false;
+	return setShaderConstantID(BL_FRAGMENT_INT, index, ints, count);
 }
 
 IVideoDriver* IBurningShader::getVideoDriver()
