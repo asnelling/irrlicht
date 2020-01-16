@@ -473,28 +473,41 @@ inline u32 PixelCombine32 ( const u32 c2, const u32 c1 )
 
 // ------------------ Fix Point ----------------------------------
 
+#if defined(ENV64BIT)
 typedef s32 tFixPoint;
 typedef u32 tFixPointu;
+#else
+typedef s32 tFixPoint;
+typedef u32 tFixPointu;
+#endif
 
-// Fix Point 12
+// Fix Point 12 (overflow on s32)
 #if 0
 	#define FIX_POINT_PRE			12
 	#define FIX_POINT_FRACT_MASK	0xFFF
-	#define FIX_POINT_SIGNED_MASK	0xFFFFF000
 	#define FIX_POINT_UNSIGNED_MASK	0x7FFFF000
 	#define FIX_POINT_ONE			0x1000
 	#define FIX_POINT_ZERO_DOT_FIVE	0x0800
 	#define FIX_POINT_F32_MUL		4096.f
 #endif
 
+// Fix Point 11 (overflow on s32)
+#if 0
+	#define FIX_POINT_PRE			11
+	#define FIX_POINT_FRACT_MASK	0x7FF
+	#define FIX_POINT_UNSIGNED_MASK	0xFFFFF800
+	#define FIX_POINT_ONE			0x800
+	#define FIX_POINT_ZERO_DOT_FIVE	0x400
+	#define FIX_POINT_F32_MUL		2048.f
+#endif
+
 // Fix Point 10
 #if 1
 	#define FIX_POINT_PRE			10
-	#define FIX_POINT_FRACT_MASK	0x3FF
-	#define FIX_POINT_SIGNED_MASK	0xFFFFFC00
+	#define FIX_POINT_FRACT_MASK	0x000003FF
 	#define FIX_POINT_UNSIGNED_MASK	0x7FFFFE00
-	#define FIX_POINT_ONE			0x400
-	#define FIX_POINT_ZERO_DOT_FIVE	0x200
+	#define FIX_POINT_ONE			0x00000400
+	#define FIX_POINT_ZERO_DOT_FIVE	0x00000200
 	#define FIX_POINT_F32_MUL		1024.f
 #endif
 
@@ -502,7 +515,6 @@ typedef u32 tFixPointu;
 #if 0
 	#define FIX_POINT_PRE			9
 	#define FIX_POINT_FRACT_MASK	0x1FF
-	#define FIX_POINT_SIGNED_MASK	0xFFFFFE00
 	#define FIX_POINT_UNSIGNED_MASK	0x7FFFFE00
 	#define FIX_POINT_ONE			0x200
 	#define FIX_POINT_ZERO_DOT_FIVE	0x100
@@ -513,7 +525,6 @@ typedef u32 tFixPointu;
 #if 0
 	#define FIX_POINT_PRE			7
 	#define FIX_POINT_FRACT_MASK	0x7F
-	#define FIX_POINT_SIGNED_MASK	0xFFFFFF80
 	#define FIX_POINT_UNSIGNED_MASK	0x7FFFFF80
 	#define FIX_POINT_ONE			0x80
 	#define FIX_POINT_ZERO_DOT_FIVE	0x40
@@ -522,9 +533,12 @@ typedef u32 tFixPointu;
 
 #define	FIXPOINT_COLOR_MAX		( COLOR_MAX << FIX_POINT_PRE )
 
-#if FIX_POINT_PRE == 10 && COLOR_MAX == 255
+#if   FIX_POINT_PRE == 10 && COLOR_MAX == 255
 	#define FIX_POINT_HALF_COLOR	0x1FE00
 	#define FIX_POINT_COLOR_ERROR	4
+#elif FIX_POINT_PRE == 12 && COLOR_MAX == 255
+	#define FIX_POINT_HALF_COLOR	0x7F800
+	#define FIX_POINT_COLOR_ERROR	16
 #elif FIX_POINT_PRE == 10 && COLOR_MAX == 31
 	#define FIX_POINT_HALF_COLOR	0x3E00
 	#define FIX_POINT_COLOR_ERROR	32
@@ -549,7 +563,7 @@ inline tFixPointu u32_to_fixPoint (const u32 x)
 
 inline u32 fixPointu_to_u32 (const tFixPointu x)
 {
-	return x >> FIX_POINT_PRE;
+	return (u32)(x >> FIX_POINT_PRE);
 }
 
 
@@ -687,7 +701,7 @@ REALINLINE tFixPoint saturateFix ( const tFixPoint a)
 // rount fixpoint to int
 inline s32 roundFix ( const tFixPoint x )
 {
-	return ( x + FIX_POINT_ZERO_DOT_FIVE ) >> FIX_POINT_PRE;
+	return (s32)(( x + FIX_POINT_ZERO_DOT_FIVE ) >> FIX_POINT_PRE);
 }
 
 
@@ -1066,6 +1080,7 @@ static REALINLINE void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint
 	size_t o0,o1,o2,o3;
 	register tVideoSample t00;
 
+	//wraps positive (ignoring negative)
 	o0 = ( ( (ty) & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	o1 = ( ( (ty+FIX_POINT_ONE) & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
 	o2 =   ( (tx) & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );

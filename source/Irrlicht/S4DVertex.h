@@ -36,10 +36,10 @@ struct sVec2
 	}
 
 	// f = a * t + b * ( 1 - t )
-	void interpolate(const sVec2& a, const sVec2& b, const f32 t)
+	void interpolate(const sVec2& burning_restrict a, const sVec2& burning_restrict b, const ipoltype t)
 	{
-		x = b.x + ( ( a.x - b.x ) * t );
-		y = b.y + ( ( a.y - b.y ) * t );
+		x = (f32)(b.x + ( ( a.x - b.x ) * t ));
+		y = (f32)(b.y + ( ( a.y - b.y ) * t ));
 	}
 
 	sVec2 operator-(const sVec2& other) const
@@ -89,11 +89,11 @@ struct sVec3Pack
 		: x(_x), y(_y), z(_z) {}
 
 	// f = a * t + b * ( 1 - t )
-	void interpolate(const sVec3Pack& v0, const sVec3Pack& v1, const f32 t)
+	void interpolate(const sVec3Pack& burning_restrict v0, const sVec3Pack& burning_restrict v1, const ipoltype t)
 	{
-		x = v1.x + ((v0.x - v1.x) * t);
-		y = v1.y + ((v0.y - v1.y) * t);
-		z = v1.z + ((v0.z - v1.z) * t);
+		x = (f32)(v1.x + ((v0.x - v1.x) * t));
+		y = (f32)(v1.y + ((v0.y - v1.y) * t));
+		z = (f32)(v1.z + ((v0.z - v1.z) * t));
 	}
 
 	sVec3Pack operator-(const sVec3Pack& other) const
@@ -160,12 +160,12 @@ struct sVec4
 	}
 
 	// f = a * t + b * ( 1 - t )
-	void interpolate(const sVec4& a, const sVec4& b, const f32 t)
+	void interpolate(const sVec4& burning_restrict a, const sVec4& burning_restrict b, const ipoltype t)
 	{
-		x = b.x + ( ( a.x - b.x ) * t );
-		y = b.y + ( ( a.y - b.y ) * t );
-		z = b.z + ( ( a.z - b.z ) * t );
-		w = b.w + ( ( a.w - b.w ) * t );
+		x = (f32)(b.x + ( ( a.x - b.x ) * t ));
+		y = (f32)(b.y + ( ( a.y - b.y ) * t ));
+		z = (f32)(b.z + ( ( a.z - b.z ) * t ));
+		w = (f32)(b.w + ( ( a.w - b.w ) * t ));
 	}
 
 	sVec4 operator-(const sVec4& other) const
@@ -228,9 +228,9 @@ struct sVec4
 		b = ((argb & 0x000000FF)      ) * (1.f / 255.f);
 	}
 
-	REALINLINE f32 dot(const sVec4& other) const
+	REALINLINE ipoltype dot_xyzw(const sVec4& other) const
 	{
-		return x * other.x + y * other.y + z * other.z + w * other.w;
+		return (ipoltype)x * other.x + (ipoltype)y * other.y + (ipoltype)z * other.z + (ipoltype)w * other.w;
 	}
 
 	REALINLINE f32 dot_xyz(const sVec4& other) const
@@ -328,18 +328,26 @@ struct sVec3Color
 		dest.b = b <= 1.f ? b : 1.f;
 	}
 
+	void sat_xyz(sVec3Pack &dest, const sVec3Color& v1) const
+	{
+		f32 v;
+		v = r * v1.r;	dest.x = v < 1.f ? v : 1.f;
+		v = g * v1.g;	dest.y = v < 1.f ? v : 1.f;
+		v = b * v1.b;	dest.z = v < 1.f ? v : 1.f;
+	}
+
 };
 
 //internal BurningShaderFlag for a Vertex
 enum e4DVertexFlag
 {
 	VERTEX4D_CLIPMASK				= 0x0000003F,
-	VERTEX4D_CLIP_INSIDE_NEAR		= 0x00000001,
-	VERTEX4D_CLIP_INSIDE_FAR		= 0x00000002,
-	VERTEX4D_CLIP_INSIDE_LEFT		= 0x00000004,
-	VERTEX4D_CLIP_INSIDE_RIGHT		= 0x00000008,
-	VERTEX4D_CLIP_INSIDE_BOTTOM		= 0x00000010,
-	VERTEX4D_CLIP_INSIDE_TOP		= 0x00000020,
+	VERTEX4D_CLIP_NEAR				= 0x00000001,
+	VERTEX4D_CLIP_FAR				= 0x00000002,
+	VERTEX4D_CLIP_LEFT				= 0x00000004,
+	VERTEX4D_CLIP_RIGHT				= 0x00000008,
+	VERTEX4D_CLIP_BOTTOM			= 0x00000010,
+	VERTEX4D_CLIP_TOP				= 0x00000020,
 	VERTEX4D_INSIDE					= 0x0000003F,
 
 	VERTEX4D_PROJECTED				= 0x00000100,
@@ -358,8 +366,13 @@ enum e4DVertexFlag
 	VERTEX4D_FORMAT_COLOR_1			= 0x00100000,
 	VERTEX4D_FORMAT_COLOR_2			= 0x00200000,
 
-	VERTEX4D_FORMAT_MASK_TANGENT	= 0x0F000000,
-	VERTEX4D_FORMAT_BUMP_DOT3		= 0x01000000,
+	VERTEX4D_FORMAT_MASK_LIGHT		= 0x0F000000,
+	VERTEX4D_FORMAT_LIGHT_1			= 0x01000000,
+	VERTEX4D_FORMAT_LIGHT_2			= 0x02000000,
+
+	VERTEX4D_FORMAT_MASK_TANGENT	= 0xF0000000,
+	VERTEX4D_FORMAT_BUMP_DOT3		= 0x10000000,
+	VERTEX4D_FORMAT_SPECULAR		= 0x20000000,
 
 };
 
@@ -372,6 +385,8 @@ enum e4DVertexType
 	E4VT_REFLECTION_MAP = 3,
 	E4VT_SHADOW = 4,			// float * 3
 	E4VT_NO_TEXTURE = 5,		// runtime if texture missing
+	E4VT_LINE = 6,
+
 	E4VT_COUNT
 };
 
@@ -384,20 +399,17 @@ enum e4DIndexType
 
 
 #ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
-	#ifdef SOFTWARE_DRIVER_2_USE_SEPARATE_SPECULAR_COLOR
-		#define BURNING_MATERIAL_MAX_COLORS 2
-	#else
-		#define BURNING_MATERIAL_MAX_COLORS 1
-	#endif
+	#define BURNING_MATERIAL_MAX_COLORS 1
 #else
 	#define BURNING_MATERIAL_MAX_COLORS 0
 #endif
 
 #define BURNING_MATERIAL_MAX_TEXTURES 2
+
 #ifdef BURNINGVIDEO_RENDERER_BEAUTIFUL
-	#define BURNING_MATERIAL_MAX_TANGENT 1
+	#define BURNING_MATERIAL_MAX_LIGHT_TANGENT 1
 #else
-	#define BURNING_MATERIAL_MAX_TANGENT 0
+	#define BURNING_MATERIAL_MAX_LIGHT_TANGENT 0
 #endif
 
 // dummy Vertex. used for calculation vertex memory size
@@ -411,8 +423,8 @@ struct s4DVertex_proxy
 #if BURNING_MATERIAL_MAX_COLORS > 0
 	sVec4 Color[BURNING_MATERIAL_MAX_COLORS];
 #endif
-#if BURNING_MATERIAL_MAX_TANGENT > 0
-	sVec3Pack LightTangent[BURNING_MATERIAL_MAX_TANGENT];
+#if BURNING_MATERIAL_MAX_LIGHT_TANGENT > 0
+	sVec3Pack LightTangent[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
 #endif
 };
 
@@ -433,16 +445,16 @@ struct s4DVertex
 #if BURNING_MATERIAL_MAX_COLORS > 0
 	sVec4 Color[ BURNING_MATERIAL_MAX_COLORS ];
 #endif
-#if BURNING_MATERIAL_MAX_TANGENT > 0
-	sVec3Pack LightTangent[BURNING_MATERIAL_MAX_TANGENT];
+#if BURNING_MATERIAL_MAX_LIGHT_TANGENT > 0
+	sVec3Pack LightTangent[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
 #endif
 
-#if BURNING_MATERIAL_MAX_COLORS < 1 || BURNING_MATERIAL_MAX_TANGENT < 1
+#if BURNING_MATERIAL_MAX_COLORS < 1 || BURNING_MATERIAL_MAX_LIGHT_TANGENT < 1
 	u8 __align [sizeof_s4DVertex - sizeof (s4DVertex_proxy) ];
 #endif
 
 	// f = a * t + b * ( 1 - t )
-	void interpolate(const s4DVertex& b, const s4DVertex& a, const f32 t)
+	void interpolate(const s4DVertex& burning_restrict b, const s4DVertex& burning_restrict a, const ipoltype t)
 	{
 		Pos.interpolate ( a.Pos, b.Pos, t );
 
@@ -465,8 +477,8 @@ struct s4DVertex
 		}
 #endif
 
-#if BURNING_MATERIAL_MAX_TANGENT > 0
-		size = (flag & VERTEX4D_FORMAT_MASK_TANGENT) >> 24;
+#if BURNING_MATERIAL_MAX_LIGHT_TANGENT > 0
+		size = (flag & VERTEX4D_FORMAT_MASK_LIGHT) >> 24;
 		for ( i = 0; i!= size; ++i )
 		{
 			LightTangent[i].interpolate ( a.LightTangent[i], b.LightTangent[i], t );
@@ -515,7 +527,7 @@ struct SAligned4DVertex
 };
 
 //#define memcpy_s4DVertexPair(dst,src) memcpy(dst,src,sizeof_s4DVertex * 2)
-static REALINLINE void memcpy_s4DVertexPair(void* dst, const void *src)
+static inline void memcpy_s4DVertexPair(void* burning_restrict dst, const void* burning_restrict src)
 {
 	//test alignment -> if already in aligned data
 #if 0
@@ -525,9 +537,9 @@ static REALINLINE void memcpy_s4DVertexPair(void* dst, const void *src)
 	}
 #endif
 
-#if (sizeof_s4DVertex * sizeof_s4DVertexPairRel == 128)
-	u64* dst64 = (u64*)dst;
-	const u64* src64 = (const u64*)src;
+#if defined(ENV64BIT) && (sizeof_s4DVertex * sizeof_s4DVertexPairRel == 128)
+	u64* burning_restrict dst64 = (u64*)dst;
+	const u64* burning_restrict src64 = (const u64*)src;
 
 	dst64[0] = src64[0];
 	dst64[1] = src64[1];
@@ -600,7 +612,11 @@ struct SVertexCache
 	SVertexCache () {}
 	~SVertexCache() {}
 
+	//VertexType
+	SVSize vSize[E4VT_COUNT];
+
 	SCacheInfo info[VERTEXCACHE_ELEMENT];
+	SCacheInfo info_temp[VERTEXCACHE_ELEMENT];
 
 
 	// Transformed and lite, clipping state
@@ -669,9 +685,9 @@ struct sScanConvertData
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES][2];	// texture slope along edges
 #endif
 
-#if BURNING_MATERIAL_MAX_TANGENT > 0
-	sVec3Pack l[BURNING_MATERIAL_MAX_TANGENT][2];		// Light Tangent
-	sVec3Pack slopeL[BURNING_MATERIAL_MAX_TEXTURES][2];	// tanget slope along edges
+#if BURNING_MATERIAL_MAX_LIGHT_TANGENT > 0
+	sVec3Pack l[BURNING_MATERIAL_MAX_LIGHT_TANGENT][2];		// Light Tangent
+	sVec3Pack slopeL[BURNING_MATERIAL_MAX_LIGHT_TANGENT][2];	// tanget slope along edges
 #endif
 };
 
@@ -680,6 +696,7 @@ struct sScanLineData
 {
 	s32 y;				// y position of scanline
 	f32 x[2];			// x start, x end of scanline
+	s32 unused[1];
 
 #if defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) || defined ( SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT )
 	f32 w[2];			// w start, w end of scanline
@@ -695,8 +712,8 @@ struct sScanLineData
 	sVec2 t[BURNING_MATERIAL_MAX_TEXTURES][2];		// texture start, texture end of scanline
 #endif
 
-#if BURNING_MATERIAL_MAX_TANGENT > 0
-	sVec3Pack l[BURNING_MATERIAL_MAX_TANGENT][2];		// Light Tangent start, end
+#if BURNING_MATERIAL_MAX_LIGHT_TANGENT > 0
+	sVec3Pack l[BURNING_MATERIAL_MAX_LIGHT_TANGENT][2];		// Light Tangent start, end
 #endif
 };
 

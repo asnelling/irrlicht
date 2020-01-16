@@ -84,7 +84,7 @@ public:
 	CTRGouraudAlpha2(CBurningVideoDriver* driver);
 
 	//! draws an indexed triangle list
-	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
+	virtual void drawTriangle ( const s4DVertex* burning_restrict a,const s4DVertex* burning_restrict b,const s4DVertex* burning_restrict c ) _IRR_OVERRIDE_;
 
 
 private:
@@ -266,7 +266,7 @@ void CTRGouraudAlpha2::scanline_bilinear ()
 
 }
 
-void CTRGouraudAlpha2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRGouraudAlpha2::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);

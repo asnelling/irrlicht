@@ -84,7 +84,7 @@ public:
 	CTRTextureWire2(CBurningVideoDriver* driver);
 
 	//! draws an indexed triangle list
-	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
+	virtual void drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c) _IRR_OVERRIDE_;
 	virtual void drawLine ( const s4DVertex *a,const s4DVertex *b) _IRR_OVERRIDE_;
 	virtual void drawPoint( const s4DVertex *a) _IRR_OVERRIDE_;
 	virtual bool canWireFrame () _IRR_OVERRIDE_  { return true; }
@@ -279,7 +279,7 @@ void CTRTextureWire2::scanline_bilinear()
 {
 }
 
-void CTRTextureWire2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRTextureWire2::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);

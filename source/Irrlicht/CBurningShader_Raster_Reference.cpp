@@ -851,7 +851,7 @@ REALINLINE void CBurningShader_Raster_Reference::scanline ()
 }
 
 
-void CBurningShader_Raster_Reference::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CBurningShader_Raster_Reference::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
 	sScanConvertData scan;
 	u32 i;

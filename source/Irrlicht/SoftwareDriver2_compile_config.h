@@ -17,7 +17,7 @@
 	#define SOFTWARE_DRIVER_2_BILINEAR
 	#define SOFTWARE_DRIVER_2_LIGHTING
 	#define SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
-	//#define SOFTWARE_DRIVER_2_USE_SEPARATE_SPECULAR_COLOR
+	#define SOFTWARE_DRIVER_2_USE_SEPARATE_SPECULAR_COLOR
 	#define SOFTWARE_DRIVER_2_32BIT
 	#define SOFTWARE_DRIVER_2_MIPMAPPING
 	#define SOFTWARE_DRIVER_2_USE_WBUFFER
@@ -153,10 +153,52 @@ enum edge_test_flag
 //! normalize from fixed point Color Max to fixed point [0;1]
 #define fix_color_norm(x) x = (x+1) >> COLOR_MAX_LOG2
 
+// Check windows
+#if _WIN32 || _WIN64
+#if _WIN64
+	#define ENV64BIT
+#else
+	#define ENV32BIT
+#endif
+#endif
+
+// Check GCC
+#if __GNUC__
+#if __x86_64__ || __ppc64__
+	#define ENV64BIT
+#else
+	#define ENV32BIT
+#endif
+#endif
+
+#if defined(ENV64BIT) && defined(BURNINGVIDEO_RENDERER_BEAUTIFUL)
+	typedef double ipoltype;
+#else
+	typedef float ipoltype;
+#endif
+
+#define	ipol_lower_equal_0(n)	((n) <= (ipoltype)0.0)
+#define	ipol_greater_0(n)		((n) >  (ipoltype)0.0)
+
+#if	(_MSC_VER >= 1600 )
+	#define burning_restrict __restrict
+#else
+	#define burning_restrict
+#endif
+
+
 #if defined(PATCH_SUPERTUX_8_0_1)
 #define getData lock
 #define snprintf_irr sprintf_s
+#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+#ifdef SOFTWARE_DRIVER_2_USE_SEPARATE_SPECULAR_COLOR
+#define BURNING_MATERIAL_MAX_COLORS 2
+#else
 #define BURNING_MATERIAL_MAX_COLORS 1
+#endif
+#else
+#define BURNING_MATERIAL_MAX_COLORS 0
+#endif
 #define _IRR_OVERRIDE_ /**/
 #endif
 

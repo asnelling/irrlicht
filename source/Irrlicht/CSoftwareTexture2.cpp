@@ -208,7 +208,8 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 		if ( MipMap[i] )
 		{
 			core::rect<s32> p (core::position2di(0,0),MipMap[i]->getDimension());
-			Blit(BLITTER_TEXTURE_ALPHA_COLOR_BLEND, MipMap[i], 0, 0, MipMap[i], &p, 0,(color[i&15] & 0x00FFFFFF) | 0xFF000000);
+			SColor c((color[i & 15] & 0x00FFFFFF) | 0xFF000000);
+			Blit(BLITTER_TEXTURE_ALPHA_COLOR_BLEND, MipMap[i], 0, 0, MipMap[i], &p, 0,&c,1);
 		}
 	}
 

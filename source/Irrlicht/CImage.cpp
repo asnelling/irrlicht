@@ -133,7 +133,7 @@ void CImage::copyTo(IImage* target, const core::position2d<s32>& pos)
 		return;
 	}
 
-	if ( !Blit(BLITTER_TEXTURE, target, 0, &pos, this, 0, 0, 0xFFFFFFFF) 
+	if ( !Blit(BLITTER_TEXTURE, target, 0, &pos, this, 0, 0, 0,0) 
 		&& target && pos.X == 0 && pos.Y == 0 &&
 		CColorConverter::canConvertFormat(Format, target->getColorFormat()) )
 	{
@@ -153,7 +153,7 @@ void CImage::copyTo(IImage* target, const core::position2d<s32>& pos, const core
 		return;
 	}
 
-	Blit(BLITTER_TEXTURE, target, clipRect, &pos, this, &sourceRect, 0, 0xFFFFFFFF);
+	Blit(BLITTER_TEXTURE, target, clipRect, &pos, this, &sourceRect, 0, 0,0);
 }
 
 
@@ -168,13 +168,13 @@ void CImage::copyToWithAlpha(IImage* target, const core::position2d<s32>& pos, c
 
 	if ( combineAlpha )
 	{
-		Blit(BLITTER_TEXTURE_COMBINE_ALPHA, target, clipRect, &pos, this, &sourceRect, 0, color.color);
+		Blit(BLITTER_TEXTURE_COMBINE_ALPHA, target, clipRect, &pos, this, &sourceRect, 0, &color,1);
 	}
 	else
 	{
 		// color blend only necessary on not full spectrum aka. color.color != 0xFFFFFFFF
 		Blit(color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND,
-				target, clipRect, &pos, this, &sourceRect, 0, color.color);
+				target, clipRect, &pos, this, &sourceRect, 0, &color,1);
 	}
 }
 

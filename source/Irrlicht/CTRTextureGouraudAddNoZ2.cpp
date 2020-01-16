@@ -83,7 +83,7 @@ public:
 	CTRTextureGouraudAddNoZ2(CBurningVideoDriver* driver);
 
 	//! draws an indexed triangle list
-	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
+	virtual void drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c) _IRR_OVERRIDE_;
 
 
 private:
@@ -264,7 +264,7 @@ void CTRTextureGouraudAddNoZ2::fragmentShader()
 
 }
 
-void CTRTextureGouraudAddNoZ2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRTextureGouraudAddNoZ2::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
 	//billboard discard
 	//if (a->Color[0].r <= 0.f) return;

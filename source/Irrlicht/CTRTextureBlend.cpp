@@ -84,7 +84,7 @@ namespace video
 		CTRTextureBlend(CBurningVideoDriver* driver);
 
 		//! draws an indexed triangle list
-		virtual void drawTriangle(const s4DVertex *a, const s4DVertex *b, const s4DVertex *c) _IRR_OVERRIDE_;
+		virtual void drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c) _IRR_OVERRIDE_;
 		virtual void OnSetMaterial(const SBurningShaderMaterial& material) _IRR_OVERRIDE_;
 
 #if defined(PATCH_SUPERTUX_8_0_1)
@@ -1322,10 +1322,7 @@ void CTRTextureBlend::fragment_src_alpha_one_minus_src_alpha()
 
 	tFixPoint a0, r0, g0, b0;
 	tFixPoint     r1, g1, b1;
-
-#ifdef IPOL_C0
 	tFixPoint a2, r2, g2, b2;
-#endif
 
 	s32 i;
 
@@ -2180,7 +2177,7 @@ void CTRTextureBlend::fragment_zero_one_minus_scr_color ()
 
 
 
-void CTRTextureBlend::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRTextureBlend::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
 	if ( 0 == fragmentShader )
 		return;

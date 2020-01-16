@@ -59,7 +59,8 @@ namespace video
 		FOG			= 0x10,
 		NORMALIZE_NORMALS	= 0x20,
 		TEXTURE_TRANSFORM	= 0x40,
-		LIGHT_LOCAL_VIEWER	= 0x80
+		LIGHT_LOCAL_VIEWER	= 0x80,
+		LIGHT0_IS_NORMAL	= 0x100
 	};
 
 	struct SBurningShaderEyeSpace
@@ -226,7 +227,7 @@ namespace video
 
 		//! sets the Texture
 		virtual void setTextureParam( const size_t stage, video::CSoftwareTexture2* texture, s32 lodFactor);
-		virtual void drawTriangle(const s4DVertex *a, const s4DVertex *b, const s4DVertex *c) {};
+		virtual void drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c) {};
 		virtual void drawLine ( const s4DVertex *a,const s4DVertex *b);
 		virtual void drawPoint(const s4DVertex *a);
 

@@ -45,6 +45,7 @@ namespace video
 
 		//! sets a viewport
 		virtual void setViewPort(const core::rect<s32>& area) _IRR_OVERRIDE_;
+		virtual void setScissor(int x, int y, int width, int height);
 
 		virtual bool beginScene(u16 clearFlag, SColor clearColor, f32 clearDepth, u8 clearStencil,
 			const SExposedVideoData& videoData, core::rect<s32>* sourceRect) _IRR_OVERRIDE_;
@@ -272,6 +273,7 @@ namespace video
 			ETS_MODEL_VIEW,
 			ETS_NORMAL, //3x3 ModelView Tansposed Inverse
 
+			ETS_PROJ_MODEL_VIEW_2D,
 			//ETS_VIEW_INVERSE,
 			ETS_COUNT_BURNING = 16
 		};
@@ -292,8 +294,11 @@ namespace video
 		f32 Transformation_ETS_CLIPSCALE[4];
 		void transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO state);
 
+		//core::recti ViewPort;
+		int ScissorTest;
+		AbsRectangle Scissor;
+
 		// Vertex Cache
-		SVSize vSize[E4VT_COUNT];
 		SVertexCache VertexCache;
 
 		int VertexCache_reset (const void* vertices, u32 vertexCount,
@@ -308,9 +313,14 @@ namespace video
 
 
 		// culling & clipping
-		size_t clipToHyperPlane (s4DVertexPair* dest, const s4DVertexPair* source, size_t inCount, const sVec4 &plane );
-		size_t clipToFrustumTest ( const s4DVertex * v  ) const;
-		size_t clipToFrustum ( s4DVertex* source, s4DVertex* temp, const size_t vIn );
+		size_t inline clipToHyperPlane (s4DVertexPair* burning_restrict dest, const s4DVertexPair* burning_restrict source, const size_t inCount, const sVec4 &plane );
+		size_t inline clipToFrustumTest ( const s4DVertex * v  ) const;
+		size_t clipToFrustum (const size_t clipmask_for_face, const size_t vIn );
+
+		// holds transformed, clipped vertices for a triangle. triangle expands on clipping
+		// Buffer is in in pairs of 4DVertex (0 ... ndc, 1 .. dc and projected)
+		SAligned4DVertex Clipper;
+		SAligned4DVertex Clipper_temp;
 
 
 #ifdef SOFTWARE_DRIVER_2_LIGHTING
@@ -322,30 +332,21 @@ namespace video
 			f32 end, f32 density, bool pixelFog, bool rangeFog) _IRR_OVERRIDE_;
 
 
-		// holds transformed, clipped vertices for a triangle. triangle expands on clipping
-		// Buffer is in in pairs of 4DVertex (0 ... ndc, 1 .. dc and projected)
-		SAligned4DVertex CurrentOut;
-		SAligned4DVertex Geometry_temp;
-
 		void ndc_2_dc_and_project (s4DVertexPair* dest,const s4DVertexPair* source, const size_t vIn ) const;
 
 		//const is misleading. **v is const that true, but not *v..
-		int face_sort(s4DVertexPair* face[]) const;
 		f32 screenarea_inside (const s4DVertexPair* const face[] ) const;
 		s32 lodFactor_inside ( const s4DVertexPair* const face[], const size_t tex, f32 dc_area ) const;
 		void select_polygon_mipmap_inside ( s4DVertex* face[], const size_t tex, const CSoftwareTexture2_Bound& b ) const;
-
-#if 0
-		f32 screenarea_clipped_first(const s4DVertexPair *v) const;
-		s32 lodFactor_clipped_first(const s4DVertexPair *v0, const size_t tex, f32 dc_area) const;
-		void select_polygon_mipmap_clipped(s4DVertexPair *source, const size_t vIn, const size_t tex, const CSoftwareTexture2_Bound& b) const;
-#endif
 
 		void getCameraPosWorldSpace();
 		SBurningShaderEyeSpace EyeSpace;
 		SBurningShaderMaterial Material;
 
-		static const sVec4 NDCPlane[6];
+		static const sVec4 NDCPlane[6+2];
+
+		//! Built-in 2D quad for 2D rendering.
+		S3DVertex Quad2DVertices[4];
 
 	};
 

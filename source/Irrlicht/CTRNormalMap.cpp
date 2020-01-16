@@ -53,7 +53,7 @@
 	#undef IPOL_C0
 #endif
 
-#if BURNING_MATERIAL_MAX_TANGENT < 1
+#if BURNING_MATERIAL_MAX_LIGHT_TANGENT < 1
 	#undef IPOL_L0
 #endif
 
@@ -91,7 +91,7 @@ public:
 	CTRNormalMap(CBurningVideoDriver* driver);
 
 	//! draws an indexed triangle list
-	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
+	virtual void drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c) _IRR_OVERRIDE_;
 
 
 private:
@@ -145,7 +145,7 @@ void CTRNormalMap::fragmentShader()
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
 #endif
 #ifdef IPOL_L0
-	sVec3Pack slopeL[BURNING_MATERIAL_MAX_TANGENT];
+	sVec3Pack slopeL[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
 #endif
 
 	// apply top-left fill-convention, left
@@ -352,7 +352,7 @@ void CTRNormalMap::fragmentShader()
 
 }
 
-void CTRNormalMap::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRNormalMap::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);

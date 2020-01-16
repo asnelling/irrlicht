@@ -24,6 +24,7 @@
 #undef IPOL_C1
 #undef IPOL_T0
 #undef IPOL_T1
+#undef IPOL_L0
 
 // define render case
 #define SUBTEXEL
@@ -38,6 +39,7 @@
 #define IPOL_C1
 #define IPOL_T0
 //#define IPOL_T1
+#define IPOL_L0
 
 // apply global override
 #ifndef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
@@ -55,6 +57,11 @@
 #if BURNING_MATERIAL_MAX_COLORS < 2
 	#undef IPOL_C1
 #endif
+
+#if BURNING_MATERIAL_MAX_LIGHT_TANGENT < 1
+	#undef IPOL_L0
+#endif
+
 
 #if !defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) && defined ( USE_ZBUFFER )
 	#ifndef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
@@ -89,12 +96,12 @@ public:
 	CTRTextureGouraud2(CBurningVideoDriver* driver);
 
 	//! draws an indexed triangle list
-	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
+	virtual void drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c) _IRR_OVERRIDE_;
 	virtual bool canWireFrame () { return true; }
 
 
 private:
-	void scanline_bilinear ();
+	void fragmentShader ();
 	sScanConvertData scan;
 	sScanLineData line;
 
@@ -113,7 +120,7 @@ CTRTextureGouraud2::CTRTextureGouraud2(CBurningVideoDriver* driver)
 
 /*!
 */
-void CTRTextureGouraud2::scanline_bilinear ()
+void CTRTextureGouraud2::fragmentShader ()
 {
 	tVideoSample *dst;
 
@@ -141,6 +148,10 @@ void CTRTextureGouraud2::scanline_bilinear ()
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
+#endif
+
+#ifdef IPOL_L0
+	sVec3Pack slopeL[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
 #endif
 
 	// apply top-left fill-convention, left
@@ -173,6 +184,10 @@ void CTRTextureGouraud2::scanline_bilinear ()
 #ifdef IPOL_T1
 	slopeT[1] = (line.t[1][1] - line.t[1][0]) * invDeltaX;
 #endif
+#ifdef IPOL_L0
+	slopeL[0] = (line.l[0][1] - line.l[0][0]) * invDeltaX;
+#endif
+
 
 #ifdef SUBTEXEL
 	subPixel = ( (f32) xStart ) - line.x[0];
@@ -194,6 +209,9 @@ void CTRTextureGouraud2::scanline_bilinear ()
 #ifdef IPOL_T1
 	line.t[1][0] += slopeT[1] * subPixel;
 #endif
+#ifdef IPOL_L0
+	line.l[0][0] += slopeL[0] * subPixel;
+#endif
 #endif
 
 	SOFTWARE_DRIVER_2_CLIPCHECK;
@@ -209,9 +227,13 @@ void CTRTextureGouraud2::scanline_bilinear ()
 	tFixPoint tx0;
 	tFixPoint ty0;
 
-	tFixPoint r0, g0, b0;
 #ifdef IPOL_C0
+	tFixPoint r0, g0, b0;
 	tFixPoint r1, g1, b1;
+#endif
+
+#ifdef IPOL_L0
+	tFixPoint r2, g2, b2;
 #endif
 
 #ifdef BURNINGVIDEO_RENDERER_FAST
@@ -260,10 +282,27 @@ void CTRTextureGouraud2::scanline_bilinear ()
 #ifdef IPOL_C0
 			getSample_texture ( r0, g0, b0, &IT[0], tx0,ty0 );
 
-			dst[i] = fix_to_color ( imulFix ( r0, r1 ),
-									imulFix ( g0, g1 ),
-									imulFix ( b0, b1 )
-								);
+#ifdef IPOL_L0
+			r2 = tofix(line.l[0][0].x, inversew*COLOR_MAX);
+			g2 = tofix(line.l[0][0].y, inversew*COLOR_MAX);
+			b2 = tofix(line.l[0][0].z, inversew*COLOR_MAX);
+
+			//dst[i] = fix_to_color(r2, g2, b2);
+
+			dst[i] = fix_to_color (
+				clampfix_maxcolor( r2 + imulFix ( r0, r1 )),
+				clampfix_maxcolor( g2 + imulFix ( g0, g1 )),
+				clampfix_maxcolor( b2 + imulFix ( b0, b1 ))
+			);
+
+#else
+			dst[i] = fix_to_color(
+				imulFix(r0, r1),
+				imulFix(g0, g1),
+				imulFix(b0, b1)
+			);
+#endif
+
 #else
 
 #ifdef BURNINGVIDEO_RENDERER_FAST
@@ -296,11 +335,14 @@ void CTRTextureGouraud2::scanline_bilinear ()
 #ifdef IPOL_T1
 		line.t[1][0] += slopeT[1];
 #endif
+#ifdef IPOL_L0
+		line.l[0][0] += slopeL[0];
+#endif
 	}
 
 }
 
-void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);
@@ -363,6 +405,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 	scan.t[1][0] = a->Tex[1];
 #endif
 
+#ifdef IPOL_L0
+	scan.slopeL[0][0] = (c->LightTangent[0] - a->LightTangent[0]) * scan.invDeltaY[0];
+	scan.l[0][0] = a->LightTangent[0];
+#endif
+
 	// top left fill convention y run
 	s32 yStart;
 	s32 yEnd;
@@ -408,6 +455,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 		scan.t[1][1] = a->Tex[1];
 #endif
 
+#ifdef IPOL_L0
+		scan.slopeL[0][1] = (b->LightTangent[0] - a->LightTangent[0]) * scan.invDeltaY[1];
+		scan.l[0][1] = a->LightTangent[0];
+#endif
+
 		// apply top-left fill convention, top part
 		yStart = fill_convention_left( a->Pos.y );
 		yEnd = fill_convention_right( b->Pos.y );
@@ -449,6 +501,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 		scan.t[1][1] += scan.slopeT[1][1] * subPixel;
 #endif
 
+#ifdef IPOL_L0
+		scan.l[0][0] += scan.slopeL[0][0] * subPixel;
+		scan.l[0][1] += scan.slopeL[0][1] * subPixel;
+#endif
+
 #endif
 
 		// rasterize the edge scanlines
@@ -487,8 +544,13 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 			line.t[1][scan.right] = scan.t[1][1];
 #endif
 
+#ifdef IPOL_L0
+			line.l[0][scan.left] = scan.l[0][0];
+			line.l[0][scan.right] = scan.l[0][1];
+#endif
+
 			// render a scanline
-			scanline_bilinear ();
+			fragmentShader ();
 			if ( EdgeTestPass & edge_test_first_line ) break;
 
 
@@ -525,6 +587,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 			scan.t[1][1] += scan.slopeT[1][1];
 #endif
 
+#ifdef IPOL_L0
+			scan.l[0][0] += scan.slopeL[0][0];
+			scan.l[0][1] += scan.slopeL[0][1];
+#endif
+
 		}
 	}
 
@@ -556,6 +623,9 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 			scan.t[1][0] = a->Tex[1] + scan.slopeT[1][0] * temp[0];
 #endif
 
+#ifdef IPOL_L0
+			scan.l[0][0] = a->LightTangent[0] + scan.slopeL[0][0] * temp[0];
+#endif
 		}
 
 		// calculate slopes for bottom edge
@@ -590,6 +660,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 #ifdef IPOL_T1
 		scan.slopeT[1][1] = (c->Tex[1] - b->Tex[1]) * scan.invDeltaY[2];
 		scan.t[1][1] = b->Tex[1];
+#endif
+
+#ifdef IPOL_L0
+		scan.slopeL[0][1] = (c->LightTangent[0] - b->LightTangent[0]) * scan.invDeltaY[2];
+		scan.l[0][1] = b->LightTangent[0];
 #endif
 
 		// apply top-left fill convention, top part
@@ -634,6 +709,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 		scan.t[1][1] += scan.slopeT[1][1] * subPixel;
 #endif
 
+#ifdef IPOL_L0
+		scan.l[0][0] += scan.slopeL[0][0] * subPixel;
+		scan.l[0][1] += scan.slopeL[0][1] * subPixel;
+#endif
+
 #endif
 
 		// rasterize the edge scanlines
@@ -672,8 +752,13 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 			line.t[1][scan.right] = scan.t[1][1];
 #endif
 
+#ifdef IPOL_L0
+			line.l[0][scan.left] = scan.l[0][0];
+			line.l[0][scan.right] = scan.l[0][1];
+#endif
+
 			// render a scanline
-			scanline_bilinear ( );
+			fragmentShader ();
 			if ( EdgeTestPass & edge_test_first_line ) break;
 
 
@@ -710,6 +795,11 @@ void CTRTextureGouraud2::drawTriangle ( const s4DVertex *a,const s4DVertex *b,co
 			scan.t[1][1] += scan.slopeT[1][1];
 #endif
 
+#ifdef IPOL_L0
+			scan.l[0][0] += scan.slopeL[0][0];
+			scan.l[0][1] += scan.slopeL[0][1];
+#endif
+
 		}
 	}
 
@@ -728,6 +818,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTriangleRendererTextureGouraud2(CBurningVideoDriver* driver)
 {
+	// ETR_TEXTURE_GOURAUD
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureGouraud2(driver);
 	#else

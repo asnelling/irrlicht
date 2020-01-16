@@ -17,7 +17,11 @@ namespace video
 		AbsRectangle Dest;
 		AbsRectangle Source;
 
-		u32 argb;
+		union
+		{
+			u32 argb;
+			SColor col[4];
+		};
 
 		void * src;
 		void * dst;
@@ -1307,7 +1311,8 @@ inline void setClip ( AbsRectangle &out, const core::rect<s32> *clip,
 static s32 Blit(eBlitter operation,
 		video::IImage* dest,const core::rect<s32>* destClipping,const core::position2d<s32>* destPos,
 		const video::IImage* source,const core::rect<s32>* sourceClipping,const core::dimension2d<u32>* src_originalSize,
-		u32 argb)
+		const video::SColor* color, u32 color_size
+)
 {
 	tExecuteBlit blitter = getBlitter( operation, dest, source );
 	if ( 0 == blitter ) return 0;
@@ -1338,7 +1343,19 @@ static s32 Blit(eBlitter operation,
 	job.Source.y0 = sourceClip.y0 + ( job.Dest.y0 - v.y0 );
 	job.Source.y1 = job.Source.y0 + job.height;
 
-	job.argb = argb;
+	job.col[0] = 0xFFFFFFFF;
+	if (color)
+	{
+		for (u32 i = 0; i < color_size; ++i)
+		{
+			job.col[i] = color[i].color;
+		}
+	}
+
+	job.stretch = 0;
+	job.x_stretch = 1.f;
+	job.y_stretch = 1.f;
+
 
 	if ( source )
 	{
@@ -1364,7 +1381,8 @@ static s32 Blit(eBlitter operation,
 static s32 StretchBlit(eBlitter operation,
 		video::IImage* dest, const core::rect<s32>* destClipping,const core::rect<s32> *destRect,
 		const video::IImage* source, const core::rect<s32> *srcRect, const core::dimension2d<u32>* src_originalSize,
-		u32 argb)
+		const video::SColor* color, u32 color_size
+)
 {
 	tExecuteBlit blitter = getBlitter( operation, dest, source );
 	if ( 0 == blitter ) return 0;
@@ -1378,7 +1396,11 @@ static s32 StretchBlit(eBlitter operation,
 	job.width = job.Dest.x1-job.Dest.x0;
 	job.height = job.Dest.y1-job.Dest.y0;
 
-	job.argb = argb;
+	for (u32 i = 0; i < color_size; ++i)
+	{
+		job.col[i] = color[i].color;
+	}
+
 
 	//scale gui needs destRect/srcRect. direct call assumes stretching.
 	//still confused to match this with openGL.. pass unit test
@@ -1418,7 +1440,7 @@ static s32 StretchBlit(eBlitter operation,
 static void drawRectangle(video::IImage* img, const core::rect<s32>& rect, const video::SColor &color)
 {
 	Blit(color.getAlpha() == 0xFF ? BLITTER_COLOR : BLITTER_COLOR_ALPHA,
-			img, 0, &rect.UpperLeftCorner, 0, &rect, 0, color.color);
+			img, 0, &rect.UpperLeftCorner, 0, &rect, 0, &color,1);
 }
 
 

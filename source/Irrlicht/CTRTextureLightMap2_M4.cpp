@@ -82,7 +82,7 @@ public:
 	CTRTextureLightMap2_M4(CBurningVideoDriver* driver);
 
 	//! draws an indexed triangle list
-	virtual void drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c ) _IRR_OVERRIDE_;
+	virtual void drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c) _IRR_OVERRIDE_;
 
 
 private:
@@ -371,7 +371,7 @@ void CTRTextureLightMap2_M4::scanline_bilinear2_min ()
 
 }
 
-void CTRTextureLightMap2_M4::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRTextureLightMap2_M4::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
 	if (IT[0].lodFactor < 4)
 	{
@@ -753,7 +753,7 @@ void CTRTextureLightMap2_M4::drawTriangle_Mag ( const s4DVertex *a,const s4DVert
 
 #else //#if defined (BURNINGVIDEO_RENDERER_SCANLINE_MAG_MIN)
 
-void CTRTextureLightMap2_M4::drawTriangle ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRTextureLightMap2_M4::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 
 #endif
 
