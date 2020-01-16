@@ -78,7 +78,7 @@ namespace video
 		sVec3Color Global_AmbientLight;
 		sVec3Color FogColor;
 
-		//sVec4 cam_eye_pos; //Camera Position in eye Space (0,0,0,1)
+		//sVec4 cam_eye_pos; //Camera Position in eye Space (0,0,-1)
 		//sVec4 cam_world_pos; //Camera Position in world Space
 		//sVec4 vertex4; //eye coordinate position of vertex
 		sVec4 normal; //transformed normal

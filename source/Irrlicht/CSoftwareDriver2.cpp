@@ -1556,7 +1556,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 				u.normalize_dir_xyz();
 
 				//reflect(u,N) u - 2.0 * dot(N, u) * N
-				f32 dot = -2.f * EyeSpace.normal.dot_xyz(u);
+				f32 dot = 2.f * EyeSpace.normal.dot_xyz(u);
 				r.x = u.x + dot * EyeSpace.normal.x;
 				r.y = u.y + dot * EyeSpace.normal.y;
 				r.z = u.z + dot * EyeSpace.normal.z;
@@ -1581,7 +1581,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 				u.normalize_dir_xyz();
 
 				//reflect(u,N) u - 2.0 * dot(N, u) * N
-				f32 dot = -2.f * EyeSpace.normal.dot_xyz(u);
+				f32 dot = 2.f * EyeSpace.normal.dot_xyz(u);
 				r.x = u.x + dot * EyeSpace.normal.x;
 				r.y = u.y + dot * EyeSpace.normal.y;
 				r.z = u.z + dot * EyeSpace.normal.z;
@@ -2654,15 +2654,14 @@ void CBurningVideoDriver::lightVertex_eye(s4DVertex *dest, u32 vertexargb)
 
 			if (!(EyeSpace.Flags & SPECULAR))
 				continue;
-			/*
-			lightHalf.x = vp.x + EyeSpace.cam_eye_pos.x;
-			lightHalf.y = vp.y + EyeSpace.cam_eye_pos.y;
-			lightHalf.z = vp.z + EyeSpace.cam_eye_pos.z;
-			lightHalf.normalize_xyz();
 
-			dot = EyeSpace.normal3.dot_xyz ( lightHalf );
-			if ( dot > 0.f)
-			*/
+			lightHalf.x = vp.x + 0.f; // EyeSpace.cam_eye_pos.x;
+			lightHalf.y = vp.y + 0.f; // EyeSpace.cam_eye_pos.y;
+			lightHalf.z = vp.z - 1.f; // EyeSpace.cam_eye_pos.z;
+			lightHalf.normalize_dir_xyz();
+
+			dot = EyeSpace.normal.dot_xyz(lightHalf);
+			if (dot > 0.f)
 			{
 				f32 srgb = powf(dot, Material.org.Shininess);
 				specular.mad_rgb(light.SpecularColor, srgb * attenuation);
