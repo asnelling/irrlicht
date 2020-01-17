@@ -125,16 +125,6 @@ struct sVec3Pack
 		z = other.z;
 	}
 
-	void normalize_pack_xyz(const f32 len, const f32 ofs)
-	{
-		//const f32 l = len * core::reciprocal_squareroot ( r * r + g * g + b * b );
-		f32 l = x * x + y * y + z * z;
-
-		l = l > 0.0000001f ? len / sqrtf(l) : 0.f;
-		x = (x*l) + ofs;
-		y = (y*l) + ofs;
-		z = (z*l) + ofs;
-	}
 }  PACK_STRUCT;
 
 #include "irrunpack.h"
@@ -151,13 +141,6 @@ struct sVec4
 	sVec4 () {}
 	sVec4 ( f32 _x, f32 _y, f32 _z, f32 _w )
 		: x ( _x ), y ( _y ), z( _z ), w ( _w ){}
-
-	sVec4(const sVec3Pack& other)
-	{
-		x = other.x;
-		y = other.y;
-		z = other.z;
-	}
 
 	// f = a * t + b * ( 1 - t )
 	void interpolate(const sVec4& burning_restrict a, const sVec4& burning_restrict b, const ipoltype t)
@@ -263,11 +246,33 @@ struct sVec4
 		x *= l;
 		y *= l;
 		z *= l;
+	}
 
+
+	//unpack sVec3 to aligned during runtime
+	sVec4(const sVec3Pack& other)
+	{
+		x = other.x;
+		y = other.y;
+		z = other.z;
+		w = 0.f;
+	}
+
+	void normalize_pack_xyz(sVec3Pack& out, const f32 len, const f32 ofs) const
+	{
+		//const f32 l = len * core::reciprocal_squareroot ( r * r + g * g + b * b );
+		f32 l = x * x + y * y + z * z;
+
+		l = l > 0.0000001f ? len / sqrtf(l) : 0.f;
+		out.x = (x*l) + ofs;
+		out.y = (y*l) + ofs;
+		out.z = (z*l) + ofs;
 	}
 
 };
 
+//!during runtime sVec3Pack
+typedef sVec4 sVec3Pack_unpack;
 
 //!sVec4 is argb. sVec3Color is rgba
 struct sVec3Color
@@ -319,7 +324,7 @@ struct sVec3Color
 		b += v0.b * v1.b;
 	}
 
-	//sVec4 is a,r,g,b
+	//sVec4 is a,r,g,b, alpha pass
 	void sat(sVec4 &dest, const u32 argb) const
 	{
 		dest.a = ((argb & 0xFF000000) >> 24) * (1.f / 255.f);
@@ -686,8 +691,8 @@ struct sScanConvertData
 #endif
 
 #if BURNING_MATERIAL_MAX_LIGHT_TANGENT > 0
-	sVec3Pack l[BURNING_MATERIAL_MAX_LIGHT_TANGENT][2];		// Light Tangent
-	sVec3Pack slopeL[BURNING_MATERIAL_MAX_LIGHT_TANGENT][2];	// tanget slope along edges
+	sVec3Pack_unpack l[BURNING_MATERIAL_MAX_LIGHT_TANGENT][2];		// Light Tangent
+	sVec3Pack_unpack slopeL[BURNING_MATERIAL_MAX_LIGHT_TANGENT][2];	// tanget slope along edges
 #endif
 };
 
@@ -713,7 +718,7 @@ struct sScanLineData
 #endif
 
 #if BURNING_MATERIAL_MAX_LIGHT_TANGENT > 0
-	sVec3Pack l[BURNING_MATERIAL_MAX_LIGHT_TANGENT][2];		// Light Tangent start, end
+	sVec3Pack_unpack l[BURNING_MATERIAL_MAX_LIGHT_TANGENT][2];		// Light Tangent start, end
 #endif
 };
 

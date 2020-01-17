@@ -151,7 +151,7 @@ void CTRTextureGouraud2::fragmentShader ()
 #endif
 
 #ifdef IPOL_L0
-	sVec3Pack slopeL[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
+	sVec3Pack_unpack slopeL[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
 #endif
 
 	// apply top-left fill-convention, left
@@ -624,7 +624,7 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 #endif
 
 #ifdef IPOL_L0
-			scan.l[0][0] = a->LightTangent[0] + scan.slopeL[0][0] * temp[0];
+			scan.l[0][0] = sVec3Pack_unpack(a->LightTangent[0]) + scan.slopeL[0][0] * temp[0];
 #endif
 		}
 

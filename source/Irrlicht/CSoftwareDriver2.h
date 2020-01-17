@@ -213,6 +213,9 @@ namespace video
 			const SMaterial& lastMaterial,
 			bool resetAllRenderstates) _IRR_OVERRIDE_;
 
+		//pass BaseMaterialID
+		void setFallback_Material(E_MATERIAL_TYPE fallback_MaterialType);
+
 		//! Return an index constant for the vertex shader based on a name.
 		virtual s32 getVertexShaderConstantID(const c8* name) _IRR_OVERRIDE_;
 		virtual bool setVertexShaderConstant(s32 index, const f32* floats, int count) _IRR_OVERRIDE_;
@@ -228,7 +231,6 @@ namespace video
 		//! Get pointer to the IVideoDriver interface
 		/** \return Pointer to the IVideoDriver interface */
 		virtual IVideoDriver* getVideoDriver() _IRR_OVERRIDE_;
-
 
 	protected:
 
@@ -288,7 +290,7 @@ namespace video
 			ETF_TEXGEN_MASK = ETF_TEXGEN_CAMERA_SPHERE | ETF_TEXGEN_CAMERA_REFLECTION | ETF_TEXGEN_WRAP
 		};
 		core::matrix4 Transformation[ETS_COUNT_BURNING];
-		u32 TransformationFlag[ETS_COUNT_BURNING]; // E_TRANSFORMATION_FLAG
+		size_t TransformationFlag[ETS_COUNT_BURNING]; // E_TRANSFORMATION_FLAG
 
 		//ETS_CLIPSCALE, // moved outside to stay at 16 matrices
 		f32 Transformation_ETS_CLIPSCALE[4];

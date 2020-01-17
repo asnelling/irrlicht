@@ -60,7 +60,7 @@ namespace video
 		NORMALIZE_NORMALS	= 0x20,
 		TEXTURE_TRANSFORM	= 0x40,
 		LIGHT_LOCAL_VIEWER	= 0x80,
-		LIGHT0_IS_NORMAL	= 0x100
+		LIGHT0_IS_NORMAL	= 0x100		//sVec4 Light Vector is used as normal or specular
 	};
 
 	struct SBurningShaderEyeSpace
@@ -72,7 +72,7 @@ namespace video
 			Light.set_used ( 0 );
 			Global_AmbientLight.set ( 0.f );
 
-			Flags = LIGHT_LOCAL_VIEWER;
+			Eye_Flags = LIGHT_LOCAL_VIEWER;
 		}
 		core::array<SBurningShaderLight> Light;
 		sVec3Color Global_AmbientLight;
@@ -84,7 +84,7 @@ namespace video
 		sVec4 normal; //transformed normal
 		sVec4 vertex; //eye coordinate position of vertex projected
 
-		u32 Flags; // eTransformLightFlags
+		size_t Eye_Flags; // eTransformLightFlags
 	};
 
 	enum eCullFlag
@@ -107,6 +107,8 @@ namespace video
 		SMaterial org;
 		SMaterial lastMaterial;
 		bool resetRenderStates;
+
+		E_MATERIAL_TYPE Fallback_MaterialType;
 
 		size_t CullFlag; //eCullFlag
 		u32 depth_write;

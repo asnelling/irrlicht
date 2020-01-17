@@ -206,6 +206,8 @@ void IBurningShader::drawWireFrameTriangle ( const s4DVertex *a,const s4DVertex 
 void IBurningShader::OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
 	bool resetAllRenderstates, IMaterialRendererServices* services)
 {
+	if (Driver)
+		Driver->setFallback_Material(BaseMaterial);
 	services->setBasicRenderStates(material, lastMaterial, resetAllRenderstates);
 	if (CallBack)
 		CallBack->OnSetMaterial(material);

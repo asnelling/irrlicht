@@ -26,6 +26,13 @@ public:
 	{
 	}
 
+	virtual void OnSetMaterial(const SMaterial& material, const SMaterial& lastMaterial,
+		bool resetAllRenderstates, IMaterialRendererServices* services) _IRR_OVERRIDE_
+	{
+		if (Driver)
+			Driver->setFallback_Material(material.MaterialType);
+	}
+
 protected:
 
 	video::CBurningVideoDriver* Driver;

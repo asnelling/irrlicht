@@ -145,7 +145,7 @@ void CTRNormalMap::fragmentShader()
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
 #endif
 #ifdef IPOL_L0
-	sVec3Pack slopeL[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
+	sVec3Pack_unpack slopeL[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
 #endif
 
 	// apply top-left fill-convention, left
@@ -632,7 +632,7 @@ void CTRNormalMap::drawTriangle(const s4DVertex* burning_restrict a, const s4DVe
 			scan.t[2][0] = a->Tex[2] + scan.slopeT[2][0] * temp[0];
 #endif
 #ifdef IPOL_L0
-			scan.l[0][0] = a->LightTangent[0] + scan.slopeL[0][0] * temp[0];
+			scan.l[0][0] = sVec3Pack_unpack(a->LightTangent[0]) + scan.slopeL[0][0] * temp[0];
 #endif
 
 		}

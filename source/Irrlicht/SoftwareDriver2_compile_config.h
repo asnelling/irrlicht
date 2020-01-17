@@ -172,7 +172,7 @@ enum edge_test_flag
 #endif
 
 #if defined(ENV64BIT) && defined(BURNINGVIDEO_RENDERER_BEAUTIFUL)
-	typedef double ipoltype;
+	typedef float ipoltype;
 #else
 	typedef float ipoltype;
 #endif
@@ -185,6 +185,25 @@ enum edge_test_flag
 #else
 	#define burning_restrict
 #endif
+
+/*
+	if (condition) state |= mask; else state &= ~mask;
+*/
+static inline void burning_setbit(size_t &state, int condition, size_t mask)
+{
+	if (condition) state |= mask;
+	else state &= ~mask;
+}
+
+/*
+	if (condition) state |= m; else state &= ~m;
+*/
+REALINLINE void burning_setbit32(unsigned int &state, int condition, const unsigned int mask)
+{
+	// 0, or any positive to mask
+	//s32 conmask = -condition >> 31;
+	state ^= ((-condition >> 31) ^ state) & mask;
+}
 
 
 #if defined(PATCH_SUPERTUX_8_0_1)
