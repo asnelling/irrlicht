@@ -1305,6 +1305,38 @@ inline void setClip ( AbsRectangle &out, const core::rect<s32> *clip,
 
 }
 
+// bounce clipping to texture
+inline void setSourceClip(AbsRectangle &out, const core::rect<s32> *in,
+	const video::IImage * tex, const core::dimension2d<u32>* tex_org)
+{
+	if (0 == in)
+	{
+		out.x0 = 0;
+		out.x1 = 0;
+		out.y0 = 0;
+		out.y1 = 0;
+		return;
+	}
+
+	if (0 == tex)
+	{
+		out.x0 = in->UpperLeftCorner.X;
+		out.x1 = in->LowerRightCorner.X;
+		out.y0 = in->UpperLeftCorner.Y;
+		out.y1 = in->LowerRightCorner.Y;
+		return;
+	}
+
+	const u32 w = tex->getDimension().Width;
+	const u32 h = tex->getDimension().Height;
+
+	//texcoo (x / original) * tex
+	out.x0 = core::s32_clamp((in->UpperLeftCorner.X*w) / tex_org->Width, 0, w);
+	out.x1 = core::s32_clamp((in->LowerRightCorner.X*w) / tex_org->Width, out.x0, w);
+	out.y0 = core::s32_clamp((in->UpperLeftCorner.Y*h) / tex_org->Height, 0, h);
+	out.y1 = core::s32_clamp((in->LowerRightCorner.Y*h) / tex_org->Height, out.y0, h);
+}
+
 /*!
 	a generic 2D Blitter
 */
@@ -1343,13 +1375,9 @@ static s32 Blit(eBlitter operation,
 	job.Source.y0 = sourceClip.y0 + ( job.Dest.y0 - v.y0 );
 	job.Source.y1 = job.Source.y0 + job.height;
 
-	job.col[0] = 0xFFFFFFFF;
-	if (color)
+	for (size_t i = 0; i < array_size(job.col); ++i)
 	{
-		for (u32 i = 0; i < color_size; ++i)
-		{
-			job.col[i] = color[i].color;
-		}
+		job.col[i] = color && i < color_size ? color[i].color : 0xFFFFFFFF;
 	}
 
 	job.stretch = 0;
@@ -1384,22 +1412,26 @@ static s32 StretchBlit(eBlitter operation,
 		const video::SColor* color, u32 color_size
 )
 {
+	SBlitJob job;
+	for (size_t i = 0; i < array_size(job.col); ++i)
+	{
+		job.col[i] = color && i < color_size ? color[i].color : 0xFFFFFFFF;
+	}
+
 	tExecuteBlit blitter = getBlitter( operation, dest, source );
 	if ( 0 == blitter ) return 0;
 
-	SBlitJob job;
-
 	// Clipping
-	setClip ( job.Source, srcRect, source, src_originalSize,1 );
+	/*
+		source:
+		a) Texture     -> build UV on Original Pixelcoordinaten
+		b) No Texture  -> srcRect in dest space
+	*/
+	setSourceClip( job.Source, srcRect, source, src_originalSize );
 	setClip ( job.Dest, destRect, dest, 0, 0 );
 
 	job.width = job.Dest.x1-job.Dest.x0;
 	job.height = job.Dest.y1-job.Dest.y0;
-
-	for (u32 i = 0; i < color_size; ++i)
-	{
-		job.col[i] = color[i].color;
-	}
 
 
 	//scale gui needs destRect/srcRect. direct call assumes stretching.

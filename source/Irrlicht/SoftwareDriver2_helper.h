@@ -933,8 +933,8 @@ inline void getTexel_fix ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
 {
 	size_t ofs;
 
-	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
-	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
+	ofs = ( ((ty + FIX_POINT_ZERO_DOT_FIVE) & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
+	ofs |= ((tx + FIX_POINT_ZERO_DOT_FIVE) & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
 
 	// texel
 	tVideoSample t00;
@@ -946,14 +946,36 @@ inline void getTexel_fix ( tFixPoint &r, tFixPoint &g, tFixPoint &b,
 
 }
 
+// get video sample to fixpoint colormax
+inline void getTexel_fix(tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,
+	const sInternalTexture* t, const tFixPointu tx, const tFixPointu ty
+)
+{
+	size_t ofs;
+
+	ofs = (((ty+ FIX_POINT_ZERO_DOT_FIVE) & t->textureYMask) >> FIX_POINT_PRE) << t->pitchlog2;
+	ofs |= ((tx+ FIX_POINT_ZERO_DOT_FIVE) & t->textureXMask) >> (FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY);
+
+	// texel
+	tVideoSample t00;
+	t00 = *((tVideoSample*)((u8*)t->data + ofs));
+
+	a = (t00 & MASK_A) >> (SHIFT_A - FIX_POINT_PRE);
+	r = (t00 & MASK_R) >> (SHIFT_R - FIX_POINT_PRE);
+	g = (t00 & MASK_G) << (FIX_POINT_PRE - SHIFT_G);
+	b = (t00 & MASK_B) << (FIX_POINT_PRE - SHIFT_B);
+
+}
+
+#if 0
 // get video sample to fixpoint
 static REALINLINE void getTexel_fix ( tFixPoint &a,
 			const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty)
 {
 	size_t ofs;
 
-	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
-	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
+	ofs = ( ((ty + FIX_POINT_ZERO_DOT_FIVE) & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
+	ofs |= ((tx + FIX_POINT_ZERO_DOT_FIVE) & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
 
 	// texel
 	tVideoSample t00;
@@ -961,8 +983,9 @@ static REALINLINE void getTexel_fix ( tFixPoint &a,
 
 	a = (t00 & MASK_A) >> ( SHIFT_A - FIX_POINT_PRE);
 }
+#endif
 
-
+#if 0
 static inline void getSample_texture_dither (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
 										const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty,
 										const u32 x, const u32 y
@@ -993,6 +1016,7 @@ static inline void getSample_texture_dither (	tFixPoint &r, tFixPoint &g, tFixPo
 	(tFixPointu &) b =	(t00 & MASK_B) << ( FIX_POINT_PRE - SHIFT_B );
 
 }
+#endif
 
 /*
 	load a sample from internal texture at position tx,ty to fixpoint
@@ -1040,8 +1064,8 @@ inline void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPo
 #else
 
 #if 0
-// get sample linear
-static REALINLINE void getSample_linear ( tFixPointu &r, tFixPointu &g, tFixPointu &b,
+// get sample nearest point distance 0
+static REALINLINE void getSample_nearest( tFixPointu &r, tFixPointu &g, tFixPointu &b,
 								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
 								)
 {
@@ -1072,10 +1096,10 @@ static REALINLINE void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint
 	tFixPointu r11,g11,b11;
 
 #if 0
-	getSample_linear ( r00, g00, b00, t, tx,ty );
-	getSample_linear ( r10, g10, b10, t, tx + FIX_POINT_ONE,ty );
-	getSample_linear ( r01, g01, b01, t, tx,ty + FIX_POINT_ONE );
-	getSample_linear ( r11, g11, b11, t, tx + FIX_POINT_ONE,ty + FIX_POINT_ONE );
+	getSample_nearest( r00, g00, b00, t, tx,ty );
+	getSample_nearest( r10, g10, b10, t, tx + FIX_POINT_ONE,ty );
+	getSample_nearest( r01, g01, b01, t, tx,ty + FIX_POINT_ONE );
+	getSample_nearest( r11, g11, b11, t, tx + FIX_POINT_ONE,ty + FIX_POINT_ONE );
 #else
 	size_t o0,o1,o2,o3;
 	register tVideoSample t00;
@@ -1136,27 +1160,6 @@ static REALINLINE void getSample_texture ( tFixPoint &r, tFixPoint &g, tFixPoint
 
 }
 
-#if 0
-// get sample linear
-static REALINLINE void getSample_linear ( tFixPointu &a, tFixPointu &r, tFixPointu &g, tFixPointu &b,
-								const sInternalTexture * t, const tFixPointu tx, const tFixPointu ty
-								)
-{
-	size_t ofs;
-
-	ofs = ( ( ty & t->textureYMask ) >> FIX_POINT_PRE ) << t->pitchlog2;
-	ofs |= ( tx & t->textureXMask ) >> ( FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY );
-
-	// texel
-	tVideoSample t00;
-	t00 = *((tVideoSample*)( (u8*) t->data + ofs ));
-
-	a =	(t00 & MASK_A) >> SHIFT_A;
-	r =	(t00 & MASK_R) >> SHIFT_R;
-	g =	(t00 & MASK_G) >> SHIFT_G;
-	b =	(t00 & MASK_B);
-}
-#endif
 
 // get Sample bilinear
 static REALINLINE void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,
@@ -1169,10 +1172,10 @@ static REALINLINE void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint
 	tFixPointu a10, r10,g10,b10;
 	tFixPointu a11, r11,g11,b11;
 #if 0
-	getSample_linear ( a00, r00, g00, b00, t, tx,ty );
-	getSample_linear ( a10, r10, g10, b10, t, tx + FIX_POINT_ONE,ty );
-	getSample_linear ( a01, r01, g01, b01, t, tx,ty + FIX_POINT_ONE );
-	getSample_linear ( a11, r11, g11, b11, t, tx + FIX_POINT_ONE,ty + FIX_POINT_ONE );
+	getSample_nearest( a00, r00, g00, b00, t, tx,ty );
+	getSample_nearest( a10, r10, g10, b10, t, tx + FIX_POINT_ONE,ty );
+	getSample_nearest( a01, r01, g01, b01, t, tx,ty + FIX_POINT_ONE );
+	getSample_nearest( a11, r11, g11, b11, t, tx + FIX_POINT_ONE,ty + FIX_POINT_ONE );
 #else
 	size_t o0, o1, o2, o3;
 	register tVideoSample t00;
@@ -1182,25 +1185,25 @@ static REALINLINE void getSample_texture ( tFixPoint &a, tFixPoint &r, tFixPoint
 	o2 = ((tx)& t->textureXMask) >> (FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY);
 	o3 = ((tx + FIX_POINT_ONE) & t->textureXMask) >> (FIX_POINT_PRE - VIDEO_SAMPLE_GRANULARITY);
 
-	t00 = *((tVideoSample*)((u8*)t->data + (o0 | o2)));
+	t00 = *((tVideoSample*)((u8*)t->data + (o0 + o2)));
 	a00 = (t00 & MASK_A) >> SHIFT_A;
 	r00 = (t00 & MASK_R) >> SHIFT_R;
 	g00 = (t00 & MASK_G) >> SHIFT_G;
 	b00 = (t00 & MASK_B);
 
-	t00 = *((tVideoSample*)((u8*)t->data + (o0 | o3)));
+	t00 = *((tVideoSample*)((u8*)t->data + (o0 + o3)));
 	a10 = (t00 & MASK_A) >> SHIFT_A;
 	r10 = (t00 & MASK_R) >> SHIFT_R;
 	g10 = (t00 & MASK_G) >> SHIFT_G;
 	b10 = (t00 & MASK_B);
 
-	t00 = *((tVideoSample*)((u8*)t->data + (o1 | o2)));
+	t00 = *((tVideoSample*)((u8*)t->data + (o1 + o2)));
 	a01 = (t00 & MASK_A) >> SHIFT_A;
 	r01 = (t00 & MASK_R) >> SHIFT_R;
 	g01 = (t00 & MASK_G) >> SHIFT_G;
 	b01 = (t00 & MASK_B);
 
-	t00 = *((tVideoSample*)((u8*)t->data + (o1 | o3)));
+	t00 = *((tVideoSample*)((u8*)t->data + (o1 + o3)));
 	a11 = (t00 & MASK_A) >> SHIFT_A;
 	r11 = (t00 & MASK_R) >> SHIFT_R;
 	g11 = (t00 & MASK_G) >> SHIFT_G;

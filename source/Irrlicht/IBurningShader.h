@@ -110,6 +110,9 @@ namespace video
 
 		E_MATERIAL_TYPE Fallback_MaterialType;
 
+		SMaterial mat2D;
+		//SMaterial save3D;
+
 		size_t CullFlag; //eCullFlag
 		u32 depth_write;
 		u32 depth_test;

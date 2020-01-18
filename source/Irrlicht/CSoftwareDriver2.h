@@ -103,9 +103,10 @@ namespace video
 			const core::vector3df& end, SColor color_start) _IRR_OVERRIDE_;
 
 		//! draw an 2d rectangle
+#if 0
 		virtual void draw2DRectangle(SColor color, const core::rect<s32>& pos,
 			const core::rect<s32>* clip = 0) _IRR_OVERRIDE_;
-
+#endif
 		//!Draws an 2d rectangle with a gradient.
 		virtual void draw2DRectangle(const core::rect<s32>& pos,
 			SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
@@ -275,7 +276,6 @@ namespace video
 			ETS_MODEL_VIEW,
 			ETS_NORMAL, //3x3 ModelView Tansposed Inverse
 
-			ETS_PROJ_MODEL_VIEW_2D,
 			//ETS_VIEW_INVERSE,
 			ETS_COUNT_BURNING = 16
 		};
@@ -289,11 +289,17 @@ namespace video
 			ETF_TEXGEN_WRAP = 16,
 			ETF_TEXGEN_MASK = ETF_TEXGEN_CAMERA_SPHERE | ETF_TEXGEN_CAMERA_REFLECTION | ETF_TEXGEN_WRAP
 		};
-		core::matrix4 Transformation[ETS_COUNT_BURNING];
-		size_t TransformationFlag[ETS_COUNT_BURNING]; // E_TRANSFORMATION_FLAG
+		core::matrix4 Transformation[2][ETS_COUNT_BURNING];
+		size_t TransformationFlag[2][ETS_COUNT_BURNING]; // E_TRANSFORMATION_FLAG
+
+		size_t TransformationStack; // 0 .. 3D , 1 .. 2D
+
+		void setRenderStates2DMode(bool vertexAlpha,video::ITexture* texture,bool useAlphaChannelOfTexture);
+		void setRenderStates3DMode();
+		void restoreRenderStates3DMode();
 
 		//ETS_CLIPSCALE, // moved outside to stay at 16 matrices
-		f32 Transformation_ETS_CLIPSCALE[4];
+		f32 Transformation_ETS_CLIPSCALE[2][4];
 		void transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO state);
 
 		//core::recti ViewPort;

@@ -626,6 +626,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTRTextureGouraudNoZ2(CBurningVideoDriver* driver)
 {
+	// ETR_TEXTURE_GOURAUD_NOZ
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureGouraudNoZ2( driver );
 	#else
