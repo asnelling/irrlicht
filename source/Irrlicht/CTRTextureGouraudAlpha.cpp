@@ -261,18 +261,13 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 
 #ifdef INVERSE_W
 		inversew = fix_inverse32 ( line.w[0] );
+#endif
 		getSample_texture ( a0,r0,g0,b0,
 							&IT[0],
 							tofix ( line.t[0][0].x,inversew),
 							tofix ( line.t[0][0].y,inversew)
 						);
-#else
-		getSample_texture ( a0,r0,g0,b0,
-							&IT[0],
-							tofix ( line.t[0][0].x),
-							tofix ( line.t[0][0].y)
-						);
-#endif
+
 		if ( a0 > AlphaRef )
 		{
 #ifdef WRITE_Z
@@ -284,14 +279,11 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 
 #ifdef IPOL_C0
 
-#ifdef INVERSE_W
-			getSample_color ( r2, g2, b2, line.c[0][0], inversew );
-#else
-			getSample_color ( r2, g2, b2, line.c[0][0] );
-#endif
-			r0 = imulFix ( r0, r2 );
-			g0 = imulFix ( g0, g2 );
-			b0 = imulFix ( b0, b2 );
+			vec4_to_fix( r2, g2, b2, line.c[0][0], inversew );
+
+			r0 = imulFix_simple( r0, r2 );
+			g0 = imulFix_simple( g0, g2 );
+			b0 = imulFix_simple( b0, b2 );
 
 			color_to_fix ( r1, g1, b1, dst[i] );
 
@@ -300,7 +292,7 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 			r2 = r1 + imulFix ( a0, r0 - r1 );
 			g2 = g1 + imulFix ( a0, g0 - g1 );
 			b2 = b1 + imulFix ( a0, b0 - b1 );
-			dst[i] = fix4_to_color ( a0, r2, g2, b2 );
+			dst[i] = fix4_to_sample( a0, r2, g2, b2 );
 
 /*
 			getSample_color ( r2, g2, b2, line.c[0][0], inversew * COLOR_MAX );
@@ -309,11 +301,11 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 			r2 = r0 + imulFix ( a0, r1 - r0 );
 			g2 = g0 + imulFix ( a0, g1 - g0 );
 			b2 = b0 + imulFix ( a0, b1 - b0 );
-			dst[i] = fix_to_color ( r2, g2, b2 );
+			dst[i] = fix_to_sample ( r2, g2, b2 );
 */
 #else
 			dst[i] = PixelBlend32 ( dst[i],
-									fix_to_color ( r0,g0, b0 ),
+				fix_to_sample( r0,g0, b0 ),
 									fixPointu_to_u32 ( a0 )
 								);
 #endif

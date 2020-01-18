@@ -558,7 +558,7 @@ void CBurningShader_Raster_Reference::pShader_EMT_LIGHTMAP_M4 ()
 	getSample_texture ( r1, g1, b1, &IT[1], tofix ( line.t[1][0].x,inversew), tofix ( line.t[1][0].y,inversew) );
 
 
-	pShader.dst[pShader.i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex2 ( r0, r1 ) ),
+	pShader.dst[pShader.i] = fix_to_sample( clampfix_maxcolor ( imulFix_tex2 ( r0, r1 ) ),
 							clampfix_maxcolor ( imulFix_tex2 ( g0, g1 ) ),
 							clampfix_maxcolor ( imulFix_tex2 ( b0, b1 ) )
 						);
@@ -578,7 +578,7 @@ void CBurningShader_Raster_Reference::pShader_1 ()
 	ty0 = tofix ( line.t[0][0].y, inversew );
 
 	getSample_texture ( r0, g0, b0, &IT[0], tx0, ty0 );
-	pShader.dst[pShader.i] = fix_to_color ( r0, g0, b0 );
+	pShader.dst[pShader.i] = fix_to_sample( r0, g0, b0 );
 
 }
 

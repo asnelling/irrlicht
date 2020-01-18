@@ -276,7 +276,7 @@ void CTRNormalMap::fragmentShader()
 			lz = tofix ( line.l[0][0].z, inversew );
 
 			// DOT 3 Normal Map light in tangent space
-			ndotl = saturateFix ( FIX_POINT_HALF_COLOR +  (( imulFix ( r1, lx ) + imulFix ( g1, ly ) + imulFix ( b1, lz ) ) << (COLOR_MAX_LOG2-1)) );
+			ndotl = saturateFix ( FIX_POINT_HALF_COLOR +  ((imulFix_simple(r1,lx) + imulFix_simple(g1,ly) + imulFix_simple(b1,lz) ) << (COLOR_MAX_LOG2-1)) );
 #else
 			ndotl = FIX_POINT_ONE;
 #endif
@@ -303,11 +303,11 @@ void CTRNormalMap::fragmentShader()
 				r2 = r1 + imulFix(a3, r2 - r1);
 				g2 = g1 + imulFix(a3, g2 - g1);
 				b2 = b1 + imulFix(a3, b2 - b1);
-				dst[i] = fix_to_color(r2, g2, b2);
+				dst[i] = fix_to_sample(r2, g2, b2);
 			}
 			else
 			{
-				dst[i] = fix_to_color(r2, g2, b2);
+				dst[i] = fix_to_sample(r2, g2, b2);
 
 #ifdef WRITE_Z
 				z[i] = line.z[0];
@@ -322,7 +322,7 @@ void CTRNormalMap::fragmentShader()
 			r2 = imulFix_tex4 ( r0, r1 );
 			g2 = imulFix_tex4 ( g0, g1 );
 			b2 = imulFix_tex4 ( b0, b1 );
-			dst[i] = fix_to_color(r2, g2, b2);
+			dst[i] = fix_to_sample(r2, g2, b2);
 #endif
 
 		}

@@ -242,7 +242,7 @@ void CTRTextureGouraudAdd2::scanline_bilinear ()
 
 			color_to_fix ( r1, g1, b1, dst[i] );
 
-			dst[i] = fix_to_color ( clampfix_maxcolor ( r1 + r0 ),
+			dst[i] = fix_to_sample( clampfix_maxcolor ( r1 + r0 ),
 									clampfix_maxcolor ( g1 + g0 ),
 									clampfix_maxcolor ( b1 + b0 )
 								);

@@ -231,9 +231,9 @@ void CTRGTextureLightMap2_M4::scanline_bilinear ()
 			getSample_texture ( r1, g1, b1, &IT[1], tx1, ty1 );
 
 #ifdef IPOL_C0
-			r2 = imulFix ( r0, r3 );
-			g2 = imulFix ( g0, g3 );
-			b2 = imulFix ( b0, b3 );
+			r2 = imulFix_simple( r0, r3 );
+			g2 = imulFix_simple( g0, g3 );
+			b2 = imulFix_simple( b0, b3 );
 
 			r2 = imulFix_tex4 ( r2, r1 );
 			g2 = imulFix_tex4 ( g2, g1 );
@@ -246,7 +246,7 @@ void CTRGTextureLightMap2_M4::scanline_bilinear ()
 #endif
 
 
-			dst[i] = fix_to_color ( r2, g2, b2 );
+			dst[i] = fix_to_sample( r2, g2, b2 );
 
 #ifdef WRITE_Z
 			z[i] = line.z[0];

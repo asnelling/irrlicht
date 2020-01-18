@@ -666,6 +666,7 @@ struct sScanConvertData
 {
 	u32 left;			// major edge left/right
 	u32 right;			// !left
+	u32 _unused_pack[2];
 
 	f32 invDeltaY[4];	// inverse edge delta for screen space sorted triangle 
 
@@ -700,14 +701,16 @@ struct sScanConvertData
 struct sScanLineData
 {
 	s32 y;				// y position of scanline
+	u32 _unused_pack[1];
 	f32 x[2];			// x start, x end of scanline
-	s32 unused[1];
 
 #if defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) || defined ( SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT )
 	f32 w[2];			// w start, w end of scanline
 #else
 	f32 z[2];			// z start, z end of scanline
 #endif
+
+	u32 _unused_pack_1[2];
 
 #if BURNING_MATERIAL_MAX_COLORS > 0
 	sVec4 c[BURNING_MATERIAL_MAX_COLORS][2];			// color start, color end of scanline
@@ -737,21 +740,18 @@ struct sPixelShaderData
 /*
 	load a color value
 */
-REALINLINE void getTexel_plain2 (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
-							const sVec4 &v
-							)
+REALINLINE void getTexel_plain2 (	tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v	)
 {
 	r = tofix(v.r, FIX_POINT_F32_MUL);
 	g = tofix(v.g, FIX_POINT_F32_MUL);
 	b = tofix(v.b, FIX_POINT_F32_MUL);
 }
 
+#if 0
 /*
 	load a color value
 */
-REALINLINE void getSample_color (	tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,
-							const sVec4 &v
-							)
+REALINLINE void getSample_color (	tFixPoint &a, tFixPoint &r, tFixPoint &g, tFixPoint &b,	const sVec4 &v )
 {
 	a = tofix ( v.a, FIX_POINT_F32_MUL);
 	r = tofix ( v.r, COLOR_MAX * FIX_POINT_F32_MUL);
@@ -768,19 +768,20 @@ REALINLINE void getSample_color ( tFixPoint &r, tFixPoint &g, tFixPoint &b,const
 	g = tofix ( v.g, COLOR_MAX * FIX_POINT_F32_MUL);
 	b = tofix ( v.b, COLOR_MAX * FIX_POINT_F32_MUL);
 }
+#endif
 
 /*
-	load a color value mulby controls [0;1] or [0;ColorMax]
+	load a color value. mulby controls [0;1] or [0;ColorMax]
+	aka getSample_color
 */
-REALINLINE void getSample_color (	tFixPoint &r, tFixPoint &g, tFixPoint &b,
-								const sVec4 &v, const f32 mulby )
+REALINLINE void vec4_to_fix(tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v, const f32 mulby )
 {
-	r = tofix ( v.r, mulby);
-	g = tofix ( v.g, mulby);
-	b = tofix ( v.b, mulby);
+	r = tofix(v.r, mulby);
+	g = tofix(v.g, mulby);
+	b = tofix(v.b, mulby);
 }
 
-REALINLINE void getSample_color(tFixPoint &a,tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v, const f32 mulby)
+REALINLINE void vec4_to_fix(tFixPoint &a,tFixPoint &r, tFixPoint &g, tFixPoint &b,const sVec4 &v, const f32 mulby)
 {
 	a = tofix(v.a, mulby);
 	r = tofix(v.r, mulby);

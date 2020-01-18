@@ -240,7 +240,7 @@ REALINLINE void CTRTextureLightMap2_Add::scanline_bilinear ()
 			getSample_texture ( r0, g0, b0, &IT[0], tofix ( line.t[0][0].x,inversew), tofix ( line.t[0][0].y,inversew) );
 			getSample_texture ( r1, g1, b1, &IT[1], tofix ( line.t[0][1].x,inversew), tofix ( line.t[0][1].y,inversew) );
 
-			dst[i] = fix_to_color ( clampfix_maxcolor ( r0 + r1 ),
+			dst[i] = fix_to_sample( clampfix_maxcolor ( r0 + r1 ),
 									clampfix_maxcolor ( g0 + g1 ),
 									clampfix_maxcolor ( b0 + b1 )
 								);

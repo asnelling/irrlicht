@@ -194,7 +194,7 @@ void CTRGouraudNoZ2::scanline_bilinear ()
 #ifdef IPOL_C0
 	tFixPoint r0, g0, b0;
 
-	f32 inversew = FIX_POINT_F32_MUL;
+	f32 inversew = FIX_POINT_F32_MUL * COLOR_MAX;
 
 #endif
 
@@ -212,12 +212,10 @@ void CTRGouraudNoZ2::scanline_bilinear ()
 		{
 #ifdef IPOL_C0
 #ifdef INVERSE_W
-			inversew = reciprocal_zero_no ( line.w[0] );
+			inversew = fix_inverse32_color(line.w[0]);
 #endif
-
-			getSample_color ( r0, g0, b0, line.c[0][0] * inversew );
-
-			dst[i] = fix_to_color ( r0, g0, b0 );
+			vec4_to_fix(r0, g0, b0, line.c[0][0], inversew);
+			dst[i] = fix_to_sample(r0, g0, b0);
 #else
 			dst[i] = COLOR_BRIGHT_WHITE;
 #endif
@@ -630,7 +628,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTriangleRendererGouraudNoZ2(CBurningVideoDriver* driver)
 {
-	//ETR_GOURAUD_NOZ
+	//ETR_GOURAUD_NOZ - no texture no depth test no depth write
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRGouraudNoZ2(driver);
 	#else

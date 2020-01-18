@@ -227,7 +227,7 @@ REALINLINE void CTRTextureLightMap2_M1::scanline_bilinear2 ()
 
 #endif
 
-			dst[i] = fix_to_color ( imulFix_tex1 ( r0, r1 ),
+			dst[i] = fix_to_sample( imulFix_tex1 ( r0, r1 ),
 									imulFix_tex1 ( g0, g1 ),
 									imulFix_tex1 ( b0, b1 )
 								);

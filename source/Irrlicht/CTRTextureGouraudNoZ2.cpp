@@ -220,7 +220,7 @@ void CTRTextureGouraudNoZ2::scanline_bilinear ( )
 //			dst[i] = getTexel_plain ( &IT[0], tx0, ty0 );
 
 			getSample_texture ( r0, g0, b0, IT+0, tx0, ty0 );
-			dst[i] = fix_to_color ( r0, g0, b0 );
+			dst[i] = fix_to_sample( r0, g0, b0 );
 
 #ifdef WRITE_Z
 			z[i] = line.z[0];

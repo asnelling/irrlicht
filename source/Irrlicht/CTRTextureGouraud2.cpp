@@ -287,16 +287,16 @@ void CTRTextureGouraud2::fragmentShader ()
 			g2 = tofix(line.l[0][0].y, inversew*COLOR_MAX);
 			b2 = tofix(line.l[0][0].z, inversew*COLOR_MAX);
 
-			//dst[i] = fix_to_color(r2, g2, b2);
+			//dst[i] = fix_to_sample(r2, g2, b2);
 
-			dst[i] = fix_to_color (
+			dst[i] = fix_to_sample(
 				clampfix_maxcolor( r2 + imulFix ( r0, r1 )),
 				clampfix_maxcolor( g2 + imulFix ( g0, g1 )),
 				clampfix_maxcolor( b2 + imulFix ( b0, b1 ))
 			);
 
 #else
-			dst[i] = fix_to_color(
+			dst[i] = fix_to_sample(
 				imulFix(r0, r1),
 				imulFix(g0, g1),
 				imulFix(b0, b1)
@@ -310,7 +310,7 @@ void CTRTextureGouraud2::fragmentShader ()
 			dst[i] = getTexel_plain ( &IT[0], d + tx0, d + ty0 );
 #else
 			getSample_texture ( r0, g0, b0, &IT[0], tx0,ty0 );
-			dst[i] = fix_to_color ( r0, g0, b0 );
+			dst[i] = fix_to_sample( r0, g0, b0 );
 #endif
 
 #endif

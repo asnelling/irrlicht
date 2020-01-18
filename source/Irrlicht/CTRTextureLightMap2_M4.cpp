@@ -234,7 +234,7 @@ void CTRTextureLightMap2_M4::scanline_bilinear2_mag ()
 			getSample_texture ( r1, g1, b1, &IT[1], tofix ( line.t[1][0].x,inversew), tofix ( line.t[1][0].y,inversew) );
 
 #endif
-			dst[i] = fix_to_color(imulFix_tex4(r0, r1), imulFix_tex4(g0, g1), imulFix_tex4(b0, b1));
+			dst[i] = fix_to_sample(imulFix_tex4(r0, r1), imulFix_tex4(g0, g1), imulFix_tex4(b0, b1));
 		}
 
 #ifdef IPOL_W
@@ -357,7 +357,7 @@ void CTRTextureLightMap2_M4::scanline_bilinear2_min ()
 			getTexel_fix ( r0, g0, b0, &IT[0], tofix ( line.t[0][0].x,inversew), tofix ( line.t[0][0].y,inversew) );
 			getTexel_fix ( r1, g1, b1, &IT[1], tofix ( line.t[1][0].x,inversew), tofix ( line.t[1][0].y,inversew) );
 
-			dst[i] = fix_to_color(imulFix_tex4(r0, r1), imulFix_tex4(g0, g1), imulFix_tex4(b0, b1));
+			dst[i] = fix_to_sample(imulFix_tex4(r0, r1), imulFix_tex4(g0, g1), imulFix_tex4(b0, b1));
 		}
 
 #ifdef IPOL_W

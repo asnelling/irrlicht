@@ -343,9 +343,9 @@ namespace video
 		void ndc_2_dc_and_project (s4DVertexPair* dest,const s4DVertexPair* source, const size_t vIn ) const;
 
 		//const is misleading. **v is const that true, but not *v..
-		f32 screenarea_inside (const s4DVertexPair* const face[] ) const;
-		s32 lodFactor_inside ( const s4DVertexPair* const face[], const size_t tex, f32 dc_area ) const;
-		void select_polygon_mipmap_inside ( s4DVertex* face[], const size_t tex, const CSoftwareTexture2_Bound& b ) const;
+		f32 screenarea_inside (const s4DVertexPair* burning_restrict const face[] ) const;
+		s32 lodFactor_inside ( const s4DVertexPair* burning_restrict const face[], const size_t tex, f32 dc_area, f32 lod_bias ) const;
+		void select_polygon_mipmap_inside ( s4DVertex* burning_restrict face[], const size_t tex, const CSoftwareTexture2_Bound& b ) const;
 
 		void getCameraPosWorldSpace();
 		SBurningShaderEyeSpace EyeSpace;

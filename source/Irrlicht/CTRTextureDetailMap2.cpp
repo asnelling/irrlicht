@@ -232,7 +232,7 @@ void CTRTextureDetailMap2::scanline_bilinear ()
 			g2 = clampfix_mincolor ( clampfix_maxcolor ( g0 + g1 - FIX_POINT_HALF_COLOR ) );
 			b2 = clampfix_mincolor ( clampfix_maxcolor ( b0 + b1 - FIX_POINT_HALF_COLOR ) );
 
-			dst[i] = fix_to_color ( r2, g2, b2 );
+			dst[i] = fix_to_sample( r2, g2, b2 );
 
 #ifdef WRITE_Z
 			z[i] = line.z[0];

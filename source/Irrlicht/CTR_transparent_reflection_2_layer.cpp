@@ -230,13 +230,13 @@ void CTR_transparent_reflection_2_layer::fragmentShader()
 		b0 = imulFix_tex1(b0, b1);
 
 #ifdef IPOL_C0
-		getSample_color(a1, r1, g1, b1, line.c[0][0], inversew);
-		r0 = imulFix(r1, r0);
-		g0 = imulFix(g1, g0);
-		b0 = imulFix(b1, b0);
+		vec4_to_fix(a1, r1, g1, b1, line.c[0][0], inversew);
+		r0 = imulFix_simple(r1, r0);
+		g0 = imulFix_simple(g1, g0);
+		b0 = imulFix_simple(b1, b0);
 #endif
 
-		dst[i] = fix_to_color(r0, g0, b0);
+		dst[i] = fix_to_sample(r0, g0, b0);
 
 #ifdef WRITE_Z
 		z[i] = line.z[0];
@@ -287,10 +287,10 @@ void CTR_transparent_reflection_2_layer::fragmentShader()
 		b0 = imulFix_tex1(b0, b1);
 
 #ifdef IPOL_C0
-		getSample_color(a1, r1, g1, b1, line.c[0][0], inversew);
-		r0 = imulFix(r1, r0);
-		g0 = imulFix(g1, g0);
-		b0 = imulFix(b1, b0);
+		vec4_to_fix(a1, r1, g1, b1, line.c[0][0], inversew);
+		r0 = imulFix_simple(r1, r0);
+		g0 = imulFix_simple(g1, g0);
+		b0 = imulFix_simple(b1, b0);
 
 		//vertex alpha blend EMT_TRANSPARENT_REFLECTION_2_LAYER
 		if (a1 + 2 < FIX_POINT_ONE)
@@ -302,7 +302,7 @@ void CTR_transparent_reflection_2_layer::fragmentShader()
 		}
 #endif
 
-		dst[i] = fix_to_color(r0, g0, b0);
+		dst[i] = fix_to_sample(r0, g0, b0);
 
 #ifdef WRITE_Z
 		//z[i] = line.z[0];

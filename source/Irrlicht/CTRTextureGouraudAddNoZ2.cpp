@@ -221,7 +221,7 @@ void CTRTextureGouraudAddNoZ2::fragmentShader()
 			getSample_texture(r0, g0, b0, &IT[0], tx0, ty0);
 
 #ifdef IPOL_C0
-			getSample_color(r2, g2, b2, line.c[0][0], inversew);
+			vec4_to_fix(r2, g2, b2, line.c[0][0], inversew);
 			r0 = imulFix(r2, r0);
 			g0 = imulFix(g2, g0);
 			b0 = imulFix(b2, b0);
@@ -234,7 +234,7 @@ void CTRTextureGouraudAddNoZ2::fragmentShader()
 				r1 = imulFix_tex1(r1, FIXPOINT_COLOR_MAX - r0);
 				g1 = imulFix_tex1(g1, FIXPOINT_COLOR_MAX - g0);
 				b1 = imulFix_tex1(b1, FIXPOINT_COLOR_MAX - b0);
-				dst[i] = fix_to_color(r0+r1, g0+g1, b0+b1);
+				dst[i] = fix_to_sample(r0+r1, g0+g1, b0+b1);
 			}
 
 #ifdef WRITE_Z

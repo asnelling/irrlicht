@@ -186,9 +186,7 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int re
 	fp24 dataW = a->Pos.w;
 #endif
 
-#ifdef INVERSE_W
 	f32 inversew = FIX_POINT_F32_MUL;
-#endif
 
 	tVideoSample color;
 #if BURNING_MATERIAL_MAX_COLORS > 0
@@ -199,8 +197,14 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int re
 	slopeC = (b->Color[0] - a->Color[0]) * invDeltaX;
 	C = a->Color[0];
 #endif
-	getSample_color ( r0, g0, b0, a->Color[0] );
-	color = fix_to_color ( r0, g0, b0 );
+
+#ifdef INVERSE_W
+	inversew = fix_inverse32_color(dataW);
+#endif
+
+	vec4_to_fix( r0, g0, b0, a->Color[0], inversew);
+	color = fix_to_sample( r0, g0, b0 );
+
 #else
 	color = (tVideoSample) 0xFFFFFFFF;
 #endif
@@ -225,14 +229,10 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int re
 
 #ifdef IPOL_C0
 #ifdef INVERSE_W
-			inversew = reciprocal_zero_no(dataW);
-			getSample_color(r0, g0, b0, C * inversew);
-#else
-			getSample_color(r0, g0, b0, C);
+			inversew = fix_inverse32_color(dataW);
 #endif
-
-
-			color = fix_to_color ( r0, g0, b0 );
+			vec4_to_fix(r0, g0, b0, C,inversew);
+			color = fix_to_sample( r0, g0, b0 );
 #endif
 			*dst = color;
 

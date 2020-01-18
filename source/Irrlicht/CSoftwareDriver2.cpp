@@ -736,24 +736,32 @@ void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
 
 //--------- Transform from NDC to DC, transform TexCoo ----------------------------------------------
 
+// controls subtexel and fill convention [may split]
+#if defined(SOFTWARE_DRIVER_2_SUBTEXEL)
+#define SOFTWARE_DRIVER_2_PIXEL_CENTER -0.5f
+#else
+#define SOFTWARE_DRIVER_2_PIXEL_CENTER -0.5f
+#endif
+
 #if 1
+
 // used to scale <-1,-1><1,1> to viewport
 void buildNDCToDCMatrix_3D(f32* m, const core::rect<s32>& viewport)
 {
 	m[0] = (viewport.getWidth() - 0.375f) * 0.5f;
-	m[1] = -0.5f + ((viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X) * 0.5f);
+	m[1] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ((viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X) * 0.5f);
 
 	m[2] = (viewport.getHeight() - 0.375f) * -0.5f;
-	m[3] = -0.5f + ((viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y) * 0.5f);
+	m[3] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ((viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y) * 0.5f);
 }
 
 void buildNDCToDCMatrix_2D(f32* m, const core::rect<s32>& viewport)
 {
 	m[0] = (viewport.getWidth() - 0.f) * 0.5f;
-	m[1] = -0.5f + ((viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X) * 0.5f);
+	m[1] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ((viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X) * 0.5f);
 
 	m[2] = (viewport.getHeight() - 0.f) * -0.5f;
-	m[3] = -0.5f + ((viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y) * 0.5f);
+	m[3] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ((viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y) * 0.5f);
 }
 
 
@@ -787,8 +795,8 @@ void buildNDCToDCMatrix( core::matrix4& out, const core::rect<s32>& viewport)
 	m[9]  = 0.f;
 	m[10] = 1.f;
 	m[11] = 0.f;
-	m[12] = -0.5f + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
-	m[13] = -0.5f + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
+	m[12] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ( (viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X ) * 0.5f );
+	m[13] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ( (viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y ) * 0.5f );
 	m[14] = 0.f;
 	m[15] = 1.f;
 }
@@ -1137,7 +1145,7 @@ inline void CBurningVideoDriver::ndc_2_dc_and_project (s4DVertexPair* dest,const
 /*!
 	crossproduct in projected 2D, face
 */
-REALINLINE f32 CBurningVideoDriver::screenarea_inside(const s4DVertexPair* const face[] ) const
+REALINLINE f32 CBurningVideoDriver::screenarea_inside(const s4DVertexPair* burning_restrict const face[] ) const
 {
 	return	( ((face[1]+1)->Pos.x - (face[0]+1)->Pos.x) * ((face[2]+1)->Pos.y - (face[0]+1)->Pos.y) ) -
 			( ((face[2]+1)->Pos.x - (face[0]+1)->Pos.x) * ((face[1]+1)->Pos.y - (face[0]+1)->Pos.y) );
@@ -1170,15 +1178,14 @@ f32 MipmapLevel(const sVec2& uv, const sVec2& textureSize)
 	Edge-walking problem
 	Texture Wrapping problem
 */
-REALINLINE s32 CBurningVideoDriver::lodFactor_inside(const s4DVertexPair* const face[], const size_t m, f32 dc_area) const
+REALINLINE s32 CBurningVideoDriver::lodFactor_inside(const s4DVertexPair* burning_restrict const face[],
+	const size_t m, f32 dc_area, f32 lod_bias) const
 {
 	/*
 		sVec2 a(v[1]->Tex[tex].x - v[0]->Tex[tex].x,v[1]->Tex[tex].y - v[0]->Tex[tex].y);
 		sVec2 b(v[2]->Tex[tex].x - v[0]->Tex[tex].x,v[2]->Tex[tex].y - v[0]->Tex[tex].y);
 		f32 area = a.x * b.y - b.x * a.y;
 	*/
-
-	const u32* d = MAT_TEXTURE(m)->getMipMap0_Area();
 
 
 	/*
@@ -1228,7 +1235,9 @@ REALINLINE s32 CBurningVideoDriver::lodFactor_inside(const s4DVertexPair* const 
 	}
 
 	//only guessing: take more detail (lower mipmap) in light+bump textures
-	f32 texelspace = d[0] * d[1] * (m ? 0.5f : 0.5f);
+	//assume transparent add is ~50% transparent -> more detail
+	const u32* d = MAT_TEXTURE(m)->getMipMap0_Area();
+	f32 texelspace = d[0] * d[1] * lod_bias; //(m ? 0.5f : 0.5f);
 
 	ieee754 ratio;
 	ratio.f = (signedArea.f * texelspace) * dc_area;
@@ -1256,7 +1265,7 @@ REALINLINE s32 CBurningVideoDriver::lodFactor_inside(const s4DVertexPair* const 
 	texcoo in current mipmap dimension (face, already clipped)
 	-> want to help fixpoint
 */
-inline void CBurningVideoDriver::select_polygon_mipmap_inside(s4DVertex* face[], const size_t tex, const CSoftwareTexture2_Bound& b) const
+inline void CBurningVideoDriver::select_polygon_mipmap_inside(s4DVertex* burning_restrict face[], const size_t tex, const CSoftwareTexture2_Bound& b) const
 {
 #ifdef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
 #if defined(Tweak_Burning)
@@ -1568,22 +1577,23 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 				u.normalize_dir_xyz();
 
 				//reflect(u,N) u - 2.0 * dot(N, u) * N
-				// cam is (0,0,-1)
-				f32 dot = 2.f * EyeSpace.normal.dot_xyz(u);
+				// cam is (0,0,-1), tex flipped
+				f32 dot = -2.f * EyeSpace.normal.dot_xyz(u);
 				r.x = u.x + dot * EyeSpace.normal.x;
 				r.y = u.y + dot * EyeSpace.normal.y;
 				r.z = u.z + dot * EyeSpace.normal.z;
 
 				//openGL
-/*
 				f32 m = 2.f * sqrtf(r.x*r.x+r.y*r.y+(r.z+1.f)*(r.z+1.f));
 				dest[0].Tex[t].x = r.x / m + 0.5f;
-				dest[0].Tex[t].y = r.y / m + 0.5f;
-*/
+				dest[0].Tex[t].y = -r.y / m + 0.5f;
+
+/*
 				//~d3d with spheremap scale
 				f32 m = 0.25f / (0.00001f + sqrtf(r.x*r.x+r.y*r.y+r.z*r.z));
 				dest[0].Tex[t].x =  r.x * m + 0.5f;
 				dest[0].Tex[t].y = -r.y * m + 0.5f;
+*/
 			}
 			else
 			if (flag[ETS_TEXTURE_0+t] & ETF_TEXGEN_CAMERA_REFLECTION )
@@ -1594,22 +1604,20 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 				u.normalize_dir_xyz();
 
 				//reflect(u,N) u - 2.0 * dot(N, u) * N
-				// cam is (0,0,-1)
-				f32 dot = 2.f * EyeSpace.normal.dot_xyz(u);
+				// cam is (0,0,-1), tex flipped
+				f32 dot = -2.f * EyeSpace.normal.dot_xyz(u);
 				r.x = u.x + dot * EyeSpace.normal.x;
 				r.y = u.y + dot * EyeSpace.normal.y;
 				r.z = u.z + dot * EyeSpace.normal.z;
 
 				//openGL
+				dest[0].Tex[t].x = r.x;
+				dest[0].Tex[t].y = -r.y;
 /*
+				//~d3d with spheremap scale
 				dest[0].Tex[t].x = r.x;
 				dest[0].Tex[t].y = r.y;
 */
-
-				//~d3d with spheremap scale
-				dest[0].Tex[t].x =  r.x;
-				dest[0].Tex[t].y =  r.y;
-
 			}
 			else if (VertexCache.vSize[VertexCache.vType].TexCooSize > t)
 			{
@@ -1700,7 +1708,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 
 			// transform by tangent matrix
 			sVec4 l;
-	#if 1
+	#if 0
 			l.x = (vp.x * tangent->Tangent.X + vp.y * tangent->Tangent.Y + vp.z * tangent->Tangent.Z );
 			l.y = (vp.x * tangent->Binormal.X + vp.y * tangent->Binormal.Y + vp.z * tangent->Binormal.Z );
 			l.z = (vp.x * tangent->Normal.X + vp.y * tangent->Normal.Y + vp.z * tangent->Normal.Z );
@@ -2146,7 +2154,11 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 			// select mipmap
 			for (size_t m = 0; m < VertexCache.vSize[VertexCache.vType].TexSize; ++m)
 			{
-				s32 lodFactor = lodFactor_inside(face, m, dc_area);
+				//only guessing: take more detail (lower mipmap) in light+bump textures
+				//assume transparent add is ~50% transparent -> more detail
+				f32 lod_bias = Material.org.MaterialType == EMT_TRANSPARENT_ADD_COLOR ? 0.33f : 0.33f;
+				s32 lodFactor = lodFactor_inside(face, m, dc_area, lod_bias);
+				
 
 				video::CSoftwareTexture2* tex = MAT_TEXTURE(m);
 				CurrentShader->setTextureParam(m, tex, lodFactor);
@@ -2324,6 +2336,13 @@ u32 CBurningVideoDriver::getMaximalDynamicLightAmount() const
 //! sets a material
 void CBurningVideoDriver::setMaterial(const SMaterial& material)
 {
+// ---------- Override
+	Material.org = material;
+	OverrideMaterial.apply(Material.org);
+
+	const SMaterial& in = Material.org;
+
+// ---------- Notify Shader
 	// unset old material
 	u32 mi;
 	mi = (u32)Material.lastMaterial.MaterialType;
@@ -2331,55 +2350,58 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 		MaterialRenderers[mi].Renderer->OnUnsetMaterial();
 
 	// set new material.
-	mi = (u32)material.MaterialType;
+	mi = (u32)in.MaterialType;
 	if (mi < MaterialRenderers.size())
 		MaterialRenderers[mi].Renderer->OnSetMaterial(
-			material, Material.lastMaterial, Material.resetRenderStates, this);
+			in, Material.lastMaterial, Material.resetRenderStates, this);
 
-	Material.lastMaterial = material;
+	Material.lastMaterial = in;
 	Material.resetRenderStates = false;
+
+	//CSoftware2MaterialRenderer sets Material.Fallback_MaterialType
 
 	//Material.Fallback_MaterialType = material.MaterialType;
 
 //-----------------
-	Material.org = material;
-	Material.CullFlag = CULL_INVISIBLE | (material.BackfaceCulling ? CULL_BACK : 0) | (material.FrontfaceCulling ? CULL_FRONT : 0);
+	
+	//Material.org = material;
+	Material.CullFlag = CULL_INVISIBLE | (in.BackfaceCulling ? CULL_BACK : 0) | (in.FrontfaceCulling ? CULL_FRONT : 0);
 
 	size_t* flag = TransformationFlag[TransformationStack];
 
 #ifdef SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM
 	for (u32 m = 0; m < BURNING_MATERIAL_MAX_TEXTURES /*&& m < vSize[VertexCache.vType].TexSize*/; ++m)
 	{
-		setTransform((E_TRANSFORMATION_STATE) (ETS_TEXTURE_0 + m),material.getTextureMatrix(m));
+		setTransform((E_TRANSFORMATION_STATE) (ETS_TEXTURE_0 + m),in.getTextureMatrix(m));
 		flag[ETS_TEXTURE_0+m] &= ~ETF_TEXGEN_MASK;
 	}
 #endif
 
 #ifdef SOFTWARE_DRIVER_2_LIGHTING
 
-	Material.AmbientColor.setA8R8G8B8( Material.org.AmbientColor.color );
-	Material.DiffuseColor.setA8R8G8B8( Material.org.ColorMaterial ? 0xFFFFFFFF : Material.org.DiffuseColor.color );
-	Material.EmissiveColor.setA8R8G8B8( Material.org.EmissiveColor.color );
-	Material.SpecularColor.setA8R8G8B8( Material.org.SpecularColor.color );
+	Material.AmbientColor.setA8R8G8B8( in.AmbientColor.color );
+	Material.DiffuseColor.setA8R8G8B8( in.ColorMaterial ? 0xFFFFFFFF : in.DiffuseColor.color );
+	Material.EmissiveColor.setA8R8G8B8(in.EmissiveColor.color );
+	Material.SpecularColor.setA8R8G8B8( in.SpecularColor.color );
 
-	burning_setbit( EyeSpace.Eye_Flags, (Material.org.Shininess != 0.f) & (Material.org.SpecularColor.color & 0x00ffffff), SPECULAR );
-	burning_setbit( EyeSpace.Eye_Flags, Material.org.FogEnable, FOG );
-	burning_setbit( EyeSpace.Eye_Flags, Material.org.NormalizeNormals, NORMALIZE_NORMALS );
+	burning_setbit( EyeSpace.Eye_Flags, (in.Shininess != 0.f) & (in.SpecularColor.color & 0x00ffffff), SPECULAR );
+	burning_setbit( EyeSpace.Eye_Flags, in.FogEnable, FOG );
+	burning_setbit( EyeSpace.Eye_Flags, in.NormalizeNormals, NORMALIZE_NORMALS );
 	//if (EyeSpace.Flags & SPECULAR ) EyeSpace.Flags |= NORMALIZE_NORMALS;
 
 #endif
 
-	//setCurrentShader
+	//--------------- setCurrentShader
 	
-	ITexture *texture0 = Material.org.getTexture(0);
-	ITexture *texture1 = Material.org.getTexture(1);
+	ITexture *texture0 = in.getTexture(0);
+	ITexture *texture1 = in.getTexture(1);
 
 	if (BURNING_MATERIAL_MAX_TEXTURES < 1) texture0 = 0;
 	if (BURNING_MATERIAL_MAX_TEXTURES < 2) texture1 = 0;
 
 	//todo: seperate depth test from depth write
-	Material.depth_write = getWriteZBuffer(Material.org);
-	Material.depth_test = Material.org.ZBuffer != ECFN_DISABLED && Material.depth_write;
+	Material.depth_write = getWriteZBuffer(in);
+	Material.depth_test = in.ZBuffer != ECFN_DISABLED && Material.depth_write;
 
 	EBurningFFShader shader = Material.depth_test ? ETR_TEXTURE_GOURAUD : ETR_TEXTURE_GOURAUD_NOZ;
 
@@ -2490,7 +2512,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 			ETR_GOURAUD_NOZ;
 	}
 
-	if (Material.org.Wireframe)
+	if (in.Wireframe)
 	{
 		IBurningShader* candidate = BurningShader[shader];
 		if (!candidate || (candidate && !candidate->canWireFrame()))
@@ -2499,7 +2521,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 		}
 	}
 
-	if (Material.org.PointCloud)
+	if (in.PointCloud)
 	{
 		IBurningShader* candidate = BurningShader[shader];
 		if (!candidate || (candidate && !candidate->canPointCloud()))
@@ -2516,7 +2538,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	{
 		CurrentShader->setRenderTarget(RenderTargetSurface, ViewPort);
 		CurrentShader->OnSetMaterial(Material);
-		CurrentShader->pushEdgeTest(Material.org.Wireframe, Material.org.PointCloud, 0);
+		CurrentShader->pushEdgeTest(in.Wireframe, in.PointCloud, 0);
 	}
 
 
@@ -2906,11 +2928,22 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 size_t compare_2d_material(const SMaterial& a, const SMaterial& b)
 {
 	size_t flag = 0;
-	flag |= a.MaterialType == b.MaterialType ? 1 : 0;
-	flag |= a.TextureLayer[0].Texture == b.TextureLayer[0].Texture ? 2 : 0;
-	flag |= a.ZBuffer == b.ZBuffer;
-	flag |= a.ZWriteEnable == b.ZWriteEnable;
-	flag |= a.MaterialTypeParam == b.MaterialTypeParam;
+	flag |= a.MaterialType == b.MaterialType ? 0 : 1;
+	flag |= a.TextureLayer[0].Texture == b.TextureLayer[0].Texture ? 0 : 2;
+	flag |= a.MaterialTypeParam == b.MaterialTypeParam ? 0 : 4;
+	if (flag) return flag;
+
+	flag |= a.TextureLayer[1].Texture == b.TextureLayer[1].Texture ? 0 : 8;
+	flag |= a.ZBuffer == b.ZBuffer ? 0 : 16;
+	flag |= a.ZWriteEnable == b.ZWriteEnable ? 0 : 32;
+
+#ifdef _DEBUG
+	int test = a != b;
+	if (test && !flag)
+	{
+		int g = 1;
+	}
+#endif
 	return flag;
 }
 
@@ -2940,13 +2973,17 @@ void CBurningVideoDriver::setRenderStates2DMode(bool vertexAlpha, video::ITextur
 	Material.mat2D.Lighting = false;
 
 	Material.mat2D.setTexture(0, (video::ITexture*)texture);
-	Material.mat2D.setFlag(video::EMF_BILINEAR_FILTER,
+
+	//used for text. so stay as sharp as possible (as HW Driver)
+	bool mip = false;
+
 #ifdef BURNINGVIDEO_RENDERER_BEAUTIFUL
-		false
-#else
-		false
+	if (texture && texture->getOriginalSize() != texture->getSize())
+	{
+		mip = true;
+	}
 #endif
-	);
+	Material.mat2D.setFlag(video::EMF_BILINEAR_FILTER, mip);
 
 
 	//switch to 2D Matrix Stack [ Material set Texture Matrix ]

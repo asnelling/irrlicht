@@ -306,7 +306,7 @@ void CTRTextureGouraudAlphaNoZ::fragment_linear()
 
 #ifdef IPOL_C0
 
-			getSample_color ( a2,r2, g2, b2, line.c[0][0], inversew );
+			vec4_to_fix( a2,r2, g2, b2, line.c[0][0], inversew );
 
 			a0 = imulFix(a0, a2); //2D uses vertexalpha*texelalpha
 			r0 = imulFix ( r0, r2 );
@@ -320,11 +320,11 @@ void CTRTextureGouraudAlphaNoZ::fragment_linear()
 			r2 = r1 + imulFix ( a0, r0 - r1 );
 			g2 = g1 + imulFix ( a0, g0 - g1 );
 			b2 = b1 + imulFix ( a0, b0 - b1 );
-			dst[i] = fix4_to_color ( a0, r2, g2, b2 );
+			dst[i] = fix4_to_sample( a0, r2, g2, b2 );
 
 #else
 			dst[i] = PixelBlend32 ( dst[i],
-									fix_to_color ( r0,g0, b0 ),
+				fix_to_sample( r0,g0, b0 ),
 									fixPointu_to_u32 ( a0 )
 								);
 #endif
@@ -514,7 +514,7 @@ void CTRTextureGouraudAlphaNoZ::fragment_point_noz()
 
 #ifdef IPOL_C0
 
-					getSample_color(a2,r2, g2, b2, line.c[0][0], inversew);
+					vec4_to_fix(a2,r2, g2, b2, line.c[0][0], inversew);
 
 					a0 = imulFix(a0, a2); //2D uses vertexalpha*texelalpha
 					r0 = imulFix(r0, r2);
@@ -528,11 +528,11 @@ void CTRTextureGouraudAlphaNoZ::fragment_point_noz()
 					r2 = r1 + imulFix(a0, r0 - r1);
 					g2 = g1 + imulFix(a0, g0 - g1);
 					b2 = b1 + imulFix(a0, b0 - b1);
-					dst[i] = fix4_to_color(a0, r2, g2, b2);
+					dst[i] = fix4_to_sample(a0, r2, g2, b2);
 
 #else
 					dst[i] = PixelBlend32(dst[i],
-						fix_to_color(r0, g0, b0),
+						fix_to_sample(r0, g0, b0),
 						fixPointu_to_u32(a0)
 					);
 #endif

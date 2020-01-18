@@ -350,7 +350,7 @@ void CTRTextureBlend::fragment_dst_color_src_alpha ()
 
 		color_to_fix ( r1, g1, b1, dst[i] );
 
-		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex2 ( r0, r1 ) ),
+		dst[i] = fix_to_sample( clampfix_maxcolor ( imulFix_tex2 ( r0, r1 ) ),
 								clampfix_maxcolor ( imulFix_tex2 ( g0, g1 ) ),
 								clampfix_maxcolor ( imulFix_tex2 ( b0, b1 ) )
 							);
@@ -393,7 +393,7 @@ void CTRTextureBlend::fragment_dst_color_src_alpha ()
 
 		color_to_fix ( r1, g1, b1, dst[i] );
 
-		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex2 ( r0, r1 ) ),
+		dst[i] = fix_to_sample( clampfix_maxcolor ( imulFix_tex2 ( r0, r1 ) ),
 								clampfix_maxcolor ( imulFix_tex2 ( g0, g1 ) ),
 								clampfix_maxcolor ( imulFix_tex2 ( b0, b1 ) )
 							);
@@ -533,15 +533,15 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 		getSample_texture ( a0, r0, g0, b0, &IT[0],	tofix ( line.t[0][0].x,iw),	tofix ( line.t[0][0].y,iw) );
 
 #ifdef IPOL_C0
-		getSample_color(a2,r2, g2, b2, line.c[0][0], iw);
+		vec4_to_fix(a2,r2, g2, b2, line.c[0][0], iw);
 		//a0 = imulFix(a0, a2); why is vertex color enabled and not vertex_alpha?
-		r0 = imulFix(r0, r2);
-		g0 = imulFix(g0, g2);
-		b0 = imulFix(b0, b2);
+		r0 = imulFix_simple(r0, r2);
+		g0 = imulFix_simple(g0, g2);
+		b0 = imulFix_simple(b0, b2);
 #endif
 
 		color_to_fix ( r1, g1, b1, dst[i] );
-		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex1( r0, r0 ) + imulFix_tex1( r1, a0 ) ),
+		dst[i] = fix_to_sample( clampfix_maxcolor ( imulFix_tex1( r0, r0 ) + imulFix_tex1( r1, a0 ) ),
 								clampfix_maxcolor ( imulFix_tex1( g0, g0 ) + imulFix_tex1( g1, a0 ) ),
 								clampfix_maxcolor ( imulFix_tex1( b0, b0 ) + imulFix_tex1( b1, a0 ) )
 							);
@@ -585,7 +585,7 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 
 		color_to_fix ( r1, g1, b1, dst[i] );
 
-		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex2 ( r0, r1 ) ),
+		dst[i] = fix_to_sample( clampfix_maxcolor ( imulFix_tex2 ( r0, r1 ) ),
 								clampfix_maxcolor ( imulFix_tex2 ( g0, g1 ) ),
 								clampfix_maxcolor ( imulFix_tex2 ( b0, b1 ) )
 							);
@@ -726,16 +726,16 @@ void CTRTextureBlend::fragment_one_one_minus_src_alpha()
 
 		color_to_fix1 ( r1, g1, b1, dst[i] );
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix_to_color ( imulFix ( r0 + imulFix ( r1, a0 ), r2 ),
-								imulFix ( g0 + imulFix ( g1, a0 ), g2 ),
-								imulFix ( b0 + imulFix ( b1, a0 ), b2 )
+		dst[i] = fix_to_sample( imulFix ( r0 + imulFix_simple( r1, a0 ), r2 ),
+								imulFix ( g0 + imulFix_simple( g1, a0 ), g2 ),
+								imulFix ( b0 + imulFix_simple( b1, a0 ), b2 )
 							);
 #else
-		dst[i] = fix_to_color ( r0 + imulFix ( r1, a0 ),
-								g0 + imulFix ( g1, a0 ),
-								b0 + imulFix ( b1, a0 )
+		dst[i] = fix_to_sample( r0 + imulFix_simple( r1, a0 ),
+								g0 + imulFix_simple( g1, a0 ),
+								b0 + imulFix_simple( b1, a0 )
 							);
 
 #endif
@@ -775,16 +775,16 @@ void CTRTextureBlend::fragment_one_one_minus_src_alpha()
 
 		color_to_fix1 ( r1, g1, b1, dst[i] );
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix_to_color ( imulFix ( r0 + imulFix ( r1, a0 ), r2 ),
-								imulFix ( g0 + imulFix ( g1, a0 ), g2 ),
-								imulFix ( b0 + imulFix ( b1, a0 ), b2 )
+		dst[i] = fix_to_sample( imulFix ( r0 + imulFix_simple( r1, a0 ), r2 ),
+								imulFix ( g0 + imulFix_simple( g1, a0 ), g2 ),
+								imulFix ( b0 + imulFix_simple( b1, a0 ), b2 )
 							);
 #else
-		dst[i] = fix_to_color ( r0 + imulFix ( r1, a0 ),
-								g0 + imulFix ( g1, a0 ),
-								b0 + imulFix ( b1, a0 )
+		dst[i] = fix_to_sample( r0 + imulFix_simple( r1, a0 ),
+								g0 + imulFix_simple( g1, a0 ),
+								b0 + imulFix_simple( b1, a0 )
 							);
 
 #endif
@@ -923,17 +923,17 @@ void CTRTextureBlend::fragment_one_minus_dst_alpha_one ()
 		getSample_texture ( r0, g0, b0, IT + 0, tofix ( line.t[0][0].x,iw),tofix ( line.t[0][0].y,iw) );
 		color_to_fix1 ( a1, r1, g1, b1, dst[i] );
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
 		a1 = FIX_POINT_ONE - a1;
-		dst[i] = fix_to_color ( imulFix ( imulFix ( r0, a1 ) + r1, r2 ),
-								imulFix ( imulFix ( g0, a1 ) + g1, g2 ),
-								imulFix ( imulFix ( b0, a1 ) + b1, b2 )
+		dst[i] = fix_to_sample( imulFix (imulFix_simple( r0, a1 ) + r1, r2 ),
+								imulFix (imulFix_simple( g0, a1 ) + g1, g2 ),
+								imulFix (imulFix_simple( b0, a1 ) + b1, b2 )
 							);
 #else
-		dst[i] = fix_to_color ( imulFix ( r0, a1) + r0,
-								imulFix ( g0, a1) + g0,
-								imulFix ( b0, a1) + b0
+		dst[i] = fix_to_sample(imulFix_simple( r0, a1) + r0,
+			imulFix_simple( g0, a1) + g0,
+			imulFix_simple( b0, a1) + b0
 							);
 
 #endif
@@ -972,17 +972,17 @@ void CTRTextureBlend::fragment_one_minus_dst_alpha_one ()
 		color_to_fix1 ( a1, r1, g1, b1, dst[i] );
 
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
 		a1 = FIX_POINT_ONE - a1;
-		dst[i] = fix_to_color ( imulFix ( imulFix ( r0, a1 ) + r1, r2 ),
-								imulFix ( imulFix ( g0, a1 ) + g1, g2 ),
-								imulFix ( imulFix ( b0, a1 ) + b1, b2 )
+		dst[i] = fix_to_sample( imulFix (imulFix_simple( r0, a1 ) + r1, r2 ),
+								imulFix (imulFix_simple( g0, a1 ) + g1, g2 ),
+								imulFix (imulFix_simple( b0, a1 ) + b1, b2 )
 							);
 #else
-		dst[i] = fix_to_color ( imulFix ( r0, a1) + r0,
-								imulFix ( g0, a1) + g0,
-								imulFix ( b0, a1) + b0
+		dst[i] = fix_to_sample(imulFix_simple( r0, a1) + r0,
+			imulFix_simple( g0, a1) + g0,
+			imulFix_simple( b0, a1) + b0
 							);
 
 #endif
@@ -1123,27 +1123,27 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 		color_to_fix ( r1, g1, b1, dst[i] );
 
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix4_to_color ( a0,
-								 clampfix_maxcolor ( imulFix (r0,a0 ) + r1),
-								 clampfix_maxcolor ( imulFix (g0,a0 ) + g1),
-								 clampfix_maxcolor ( imulFix (b0,a0 ) + b1)
+		dst[i] = fix4_to_sample( a0,
+								 clampfix_maxcolor (imulFix_simple(r0,a0) + r1),
+								 clampfix_maxcolor (imulFix_simple(g0,a0) + g1),
+								 clampfix_maxcolor (imulFix_simple(b0,a0) + b1)
 								);
 
 /*
 		fix_color_norm(a0);
-		dst[i] = fix4_to_color ( a0,
-								imulFix ( imulFix ( r0, a0 ) + r1, r2 ),
-								imulFix ( imulFix ( g0, a0 ) + g1, g2 ),
-								imulFix ( imulFix ( b0, a0 ) + b1, b2 )
+		dst[i] = fix4_to_sample ( a0,
+								imulFix ( imulFix_simple ( r0, a0 ) + r1, r2 ),
+								imulFix ( imulFix_simple ( g0, a0 ) + g1, g2 ),
+								imulFix ( imulFix_simple ( b0, a0 ) + b1, b2 )
 							);
 */
 #else
-		dst[i] = fix4_to_color ( a0,
-								 clampfix_maxcolor ( imulFix (r0,a0 ) + r1 ),
-								 clampfix_maxcolor ( imulFix (g0,a0 ) + g1 ),
-								 clampfix_maxcolor ( imulFix (b0,a0 ) + b1 )
+		dst[i] = fix4_to_sample( a0,
+								 clampfix_maxcolor (imulFix_simple(r0,a0 ) + r1 ),
+								 clampfix_maxcolor (imulFix_simple(g0,a0 ) + g1 ),
+								 clampfix_maxcolor (imulFix_simple(b0,a0 ) + b1 )
 								);
 
 #endif
@@ -1187,27 +1187,27 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 		color_to_fix ( r1, g1, b1, dst[i] );
 
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix4_to_color ( a0,
-								 clampfix_maxcolor ( imulFix ( imulFix (r0,a0 ) + r1, r2 ) ),
-								 clampfix_maxcolor ( imulFix ( imulFix (g0,a0 ) + g1, g2 ) ),
-								 clampfix_maxcolor ( imulFix ( imulFix (b0,a0 ) + b1, b2 ) )
+		dst[i] = fix4_to_sample( a0,
+								 clampfix_maxcolor ( imulFix (imulFix_simple(r0,a0 ) + r1, r2 ) ),
+								 clampfix_maxcolor ( imulFix (imulFix_simple(g0,a0 ) + g1, g2 ) ),
+								 clampfix_maxcolor ( imulFix (imulFix_simple(b0,a0 ) + b1, b2 ) )
 								);
 
 /*
 		fix_color_norm(a0);
-		dst[i] = fix4_to_color ( a0,
-								imulFix ( imulFix ( r0, a0 ) + r1, r2 ),
-								imulFix ( imulFix ( g0, a0 ) + g1, g2 ),
-								imulFix ( imulFix ( b0, a0 ) + b1, b2 )
+		dst[i] = fix4_to_sample ( a0,
+								imulFix ( imulFix_simple ( r0, a0 ) + r1, r2 ),
+								imulFix ( imulFix_simple ( g0, a0 ) + g1, g2 ),
+								imulFix ( imulFix_simple ( b0, a0 ) + b1, b2 )
 							);
 */
 #else
-		dst[i] = fix4_to_color ( a0,
-								 clampfix_maxcolor ( imulFix (r0,a0 ) + r1 ),
-								 clampfix_maxcolor ( imulFix (g0,a0 ) + g1 ),
-								 clampfix_maxcolor ( imulFix (b0,a0 ) + b1 )
+		dst[i] = fix4_to_sample( a0,
+								 clampfix_maxcolor (imulFix_simple(r0,a0 ) + r1 ),
+								 clampfix_maxcolor (imulFix_simple(g0,a0 ) + g1 ),
+								 clampfix_maxcolor (imulFix_simple(b0,a0 ) + b1 )
 								);
 
 #endif
@@ -1349,11 +1349,11 @@ void CTRTextureBlend::fragment_src_alpha_one_minus_src_alpha()
 				if (a0 > AlphaRef)
 				{
 #ifdef IPOL_C0
-					getSample_color(a2, r2, g2, b2, line.c[0][0], iw);
+					vec4_to_fix(a2, r2, g2, b2, line.c[0][0], iw);
 					//a0 = imulFix(a0, a2); why is vertex color enabled and not vertex_alpha?
-					r0 = imulFix(r0, r2);
-					g0 = imulFix(g0, g2);
-					b0 = imulFix(b0, b2);
+					r0 = imulFix_simple(r0, r2);
+					g0 = imulFix_simple(g0, g2);
+					b0 = imulFix_simple(b0, b2);
 #endif
 
 					color_to_fix(r1, g1, b1, dst[i]);
@@ -1363,7 +1363,7 @@ void CTRTextureBlend::fragment_src_alpha_one_minus_src_alpha()
 					r2 = r1 + imulFix(a0, r0 - r1);
 					g2 = g1 + imulFix(a0, g0 - g1);
 					b2 = b1 + imulFix(a0, b0 - b1);
-					dst[i] = fix4_to_color(a0, r2, g2, b2);
+					dst[i] = fix4_to_sample(a0, r2, g2, b2);
 				}
 
 			}
@@ -1503,15 +1503,15 @@ void CTRTextureBlend::fragment_dst_color_one_minus_dst_alpha ()
 		getSample_texture ( r0, g0, b0, IT + 0, tofix ( line.t[0][0].x,iw),tofix ( line.t[0][0].y,iw) );
 		color_to_fix1 ( a1, r1, g1, b1, dst[i] );
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
 		a1 = FIX_POINT_ONE - a1;
-		dst[i] = fix_to_color ( imulFix ( imulFix ( r1, r0 + a1 ), r2 ),
+		dst[i] = fix_to_sample( imulFix ( imulFix ( r1, r0 + a1 ), r2 ),
 								imulFix ( imulFix ( g1, g0 + a1 ), g2 ),
 								imulFix ( imulFix ( b1, b0 + a1 ), b2 )
 							);
 #else
-		dst[i] = fix_to_color ( imulFix ( r1, r0 + a1 ),
+		dst[i] = fix_to_sample( imulFix ( r1, r0 + a1 ),
 								imulFix ( g1, g0 + a1 ),
 								imulFix ( b1, b0 + a1 )
 							);
@@ -1552,15 +1552,15 @@ void CTRTextureBlend::fragment_dst_color_one_minus_dst_alpha ()
 		color_to_fix1 ( a1, r1, g1, b1, dst[i] );
 
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
 		a1 = FIX_POINT_ONE - a1;
-		dst[i] = fix_to_color ( imulFix ( imulFix ( r1, r0 + a1 ), r2 ),
+		dst[i] = fix_to_sample( imulFix ( imulFix ( r1, r0 + a1 ), r2 ),
 								imulFix ( imulFix ( g1, g0 + a1 ), g2 ),
 								imulFix ( imulFix ( b1, b0 + a1 ), b2 )
 							);
 #else
-		dst[i] = fix_to_color ( imulFix ( r1, r0 + a1 ),
+		dst[i] = fix_to_sample( imulFix ( r1, r0 + a1 ),
 								imulFix ( g1, g0 + a1 ),
 								imulFix ( b1, b0 + a1 )
 							);
@@ -1702,15 +1702,15 @@ void CTRTextureBlend::fragment_dst_color_zero ()
 		color_to_fix1 ( r1, g1, b1, dst[i] );
 
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix_to_color ( imulFix ( imulFix ( r0, r1 ), r2 ),
-								imulFix ( imulFix ( g0, g1 ), g2 ),
-								imulFix ( imulFix ( b0, b1 ), b2 ) );
+		dst[i] = fix_to_sample( imulFix (imulFix_simple( r0, r1 ), r2 ),
+								imulFix (imulFix_simple( g0, g1 ), g2 ),
+								imulFix (imulFix_simple( b0, b1 ), b2 ) );
 #else
-		dst[i] = fix_to_color ( imulFix ( r0, r1 ),
-								imulFix ( g0, g1 ),
-								imulFix ( b0, b1 )
+		dst[i] = fix_to_sample(imulFix_simple( r0, r1 ),
+			imulFix_simple( g0, g1 ),
+			imulFix_simple( b0, b1 )
 							);
 
 #endif
@@ -1749,16 +1749,16 @@ void CTRTextureBlend::fragment_dst_color_zero ()
 		color_to_fix1 ( r1, g1, b1, dst[i] );
 
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix_to_color ( imulFix ( imulFix ( r0, r1 ), r2 ),
-								imulFix ( imulFix ( g0, g1 ), g2 ),
-								imulFix ( imulFix ( b0, b1 ), b2 )
+		dst[i] = fix_to_sample( imulFix (imulFix_simple( r0, r1 ), r2 ),
+								imulFix (imulFix_simple( g0, g1 ), g2 ),
+								imulFix (imulFix_simple( b0, b1 ), b2 )
 							);
 #else
-		dst[i] = fix_to_color ( imulFix ( r0, r1 ),
-								imulFix ( g0, g1 ),
-								imulFix ( b0, b1 )
+		dst[i] = fix_to_sample(imulFix_simple( r0, r1 ),
+			imulFix_simple( g0, g1 ),
+			imulFix_simple( b0, b1 )
 							);
 
 #endif
@@ -1897,15 +1897,15 @@ void CTRTextureBlend::fragment_dst_color_one ()
 		getSample_texture ( r0, g0, b0, IT + 0, tofix ( line.t[0][0].x,iw),tofix ( line.t[0][0].y,iw) );
 		color_to_fix ( r1, g1, b1, dst[i] );
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex1 ( r0, r1 ) + r1 ),
+		dst[i] = fix_to_sample( clampfix_maxcolor ( imulFix_tex1 ( r0, r1 ) + r1 ),
 								clampfix_maxcolor ( imulFix_tex1 ( g0, g1 ) + g1 ),
 								clampfix_maxcolor ( imulFix_tex1 ( b0, b1 ) + b1 )
 							);
 
 #else
-		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex1 ( r0, r1 ) + r1 ),
+		dst[i] = fix_to_sample( clampfix_maxcolor ( imulFix_tex1 ( r0, r1 ) + r1 ),
 								clampfix_maxcolor ( imulFix_tex1 ( g0, g1 ) + g1 ),
 								clampfix_maxcolor ( imulFix_tex1 ( b0, b1 ) + b1 )
 							);
@@ -1946,15 +1946,15 @@ void CTRTextureBlend::fragment_dst_color_one ()
 		color_to_fix ( r1, g1, b1, dst[i] );
 
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex1 ( r0, r1 ) + r1 ),
+		dst[i] = fix_to_sample( clampfix_maxcolor ( imulFix_tex1 ( r0, r1 ) + r1 ),
 								clampfix_maxcolor ( imulFix_tex1 ( g0, g1 ) + g1 ),
 								clampfix_maxcolor ( imulFix_tex1 ( b0, b1 ) + b1 )
 							);
 
 #else
-		dst[i] = fix_to_color ( clampfix_maxcolor ( imulFix_tex1 ( r0, r1 ) + r1 ),
+		dst[i] = fix_to_sample( clampfix_maxcolor ( imulFix_tex1 ( r0, r1 ) + r1 ),
 								clampfix_maxcolor ( imulFix_tex1 ( g0, g1 ) + g1 ),
 								clampfix_maxcolor ( imulFix_tex1 ( b0, b1 ) + b1 )
 							);
@@ -2096,17 +2096,17 @@ void CTRTextureBlend::fragment_zero_one_minus_scr_color ()
 		getSample_texture ( r0, g0, b0, IT + 0, tofix ( line.t[0][0].x,iw),tofix ( line.t[0][0].y,iw) );
 		color_to_fix1 ( r1, g1, b1, dst[i] );
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix_to_color ( imulFix ( FIX_POINT_ONE - r0, r1 ),
-								imulFix ( FIX_POINT_ONE - g0, g1 ),
-								imulFix ( FIX_POINT_ONE - b0, b1 )
+		dst[i] = fix_to_sample(imulFix( FIX_POINT_ONE - r0, r1 ),
+			imulFix( FIX_POINT_ONE - g0, g1 ),
+			imulFix( FIX_POINT_ONE - b0, b1 )
 							);
 
 #else
-		dst[i] = fix_to_color ( imulFix ( FIX_POINT_ONE - r0, r1 ),
-								imulFix ( FIX_POINT_ONE - g0, g1 ),
-								imulFix ( FIX_POINT_ONE - b0, b1 )
+		dst[i] = fix_to_sample(imulFix( FIX_POINT_ONE - r0, r1 ),
+			imulFix( FIX_POINT_ONE - g0, g1 ),
+			imulFix( FIX_POINT_ONE - b0, b1 )
 							);
 
 #endif
@@ -2144,17 +2144,17 @@ void CTRTextureBlend::fragment_zero_one_minus_scr_color ()
 		getSample_texture ( r0, g0, b0, IT + 0, tofix ( line.t[0][0].x,iw),tofix ( line.t[0][0].y,iw) );
 		color_to_fix1 ( r1, g1, b1, dst[i] );
 #ifdef IPOL_C0
-		getSample_color ( r2, g2, b2, line.c[0][0],iw );
+		vec4_to_fix( r2, g2, b2, line.c[0][0],iw );
 
-		dst[i] = fix_to_color ( imulFix ( FIX_POINT_ONE - r0, r1 ),
-								imulFix ( FIX_POINT_ONE - g0, g1 ),
-								imulFix ( FIX_POINT_ONE - b0, b1 )
+		dst[i] = fix_to_sample(imulFix( FIX_POINT_ONE - r0, r1 ),
+			imulFix( FIX_POINT_ONE - g0, g1 ),
+			imulFix( FIX_POINT_ONE - b0, b1 )
 							);
 
 #else
-		dst[i] = fix_to_color ( imulFix ( FIX_POINT_ONE - r0, r1 ),
-								imulFix ( FIX_POINT_ONE - g0, g1 ),
-								imulFix ( FIX_POINT_ONE - b0, b1 )
+		dst[i] = fix_to_sample(imulFix( FIX_POINT_ONE - r0, r1 ),
+			imulFix( FIX_POINT_ONE - g0, g1 ),
+			imulFix( FIX_POINT_ONE - b0, b1 )
 							);
 
 #endif
