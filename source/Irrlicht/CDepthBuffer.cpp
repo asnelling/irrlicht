@@ -107,9 +107,15 @@ CStencilBuffer::~CStencilBuffer()
 
 
 //! clears the buffer
-void CStencilBuffer::clear(u32 value)
+void CStencilBuffer::clear(u8 value)
 {
-	memset32 ( Buffer, value, TotalSize );
+	u32 set = value;
+	if (Bit == 8)
+	{
+		set |= set << 8;
+		set |= set << 16;
+	}
+	memset32 ( Buffer, set, TotalSize );
 }
 
 

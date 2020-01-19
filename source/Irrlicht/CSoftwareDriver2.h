@@ -313,17 +313,17 @@ namespace video
 					const void* indices, u32 indexCount,
 					E_VERTEX_TYPE vType,scene::E_PRIMITIVE_TYPE pType,
 					E_INDEX_TYPE iType);
-		void VertexCache_get ( s4DVertex ** face );
+		void VertexCache_get (s4DVertexPair ** face );
 
 		void VertexCache_map_source_format();
 		void VertexCache_fill ( const u32 sourceIndex,const u32 destIndex );
-		s4DVertex* VertexCache_getVertex ( const u32 sourceIndex ) const;
+		s4DVertexPair* VertexCache_getVertex ( const u32 sourceIndex ) const;
 
 
 		// culling & clipping
 		size_t inline clipToHyperPlane (s4DVertexPair* burning_restrict dest, const s4DVertexPair* burning_restrict source, const size_t inCount, const sVec4 &plane );
 		size_t inline clipToFrustumTest ( const s4DVertex * v  ) const;
-		size_t clipToFrustum (const size_t clipmask_for_face, const size_t vIn );
+		size_t clipToFrustum( const size_t vIn /*, const size_t clipmask_for_face*/ );
 
 		// holds transformed, clipped vertices for a triangle. triangle expands on clipping
 		// Buffer is in in pairs of 4DVertex (0 ... ndc, 1 .. dc and projected)

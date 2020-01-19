@@ -60,7 +60,7 @@ namespace video
 		NORMALIZE_NORMALS	= 0x20,
 		TEXTURE_TRANSFORM	= 0x40,
 		LIGHT_LOCAL_VIEWER	= 0x80,
-		LIGHT0_IS_NORMAL	= 0x100		//sVec4 Light Vector is used as normal or specular
+		LIGHT0_IS_NORMAL_MAP	= 0x100		//sVec4 Light Vector is used as normal or specular
 	};
 
 	struct SBurningShaderEyeSpace

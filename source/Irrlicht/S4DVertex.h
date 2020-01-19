@@ -462,6 +462,12 @@ struct s4DVertex
 	void interpolate(const s4DVertex& burning_restrict b, const s4DVertex& burning_restrict a, const ipoltype t)
 	{
 		Pos.interpolate ( a.Pos, b.Pos, t );
+#if 0
+		Tex[0].interpolate(a.Tex[0], b.Tex[0], t);
+		Tex[1].interpolate(a.Tex[1], b.Tex[1], t);
+		Color[0].interpolate(a.Color[0], b.Color[0], t);
+		LightTangent[0].interpolate(a.LightTangent[0], b.LightTangent[0], t);
+#endif
 
 		size_t i;
 		size_t size;
@@ -489,6 +495,7 @@ struct s4DVertex
 			LightTangent[i].interpolate ( a.LightTangent[i], b.LightTangent[i], t );
 		}
 #endif
+
 	}
 };
 
@@ -639,7 +646,7 @@ struct SVertexCache
 	u32 indicesPitch;
 
 	// primitives consist of x vertices
-	u32 primitiveHasVertex;
+	size_t primitiveHasVertex;
 
 	e4DVertexType vType;		//E_VERTEX_TYPE
 	scene::E_PRIMITIVE_TYPE pType;		//scene::E_PRIMITIVE_TYPE

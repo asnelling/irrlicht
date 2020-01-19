@@ -52,7 +52,7 @@ namespace video
 		virtual ~IStencilBuffer() {};
 
 		//! clears the stencil buffer
-		virtual void clear(u32 value) = 0;
+		virtual void clear(u8 value) = 0;
 
 		//! sets the new size of the zbuffer
 		virtual void setSize(const core::dimension2d<u32>& size) = 0;
