@@ -135,14 +135,13 @@ void CTRTextureGouraudAlphaNoZ::OnSetMaterial(const SBurningShaderMaterial& mate
 	AlphaRef = tofix(material.org.MaterialTypeParam, FIXPOINT_COLOR_MAX);
 #endif
 
+	//check triangle on w = 1.f instead..
 #ifdef	SOFTWARE_DRIVER_2_BILINEAR
 	if ( material.org.TextureLayer[0].BilinearFilter )
 		fragmentShader = &CTRTextureGouraudAlphaNoZ::fragment_linear;
 	else
 #endif
 		fragmentShader = &CTRTextureGouraudAlphaNoZ::fragment_point_noz;
-
-
 
 }
 

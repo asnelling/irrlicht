@@ -1017,6 +1017,12 @@
     <ClInclude Include="..\..\include\IGUIToolbar.h" />
     <ClInclude Include="..\..\include\IGUITreeView.h" />
     <ClInclude Include="..\..\include\IGUIWindow.h" />
+    <ClInclude Include="burning_shader_compile_fragment_c.h" />
+    <ClInclude Include="burning_shader_compile_fragment_end.h" />
+    <ClInclude Include="burning_shader_compile_start.h" />
+    <ClInclude Include="burning_shader_compile_fragment_start.h" />
+    <ClInclude Include="burning_shader_compile_triangle.h" />
+    <ClInclude Include="burning_shader_compile_verify.h" />
     <ClInclude Include="CB3DMeshWriter.h" />
     <ClInclude Include="CBlit.h" />
     <ClInclude Include="CD3D9RenderTarget.h" />
@@ -1272,6 +1278,7 @@
     <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="burning_shader_color.cpp" />
     <ClCompile Include="CB3DMeshWriter.cpp" />
     <ClCompile Include="CD3D9RenderTarget.cpp" />
     <ClCompile Include="CDefaultSceneNodeAnimatorFactory.cpp" />

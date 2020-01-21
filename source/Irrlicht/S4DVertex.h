@@ -539,7 +539,7 @@ struct SAligned4DVertex
 };
 
 //#define memcpy_s4DVertexPair(dst,src) memcpy(dst,src,sizeof_s4DVertex * 2)
-static inline void memcpy_s4DVertexPair(void* burning_restrict dst, const void* burning_restrict src)
+static REALINLINE void memcpy_s4DVertexPair(void* burning_restrict dst, const void* burning_restrict src)
 {
 	//test alignment -> if already in aligned data
 #if 0
@@ -616,7 +616,7 @@ struct SCacheInfo
 	u32 hit;
 };
 
-//must at least hold all possible vertices of primitive.
+//must at least hold all possible (clipped) vertices of primitive.
 #define VERTEXCACHE_ELEMENT	16			
 #define VERTEXCACHE_MISS 0xFFFFFFFF
 struct SVertexCache

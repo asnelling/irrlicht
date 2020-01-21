@@ -86,7 +86,15 @@ namespace video
 				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType) _IRR_OVERRIDE_;
 
 		//! draws an 2d image
-		virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture) _IRR_OVERRIDE_;
+		//virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture) _IRR_OVERRIDE_;
+
+		/* NullDriver calls
+		draw2DImage(texture, destPos,
+			core::rect<s32>(core::position2d<s32>(0, 0), core::dimension2di(texture->getOriginalSize())),
+			0,
+			SColor(255, 255, 255, 255),
+			useAlphaChannelOfTexture
+		*/
 
 		//! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 		virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
@@ -103,10 +111,13 @@ namespace video
 			const core::vector3df& end, SColor color_start) _IRR_OVERRIDE_;
 
 		//! draw an 2d rectangle
-#if 0
-		virtual void draw2DRectangle(SColor color, const core::rect<s32>& pos,
-			const core::rect<s32>* clip = 0) _IRR_OVERRIDE_;
-#endif
+		//virtual void draw2DRectangle(SColor color, const core::rect<s32>& pos,
+		//	const core::rect<s32>* clip = 0) _IRR_OVERRIDE_;
+
+		/* NullDriver calls
+		draw2DRectangle(pos, color, color, color, color, clip);
+		*/
+
 		//!Draws an 2d rectangle with a gradient.
 		virtual void draw2DRectangle(const core::rect<s32>& pos,
 			SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,

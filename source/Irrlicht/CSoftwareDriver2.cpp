@@ -323,8 +323,8 @@ CBurningVideoDriver::CBurningVideoDriver(const irr::SIrrlichtCreationParameters&
 	//BurningShader[ETR_FLAT_WIRE] = createTRFlatWire2(DepthBuffer);
 	BurningShader[ETR_GOURAUD] = createTriangleRendererGouraud2(this);
 	BurningShader[ETR_GOURAUD_NOZ] = createTriangleRendererGouraudNoZ2(this);
-	BurningShader[ETR_GOURAUD_ALPHA] = createTriangleRendererGouraudAlpha2(this );
-	BurningShader[ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT] = createTRGouraudAlphaNoZ2(this ); // 2D
+	//BurningShader[ETR_GOURAUD_ALPHA] = createTriangleRendererGouraudAlpha2(this );
+	BurningShader[ETR_GOURAUD_ALPHA_NOZ] = createTRGouraudAlphaNoZ2(this ); // 2D
 	//BurningShader[ETR_GOURAUD_WIRE] = createTriangleRendererGouraudWire2(DepthBuffer);
 	//BurningShader[ETR_TEXTURE_FLAT] = createTriangleRendererTextureFlat2(DepthBuffer);
 	//BurningShader[ETR_TEXTURE_FLAT_WIRE] = createTriangleRendererTextureFlatWire2(DepthBuffer);
@@ -1532,15 +1532,15 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 #endif
 
 	// Texture Transform
-	// Irrlicht TCoords and TCoords2 must be contiguous memory. baseTCoord has no 4 byte aligned start address!
-	const f32* baseTCoord = &base->TCoords.X;
 
-#if !defined ( SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM )
-	memcpy(dest->Tex, baseTCoord, vSize[VertexCache.vType].TexCooSize *(2*sizeof(f32)));
-#else
+#if defined ( SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM )
 
 	if ( 0 == (EyeSpace.Eye_Flags & TEXTURE_TRANSFORM) )
+#endif // SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM
 	{
+		// Irrlicht TCoords and TCoords2 must be contiguous memory. baseTCoord has no 4 byte aligned start address!
+		const f32* baseTCoord = &base->TCoords.X;
+
 		switch (VertexCache.vSize[VertexCache.vType].TexCooSize)
 		{
 
@@ -1559,8 +1559,6 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			dest->Tex[1].y = 0.f;
 			break;
 		case 2:
-		case 3:
-		case 4:
 			dest->Tex[0].x = baseTCoord[0];
 			dest->Tex[0].y = baseTCoord[1];
 			dest->Tex[1].x = baseTCoord[2];
@@ -1581,6 +1579,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			break;
 		}
 	}
+#if defined ( SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM )
 	else
 	{
 	/*
@@ -1628,8 +1627,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 				dest[0].Tex[t].y = -r.y * m + 0.5f;
 */
 			}
-			else
-			if (flag[ETS_TEXTURE_0+t] & ETF_TEXGEN_CAMERA_REFLECTION )
+			else if (flag[ETS_TEXTURE_0+t] & ETF_TEXGEN_CAMERA_REFLECTION )
 			{
 				u.x = EyeSpace.vertex.x;
 				u.y = EyeSpace.vertex.y;
@@ -1655,6 +1653,9 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 			else if (VertexCache.vSize[VertexCache.vType].TexCooSize > t)
 			{
 				const f32* M = matrix[ETS_TEXTURE_0 + t].pointer();
+
+				// Irrlicht TCoords and TCoords2 must be contiguous memory. baseTCoord has no 4 byte aligned start address!
+				const f32* baseTCoord = &base->TCoords.X;
 
 				sVec4 srcT;
 				srcT.x = baseTCoord[(t * 2) + 0];
@@ -2205,7 +2206,7 @@ void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vert
 			{
 				//only guessing: take more detail (lower mipmap) in light+bump textures
 				//assume transparent add is ~50% transparent -> more detail
-				f32 lod_bias = 0.33f; // Material.org.MaterialType == EMT_TRANSPARENT_ADD_COLOR ? 0.33f : 0.5f;
+				f32 lod_bias = Material.org.MaterialType == EMT_TRANSPARENT_ADD_COLOR ? 0.1f : 0.33f;
 				s32 lodFactor = lodFactor_inside(face, m, dc_area, lod_bias);
 				
 
@@ -2448,13 +2449,13 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	if (BURNING_MATERIAL_MAX_TEXTURES < 1) texture0 = 0;
 	if (BURNING_MATERIAL_MAX_TEXTURES < 2) texture1 = 0;
 
+	EyeSpace.Eye_Flags &= ~(TEXTURE_TRANSFORM | LIGHT0_IS_NORMAL_MAP);
+
 	//todo: seperate depth test from depth write
 	Material.depth_write = getWriteZBuffer(in);
 	Material.depth_test = in.ZBuffer != ECFN_DISABLED && Material.depth_write;
 
 	EBurningFFShader shader = Material.depth_test ? ETR_TEXTURE_GOURAUD : ETR_TEXTURE_GOURAUD_NOZ;
-
-	EyeSpace.Eye_Flags &= ~(TEXTURE_TRANSFORM| LIGHT0_IS_NORMAL_MAP);
 
 	switch (Material.Fallback_MaterialType) //(Material.org.MaterialType)
 	{
@@ -2472,6 +2473,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 		}
 		else
 		{
+			//fall back to EMT_TRANSPARENT_VERTEX_ALPHA
 			shader = ETR_TEXTURE_GOURAUD_VERTEX_ALPHA;
 		}
 		break;
@@ -2557,7 +2559,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	{
 		shader = Material.depth_test ? ETR_GOURAUD :
 			shader == ETR_TEXTURE_GOURAUD_VERTEX_ALPHA ?
-			ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT: // 2D Gradient
+			ETR_GOURAUD_ALPHA_NOZ: // 2D Gradient
 			ETR_GOURAUD_NOZ;
 	}
 
@@ -2824,6 +2826,7 @@ CImage* getImage(const video::ITexture* texture)
 static const u32 quad_triangle_indexList[6] = { 0,1,2,0,2,3 };
 
 
+#if 0
 //! draws an 2d image
 // is copy of void CNullDriver::draw2DImage
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture)
@@ -2838,6 +2841,7 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 		useAlphaChannelOfTexture
 	);
 }
+#endif
 
 #if defined(SOFTWARE_DRIVER_2_2D_OLD)
 //! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
@@ -2974,18 +2978,21 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 
 size_t compare_2d_material(const SMaterial& a, const SMaterial& b)
 {
+#ifdef _DEBUG
+	int test = a != b;
+#endif
+
 	size_t flag = 0;
 	flag |= a.MaterialType == b.MaterialType ? 0 : 1;
+	flag |= a.ZBuffer == b.ZBuffer ? 0 : 16;
 	flag |= a.TextureLayer[0].Texture == b.TextureLayer[0].Texture ? 0 : 2;
 	flag |= a.MaterialTypeParam == b.MaterialTypeParam ? 0 : 4;
 	if (flag) return flag;
 
 	flag |= a.TextureLayer[1].Texture == b.TextureLayer[1].Texture ? 0 : 8;
-	flag |= a.ZBuffer == b.ZBuffer ? 0 : 16;
 	flag |= a.ZWriteEnable == b.ZWriteEnable ? 0 : 32;
 
 #ifdef _DEBUG
-	int test = a != b;
 	if (test && !flag)
 	{
 		int g = 1;
@@ -3214,6 +3221,44 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 
 }
 
+
+//!Draws an 2d rectangle with a gradient.
+void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
+	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
+	const core::rect<s32>* clip)
+{
+	core::rect<s32> pos = position;
+
+	if (clip)
+		pos.clipAgainst(*clip);
+
+	if (!pos.isValid())
+		return;
+
+	Quad2DVertices[0].Color = colorLeftUp;
+	Quad2DVertices[1].Color = colorRightUp;
+	Quad2DVertices[2].Color = colorRightDown;
+	Quad2DVertices[3].Color = colorLeftDown;
+
+	Quad2DVertices[0].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.UpperLeftCorner.Y, 0.0f);
+	Quad2DVertices[1].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.UpperLeftCorner.Y, 0.0f);
+	Quad2DVertices[2].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.LowerRightCorner.Y, 0.0f);
+	Quad2DVertices[3].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.LowerRightCorner.Y, 0.0f);
+
+
+	video::SColor alphaTest;
+	alphaTest.color = colorLeftUp.color & colorRightUp.color & colorRightDown.color & colorLeftDown.color;
+	setRenderStates2DMode(alphaTest.getAlpha() < 255, 0, 0);
+
+	drawVertexPrimitiveList(Quad2DVertices, 4,
+		quad_triangle_indexList, 2,
+		EVT_STANDARD, scene::EPT_TRIANGLES, EIT_32BIT);
+
+	setRenderStates3DMode();
+
+}
+
+
 #endif // SOFTWARE_DRIVER_2_2D_AS_3D
 
 
@@ -3244,45 +3289,6 @@ void CBurningVideoDriver::draw2DRectangle(SColor color, const core::rect<s32>& p
 
 #endif
 
-#if defined(SOFTWARE_DRIVER_2_2D_AS_3D)
-
-//!Draws an 2d rectangle with a gradient.
-void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
-	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
-	const core::rect<s32>* clip)
-{
-	core::rect<s32> pos = position;
-
-	if (clip)
-		pos.clipAgainst(*clip);
-
-	if (!pos.isValid())
-		return;
-
-	Quad2DVertices[0].Color = colorLeftUp;
-	Quad2DVertices[1].Color = colorRightUp;
-	Quad2DVertices[2].Color = colorRightDown;
-	Quad2DVertices[3].Color = colorLeftDown;
-
-	Quad2DVertices[0].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.UpperLeftCorner.Y, 0.0f);
-	Quad2DVertices[1].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.UpperLeftCorner.Y, 0.0f);
-	Quad2DVertices[2].Pos = core::vector3df((f32)pos.LowerRightCorner.X, (f32)pos.LowerRightCorner.Y, 0.0f);
-	Quad2DVertices[3].Pos = core::vector3df((f32)pos.UpperLeftCorner.X, (f32)pos.LowerRightCorner.Y, 0.0f);
-
-
-	video::SColor alphaTest;
-	alphaTest.color = colorLeftUp.color & colorRightUp.color & colorRightDown.color & colorLeftDown.color;
-	setRenderStates2DMode(alphaTest.getAlpha()<255, 0, 0);
-
-	drawVertexPrimitiveList(Quad2DVertices, 4,
-		quad_triangle_indexList, 2,
-		EVT_STANDARD, scene::EPT_TRIANGLES, EIT_32BIT);
-
-	setRenderStates3DMode();
-
-}
-
-#endif // SOFTWARE_DRIVER_2_2D_AS_3D
 
 #if defined(SOFTWARE_DRIVER_2_2D_NEW)
 
