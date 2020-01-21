@@ -325,6 +325,7 @@ void CTRTextureBlend::fragment_dst_color_src_alpha ()
 
 	switch (depth_func)
 	{
+	default:
 	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
@@ -513,6 +514,7 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 
 	switch (depth_func)
 	{
+	default:
 	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
@@ -602,6 +604,7 @@ void CTRTextureBlend::fragment_src_color_src_alpha ()
 		line.c[0][0] += slopeC[0];
 #endif
 	}break;
+	
 	} // zcompare
 
 }
@@ -704,6 +707,7 @@ void CTRTextureBlend::fragment_one_one_minus_src_alpha()
 
 	switch (depth_func)
 	{
+	default:
 	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
@@ -801,6 +805,7 @@ void CTRTextureBlend::fragment_one_one_minus_src_alpha()
 		line.c[0][0] += slopeC[0];
 #endif
 	}break;
+
 	} // zcompare
 
 }
@@ -903,6 +908,7 @@ void CTRTextureBlend::fragment_one_minus_dst_alpha_one ()
 
 	switch (depth_func)
 	{
+	default:
 	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
@@ -999,6 +1005,7 @@ void CTRTextureBlend::fragment_one_minus_dst_alpha_one ()
 		line.c[0][0] += slopeC[0];
 #endif
 	}break;
+
 	} // zcompare
 
 }
@@ -1101,6 +1108,7 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 
 	switch (depth_func)
 	{
+	default:
 	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
@@ -1227,6 +1235,7 @@ void CTRTextureBlend::fragment_src_alpha_one ()
 		line.c[0][0] += slopeC[0];
 #endif
 	}break;
+
 	} // zcompare
 
 }
@@ -1483,6 +1492,7 @@ void CTRTextureBlend::fragment_dst_color_one_minus_dst_alpha ()
 
 	switch (depth_func)
 	{
+	default:
 	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
@@ -1681,6 +1691,7 @@ void CTRTextureBlend::fragment_dst_color_zero ()
 
 	switch (depth_func)
 	{
+	default:
 	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
@@ -1877,6 +1888,7 @@ void CTRTextureBlend::fragment_dst_color_one ()
 
 	switch (depth_func)
 	{
+	default:
 	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{
@@ -2076,6 +2088,7 @@ void CTRTextureBlend::fragment_zero_one_minus_scr_color ()
 
 	switch (depth_func)
 	{
+	default:
 	case ECFN_LESSEQUAL:
 	for ( i = 0; i <= dx; ++i )
 	{

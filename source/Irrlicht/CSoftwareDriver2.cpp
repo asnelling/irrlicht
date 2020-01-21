@@ -1478,7 +1478,7 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 		//	dest->Pos.z = dest->Pos.w*0.99f;
 
 		//glPolygonOffset // self shadow wanted or not?
-		dest->Pos.w *= 1.0001f;
+		dest->Pos.w *= 1.005f;
 
 		//flag |= v->Pos.z <= v->Pos.w ? VERTEX4D_CLIP_NEAR : 0;
 		//flag |= -v->Pos.z <= v->Pos.w ? VERTEX4D_CLIP_FAR : 0;
