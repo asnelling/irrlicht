@@ -118,8 +118,6 @@ private:
 	void fragment_src_alpha_one_minus_src_alpha();
 
 	tFragmentShader fragmentShader;
-	sScanConvertData scan;
-	sScanLineData line;
 
 	E_COMPARISON_FUNC depth_func;
 };

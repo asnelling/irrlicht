@@ -1,4 +1,4 @@
-// compile flag for this file
+// undef compile flag for this file
 #undef USE_ZBUFFER
 #undef IPOL_Z
 #undef CMP_Z
@@ -12,6 +12,7 @@
 #undef INVERSE_W
 
 #undef IPOL_C0
+#undef IPOL_A0
 #undef IPOL_T0
 #undef IPOL_T1
 #undef IPOL_T2

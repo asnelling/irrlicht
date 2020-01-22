@@ -1361,7 +1361,10 @@
     <ClInclude Include="burning_shader_compile_fragment_start.h">
       <Filter>Irrlicht\video\Burning Video</Filter>
     </ClInclude>
-    <ClInclude Include="burning_shader_compile_fragment_c.h">
+    <ClInclude Include="burning_shader_color_fraq.h">
+      <Filter>Irrlicht\video\Burning Video</Filter>
+    </ClInclude>
+    <ClInclude Include="burning_shader_compile_fragment_default.h">
       <Filter>Irrlicht\video\Burning Video</Filter>
     </ClInclude>
   </ItemGroup>

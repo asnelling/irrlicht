@@ -88,8 +88,6 @@ public:
 private:
 	void scanline_bilinear2 ();
 
-	sScanLineData line;
-
 };
 
 //! constructor
@@ -247,8 +245,6 @@ REALINLINE void CTRTextureLightMap2_M2::scanline_bilinear2 ()
 
 void CTRTextureLightMap2_M2::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
-	sScanConvertData scan;
-
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);
 	if ( F32_A_GREATER_B ( b->Pos.y , c->Pos.y ) ) swapVertexPointer(&b, &c);

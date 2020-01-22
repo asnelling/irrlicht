@@ -89,8 +89,6 @@ public:
 
 private:
 	void scanline_bilinear ();
-	sScanLineData line;
-
 };
 
 //! constructor
@@ -278,8 +276,6 @@ void CTRTextureGouraudAdd2::scanline_bilinear ()
 
 void CTRTextureGouraudAdd2::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 {
-	sScanConvertData scan;
-
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);
 	if ( F32_A_GREATER_B ( b->Pos.y , c->Pos.y ) ) swapVertexPointer(&b, &c);

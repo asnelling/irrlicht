@@ -1465,14 +1465,20 @@ void CBurningVideoDriver::VertexCache_fill(const u32 sourceIndex, const u32 dest
 	// destination Vertex
 	dest = VertexCache.mem.data + s4DVertex_ofs(destIndex);
 
+	//Irrlicht S3DVertex,S3DVertex2TCoords,S3DVertexTangents
+	const S3DVertex* base = ((S3DVertex*)source);
+
 	// transform Model * World * Camera * Projection * NDCSpace matrix
 	const core::matrix4* matrix = Transformation[TransformationStack];
-	const S3DVertex *base = ((S3DVertex*) source );
-	matrix[ETS_PROJ_MODEL_VIEW].transformVect ( &dest->Pos.x, base->Pos );
+	matrix[ETS_PROJ_MODEL_VIEW].transformVect(&dest->Pos.x, base->Pos);
 
-	//mhm ;-) maybe no goto
+	//mhm ... maybe no goto
 	if (VertexCache.vType == E4VT_SHADOW)
 	{
+		//core::vector3df i = base->Pos;
+		//i.Z -= 0.5f;
+		//matrix[ETS_PROJ_MODEL_VIEW].transformVect(&dest->Pos.x, i);
+
 		//GL_DEPTH_CLAMP,EVDF_DEPTH_CLAMP
 		//if ( dest->Pos.z < dest->Pos.w)
 		//	dest->Pos.z = dest->Pos.w*0.99f;

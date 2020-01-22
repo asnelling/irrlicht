@@ -223,6 +223,8 @@ REALINLINE void burning_setbit32(unsigned int &state, int condition, const unsig
 	state ^= ((-condition >> 31) ^ state) & mask;
 }
 
+#define burning_stringify(s) #s
+#define burning_create(s) create ## _s
 
 #if defined(PATCH_SUPERTUX_8_0_1)
 #define getData lock

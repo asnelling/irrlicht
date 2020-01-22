@@ -97,9 +97,6 @@ public:
 private:
 	void fragmentShader();
 
-	sScanConvertData scan;
-	sScanLineData line;
-
 };
 
 //! constructor

@@ -310,6 +310,9 @@ namespace video
 		eStencilOp stencilOp[4];
 		tFixPoint AlphaRef;
 
+		sScanConvertData scan;
+		sScanLineData line;
+
 	};
 
 

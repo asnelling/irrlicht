@@ -108,8 +108,6 @@ private:
 
 	tFragmentShader fragmentShader;
 
-	sScanConvertData scan;
-	sScanLineData line;
 
 };
 

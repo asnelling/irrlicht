@@ -97,7 +97,6 @@ private:
 #endif
 
 	void scanline_bilinear ();
-	sScanLineData line;
 
 };
 
@@ -385,8 +384,6 @@ void CTRTextureLightMap2_M4::drawTriangle(const s4DVertex* burning_restrict a, c
 
 void CTRTextureLightMap2_M4::drawTriangle_Min ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
 {
-	sScanConvertData scan;
-
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);
 	if ( F32_A_GREATER_B ( b->Pos.y , c->Pos.y ) ) swapVertexPointer(&b, &c);
@@ -758,7 +755,6 @@ void CTRTextureLightMap2_M4::drawTriangle(const s4DVertex* burning_restrict a, c
 #endif
 
 {
-	sScanConvertData scan;
 
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);

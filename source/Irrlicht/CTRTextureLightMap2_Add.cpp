@@ -88,9 +88,6 @@ public:
 private:
 	void scanline_bilinear ();
 
-	sScanConvertData scan;
-	sScanLineData line;
-
 };
 
 //! constructor

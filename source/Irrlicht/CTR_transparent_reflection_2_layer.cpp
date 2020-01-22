@@ -89,8 +89,6 @@ private:
 	void fragmentShader();
 
 	E_MATERIAL_TYPE MaterialType;
-	sScanConvertData scan;
-	sScanLineData line;
 
 };
 
