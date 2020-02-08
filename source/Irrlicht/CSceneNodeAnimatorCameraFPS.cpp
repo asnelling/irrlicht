@@ -166,7 +166,7 @@ void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 			{
 				char buf[256];
 				sprintf(buf, "mouse: %d,%d", systemCursorPos.X, systemCursorPos.Y);
-				os::Printer::print(buf);
+				os::Printer::log(buf);
 				last = systemCursorPos;
 			}
 
