@@ -327,8 +327,8 @@ void CDemo::switchToNextScene()
 			keyMap.push_back( SKeyMap(EKA_ROTATE_LEFT, KEY_KEY_Q) );
 			keyMap.push_back( SKeyMap(EKA_ROTATE_RIGHT, KEY_KEY_E) );
 
-			keyMap.push_back(SKeyMap(EKA_ROTATE_UP, KEY_KEY_Y));
-			keyMap.push_back(SKeyMap(EKA_ROTATE_DOWN, KEY_KEY_X));
+			keyMap.push_back(SKeyMap(EKA_ROTATE_UP, KEY_PRIOR));
+			keyMap.push_back(SKeyMap(EKA_ROTATE_DOWN, KEY_NEXT));
 
 			camera = sm->addCameraSceneNodeFPS(0, 100.0f, .4f, -1, keyMap.pointer(), keyMap.size(), false, 300.f);
 			camera->setPosition(core::vector3df(108,140,-140));

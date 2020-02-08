@@ -16,6 +16,10 @@ namespace irr
 namespace scene
 {
 
+//!define NO_IRRLICHT_MOUSE_CAPTURE if you don't want to manipulate the system mouse
+#define NO_IRRLICHT_MOUSE_CAPTURE
+
+
 //! constructor
 CSceneNodeAnimatorCameraFPS::CSceneNodeAnimatorCameraFPS(gui::ICursorControl* cursorControl,
 		f32 rotateSpeed, f32 moveSpeed, f32 jumpSpeed,
@@ -31,6 +35,7 @@ CSceneNodeAnimatorCameraFPS::CSceneNodeAnimatorCameraFPS(gui::ICursorControl* cu
 	#endif
 
 	CaptureMouse = true;
+	MouseOutside = false;
 	#if defined(NO_IRRLICHT_MOUSE_CAPTURE)
 		CaptureMouse = false;
 	#endif
@@ -53,11 +58,11 @@ CSceneNodeAnimatorCameraFPS::CSceneNodeAnimatorCameraFPS(gui::ICursorControl* cu
 		if (!CaptureMouse)
 		{
 			//use a default keyboard rotation/look
-			KeyMap.push_back(SKeyMap(EKA_ROTATE_LEFT, KEY_NUMPAD4));
-			KeyMap.push_back(SKeyMap(EKA_ROTATE_RIGHT, KEY_NUMPAD6));
+			KeyMap.push_back(SKeyMap(EKA_ROTATE_LEFT, KEY_COMMA));
+			KeyMap.push_back(SKeyMap(EKA_ROTATE_RIGHT, KEY_PERIOD));
 
-			KeyMap.push_back(SKeyMap(EKA_ROTATE_UP, KEY_NUMPAD8));
-			KeyMap.push_back(SKeyMap(EKA_ROTATE_DOWN, KEY_NUMPAD2));
+			KeyMap.push_back(SKeyMap(EKA_ROTATE_UP, KEY_PRIOR));
+			KeyMap.push_back(SKeyMap(EKA_ROTATE_DOWN, KEY_NEXT));
 		}
 	}
 	else
@@ -143,14 +148,12 @@ void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 	if(smgr && smgr->getActiveCamera() != camera)
 		return;
 
-	if ( CursorControl )
-		CursorPos = CursorControl->getRelativePosition();
-
 	// get time
 	f32 timeDiff = (f32) ( timeMs - LastAnimationTime );
 	LastAnimationTime = timeMs;
 
 	bool allowRotateMouse = true;
+	bool updateCursor = true;
 	if (!CaptureMouse)
 	{
 		//slow system limit
@@ -159,16 +162,8 @@ void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 		//disable rotating outside window
 		if (CursorControl && smgr)
 		{
-			core::position2di systemCursorPos = CursorControl->getPosition(false);
-			static core::position2di last(-1, -1);
-
-			if (systemCursorPos != last)
-			{
-				char buf[256];
-				sprintf(buf, "mouse: %d,%d", systemCursorPos.X, systemCursorPos.Y);
-				os::Printer::log(buf);
-				last = systemCursorPos;
-			}
+			core::position2di systemCursorPos = CursorControl->getPosition(updateCursor);
+			updateCursor = false;
 
 			video::IVideoDriver* driver = smgr->getVideoDriver();
 			if (driver)
@@ -177,10 +172,25 @@ void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 				if (!screenRect.isPointInside(systemCursorPos))
 				{
 					allowRotateMouse = false;
+					firstInput = true;
+					MouseOutside = true;
+				}
+				else
+				{
+					if (MouseOutside)
+					{
+						CursorPos = CenterCursor = CursorControl->getRelativePosition(false);
+						MouseOutside = false;
+					}
 				}
 			}
 		}
 
+	}
+
+	if (CursorControl && allowRotateMouse)
+	{
+		CursorPos = CursorControl->getRelativePosition(updateCursor);
 	}
 
 	// Update rotation

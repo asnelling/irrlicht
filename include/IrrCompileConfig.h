@@ -858,9 +858,5 @@ precision will be lower but speed higher. currently X86 only
 	#endif
 #endif
 
-//!define NO_IRRLICHT_MOUSE_CAPTURE if you don't want to manipulate the system mouse
-#define NO_IRRLICHT_MOUSE_CAPTURE
-
-
 #endif // __IRR_COMPILE_CONFIG_H_INCLUDED__
 
