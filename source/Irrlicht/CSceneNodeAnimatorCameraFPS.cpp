@@ -160,6 +160,15 @@ void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 		if (CursorControl && smgr)
 		{
 			core::position2di systemCursorPos = CursorControl->getPosition(false);
+			static core::position2di last(-1, -1);
+
+			if (systemCursorPos != last)
+			{
+				char buf[256];
+				sprintf(buf, "mouse: %d,%d", systemCursorPos.X, systemCursorPos.Y);
+				os::Printer::print(buf);
+				last = systemCursorPos;
+			}
 
 			video::IVideoDriver* driver = smgr->getVideoDriver();
 			if (driver)
