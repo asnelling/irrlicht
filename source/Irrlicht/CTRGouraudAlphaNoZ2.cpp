@@ -235,7 +235,7 @@ void CTRGouraudAlphaNoZ2::scanline_bilinear ()
 
 			dst[i] = fix_to_sample( r2, g2, b2 );
 #else
-			dst[i] = COLOR_BRIGHT_WHITE;
+			dst[i] = PrimitiveColor;
 #endif
 
 

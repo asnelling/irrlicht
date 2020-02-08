@@ -305,7 +305,7 @@ namespace video
 
 		size_t TransformationStack; // 0 .. 3D , 1 .. 2D
 
-		void setRenderStates2DMode(bool vertexAlpha,video::ITexture* texture,bool useAlphaChannelOfTexture);
+		void setRenderStates2DMode(const video::SColor& color,video::ITexture* texture,bool useAlphaChannelOfTexture);
 		void setRenderStates3DMode();
 		void restoreRenderStates3DMode();
 
@@ -332,9 +332,11 @@ namespace video
 
 
 		// culling & clipping
-		size_t inline clipToHyperPlane (s4DVertexPair* burning_restrict dest, const s4DVertexPair* burning_restrict source, const size_t inCount, const sVec4 &plane );
-		size_t inline clipToFrustumTest ( const s4DVertex * v  ) const;
+		//size_t inline clipToHyperPlane (s4DVertexPair* burning_restrict dest, const s4DVertexPair* burning_restrict source, const size_t inCount, const sVec4 &plane );
+		//size_t inline clipToFrustumTest ( const s4DVertex * v  ) const;
+		public:
 		size_t clipToFrustum( const size_t vIn /*, const size_t clipmask_for_face*/ );
+		protected:
 
 		// holds transformed, clipped vertices for a triangle. triangle expands on clipping
 		// Buffer is in in pairs of 4DVertex (0 ... ndc, 1 .. dc and projected)

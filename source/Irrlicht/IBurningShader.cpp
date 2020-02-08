@@ -54,6 +54,8 @@ IBurningShader::IBurningShader(CBurningVideoDriver* driver)
 	stencilOp[1] = StencilOp_KEEP;
 	stencilOp[2] = StencilOp_KEEP;
 	AlphaRef = 0;
+	RenderPass_ShaderIsTransparent = 0;
+	PrimitiveColor = COLOR_BRIGHT_WHITE;
 }
 
 //! Constructor
@@ -230,7 +232,7 @@ bool IBurningShader::OnRender(IMaterialRendererServices* service, E_VERTEX_TYPE 
 //! Returns if the material is transparent.
 bool IBurningShader::isTransparent() const
 {
-	return false;
+	return RenderPass_ShaderIsTransparent != 0;
 }
 
 //! Access the callback provided by the users when creating shader materials

@@ -325,8 +325,10 @@ void CDemo::switchToNextScene()
 			keyMap.push_back( SKeyMap(EKA_JUMP_UP, KEY_KEY_J) );
 
 			keyMap.push_back( SKeyMap(EKA_ROTATE_LEFT, KEY_KEY_Q) );
-
 			keyMap.push_back( SKeyMap(EKA_ROTATE_RIGHT, KEY_KEY_E) );
+
+			keyMap.push_back(SKeyMap(EKA_ROTATE_UP, KEY_KEY_Y));
+			keyMap.push_back(SKeyMap(EKA_ROTATE_DOWN, KEY_KEY_X));
 
 			camera = sm->addCameraSceneNodeFPS(0, 100.0f, .4f, -1, keyMap.pointer(), keyMap.size(), false, 300.f);
 			camera->setPosition(core::vector3df(108,140,-140));
@@ -428,9 +430,10 @@ void CDemo::loadSceneData()
 			model1->setPosition(core::vector3df(100,40,-80));
 			model1->setScale(core::vector3df(2,2,2));
 			model1->setMD2Animation(scene::EMAT_STAND);
-			model1->setMaterialFlag(video::EMF_LIGHTING, false);
+			model1->setMaterialFlag(video::EMF_LIGHTING, true);
 			model1->setMaterialFlag(video::EMF_NORMALIZE_NORMALS, true);
 			model1->setMaterialType(video::EMT_SPHERE_MAP);
+			model1->getMaterial(0).Shininess = 20.f;
 			//model1->setAutomaticCulling(scene::EAC_OFF); // avoid shadows not updating
 			scene::IShadowVolumeSceneNode * shadVol = model1->addShadowVolumeSceneNode();
 			if (shadVol) shadVol->setOptimization(scene::ESV_NONE);	// Sydney has broken shadows otherwise

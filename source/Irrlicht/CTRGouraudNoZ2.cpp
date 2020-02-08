@@ -108,7 +108,7 @@ void CTRGouraudNoZ2::scanline_bilinear ()
 	tVideoSample *dst;
 
 #ifdef USE_ZBUFFER
-	fp24 *z;
+	//fp24 *z;
 #endif
 
 	s32 xStart;
@@ -183,7 +183,7 @@ void CTRGouraudNoZ2::scanline_bilinear ()
 	dst = (tVideoSample*)RenderTarget->getData() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 
 #ifdef USE_ZBUFFER
-	z = (fp24*) DepthBuffer->lock() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
+	//z = (fp24*) DepthBuffer->lock() + ( line.y * RenderTarget->getDimension().Width ) + xStart;
 #endif
 
 
@@ -214,7 +214,7 @@ void CTRGouraudNoZ2::scanline_bilinear ()
 			vec4_to_fix(r0, g0, b0, line.c[0][0], inversew);
 			dst[i] = fix_to_sample(r0, g0, b0);
 #else
-			dst[i] = COLOR_BRIGHT_WHITE;
+			dst[i] = PrimitiveColor;
 #endif
 
 #ifdef WRITE_Z

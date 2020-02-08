@@ -9,6 +9,7 @@
 
 #if BURNING_MATERIAL_MAX_COLORS < 1
 #undef IPOL_C0
+#undef IPOL_A0
 #endif
 
 #if BURNING_MATERIAL_MAX_LIGHT_TANGENT < 1
@@ -21,20 +22,22 @@
 	#define INVERSE_W_RANGE FIX_POINT_F32_MUL
 #endif
 
-#if !defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) && defined ( USE_ZBUFFER )
-#ifndef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
-#undef IPOL_W
+#if defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) || defined ( SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT )
+#else
+
+#ifdef IPOL_W
+	#undef IPOL_W
+	#define IPOL_Z
 #endif
-#define IPOL_Z
 
 #ifdef CMP_W
-#undef CMP_W
-#define CMP_Z
+	#undef CMP_W
+	#define CMP_Z
 #endif
 
 #ifdef WRITE_W
-#undef WRITE_W
-#define WRITE_Z
+	#undef WRITE_W
+	#define WRITE_Z
 #endif
 
 #endif

@@ -216,7 +216,7 @@ void CTRGouraud2::scanline_bilinear ()
 			vec4_to_fix( r0, g0, b0, line.c[0][0],inversew );
 			dst[i] = fix_to_sample( r0, g0, b0 );
 #else
-			dst[i] = COLOR_BRIGHT_WHITE;
+			dst[i] = PrimitiveColor;
 #endif
 
 #ifdef WRITE_Z

@@ -24,8 +24,8 @@
 #define SOFTWARE_DRIVER_2_USE_WBUFFER
 #define SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM
 #define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		256
-#define BURNINGVIDEO_RENDERER_SCANLINE_MAG_MIN
-
+#define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
+#define SOFTWARE_DRIVER_2_CLIPPING
 #endif
 
 
@@ -41,7 +41,8 @@
 	#define SOFTWARE_DRIVER_2_USE_WBUFFER
 	#define SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM
 	#define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		0
-	//#define BURNINGVIDEO_RENDERER_SCANLINE_MAG_MIN
+	#define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
+	#define SOFTWARE_DRIVER_2_CLIPPING
 #endif
 
 //! Set Flags for Windows Mobile
@@ -56,7 +57,8 @@
 	#define SOFTWARE_DRIVER_2_USE_WBUFFER
 	//#define SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM
 	#define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		64
-	#define BURNINGVIDEO_RENDERER_SCANLINE_MAG_MIN
+	#define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
+	//#define SOFTWARE_DRIVER_2_CLIPPING
 #endif
 
 #ifdef BURNINGVIDEO_RENDERER_FAST
@@ -65,11 +67,13 @@
 	//#define SOFTWARE_DRIVER_2_BILINEAR
 	//#define SOFTWARE_DRIVER_2_LIGHTING
 	#define SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
-	#define SOFTWARE_DRIVER_2_32BIT
+	//#define SOFTWARE_DRIVER_2_32BIT
+	#define SOFTWARE_DRIVER_2_16BIT
 	#define SOFTWARE_DRIVER_2_MIPMAPPING
 	#define SOFTWARE_DRIVER_2_USE_WBUFFER
 	#define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		256
-	#define BURNINGVIDEO_RENDERER_SCANLINE_MAG_MIN
+	#define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
+	//#define SOFTWARE_DRIVER_2_CLIPPING
 #endif
 
 #ifdef BURNINGVIDEO_RENDERER_ULTRA_FAST
@@ -79,13 +83,15 @@
 	//#define SOFTWARE_DRIVER_2_SUBTEXEL
 	//#define SOFTWARE_DRIVER_2_BILINEAR
 	//#define SOFTWARE_DRIVER_2_LIGHTING
-	//#define SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+	#define SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
 	//#define SOFTWARE_DRIVER_2_32BIT
-	#define SOFTWARE_DRIVER_2_MIPMAPPING
+	#define SOFTWARE_DRIVER_2_16BIT
+	//#define SOFTWARE_DRIVER_2_MIPMAPPING
 	//#define SOFTWARE_DRIVER_2_USE_WBUFFER
-	#define SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM
+	//#define SOFTWARE_DRIVER_2_TEXTURE_TRANSFORM
 	#define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		128
-	#define BURNINGVIDEO_RENDERER_SCANLINE_MAG_MIN
+	#define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
+	//#define SOFTWARE_DRIVER_2_CLIPPING
 #endif
 
 // Derivate flags
@@ -224,7 +230,9 @@ REALINLINE void burning_setbit32(unsigned int &state, int condition, const unsig
 }
 
 #define burning_stringify(s) #s
-#define burning_create(s) create ## _s
+#define burning_create_indirect(s) create_##s
+#define burning_create(s) burning_create_indirect(s)
+
 
 #if defined(PATCH_SUPERTUX_8_0_1)
 #define getData lock
@@ -246,6 +254,7 @@ REALINLINE void burning_setbit32(unsigned int &state, int condition, const unsig
 
 #define fix_to_color fix_to_sample
 #define fix4_to_color fix4_to_sample
+#define vec4_to_fix getSample_color
 #define SOFTWARE_DRIVER_2_MIPMAPPING_LOD_BIAS 0
 
 namespace irr {

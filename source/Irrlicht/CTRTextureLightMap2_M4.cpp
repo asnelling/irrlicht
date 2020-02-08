@@ -87,9 +87,9 @@ public:
 
 private:
 
-#if defined(BURNINGVIDEO_RENDERER_SCANLINE_MAG_MIN)
-	void drawTriangle_Min ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c );
-	void drawTriangle_Mag ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c );
+#if defined(SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN)
+	void drawTriangle_Min ( const s4DVertex* burning_restrict a,const s4DVertex* burning_restrict b,const s4DVertex* burning_restrict c );
+	void drawTriangle_Mag ( const s4DVertex* burning_restrict a,const s4DVertex* burning_restrict b,const s4DVertex* burning_restrict c );
 	void scanline_bilinear2_mag ();
 	void scanline_bilinear2_min ();
 #else
@@ -248,7 +248,7 @@ void CTRTextureLightMap2_M4::scanline_bilinear2_mag ()
 }
 
 
-#if defined (BURNINGVIDEO_RENDERER_SCANLINE_MAG_MIN)
+#if defined (SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN)
 void CTRTextureLightMap2_M4::scanline_bilinear2_min ()
 {
 	tVideoSample *dst;
@@ -382,7 +382,7 @@ void CTRTextureLightMap2_M4::drawTriangle(const s4DVertex* burning_restrict a, c
 	}
 }
 
-void CTRTextureLightMap2_M4::drawTriangle_Min ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRTextureLightMap2_M4::drawTriangle_Min ( const s4DVertex* burning_restrict a,const s4DVertex* burning_restrict b,const s4DVertex* burning_restrict c )
 {
 	// sort on height, y
 	if ( F32_A_GREATER_B ( a->Pos.y , b->Pos.y ) ) swapVertexPointer(&a, &b);
@@ -746,9 +746,9 @@ void CTRTextureLightMap2_M4::drawTriangle_Min ( const s4DVertex *a,const s4DVert
 
 }
 
-void CTRTextureLightMap2_M4::drawTriangle_Mag ( const s4DVertex *a,const s4DVertex *b,const s4DVertex *c )
+void CTRTextureLightMap2_M4::drawTriangle_Mag ( const s4DVertex* burning_restrict a,const s4DVertex* burning_restrict b,const s4DVertex* burning_restrict c )
 
-#else //#if defined (BURNINGVIDEO_RENDERER_SCANLINE_MAG_MIN)
+#else //#if defined (SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN)
 
 void CTRTextureLightMap2_M4::drawTriangle(const s4DVertex* burning_restrict a, const s4DVertex* burning_restrict b, const s4DVertex* burning_restrict c)
 

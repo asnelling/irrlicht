@@ -19,5 +19,6 @@
 #undef IPOL_L0
 
 #undef burning_shader_fragment
+#undef ipol_test
 
 #undef INVERSE_W_RANGE

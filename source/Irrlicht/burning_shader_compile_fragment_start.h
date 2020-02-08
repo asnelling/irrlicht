@@ -91,6 +91,11 @@ void burning_shader_class::burning_shader_fragment()
 	tFixPoint r0, g0, b0;
 #endif
 
+#ifdef IPOL_A0
+	tFixPoint a0;
+	tFixPoint r1, g1, b1;
+#endif
+
 	for (s32 i = 0; i <= dx; ++i)
 	{
 		if ((0 == EdgeTestPass) & i) break;

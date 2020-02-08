@@ -229,7 +229,7 @@ void CTRGouraudAlpha2::scanline_bilinear ()
 
 			dst[i] = fix4_to_sample( a0,r2, g2, b2 );
 #else
-			dst[i] = COLOR_BRIGHT_WHITE;
+			dst[i] = PrimitiveColor;
 #endif
 #ifdef WRITE_Z
 			z[i] = line.z[0];

@@ -161,6 +161,9 @@ namespace video
 
 		ETR_TEXTURE_BLEND,
 		ETR_TRANSPARENT_REFLECTION_2_LAYER,
+
+		ETR_COLOR,
+
 		//ETR_REFERENCE,
 		ETR_INVALID,
 
@@ -283,6 +286,12 @@ namespace video
 		virtual bool setPixelShaderConstant(s32 index, const s32* ints, int count) _IRR_OVERRIDE_;
 		virtual IVideoDriver* getVideoDriver() _IRR_OVERRIDE_;
 
+		//used if no color interpolation is defined
+		void setPrimitiveColor(const video::SColor& color)
+		{
+			PrimitiveColor = BURNINGSHADER_COLOR_FORMAT == ECF_A8R8G8B8 ? color.color : color.toA1R5G5B5();
+		}
+
 	protected:
 
 		CBurningVideoDriver *Driver;
@@ -309,10 +318,11 @@ namespace video
 
 		eStencilOp stencilOp[4];
 		tFixPoint AlphaRef;
+		int RenderPass_ShaderIsTransparent;
 
 		sScanConvertData scan;
 		sScanLineData line;
-
+		tVideoSample PrimitiveColor; //used if no color interpolation is defined
 	};
 
 
@@ -351,6 +361,7 @@ namespace video
 	IBurningShader* createTriangleRendererReference(CBurningVideoDriver* driver);
 	IBurningShader* createTriangleRendererTexture_transparent_reflection_2_layer(CBurningVideoDriver* driver);
 
+	IBurningShader* create_burning_shader_color(CBurningVideoDriver* driver);
 
 } // end namespace video
 } // end namespace irr

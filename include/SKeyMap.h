@@ -21,6 +21,8 @@ namespace irr
 		EKA_CROUCH,
 		EKA_ROTATE_LEFT,
 		EKA_ROTATE_RIGHT,
+		EKA_ROTATE_UP,
+		EKA_ROTATE_DOWN,
 		EKA_COUNT,
 
 		//! This value is not used. It only forces this enumeration to compile in 32 bit.

@@ -20,7 +20,7 @@ namespace scene
 CSceneNodeAnimatorCameraFPS::CSceneNodeAnimatorCameraFPS(gui::ICursorControl* cursorControl,
 		f32 rotateSpeed, f32 moveSpeed, f32 jumpSpeed,
 		SKeyMap* keyMapArray, u32 keyMapSize, bool noVerticalMovement, bool invertY, float rotateSpeedKeyboard)
-: CursorControl(cursorControl), MaxVerticalAngle(88.0f), NoVerticalMovement(noVerticalMovement),
+: CursorControl(cursorControl), MaxVerticalAngle(89.0f), NoVerticalMovement(noVerticalMovement),
 	MoveSpeed(moveSpeed), RotateSpeedKeyboard(rotateSpeedKeyboard), RotateSpeed(rotateSpeed),
 	JumpSpeed(jumpSpeed),
 	MouseYDirection(invertY ? -1.0f : 1.0f),
@@ -28,6 +28,11 @@ CSceneNodeAnimatorCameraFPS::CSceneNodeAnimatorCameraFPS(gui::ICursorControl* cu
 {
 	#ifdef _DEBUG
 	setDebugName("CCameraSceneNodeAnimatorFPS");
+	#endif
+
+	CaptureMouse = true;
+	#if defined(NO_IRRLICHT_MOUSE_CAPTURE)
+		CaptureMouse = false;
 	#endif
 
 	if (CursorControl)
@@ -44,6 +49,16 @@ CSceneNodeAnimatorCameraFPS::CSceneNodeAnimatorCameraFPS(gui::ICursorControl* cu
 		KeyMap.push_back(SKeyMap(EKA_STRAFE_LEFT, irr::KEY_LEFT));
 		KeyMap.push_back(SKeyMap(EKA_STRAFE_RIGHT, irr::KEY_RIGHT));
 		KeyMap.push_back(SKeyMap(EKA_JUMP_UP, irr::KEY_KEY_J));
+
+		if (!CaptureMouse)
+		{
+			//use a default keyboard rotation/look
+			KeyMap.push_back(SKeyMap(EKA_ROTATE_LEFT, KEY_NUMPAD4));
+			KeyMap.push_back(SKeyMap(EKA_ROTATE_RIGHT, KEY_NUMPAD6));
+
+			KeyMap.push_back(SKeyMap(EKA_ROTATE_UP, KEY_NUMPAD8));
+			KeyMap.push_back(SKeyMap(EKA_ROTATE_DOWN, KEY_NUMPAD2));
+		}
 	}
 	else
 	{
@@ -88,7 +103,6 @@ bool CSceneNodeAnimatorCameraFPS::OnEvent(const SEvent& evt)
 	return false;
 }
 
-
 void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 {
 	if (!node || node->getType() != ESNT_CAMERA)
@@ -103,7 +117,7 @@ void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 		camera->updateAbsolutePosition();
 		if (CursorControl )
 		{
-			CursorControl->setPosition(0.5f, 0.5f);
+			if (CaptureMouse) CursorControl->setPosition(0.5f, 0.5f);
 			CursorPos = CenterCursor = CursorControl->getRelativePosition(false);
 		}
 
@@ -136,11 +150,35 @@ void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 	f32 timeDiff = (f32) ( timeMs - LastAnimationTime );
 	LastAnimationTime = timeMs;
 
+	bool allowRotateMouse = true;
+	if (!CaptureMouse)
+	{
+		//slow system limit
+		if ( timeDiff > 1000.f / 60.f ) timeDiff = 1000.f / 60.f;
+
+		//disable rotating outside window
+		if (CursorControl && smgr)
+		{
+			core::position2di systemCursorPos = CursorControl->getPosition(false);
+
+			video::IVideoDriver* driver = smgr->getVideoDriver();
+			if (driver)
+			{
+				core::rect<s32> screenRect(0, 0, driver->getScreenSize().Width, driver->getScreenSize().Height);
+				if (!screenRect.isPointInside(systemCursorPos))
+				{
+					allowRotateMouse = false;
+				}
+			}
+		}
+
+	}
+
 	// Update rotation
 	core::vector3df target = (camera->getTarget() - camera->getAbsolutePosition());
 	core::vector3df relativeRotation = target.getHorizontalAngle();
 
-	if (CursorControl)
+	if (CursorControl && allowRotateMouse)
 	{
 		bool reset = false;
 
@@ -169,7 +207,7 @@ void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 
 		if(reset)
 		{
-			CursorControl->setPosition(0.5f, 0.5f);
+			if ( CaptureMouse ) CursorControl->setPosition(0.5f, 0.5f);
 			CenterCursor = CursorControl->getRelativePosition(false);	// often no longer 0.5 due to int/float conversions
 			CursorPos = CenterCursor;
  		}
@@ -182,16 +220,26 @@ void CSceneNodeAnimatorCameraFPS::animateNode(ISceneNode* node, u32 timeMs)
 	if (CursorKeys[EKA_ROTATE_RIGHT])
 		relativeRotation.Y += timeDiff * RotateSpeedKeyboard;
 
+	if (CursorKeys[EKA_ROTATE_UP])
+	{
+		relativeRotation.X += timeDiff * RotateSpeedKeyboard * 0.5f * -MouseYDirection;
+	}
+
+	if (CursorKeys[EKA_ROTATE_DOWN])
+	{
+		relativeRotation.X += timeDiff * RotateSpeedKeyboard * 0.5f * +MouseYDirection;
+	}
+
 	// X < MaxVerticalAngle or X > 360-MaxVerticalAngle
 
-	if (relativeRotation.X > MaxVerticalAngle*2 &&
-		relativeRotation.X < 360.0f-MaxVerticalAngle)
+	if (relativeRotation.X > MaxVerticalAngle * 2 &&
+		relativeRotation.X < 360.0f - MaxVerticalAngle)
 	{
-		relativeRotation.X = 360.0f-MaxVerticalAngle;
+		relativeRotation.X = 360.0f - MaxVerticalAngle;
 	}
 	else
 	if (relativeRotation.X > MaxVerticalAngle &&
-		relativeRotation.X < 360.0f-MaxVerticalAngle)
+		relativeRotation.X < 360.0f - MaxVerticalAngle)
 	{
 		relativeRotation.X = MaxVerticalAngle;
 	}

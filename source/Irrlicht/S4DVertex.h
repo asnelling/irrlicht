@@ -420,7 +420,6 @@ enum e4DIndexType
 // dummy Vertex. used for calculation vertex memory size
 struct s4DVertex_proxy
 {
-	u32 flag; // e4DVertexFlag
 	sVec4 Pos;
 #if BURNING_MATERIAL_MAX_TEXTURES > 0
 	sVec2 Tex[BURNING_MATERIAL_MAX_TEXTURES];
@@ -431,6 +430,8 @@ struct s4DVertex_proxy
 #if BURNING_MATERIAL_MAX_LIGHT_TANGENT > 0
 	sVec3Pack LightTangent[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
 #endif
+	u32 flag; // e4DVertexFlag
+
 };
 
 //ensure handcrafted sizeof(s4DVertex)
@@ -441,8 +442,6 @@ struct s4DVertex_proxy
 */
 struct s4DVertex
 {
-	u32 flag; // e4DVertexFlag
-
 	sVec4 Pos;
 #if BURNING_MATERIAL_MAX_TEXTURES > 0
 	sVec2 Tex[ BURNING_MATERIAL_MAX_TEXTURES ];
@@ -453,6 +452,8 @@ struct s4DVertex
 #if BURNING_MATERIAL_MAX_LIGHT_TANGENT > 0
 	sVec3Pack LightTangent[BURNING_MATERIAL_MAX_LIGHT_TANGENT];
 #endif
+
+	u32 flag; // e4DVertexFlag
 
 #if BURNING_MATERIAL_MAX_COLORS < 1 || BURNING_MATERIAL_MAX_LIGHT_TANGENT < 1
 	u8 __align [sizeof_s4DVertex - sizeof (s4DVertex_proxy) ];

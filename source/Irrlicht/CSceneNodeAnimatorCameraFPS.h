@@ -134,6 +134,7 @@ namespace scene
 
 		bool firstUpdate;
 		bool firstInput;
+		bool CaptureMouse; //if false don't set system mouse Position and react on mouse outside window
 	};
 
 } // end namespace scene
