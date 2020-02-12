@@ -176,11 +176,14 @@ namespace video
 		BL_FRAGMENT_PROGRAM = 2,
 		BL_TYPE_FLOAT = 4,
 		BL_TYPE_INT = 8,
+		BL_TYPE_UINT = 16,
 
 		BL_VERTEX_FLOAT = (BL_VERTEX_PROGRAM | BL_TYPE_FLOAT),
 		BL_VERTEX_INT = (BL_VERTEX_PROGRAM | BL_TYPE_INT),
+		BL_VERTEX_UINT = (BL_VERTEX_PROGRAM | BL_TYPE_UINT),
 		BL_FRAGMENT_FLOAT = (BL_FRAGMENT_PROGRAM | BL_TYPE_FLOAT),
 		BL_FRAGMENT_INT = (BL_FRAGMENT_PROGRAM | BL_TYPE_INT),
+		BL_FRAGMENT_UINT = (BL_FRAGMENT_PROGRAM | BL_TYPE_UINT),
 
 		BL_ACTIVE_UNIFORM_MAX_LENGTH = 28
 	} EBurningUniformFlags;
@@ -282,8 +285,10 @@ namespace video
 		virtual void setPixelShaderConstant(const f32* data, s32 startRegister, s32 constantAmount = 1) _IRR_OVERRIDE_;
 		virtual bool setVertexShaderConstant(s32 index, const f32* floats, int count) _IRR_OVERRIDE_;
 		virtual bool setVertexShaderConstant(s32 index, const s32* ints, int count) _IRR_OVERRIDE_;
+		virtual bool setVertexShaderConstant(s32 index, const u32* ints, int count) _IRR_OVERRIDE_;
 		virtual bool setPixelShaderConstant(s32 index, const f32* floats, int count) _IRR_OVERRIDE_;
 		virtual bool setPixelShaderConstant(s32 index, const s32* ints, int count) _IRR_OVERRIDE_;
+		virtual bool setPixelShaderConstant(s32 index, const u32* ints, int count)  _IRR_OVERRIDE_;
 		virtual IVideoDriver* getVideoDriver() _IRR_OVERRIDE_;
 
 		//used if no color interpolation is defined

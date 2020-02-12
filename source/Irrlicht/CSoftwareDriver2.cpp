@@ -3984,6 +3984,11 @@ bool CBurningVideoDriver::setVertexShaderConstant(s32 index, const s32* ints, in
 	return true;
 }
 
+bool CBurningVideoDriver::setVertexShaderConstant(s32 index, const u32* ints, int count)
+{
+	return true;
+}
+
 void CBurningVideoDriver::setVertexShaderConstant(const f32* data, s32 startRegister, s32 constantAmount)
 {
 }
@@ -4000,6 +4005,11 @@ bool CBurningVideoDriver::setPixelShaderConstant(s32 index, const f32* floats, i
 }
 
 bool CBurningVideoDriver::setPixelShaderConstant(s32 index, const s32* ints, int count)
+{
+	return false;
+}
+
+bool CBurningVideoDriver::setPixelShaderConstant(s32 index, const u32* ints, int count)
 {
 	return false;
 }

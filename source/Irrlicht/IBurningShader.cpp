@@ -353,6 +353,11 @@ bool IBurningShader::setVertexShaderConstant(s32 index, const s32* ints, int cou
 	return setShaderConstantID(BL_VERTEX_INT, index, ints, count);
 }
 
+bool IBurningShader::setVertexShaderConstant(s32 index, const u32* ints, int count)
+{
+	return setShaderConstantID(BL_VERTEX_UINT, index, ints, count);
+}
+
 bool IBurningShader::setPixelShaderConstant(s32 index, const f32* floats, int count)
 {
 	return setShaderConstantID(BL_FRAGMENT_FLOAT, index, floats, count);
@@ -362,6 +367,12 @@ bool IBurningShader::setPixelShaderConstant(s32 index, const s32* ints, int coun
 {
 	return setShaderConstantID(BL_FRAGMENT_INT, index, ints, count);
 }
+
+bool IBurningShader::setPixelShaderConstant(s32 index, const u32* ints, int count)
+{
+	return setShaderConstantID(BL_FRAGMENT_UINT, index, ints, count);
+}
+
 
 IVideoDriver* IBurningShader::getVideoDriver()
 {

@@ -232,12 +232,15 @@ namespace video
 		virtual s32 getVertexShaderConstantID(const c8* name) _IRR_OVERRIDE_;
 		virtual bool setVertexShaderConstant(s32 index, const f32* floats, int count) _IRR_OVERRIDE_;
 		virtual bool setVertexShaderConstant(s32 index, const s32* ints, int count) _IRR_OVERRIDE_;
+		virtual bool setVertexShaderConstant(s32 index, const u32* ints, int count) _IRR_OVERRIDE_;
 		virtual void setVertexShaderConstant(const f32* data, s32 startRegister, s32 constantAmount) _IRR_OVERRIDE_;
 
 		//! Return an index constant for the pixel shader based on a name.
 		virtual s32 getPixelShaderConstantID(const c8* name) _IRR_OVERRIDE_;
 		virtual bool setPixelShaderConstant(s32 index, const f32* floats, int count) _IRR_OVERRIDE_;
 		virtual bool setPixelShaderConstant(s32 index, const s32* ints, int count) _IRR_OVERRIDE_;
+		virtual bool setPixelShaderConstant(s32 index, const u32* ints, int count) _IRR_OVERRIDE_;
+		
 		virtual void setPixelShaderConstant(const f32* data, s32 startRegister, s32 constantAmount) _IRR_OVERRIDE_;
 
 		//! Get pointer to the IVideoDriver interface
