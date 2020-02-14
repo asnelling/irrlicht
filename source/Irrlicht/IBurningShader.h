@@ -54,13 +54,14 @@ namespace video
 
 	enum eTransformLightFlags
 	{
-		ENABLED		= 0x01,
-		SPECULAR	= 0x08,
-		FOG			= 0x10,
-		NORMALIZE_NORMALS	= 0x20,
-		TEXTURE_TRANSFORM	= 0x40,
-		LIGHT_LOCAL_VIEWER	= 0x80,
-		LIGHT0_IS_NORMAL_MAP	= 0x100		//sVec4 Light Vector is used as normal or specular
+		//ENABLED		= 0x01,
+		TL_LIGHT				= 0x04,
+		TL_SPECULAR				= 0x08,
+		TL_FOG					= 0x10,
+		TL_NORMALIZE_NORMALS	= 0x20,
+		TL_TEXTURE_TRANSFORM	= 0x40,
+		TL_LIGHT_LOCAL_VIEWER	= 0x80,
+		TL_LIGHT0_IS_NORMAL_MAP	= 0x100		//sVec4 Light Vector is used as normal or specular
 	};
 
 	struct SBurningShaderEyeSpace
@@ -72,11 +73,16 @@ namespace video
 			Light.set_used ( 0 );
 			Global_AmbientLight.set ( 0.f );
 
-			Eye_Flags = LIGHT_LOCAL_VIEWER;
+			TL_Flag = TL_LIGHT_LOCAL_VIEWER;
 		}
+		void resetFog()
+		{
+			fog_scale = 0.f;
+			//cam_distance = 0.f;
+		}
+
 		core::array<SBurningShaderLight> Light;
 		sVec3Color Global_AmbientLight;
-		sVec3Color FogColor;
 
 		//sVec4 cam_eye_pos; //Camera Position in eye Space (0,0,-1)
 		//sVec4 cam_world_pos; //Camera Position in world Space
@@ -84,10 +90,16 @@ namespace video
 		sVec4 normal; //transformed normal
 		sVec4 vertex; //eye coordinate position of vertex projected
 
-		size_t Eye_Flags; // eTransformLightFlags
+		//derivative of vertex
+		//f32 cam_distance; // vertex.length();
+		sVec4 cam_dir; //vertex.normalize();
+
+		f32 fog_scale; // 1 / (fog.end-fog.start)
+
+		size_t TL_Flag; // eTransformLightFlags
 	};
 
-	enum eCullFlag
+	enum eBurningCullFlag
 	{
 		CULL_FRONT = 1,
 		CULL_BACK = 2,
@@ -95,7 +107,7 @@ namespace video
 		CULL_FRONT_AND_BACK = 8,
 	};
 
-	enum eStencilOp
+	enum eBurningStencilOp
 	{
 		StencilOp_KEEP = 0x1E00,
 		StencilOp_INCR = 0x1E02,
@@ -255,12 +267,7 @@ namespace video
 		virtual bool canWireFrame () { return false; }
 		virtual bool canPointCloud() { return false; }
 
-		void setStencilOp(eStencilOp sfail, eStencilOp dpfail, eStencilOp dppass)
-		{
-			stencilOp[0] = sfail;
-			stencilOp[1] = dpfail;
-			stencilOp[2] = dppass;
-		}
+		void setStencilOp(eBurningStencilOp sfail, eBurningStencilOp dpfail, eBurningStencilOp dppass);
 
 		//IMaterialRenderer
 
@@ -296,6 +303,16 @@ namespace video
 		{
 			PrimitiveColor = BURNINGSHADER_COLOR_FORMAT == ECF_A8R8G8B8 ? color.color : color.toA1R5G5B5();
 		}
+		void setTLFlag(size_t in /*eTransformLightFlags*/)
+		{
+			TL_Flag = in;
+		}
+		void setFog(SColor color_fog)
+		{
+			fog_color_sample = BURNINGSHADER_COLOR_FORMAT == ECF_A8R8G8B8 ? color_fog.color : color_fog.toA1R5G5B5();
+			color_to_fix(fog_color, fog_color_sample);
+		}
+
 
 	protected:
 
@@ -321,13 +338,17 @@ namespace video
 		int EdgeTestPass; //edge_test_flag
 		int EdgeTestPass_stack;
 
-		eStencilOp stencilOp[4];
+		eBurningStencilOp stencilOp[4];
 		tFixPoint AlphaRef;
 		int RenderPass_ShaderIsTransparent;
 
 		sScanConvertData scan;
 		sScanLineData line;
 		tVideoSample PrimitiveColor; //used if no color interpolation is defined
+
+		size_t /*eTransformLightFlags*/ TL_Flag;
+		tFixPoint fog_color[4];
+		tVideoSample fog_color_sample;
 	};
 
 

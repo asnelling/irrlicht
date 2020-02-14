@@ -83,6 +83,7 @@ struct sVec2
 struct sVec3Pack
 {
 	f32 x, y, z;
+	//f32 _can_pack;
 
 	sVec3Pack() {}
 	sVec3Pack(f32 _x, f32 _y, f32 _z)
@@ -341,6 +342,16 @@ struct sVec3Color
 		v = b * v1.b;	dest.z = v < 1.f ? v : 1.f;
 	}
 
+	void sat_xyz(sVec4 &dest, const sVec3Color& v1) const
+	{
+		f32 v;
+		dest.a = 1.f;
+		v = r * v1.r;	dest.r = v < 1.f ? v : 1.f;
+		v = g * v1.g;	dest.g = v < 1.f ? v : 1.f;
+		v = b * v1.b;	dest.b = v < 1.f ? v : 1.f;
+	}
+
+
 };
 
 //internal BurningShaderFlag for a Vertex
@@ -369,7 +380,9 @@ enum e4DVertexFlag
 
 	VERTEX4D_FORMAT_MASK_COLOR		= 0x00F00000,
 	VERTEX4D_FORMAT_COLOR_1			= 0x00100000,
-	VERTEX4D_FORMAT_COLOR_2			= 0x00200000,
+	VERTEX4D_FORMAT_COLOR_2_FOG		= 0x00200000,
+	VERTEX4D_FORMAT_COLOR_3			= 0x00300000,
+	VERTEX4D_FORMAT_COLOR_4			= 0x00400000,
 
 	VERTEX4D_FORMAT_MASK_LIGHT		= 0x0F000000,
 	VERTEX4D_FORMAT_LIGHT_1			= 0x01000000,
@@ -402,7 +415,7 @@ enum e4DIndexType
 	E4IT_NONE  = 4, //
 };
 
-
+#if 0
 #ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
 	#define BURNING_MATERIAL_MAX_COLORS 1
 #else
@@ -416,6 +429,11 @@ enum e4DIndexType
 #else
 	#define BURNING_MATERIAL_MAX_LIGHT_TANGENT 0
 #endif
+#endif
+
+#define BURNING_MATERIAL_MAX_TEXTURES 4
+#define BURNING_MATERIAL_MAX_COLORS 4
+#define BURNING_MATERIAL_MAX_LIGHT_TANGENT 1
 
 // dummy Vertex. used for calculation vertex memory size
 struct s4DVertex_proxy
@@ -435,7 +453,7 @@ struct s4DVertex_proxy
 };
 
 //ensure handcrafted sizeof(s4DVertex)
-#define sizeof_s4DVertex	64
+#define sizeof_s4DVertex	128
 
 /*!
 	Internal BurningVideo Vertex
@@ -454,6 +472,7 @@ struct s4DVertex
 #endif
 
 	u32 flag; // e4DVertexFlag
+
 
 #if BURNING_MATERIAL_MAX_COLORS < 1 || BURNING_MATERIAL_MAX_LIGHT_TANGENT < 1
 	u8 __align [sizeof_s4DVertex - sizeof (s4DVertex_proxy) ];
@@ -554,23 +573,63 @@ static REALINLINE void memcpy_s4DVertexPair(void* burning_restrict dst, const vo
 	u64* burning_restrict dst64 = (u64*)dst;
 	const u64* burning_restrict src64 = (const u64*)src;
 
-	dst64[0] = src64[0];
-	dst64[1] = src64[1];
-	dst64[2] = src64[2];
-	dst64[3] = src64[3];
-	dst64[4] = src64[4];
-	dst64[5] = src64[5];
-	dst64[6] = src64[6];
-	dst64[7] = src64[7];
+	dst64[0]  = src64[0];
+	dst64[1]  = src64[1];
+	dst64[2]  = src64[2];
+	dst64[3]  = src64[3];
+	dst64[4]  = src64[4];
+	dst64[5]  = src64[5];
+	dst64[6]  = src64[6];
+	dst64[7]  = src64[7];
 
-	dst64[8] = src64[8];
-	dst64[9] = src64[9];
+	dst64[8]  = src64[8];
+	dst64[9]  = src64[9];
 	dst64[10] = src64[10];
 	dst64[11] = src64[11];
 	dst64[12] = src64[12];
 	dst64[13] = src64[13];
 	dst64[14] = src64[14];
 	dst64[15] = src64[15];
+
+#elif defined(ENV64BIT) && (sizeof_s4DVertex * sizeof_s4DVertexPairRel == 256)
+	u64* burning_restrict dst64 = (u64*)dst;
+	const u64* burning_restrict src64 = (const u64*)src;
+
+	dst64[0]  = src64[0];
+	dst64[1]  = src64[1];
+	dst64[2]  = src64[2];
+	dst64[3]  = src64[3];
+	dst64[4]  = src64[4];
+	dst64[5]  = src64[5];
+	dst64[6]  = src64[6];
+	dst64[7]  = src64[7];
+
+	dst64[8]  = src64[8];
+	dst64[9]  = src64[9];
+	dst64[10] = src64[10];
+	dst64[11] = src64[11];
+	dst64[12] = src64[12];
+	dst64[13] = src64[13];
+	dst64[14] = src64[14];
+	dst64[15] = src64[15];
+
+	dst64[16] = src64[16];
+	dst64[17] = src64[17];
+	dst64[18] = src64[18];
+	dst64[19] = src64[19];
+	dst64[20] = src64[20];
+	dst64[21] = src64[21];
+	dst64[22] = src64[22];
+	dst64[23] = src64[23];
+
+	dst64[24] = src64[24];
+	dst64[25] = src64[25];
+	dst64[26] = src64[26];
+	dst64[27] = src64[27];
+	dst64[28] = src64[28];
+	dst64[29] = src64[29];
+	dst64[30] = src64[30];
+	dst64[31] = src64[31];
 
 #else
 	u32* dst32 = (u32*)dst;

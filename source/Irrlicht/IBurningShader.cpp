@@ -56,6 +56,7 @@ IBurningShader::IBurningShader(CBurningVideoDriver* driver)
 	AlphaRef = 0;
 	RenderPass_ShaderIsTransparent = 0;
 	PrimitiveColor = COLOR_BRIGHT_WHITE;
+	TL_Flag = 0;
 }
 
 //! Constructor
@@ -371,6 +372,13 @@ bool IBurningShader::setPixelShaderConstant(s32 index, const s32* ints, int coun
 bool IBurningShader::setPixelShaderConstant(s32 index, const u32* ints, int count)
 {
 	return setShaderConstantID(BL_FRAGMENT_UINT, index, ints, count);
+}
+
+void IBurningShader::setStencilOp(eBurningStencilOp sfail, eBurningStencilOp dpfail, eBurningStencilOp dppass)
+{
+	stencilOp[0] = sfail;
+	stencilOp[1] = dpfail;
+	stencilOp[2] = dppass;
 }
 
 

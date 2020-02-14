@@ -21,6 +21,7 @@
 #undef INVERSE_W
 
 #undef IPOL_C0
+#undef IPOL_C1
 #undef IPOL_T0
 #undef IPOL_T1
 
@@ -34,6 +35,7 @@
 //#define WRITE_W
 
 #define IPOL_C0
+#define IPOL_C1
 #define IPOL_T0
 //#define IPOL_T1
 
@@ -49,6 +51,11 @@
 #if BURNING_MATERIAL_MAX_COLORS < 1
 	#undef IPOL_C0
 #endif
+
+#if BURNING_MATERIAL_MAX_COLORS < 2
+	#undef IPOL_C1
+#endif
+
 
 #if !defined ( SOFTWARE_DRIVER_2_USE_WBUFFER ) && defined ( USE_ZBUFFER )
 	#ifndef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
@@ -127,7 +134,7 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 	fp24 slopeW;
 #endif
 #ifdef IPOL_C0
-	sVec4 slopeC;
+	sVec4 slopeC[BURNING_MATERIAL_MAX_COLORS];
 #endif
 #ifdef IPOL_T0
 	sVec2 slopeT[BURNING_MATERIAL_MAX_TEXTURES];
@@ -152,7 +159,10 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 	slopeW = (line.w[1] - line.w[0]) * invDeltaX;
 #endif
 #ifdef IPOL_C0
-	slopeC = (line.c[0][1] - line.c[0][0]) * invDeltaX;
+	slopeC[0] = (line.c[0][1] - line.c[0][0]) * invDeltaX;
+#endif
+#ifdef IPOL_C1
+	slopeC[1] = (line.c[1][1] - line.c[1][0]) * invDeltaX;
 #endif
 #ifdef IPOL_T0
 	slopeT[0] = (line.t[0][1] - line.t[0][0]) * invDeltaX;
@@ -170,8 +180,12 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 	line.w[0] += slopeW * subPixel;
 #endif
 #ifdef IPOL_C0
-	line.c[0][0] += slopeC * subPixel;
+	line.c[0][0] += slopeC[0] * subPixel;
 #endif
+#ifdef IPOL_C1
+	line.c[1][0] += slopeC[1] * subPixel;
+#endif
+
 #ifdef IPOL_T0
 	line.t[0][0] += slopeT[0] * subPixel;
 #endif
@@ -195,11 +209,13 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 
 	tFixPoint r0, g0, b0;
 	tFixPoint r1, g1, b1;
-	tFixPoint r2, g2, b2;
-
 
 #ifdef IPOL_C0
-	tFixPoint a3;
+	tFixPoint a2,r2, g2, b2;
+#endif
+
+#ifdef IPOL_C1
+	tFixPoint aFog = FIX_POINT_ONE;
 #endif
 
 
@@ -213,42 +229,73 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 #endif
 
 		{
-#ifdef INVERSE_W
-			inversew = fix_inverse32 ( line.w[0] );
-#endif
-			tx0 = tofix ( line.t[0][0].x,inversew);
-			ty0 = tofix ( line.t[0][0].y,inversew);
-
-#ifdef IPOL_C0
-			a3 = tofix ( line.c[0][0].x,inversew );
-			vec4_to_fix(r2, g2, b2, line.c[0][0], inversew);
-#endif
-
-			getSample_texture ( r0, g0, b0, &IT[0], tx0, ty0 );
-			color_to_fix ( r1, g1, b1, dst[i] );
-
-#ifdef IPOL_C0
-			r0 = imulFix_simple(r0, r2);
-			g0 = imulFix_simple(g0, g2);
-			b0 = imulFix_simple(b0, b2);
-
-			r2 = r1 + imulFix(a3, r0 - r1);
-			g2 = g1 + imulFix(a3, g0 - g1);
-			b2 = b1 + imulFix(a3, b0 - b1);
-#else
-			r2 = clampfix_maxcolor ( r1 + r0 );
-			g2 = clampfix_maxcolor ( g1 + g0 );
-			b2 = clampfix_maxcolor ( b1 + b0 );
-#endif
-
-			dst[i] = fix_to_sample( r2, g2, b2 );
-
 #ifdef WRITE_Z
 			z[i] = line.z[0];
 #endif
 #ifdef WRITE_W
 			z[i] = line.w[0];
 #endif
+
+#ifdef INVERSE_W
+			inversew = fix_inverse32 ( line.w[0] );
+#endif
+#ifdef IPOL_C1
+			//complete inside fog
+			if (TL_Flag & TL_FOG)
+			{
+				aFog = tofix(line.c[1][0].a, inversew);
+				if (aFog <= 0)
+				{
+					dst[i] = fog_color_sample;
+					continue;
+				}
+			}
+#endif
+			tx0 = tofix ( line.t[0][0].x,inversew);
+			ty0 = tofix ( line.t[0][0].y,inversew);
+
+			getSample_texture ( r0, g0, b0, &IT[0], tx0, ty0 );
+			color_to_fix ( r1, g1, b1, dst[i] );
+
+#ifdef IPOL_C0
+			vec4_to_fix(a2,r2, g2, b2, line.c[0][0], inversew);
+
+			r0 = imulFix_simple(r0, r2);
+			g0 = imulFix_simple(g0, g2);
+			b0 = imulFix_simple(b0, b2);
+
+#ifdef IPOL_C1
+			//specular highlight
+			if (TL_Flag & TL_SPECULAR)
+			{
+				vec4_to_fix(r2, g2, b2, line.c[1][0], inversew*COLOR_MAX);
+				r0 = clampfix_maxcolor(r2 + r0);
+				g0 = clampfix_maxcolor(g2 + g0);
+				b0 = clampfix_maxcolor(b2 + b0);
+			}
+#endif
+			//blend background
+			r0 = r1 + imulFix(a2, r0 - r1);
+			g0 = g1 + imulFix(a2, g0 - g1);
+			b0 = b1 + imulFix(a2, b0 - b1);
+
+#ifdef IPOL_C1
+			//mix with distance
+			if (aFog < FIX_POINT_ONE) //TL_Flag & TL_FOG)
+			{
+				r0 = fog_color[1] + imulFix(aFog, r0 - fog_color[1]);
+				g0 = fog_color[2] + imulFix(aFog, g0 - fog_color[2]);
+				b0 = fog_color[3] + imulFix(aFog, b0 - fog_color[3]);
+			}
+#endif
+
+#else
+			r0 = clampfix_maxcolor ( r1 + r0 );
+			g0 = clampfix_maxcolor ( g1 + g0 );
+			b0 = clampfix_maxcolor ( b1 + b0 );
+#endif
+
+			dst[i] = fix_to_sample( r0, g0, b0 );
 
 		}
 
@@ -259,7 +306,10 @@ void CTRTextureVertexAlpha2::scanline_bilinear (  )
 		line.w[0] += slopeW;
 #endif
 #ifdef IPOL_C0
-		line.c[0][0] += slopeC;
+		line.c[0][0] += slopeC[0];
+#endif
+#ifdef IPOL_C1
+		line.c[1][0] += slopeC[1];
 #endif
 #ifdef IPOL_T0
 		line.t[0][0] += slopeT[0];
@@ -319,6 +369,11 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 	scan.c[0][0] = a->Color[0];
 #endif
 
+#ifdef IPOL_C1
+	scan.slopeC[1][0] = (c->Color[1] - a->Color[1]) * scan.invDeltaY[0];
+	scan.c[1][0] = a->Color[1];
+#endif
+
 #ifdef IPOL_T0
 	scan.slopeT[0][0] = (c->Tex[0] - a->Tex[0]) * scan.invDeltaY[0];
 	scan.t[0][0] = a->Tex[0];
@@ -359,6 +414,11 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 		scan.c[0][1] = a->Color[0];
 #endif
 
+#ifdef IPOL_C1
+		scan.slopeC[1][1] = (b->Color[1] - a->Color[1]) * scan.invDeltaY[1];
+		scan.c[1][1] = a->Color[1];
+#endif
+
 #ifdef IPOL_T0
 		scan.slopeT[0][1] = (b->Tex[0] - a->Tex[0]) * scan.invDeltaY[1];
 		scan.t[0][1] = a->Tex[0];
@@ -395,6 +455,11 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 		scan.c[0][1] += scan.slopeC[0][1] * subPixel;
 #endif
 
+#ifdef IPOL_C1
+		scan.c[1][0] += scan.slopeC[1][0] * subPixel;
+		scan.c[1][1] += scan.slopeC[1][1] * subPixel;
+#endif
+
 #ifdef IPOL_T0
 		scan.t[0][0] += scan.slopeT[0][0] * subPixel;
 		scan.t[0][1] += scan.slopeT[0][1] * subPixel;
@@ -428,6 +493,11 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 			line.c[0][scan.right] = scan.c[0][1];
 #endif
 
+#ifdef IPOL_C1
+			line.c[1][scan.left] = scan.c[1][0];
+			line.c[1][scan.right] = scan.c[1][1];
+#endif
+
 #ifdef IPOL_T0
 			line.t[0][scan.left] = scan.t[0][0];
 			line.t[0][scan.right] = scan.t[0][1];
@@ -457,6 +527,11 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 #ifdef IPOL_C0
 			scan.c[0][0] += scan.slopeC[0][0];
 			scan.c[0][1] += scan.slopeC[0][1];
+#endif
+
+#ifdef IPOL_C1
+			scan.c[1][0] += scan.slopeC[1][0];
+			scan.c[1][1] += scan.slopeC[1][1];
 #endif
 
 #ifdef IPOL_T0
@@ -490,6 +565,9 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 #ifdef IPOL_C0
 			scan.c[0][0] = a->Color[0] + scan.slopeC[0][0] * temp[0];
 #endif
+#ifdef IPOL_C1
+			scan.c[1][0] = a->Color[1] + scan.slopeC[1][0] * temp[0];
+#endif
 #ifdef IPOL_T0
 			scan.t[0][0] = a->Tex[0] + scan.slopeT[0][0] * temp[0];
 #endif
@@ -516,6 +594,11 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 #ifdef IPOL_C0
 		scan.slopeC[0][1] = (c->Color[0] - b->Color[0]) * scan.invDeltaY[2];
 		scan.c[0][1] = b->Color[0];
+#endif
+
+#ifdef IPOL_C1
+		scan.slopeC[1][1] = (c->Color[1] - b->Color[1]) * scan.invDeltaY[2];
+		scan.c[1][1] = b->Color[1];
 #endif
 
 #ifdef IPOL_T0
@@ -555,6 +638,11 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 		scan.c[0][1] += scan.slopeC[0][1] * subPixel;
 #endif
 
+#ifdef IPOL_C1
+		scan.c[1][0] += scan.slopeC[1][0] * subPixel;
+		scan.c[1][1] += scan.slopeC[1][1] * subPixel;
+#endif
+
 #ifdef IPOL_T0
 		scan.t[0][0] += scan.slopeT[0][0] * subPixel;
 		scan.t[0][1] += scan.slopeT[0][1] * subPixel;
@@ -588,6 +676,11 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 			line.c[0][scan.right] = scan.c[0][1];
 #endif
 
+#ifdef IPOL_C1
+			line.c[1][scan.left] = scan.c[1][0];
+			line.c[1][scan.right] = scan.c[1][1];
+#endif
+
 #ifdef IPOL_T0
 			line.t[0][scan.left] = scan.t[0][0];
 			line.t[0][scan.right] = scan.t[0][1];
@@ -619,6 +712,11 @@ void CTRTextureVertexAlpha2::drawTriangle(const s4DVertex* burning_restrict a, c
 			scan.c[0][1] += scan.slopeC[0][1];
 #endif
 
+#ifdef IPOL_C1
+			scan.c[1][0] += scan.slopeC[1][0];
+			scan.c[1][1] += scan.slopeC[1][1];
+#endif
+
 #ifdef IPOL_T0
 			scan.t[0][0] += scan.slopeT[0][0];
 			scan.t[0][1] += scan.slopeT[0][1];
@@ -648,6 +746,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTriangleRendererTextureVertexAlpha2(CBurningVideoDriver* driver)
 {
+	/* ETR_TEXTURE_GOURAUD_VERTEX_ALPHA */
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureVertexAlpha2(driver);
 	#else

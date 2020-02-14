@@ -22,6 +22,7 @@
 
 #undef IPOL_C0
 #undef IPOL_C1
+#undef IPOL_C2
 #undef IPOL_T0
 #undef IPOL_T1
 #undef IPOL_L0
@@ -37,9 +38,10 @@
 
 #define IPOL_C0
 #define IPOL_C1
+//#define IPOL_C2
 #define IPOL_T0
 //#define IPOL_T1
-#define IPOL_L0
+//#define IPOL_L0
 
 // apply global override
 #ifndef SOFTWARE_DRIVER_2_PERSPECTIVE_CORRECT
@@ -56,6 +58,10 @@
 
 #if BURNING_MATERIAL_MAX_COLORS < 2
 	#undef IPOL_C1
+#endif
+
+#if BURNING_MATERIAL_MAX_COLORS < 3
+#undef IPOL_C2
 #endif
 
 #if BURNING_MATERIAL_MAX_LIGHT_TANGENT < 1
@@ -175,6 +181,9 @@ void CTRTextureGouraud2::fragmentShader ()
 #ifdef IPOL_C1
 	slopeC[1] = (line.c[1][1] - line.c[1][0]) * invDeltaX;
 #endif
+#ifdef IPOL_C2
+	slopeC[2] = (line.c[2][1] - line.c[2][0]) * invDeltaX;
+#endif
 #ifdef IPOL_T0
 	slopeT[0] = (line.t[0][1] - line.t[0][0]) * invDeltaX;
 #endif
@@ -199,6 +208,9 @@ void CTRTextureGouraud2::fragmentShader ()
 #endif
 #ifdef IPOL_C1
 	line.c[1][0] += slopeC[1] * subPixel;
+#endif
+#ifdef IPOL_C2
+	line.c[2][0] += slopeC[2] * subPixel;
 #endif
 #ifdef IPOL_T0
 	line.t[0][0] += slopeT[0] * subPixel;
@@ -229,8 +241,13 @@ void CTRTextureGouraud2::fragmentShader ()
 	tFixPoint r1, g1, b1;
 #endif
 
-#ifdef IPOL_L0
-	tFixPoint r2, g2, b2;
+#ifdef IPOL_C1
+	tFixPoint aFog = FIX_POINT_ONE;
+#endif
+
+
+#ifdef IPOL_C2
+	tFixPoint r3, g3, b3;
 #endif
 
 #ifdef BURNINGVIDEO_RENDERER_FAST
@@ -256,47 +273,59 @@ void CTRTextureGouraud2::fragmentShader ()
 			z[i] = line.w[0];
 #endif
 
-
 #ifdef INVERSE_W
 			inversew = fix_inverse32 ( line.w[0] );
+#endif
+
+#ifdef IPOL_C1
+			//complete inside fog
+			if (TL_Flag & TL_FOG)
+			{
+				aFog = tofix(line.c[1][0].a, inversew);
+				if (aFog <= 0)
+				{
+					dst[i] = fog_color_sample;
+					continue;
+				}
+			}
+#endif
 			tx0 = tofix ( line.t[0][0].x, inversew);
 			ty0 = tofix ( line.t[0][0].y, inversew);
 
+
 #ifdef IPOL_C0
-			r1 = tofix ( line.c[0][0].y ,inversew );
-			g1 = tofix ( line.c[0][0].z ,inversew );
-			b1 = tofix ( line.c[0][0].w ,inversew );
-#endif
+
+			getSample_texture(r0, g0, b0, &IT[0], tx0, ty0);
+			vec4_to_fix(r1, g1, b1, line.c[0][0], inversew);
+
+			r0 = imulFix_simple(r0, r1);
+			g0 = imulFix_simple(g0, g1);
+			b0 = imulFix_simple(b0, b1);
+
+#ifdef IPOL_C1
+
+			//specular highlight
+			if (TL_Flag & TL_SPECULAR)
+			{
+				vec4_to_fix(r1, g1, b1, line.c[1][0], inversew*COLOR_MAX);
+				r0 = clampfix_maxcolor(r1 + r0);
+				g0 = clampfix_maxcolor(g1 + g0);
+				b0 = clampfix_maxcolor(b1 + b0);
+			}
+			//mix with distance
+			if (aFog < FIX_POINT_ONE)
+			{
+				r0 = fog_color[1] + imulFix(aFog, r0 - fog_color[1]);
+				g0 = fog_color[2] + imulFix(aFog, g0 - fog_color[2]);
+				b0 = fog_color[3] + imulFix(aFog, b0 - fog_color[3]);
+			}
+			dst[i] = fix_to_sample(r0, g0, b0);
 
 #else
-			tx0 = tofix(line.t[0][0].x, inversew);
-			ty0 = tofix(line.t[0][0].y, inversew);
-#ifdef IPOL_C0
-			getTexel_plain2 ( r1, g1, b1, line.c[0][0] );
-#endif
-#endif
-
-#ifdef IPOL_C0
-			getSample_texture ( r0, g0, b0, &IT[0], tx0,ty0 );
-
-#ifdef IPOL_L0
-			r2 = tofix(line.l[0][0].x, inversew*COLOR_MAX);
-			g2 = tofix(line.l[0][0].y, inversew*COLOR_MAX);
-			b2 = tofix(line.l[0][0].z, inversew*COLOR_MAX);
-
-			//dst[i] = fix_to_sample(r2, g2, b2);
-
 			dst[i] = fix_to_sample(
-				clampfix_maxcolor( r2 + imulFix ( r0, r1 )),
-				clampfix_maxcolor( g2 + imulFix ( g0, g1 )),
-				clampfix_maxcolor( b2 + imulFix ( b0, b1 ))
-			);
-
-#else
-			dst[i] = fix_to_sample(
-				imulFix(r0, r1),
-				imulFix(g0, g1),
-				imulFix(b0, b1)
+				imulFix_simple(r0, r1),
+				imulFix_simple(g0, g1),
+				imulFix_simple(b0, b1)
 			);
 #endif
 
@@ -325,6 +354,9 @@ void CTRTextureGouraud2::fragmentShader ()
 #endif
 #ifdef IPOL_C1
 		line.c[1][0] += slopeC[1];
+#endif
+#ifdef IPOL_C2
+		line.c[2][0] += slopeC[2];
 #endif
 #ifdef IPOL_T0
 		line.t[0][0] += slopeT[0];
@@ -392,6 +424,11 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 	scan.c[1][0] = a->Color[1];
 #endif
 
+#ifdef IPOL_C2
+	scan.slopeC[2][0] = (c->Color[2] - a->Color[2]) * scan.invDeltaY[0];
+	scan.c[2][0] = a->Color[2];
+#endif
+
 #ifdef IPOL_T0
 	scan.slopeT[0][0] = (c->Tex[0] - a->Tex[0]) * scan.invDeltaY[0];
 	scan.t[0][0] = a->Tex[0];
@@ -442,6 +479,11 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 		scan.c[1][1] = a->Color[1];
 #endif
 
+#ifdef IPOL_C2
+		scan.slopeC[2][1] = (b->Color[2] - a->Color[2]) * scan.invDeltaY[1];
+		scan.c[2][1] = a->Color[2];
+#endif
+
 #ifdef IPOL_T0
 		scan.slopeT[0][1] = (b->Tex[0] - a->Tex[0]) * scan.invDeltaY[1];
 		scan.t[0][1] = a->Tex[0];
@@ -488,6 +530,11 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 		scan.c[1][1] += scan.slopeC[1][1] * subPixel;
 #endif
 
+#ifdef IPOL_C2
+		scan.c[2][0] += scan.slopeC[2][0] * subPixel;
+		scan.c[2][1] += scan.slopeC[2][1] * subPixel;
+#endif
+
 #ifdef IPOL_T0
 		scan.t[0][0] += scan.slopeT[0][0] * subPixel;
 		scan.t[0][1] += scan.slopeT[0][1] * subPixel;
@@ -529,6 +576,11 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 #ifdef IPOL_C1
 			line.c[1][scan.left] = scan.c[1][0];
 			line.c[1][scan.right] = scan.c[1][1];
+#endif
+
+#ifdef IPOL_C2
+			line.c[2][scan.left] = scan.c[2][0];
+			line.c[2][scan.right] = scan.c[2][1];
 #endif
 
 #ifdef IPOL_T0
@@ -574,6 +626,11 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 			scan.c[1][1] += scan.slopeC[1][1];
 #endif
 
+#ifdef IPOL_C2
+			scan.c[2][0] += scan.slopeC[2][0];
+			scan.c[2][1] += scan.slopeC[2][1];
+#endif
+
 #ifdef IPOL_T0
 			scan.t[0][0] += scan.slopeT[0][0];
 			scan.t[0][1] += scan.slopeT[0][1];
@@ -613,6 +670,9 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 #ifdef IPOL_C1
 			scan.c[1][0] = a->Color[1] + scan.slopeC[1][0] * temp[0];
 #endif
+#ifdef IPOL_C2
+			scan.c[2][0] = a->Color[2] + scan.slopeC[2][0] * temp[0];
+#endif
 #ifdef IPOL_T0
 			scan.t[0][0] = a->Tex[0] + scan.slopeT[0][0] * temp[0];
 #endif
@@ -647,6 +707,11 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 #ifdef IPOL_C1
 		scan.slopeC[1][1] = (c->Color[1] - b->Color[1]) * scan.invDeltaY[2];
 		scan.c[1][1] = b->Color[1];
+#endif
+
+#ifdef IPOL_C2
+		scan.slopeC[2][1] = (c->Color[2] - b->Color[2]) * scan.invDeltaY[2];
+		scan.c[2][1] = b->Color[2];
 #endif
 
 #ifdef IPOL_T0
@@ -696,6 +761,11 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 		scan.c[1][1] += scan.slopeC[1][1] * subPixel;
 #endif
 
+#ifdef IPOL_C1
+		scan.c[2][0] += scan.slopeC[2][0] * subPixel;
+		scan.c[2][1] += scan.slopeC[2][1] * subPixel;
+#endif
+
 #ifdef IPOL_T0
 		scan.t[0][0] += scan.slopeT[0][0] * subPixel;
 		scan.t[0][1] += scan.slopeT[0][1] * subPixel;
@@ -739,6 +809,11 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 			line.c[1][scan.right] = scan.c[1][1];
 #endif
 
+#ifdef IPOL_C2
+			line.c[2][scan.left] = scan.c[2][0];
+			line.c[2][scan.right] = scan.c[2][1];
+#endif
+
 #ifdef IPOL_T0
 			line.t[0][scan.left] = scan.t[0][0];
 			line.t[0][scan.right] = scan.t[0][1];
@@ -780,6 +855,11 @@ void CTRTextureGouraud2::drawTriangle(const s4DVertex* burning_restrict a, const
 #ifdef IPOL_C1
 			scan.c[1][0] += scan.slopeC[1][0];
 			scan.c[1][1] += scan.slopeC[1][1];
+#endif
+
+#ifdef IPOL_C2
+			scan.c[2][0] += scan.slopeC[2][0];
+			scan.c[2][1] += scan.slopeC[2][1];
 #endif
 
 #ifdef IPOL_T0
