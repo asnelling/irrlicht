@@ -858,5 +858,13 @@ precision will be lower but speed higher. currently X86 only
 	#endif
 #endif
 
+//!define IRRLICHT_FREE_CANVAS if you don't want( or can't) manipulate the system mouse or system window
+// Default: off
+// for example: Window Mode,MacOSX,Virtual Machine,X11 Forward
+// createDevice is Patched, so that WindowResize is always allowed.
+// CSceneNodeAnimatorFPS install Look(Rotate) for keyboard and handles MouseMovement only if mouse is inside window
+#define IRRLICHT_FREE_CANVAS
+
+
 #endif // __IRR_COMPILE_CONFIG_H_INCLUDED__
 

@@ -175,6 +175,11 @@ namespace irr
 			//! Changes the visible state of the mouse cursor.
 			virtual void setVisible(bool visible) _IRR_OVERRIDE_
 			{
+#if defined(IRRLICHT_FREE_CANVAS)
+				IsVisible = visible;
+				return;
+#endif
+
 				if (visible==IsVisible)
 					return;
 				IsVisible = visible;

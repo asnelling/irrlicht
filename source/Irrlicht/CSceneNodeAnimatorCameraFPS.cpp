@@ -16,9 +16,6 @@ namespace irr
 namespace scene
 {
 
-//!define NO_IRRLICHT_MOUSE_CAPTURE if you don't want to manipulate the system mouse
-#define NO_IRRLICHT_MOUSE_CAPTURE
-
 
 //! constructor
 CSceneNodeAnimatorCameraFPS::CSceneNodeAnimatorCameraFPS(gui::ICursorControl* cursorControl,
@@ -36,7 +33,7 @@ CSceneNodeAnimatorCameraFPS::CSceneNodeAnimatorCameraFPS(gui::ICursorControl* cu
 
 	CaptureMouse = true;
 	MouseOutside = false;
-	#if defined(NO_IRRLICHT_MOUSE_CAPTURE)
+	#if defined(IRRLICHT_FREE_CANVAS)
 		CaptureMouse = false;
 	#endif
 
