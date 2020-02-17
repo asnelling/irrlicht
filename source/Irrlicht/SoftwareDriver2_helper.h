@@ -189,12 +189,13 @@ static inline s32 s32_abs(s32 x)
 	return (x ^ b ) - b;
 }
 
-
+#if 0
 //! conditional set based on mask and arithmetic shift
 REALINLINE u32 if_mask_a_else_b ( const u32 mask, const u32 a, const u32 b )
 {
 	return ( mask & ( a ^ b ) ) ^ b;
 }
+#endif
 
 // ------------------ Video---------------------------------------
 /*!
@@ -402,71 +403,6 @@ inline u32 PixelBlend32 ( const u32 c2, const u32 c1 )
 	xg &= 0x0000FF00;
 
 	return (c1 & 0xFF000000) | rb | xg;
-}
-
-/*!
-	Pixel =>
-			color = sourceAlpha > 0 ? source, else dest
-			alpha = max(destAlpha, sourceAlpha)
-*/
-inline u16 PixelCombine16 ( const u16 c2, const u16 c1 )
-{
-	if ( video::getAlpha(c1) > 0 )
-		return c1;
-	else
-		return c2;
-}
-
-/*!
-	Pixel =>
-			color = dest * ( 1 - SourceAlpha ) + source * SourceAlpha,
-			alpha = destAlpha * ( 1 - SourceAlpha ) + sourceAlpha
-
-	where "1" means "full scale" (255)
-*/
-inline u32 PixelCombine32 ( const u32 c2, const u32 c1 )
-{
-	// alpha test
-	u32 alpha = c1 & 0xFF000000;
-
-	if ( 0 == alpha )
-		return c2;
-	if ( 0xFF000000 == alpha )
-	{
-		return c1;
-	}
-
-	alpha >>= 24;
-
-	// add highbit alpha, if ( alpha > 127 ) alpha += 1;
-	// stretches [0;255] to [0;256] to avoid division by 255. use division 256 == shr 8
-	alpha += ( alpha >> 7);
-
-	u32 srcRB = c1 & 0x00FF00FF;
-	u32 srcXG = c1 & 0x0000FF00;
-
-	u32 dstRB = c2 & 0x00FF00FF;
-	u32 dstXG = c2 & 0x0000FF00;
-
-
-	u32 rb = srcRB - dstRB;
-	u32 xg = srcXG - dstXG;
-
-	rb *= alpha;
-	xg *= alpha;
-	rb >>= 8;
-	xg >>= 8;
-
-	rb += dstRB;
-	xg += dstXG;
-
-	rb &= 0x00FF00FF;
-	xg &= 0x0000FF00;
-
-	u32 sa = c1 >> 24;
-	u32 da = c2 >> 24;
-	u32 blendAlpha_fix8 = (sa*256 + da*(256-alpha))>>8;
-	return blendAlpha_fix8 << 24 | rb | xg;
 }
 
 
@@ -827,40 +763,6 @@ inline void color_to_fix1(tFixPoint c[4], const tVideoSample t00)
 
 }
 
-/*!
-	c1 == src
-	c2 == dest
-	alpha = c1.alpha * c2.alpha
-
-	Pixel = (c1.color * src_color) * alpha + c2.color * ( 1 - alpha )
-*/
-inline void PixelBlend32_2(u32* dst, const u32* src, const tFixPoint c[4])
-{
-	tFixPoint s[4];
-	color_to_fix(s, src[0]);
-
-	tFixPoint a0;
-	a0 = imulFix_simple(s[0], c[0]);
-	if (0 == a0)
-		return;
-
-	s[1] = imulFix_simple(s[1], c[1]);
-	s[2] = imulFix_simple(s[2], c[2]);
-	s[3] = imulFix_simple(s[3], c[3]);
-
-	if (a0 < FIXPOINT_COLOR_MAX)
-	{
-		tFixPoint d[4];
-		color_to_fix(d, dst[0]);
-
-		fix_color_norm(a0);
-
-		s[1] = d[1] + imulFix(a0, s[1] - d[1]);
-		s[2] = d[2] + imulFix(a0, s[2] - d[2]);
-		s[3] = d[3] + imulFix(a0, s[3] - d[3]);
-	}
-	dst[0] = fix_to_sample(s[1], s[2], s[3]);
-}
 
 
 //! ----- FP24 1.23 fix point z-buffer

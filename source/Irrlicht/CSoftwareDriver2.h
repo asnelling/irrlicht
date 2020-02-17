@@ -85,6 +85,12 @@ namespace video
 				const void* indexList, u32 primitiveCount,
 				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType) _IRR_OVERRIDE_;
 
+		//! draws a vertex primitive list in 2d
+		virtual void draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
+			const void* indexList, u32 primitiveCount,
+			E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType) _IRR_OVERRIDE_;
+
+
 		//! draws an 2d image
 		//virtual void draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture) _IRR_OVERRIDE_;
 
@@ -317,7 +323,6 @@ namespace video
 		void transform_calc(E_TRANSFORMATION_STATE_BURNING_VIDEO state);
 
 		//core::recti ViewPort;
-		int ScissorTest;
 		AbsRectangle Scissor;
 
 		// Vertex Cache

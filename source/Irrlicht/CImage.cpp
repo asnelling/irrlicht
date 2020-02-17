@@ -7,6 +7,7 @@
 #include "CColorConverter.h"
 #include "CBlit.h"
 #include "os.h"
+#include "SoftwareDriver2_helper.h"
 
 namespace irr
 {
@@ -166,16 +167,10 @@ void CImage::copyToWithAlpha(IImage* target, const core::position2d<s32>& pos, c
 		return;
 	}
 
-	if ( combineAlpha )
-	{
-		Blit(BLITTER_TEXTURE_COMBINE_ALPHA, target, clipRect, &pos, this, &sourceRect, 0, &color,1);
-	}
-	else
-	{
-		// color blend only necessary on not full spectrum aka. color.color != 0xFFFFFFFF
-		Blit(color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND,
-				target, clipRect, &pos, this, &sourceRect, 0, &color,1);
-	}
+	// color blend only necessary on not full spectrum aka. color.color != 0xFFFFFFFF
+	Blit(combineAlpha ? BLITTER_TEXTURE_COMBINE_ALPHA : 
+		color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND,
+		target, clipRect, &pos, this, &sourceRect, 0, &color,1);
 }
 
 

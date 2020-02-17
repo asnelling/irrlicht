@@ -55,6 +55,7 @@ namespace video
 	enum eTransformLightFlags
 	{
 		//ENABLED		= 0x01,
+		TL_SCISSOR				= 0x02,
 		TL_LIGHT				= 0x04,
 		TL_SPECULAR				= 0x08,
 		TL_FOG					= 0x10,
@@ -312,7 +313,10 @@ namespace video
 			fog_color_sample = BURNINGSHADER_COLOR_FORMAT == ECF_A8R8G8B8 ? color_fog.color : color_fog.toA1R5G5B5();
 			color_to_fix(fog_color, fog_color_sample);
 		}
-
+		void setScissor(const AbsRectangle& scissor)
+		{
+			Scissor = scissor;
+		}
 
 	protected:
 
@@ -349,6 +353,8 @@ namespace video
 		size_t /*eTransformLightFlags*/ TL_Flag;
 		tFixPoint fog_color[4];
 		tVideoSample fog_color_sample;
+
+		AbsRectangle Scissor;
 	};
 
 

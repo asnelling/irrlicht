@@ -2314,6 +2314,9 @@
     <ClCompile Include="burning_shader_color.cpp">
       <Filter>Irrlicht\video\Burning Video</Filter>
     </ClCompile>
+    <ClCompile Include="CBlit.cpp">
+      <Filter>Irrlicht\video\Null</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Irrlicht.rc" />

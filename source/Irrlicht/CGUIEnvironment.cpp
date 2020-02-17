@@ -570,46 +570,58 @@ bool CGUIEnvironment::postEventFromUser(const SEvent& event)
 
 		break;
 	case EET_MOUSE_INPUT_EVENT:
+	{
+		SEvent e = event;
 
-		updateHoveredElement(core::position2d<s32>(event.MouseInput.X, event.MouseInput.Y));
+		//map screen coordinates to current viewport
+#if defined(IRRLICHT_FREE_CANVAS)
+		if (Driver)
+		{
+			core::position2d<s32> mousep(e.MouseInput.X, e.MouseInput.Y);
+			if (!Driver->mapScreenToViewPort(mousep))
+				return false;
+			e.MouseInput.X = mousep.X;
+			e.MouseInput.Y = mousep.Y;
+		}
+#endif
+		updateHoveredElement(core::position2d<s32>(e.MouseInput.X, e.MouseInput.Y));
 
-		if ( Hovered != Focus )
+		if (Hovered != Focus)
 		{
 			IGUIElement * focusCandidate = Hovered;
 
 			// Only allow enabled elements to be focused (unless EFF_CAN_FOCUS_DISABLED is set)
-			if ( Hovered && !Hovered->isEnabled() && !(FocusFlags & EFF_CAN_FOCUS_DISABLED))
+			if (Hovered && !Hovered->isEnabled() && !(FocusFlags & EFF_CAN_FOCUS_DISABLED))
 				focusCandidate = NULL;	// we still remove focus from the active element
 
 			// Please don't merge this into a single if clause, it's easier to debug the way it is
 			if (FocusFlags & EFF_SET_ON_LMOUSE_DOWN &&
-				event.MouseInput.Event == EMIE_LMOUSE_PRESSED_DOWN )
+				e.MouseInput.Event == EMIE_LMOUSE_PRESSED_DOWN)
 			{
 				setFocus(focusCandidate);
 			}
-			else if ( FocusFlags & EFF_SET_ON_RMOUSE_DOWN &&
-				event.MouseInput.Event == EMIE_RMOUSE_PRESSED_DOWN )
+			else if (FocusFlags & EFF_SET_ON_RMOUSE_DOWN &&
+				e.MouseInput.Event == EMIE_RMOUSE_PRESSED_DOWN)
 			{
 				setFocus(focusCandidate);
 			}
-			else if ( FocusFlags & EFF_SET_ON_MOUSE_OVER &&
-				event.MouseInput.Event == EMIE_MOUSE_MOVED )
+			else if (FocusFlags & EFF_SET_ON_MOUSE_OVER &&
+				e.MouseInput.Event == EMIE_MOUSE_MOVED)
 			{
 				setFocus(focusCandidate);
 			}
 		}
 
 		// sending input to focus
-		if (Focus && Focus->OnEvent(event))
+		if (Focus && Focus->OnEvent(e))
 			return true;
 
 		// focus could have died in last call
 		if (!Focus && Hovered)
 		{
-			return Hovered->OnEvent(event);
+			return Hovered->OnEvent(e);
 		}
-
-		break;
+	} break;
 	case EET_KEY_INPUT_EVENT:
 		{
 			if (Focus && Focus->OnEvent(event))

@@ -1473,7 +1473,7 @@ void CBurningVideoDriver::VertexCache_map_source_format()
 	Material.resetRenderStates = true;
 	Material.Fallback_MaterialType = EMT_SOLID;
 
-	ScissorTest = 0;
+
 }
 
 
@@ -2232,7 +2232,40 @@ int CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCou
 	return 0;
 }
 
+//! draws a vertex primitive list in 2d
+void CBurningVideoDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
+	const void* indexList, u32 primitiveCount,
+	E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
+{
+	if (!checkPrimitiveCount(primitiveCount))
+		return;
 
+	CNullDriver::draw2DVertexPrimitiveList(vertices, vertexCount, indexList, primitiveCount, vType, pType, iType);
+
+	bool useAlphaChannelOfTexture = false;
+	video::SColor color(0xFFFFFFFF);
+	switch (Material.org.MaterialType)
+	{
+		case EMT_TRANSPARENT_ALPHA_CHANNEL:
+			useAlphaChannelOfTexture = true;
+			break;
+		case EMT_TRANSPARENT_VERTEX_ALPHA:
+			color.setAlpha(127);
+			break;
+		default:
+			break;
+	}
+	setRenderStates2DMode(color, Material.org.getTexture(0), useAlphaChannelOfTexture);
+
+	drawVertexPrimitiveList(vertices, vertexCount,
+		indexList, primitiveCount,
+		vType, pType, iType);
+
+	setRenderStates3DMode();
+
+}
+
+//! draws a vertex primitive list
 void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
 				const void* indexList, u32 primitiveCount,
 				E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
@@ -2744,6 +2777,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	{
 		CurrentShader->setTLFlag(EyeSpace.TL_Flag);
 		if (EyeSpace.TL_Flag & TL_FOG) CurrentShader->setFog(FogColor);
+		if (EyeSpace.TL_Flag &TL_SCISSOR) CurrentShader->setScissor(Scissor);
 		CurrentShader->setRenderTarget(RenderTargetSurface, ViewPort);
 		CurrentShader->OnSetMaterial(Material);
 		CurrentShader->pushEdgeTest(in.Wireframe, in.PointCloud, 0);
@@ -2986,12 +3020,12 @@ CImage* getImage(const video::ITexture* texture)
 	draw2DImage with single color scales into destination quad & cliprect(more like viewport)
 	draw2DImage with 4 color scales on destination and cliprect is scissor
 */
-//#define SOFTWARE_DRIVER_2_2D_OLD
-#define SOFTWARE_DRIVER_2_2D_AS_3D
+#define SOFTWARE_DRIVER_2_2D_OLD
+//#define SOFTWARE_DRIVER_2_2D_AS_3D
 //#define SOFTWARE_DRIVER_2_2D_NEW
-#define SOFTWARE_DRIVER_2_2D_AS_3D_TRANSFORM
+//#define SOFTWARE_DRIVER_2_2D_AS_3D_TRANSFORM
 
-static const u32 quad_triangle_indexList[6] = { 0,1,2,0,2,3 };
+static const u16 quad_triangle_indexList[6] = { 0,1,2,0,2,3 };
 
 
 #if 0
@@ -3012,6 +3046,7 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 #endif
 
 #if defined(SOFTWARE_DRIVER_2_2D_OLD)
+
 //! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
 	const core::rect<s32>& sourceRect,
@@ -3026,21 +3061,6 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 			return;
 		}
 
-#if 0
-		// 2d methods don't use viewPort
-		core::position2di dest = destPos;
-		core::recti clip = ViewPort;
-		if (ViewPort.getSize().Width != ScreenSize.Width)
-		{
-			dest.X = ViewPort.UpperLeftCorner.X + core::round32_fast(destPos.X*ViewPort.getWidth() / (f32)ScreenSize.Width);
-			dest.Y = ViewPort.UpperLeftCorner.Y + core::round32_fast(destPos.Y*ViewPort.getHeight() / (f32)ScreenSize.Height);
-			if (clipRect)
-			{
-				clip.constrainTo(*clipRect);
-			}
-			clipRect = &clip;
-		}
-#endif
 		if (useAlphaChannelOfTexture)
 			((CSoftwareTexture2*)texture)->getImage()->copyToWithAlpha(
 				RenderTargetSurface, destPos, sourceRect, color, clipRect);
@@ -3069,10 +3089,50 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 			argb == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND : BLITTER_TEXTURE_ALPHA_COLOR_BLEND : BLITTER_TEXTURE;
 
 		StretchBlit(op, RenderTargetSurface, clipRect, &destRect,
-			((CSoftwareTexture2*)texture)->getImage(), &sourceRect, &texture->getOriginalSize(), argb);
+			((CSoftwareTexture2*)texture)->getImage(), &sourceRect, &texture->getOriginalSize(), colors,4);
+	}
+}
+
+#if 0
+//! draw an 2d rectangle 1:1 niko
+void CBurningVideoDriver::draw2DRectangle(SColor color, const core::rect<s32>& pos,
+	const core::rect<s32>* clip)
+{
+	if (clip)
+	{
+		core::rect<s32> p(pos);
+
+		p.clipAgainst(*clip);
+
+		if (!p.isValid())
+			return;
+
+		drawRectangle(RenderTargetSurface, p, color);
+	}
+	else
+	{
+		if (!pos.isValid())
+			return;
+
+		drawRectangle(RenderTargetSurface, pos, color);
 	}
 }
 #endif
+
+//!Draws an 2d rectangle with a gradient.
+void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
+	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
+	const core::rect<s32>* clip)
+{
+	//draw2DRectangle(colorLeftUp, position, clip);
+	core::rect<s32> p(position);
+
+	if (clip) p.clipAgainst(*clip);
+	if (p.isValid()) drawRectangle(RenderTargetSurface, p, colorLeftUp);
+
+}
+#endif //defined(SOFTWARE_DRIVER_2_2D_OLD)
+
 
 
 #if defined(SOFTWARE_DRIVER_2_2D_NEW)
@@ -3142,6 +3202,110 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 	}
 }
 
+//!Draws an 2d rectangle with a gradient.
+void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
+	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
+	const core::rect<s32>* clip)
+{
+	core::rect<s32> pos = position;
+	if (clip) pos.clipAgainst(*clip);
+	if (!pos.isValid()) return;
+
+	const core::dimension2d<s32> renderTargetSize(ViewPort.getSize());
+
+	const f32 xPlus = -(renderTargetSize.Width*0.5f);
+	const f32 xFact = 1.0f / (renderTargetSize.Width*0.5f);
+
+	const f32 yPlus = renderTargetSize.Height - (renderTargetSize.Height*0.5f);
+	const f32 yFact = 1.0f / (renderTargetSize.Height*0.5f);
+
+	// fill VertexCache direct
+	VertexCache.vertexCount = 4;
+	VertexCache.vType = E4VT_STANDARD;
+
+	VertexCache.indicesIndex = 0;
+	VertexCache.indicesRun = 0;
+	VertexCache.indicesPitch = 1;
+	VertexCache.primitiveHasVertex = 3;
+
+	VertexCache.info[0].index = 0;
+	VertexCache.info[1].index = 1;
+	VertexCache.info[2].index = 2;
+	VertexCache.info[3].index = 3;
+
+
+	s4DVertex* v = &VertexCache.mem.data[0];
+
+	v[0].Pos.set((pos.UpperLeftCorner.X + xPlus)  * xFact, (yPlus - pos.UpperLeftCorner.Y)  * yFact, 0.f, 1.f);
+	v[2].Pos.set((pos.LowerRightCorner.X + xPlus) * xFact, (yPlus - pos.UpperLeftCorner.Y)  * yFact, 0.f, 1.f);
+	v[4].Pos.set((pos.LowerRightCorner.X + xPlus) * xFact, (yPlus - pos.LowerRightCorner.Y) * yFact, 0.f, 1.f);
+	v[6].Pos.set((pos.UpperLeftCorner.X + xPlus)  * xFact, (yPlus - pos.LowerRightCorner.Y) * yFact, 0.f, 1.f);
+
+#if BURNING_MATERIAL_MAX_COLORS > 0
+	v[0].Color[0].setA8R8G8B8(colorLeftUp.color);
+	v[2].Color[0].setA8R8G8B8(colorRightUp.color);
+	v[4].Color[0].setA8R8G8B8(colorRightDown.color);
+	v[6].Color[0].setA8R8G8B8(colorLeftDown.color);
+#endif
+
+	size_t i;
+	for (i = 0; i < 8; i += sizeof_s4DVertexPairRel)
+	{
+		v[i + 0].flag = (u32)(clipToFrustumTest(v + i) | VertexCache.vSize[VertexCache.vType].Format);
+		v[i + 1].flag = v[i + 0].flag;
+		if ((v[i].flag & VERTEX4D_INSIDE) == VERTEX4D_INSIDE)
+		{
+			ndc_2_dc_and_project(v + i + 1, v + i, s4DVertex_ofs(1));
+		}
+	}
+
+
+	IBurningShader * render = BurningShader[ETR_GOURAUD_ALPHA_NOZ]; // ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT];
+	render->setRenderTarget(RenderTargetSurface, ViewPort);
+
+	s4DVertex* face[4];
+
+	for (i = 0; i < 6; i += VertexCache.primitiveHasVertex)
+	{
+		face[0] = VertexCache_getVertex(quad_triangle_indexList[i + 0]);
+		face[1] = VertexCache_getVertex(quad_triangle_indexList[i + 1]);
+		face[2] = VertexCache_getVertex(quad_triangle_indexList[i + 2]);
+
+		// test clipping
+		size_t clipmask = face[0]->flag & face[1]->flag & face[2]->flag & VERTEX4D_INSIDE;
+
+		if (clipmask == VERTEX4D_INSIDE)
+		{
+			render->drawTriangle(face[0] + 1, face[1] + 1, face[2] + 1);
+			continue;
+		}
+		// Todo: all vertices are clipped in 2d..
+		// is this true ?
+
+		memcpy_s4DVertexPair(Clipper.data + s4DVertex_ofs(0), face[0]);
+		memcpy_s4DVertexPair(Clipper.data + s4DVertex_ofs(1), face[1]);
+		memcpy_s4DVertexPair(Clipper.data + s4DVertex_ofs(2), face[2]);
+
+		size_t vOut = clipToFrustum(VertexCache.primitiveHasVertex);// , clipmask);
+		if (vOut < VertexCache.primitiveHasVertex)
+			continue;
+
+		vOut *= sizeof_s4DVertexPairRel;
+		// to DC Space, project homogenous vertex
+		ndc_2_dc_and_project(Clipper.data + 1, Clipper.data, vOut);
+
+		// re-tesselate ( triangle-fan, 0-1-2,0-2-3.. )
+		for (size_t g = 0; g <= vOut - 6; g += sizeof_s4DVertexPairRel)
+		{
+			// rasterize
+			render->drawTriangle(Clipper.data + 1, Clipper.data + g + 3, Clipper.data + g + 5);
+		}
+
+	}
+
+}
+
+
 #endif // SOFTWARE_DRIVER_2_2D_NEW
 
 size_t compare_2d_material(const SMaterial& a, const SMaterial& b)
@@ -3159,6 +3323,7 @@ size_t compare_2d_material(const SMaterial& a, const SMaterial& b)
 	return flag;
 }
 
+#if 0
 void transform_for_BlitJob2D( SBlitJob& out,
 	const S3DVertex quad2DVertices[4], const core::dimension2d<u32>& renderTargetSize,
 	CBurningVideoDriver* driver
@@ -3230,9 +3395,8 @@ void transform_for_BlitJob2D( SBlitJob& out,
 
 	}
 
-
-
 }
+#endif
 
 void CBurningVideoDriver::setRenderStates2DMode(const video::SColor& color, video::ITexture* texture, bool useAlphaChannelOfTexture)
 {
@@ -3378,14 +3542,14 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 	Quad2DVertices[2].TCoords = core::vector2df(tcoords.LowerRightCorner.X, tcoords.LowerRightCorner.Y);
 	Quad2DVertices[3].TCoords = core::vector2df(tcoords.UpperLeftCorner.X, tcoords.LowerRightCorner.Y);
 
-	SBlitJob job;
-	transform_for_BlitJob2D(job, Quad2DVertices, renderTargetSize,this);
+	//SBlitJob job;
+	//transform_for_BlitJob2D(job, Quad2DVertices, renderTargetSize,this);
 
 	setRenderStates2DMode(color, (video::ITexture*) texture, useAlphaChannelOfTexture);
 
 	drawVertexPrimitiveList(Quad2DVertices, 4,
 		quad_triangle_indexList, 2,
-		EVT_STANDARD, scene::EPT_TRIANGLES, EIT_32BIT);
+		EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
 
 	setRenderStates3DMode();
 
@@ -3441,7 +3605,7 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 			return;
 
 		//glEnable(GL_SCISSOR_TEST);
-		ScissorTest = ETF_VALID;
+		EyeSpace.TL_Flag |= TL_SCISSOR;
 		setScissor(clipRect->UpperLeftCorner.X, renderTargetSize.Height - clipRect->LowerRightCorner.Y,
 			clipRect->getWidth(), clipRect->getHeight());
 	}
@@ -3449,17 +3613,18 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 	video::SColor alphaTest;
 	alphaTest.color = useColor[0].color & useColor[0].color & useColor[0].color & useColor[0].color;
 
-	SBlitJob job;
-	transform_for_BlitJob2D(job, Quad2DVertices, renderTargetSize, this);
+	//SBlitJob job;
+	//transform_for_BlitJob2D(job, Quad2DVertices, renderTargetSize, this);
 
 	setRenderStates2DMode(alphaTest, (video::ITexture*) texture, useAlphaChannelOfTexture);
 
 	drawVertexPrimitiveList(Quad2DVertices, 4,
 		quad_triangle_indexList, 2,
-		EVT_STANDARD, scene::EPT_TRIANGLES, EIT_32BIT);
+		EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
 
+	
 	if (clipRect)
-		ScissorTest = 0;
+		EyeSpace.TL_Flag &= ~TL_SCISSOR;
 
 	setRenderStates3DMode();
 
@@ -3506,7 +3671,7 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 
 	drawVertexPrimitiveList(Quad2DVertices, 4,
 		quad_triangle_indexList, 2,
-		EVT_STANDARD, scene::EPT_TRIANGLES, EIT_32BIT);
+		EVT_STANDARD, scene::EPT_TRIANGLES, EIT_16BIT);
 
 	setRenderStates3DMode();
 
@@ -3516,151 +3681,8 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 #endif // SOFTWARE_DRIVER_2_2D_AS_3D
 
 
-#if 0
-//! draw an 2d rectangle 1:1 niko
-void CBurningVideoDriver::draw2DRectangle(SColor color, const core::rect<s32>& pos,
-	const core::rect<s32>* clip)
-{
-	if (clip)
-	{
-		core::rect<s32> p(pos);
-
-		p.clipAgainst(*clip);
-
-		if (!p.isValid())
-			return;
-
-		drawRectangle(RenderTargetSurface, p, color);
-	}
-	else
-	{
-		if (!pos.isValid())
-			return;
-
-		drawRectangle(RenderTargetSurface, pos, color);
-	}
-}
-
-#endif
 
 
-#if defined(SOFTWARE_DRIVER_2_2D_NEW)
-
-//!Draws an 2d rectangle with a gradient.
-void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
-	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
-	const core::rect<s32>* clip)
-{
-	core::rect<s32> pos = position;
-	if (clip) pos.clipAgainst(*clip);
-	if (!pos.isValid()) return;
-
-	const core::dimension2d<s32> renderTargetSize(ViewPort.getSize());
-
-	const f32 xPlus = -(renderTargetSize.Width*0.5f);
-	const f32 xFact = 1.0f / (renderTargetSize.Width*0.5f);
-
-	const f32 yPlus = renderTargetSize.Height - (renderTargetSize.Height*0.5f);
-	const f32 yFact = 1.0f / (renderTargetSize.Height*0.5f);
-
-	// fill VertexCache direct
-	VertexCache.vertexCount = 4;
-	VertexCache.vType = E4VT_STANDARD;
-
-	VertexCache.indicesIndex = 0;
-	VertexCache.indicesRun = 0;
-	VertexCache.indicesPitch = 1;
-	VertexCache.primitiveHasVertex = 3;
-
-	VertexCache.info[0].index = 0;
-	VertexCache.info[1].index = 1;
-	VertexCache.info[2].index = 2;
-	VertexCache.info[3].index = 3;
-
-
-	s4DVertex* v = &VertexCache.mem.data[0];
-
-	v[0].Pos.set((pos.UpperLeftCorner.X + xPlus)  * xFact, (yPlus - pos.UpperLeftCorner.Y)  * yFact, 0.f, 1.f);
-	v[2].Pos.set((pos.LowerRightCorner.X + xPlus) * xFact, (yPlus - pos.UpperLeftCorner.Y)  * yFact, 0.f, 1.f);
-	v[4].Pos.set((pos.LowerRightCorner.X + xPlus) * xFact, (yPlus - pos.LowerRightCorner.Y) * yFact, 0.f, 1.f);
-	v[6].Pos.set((pos.UpperLeftCorner.X + xPlus)  * xFact, (yPlus - pos.LowerRightCorner.Y) * yFact, 0.f, 1.f);
-
-#if BURNING_MATERIAL_MAX_COLORS > 0
-	v[0].Color[0].setA8R8G8B8(colorLeftUp.color);
-	v[2].Color[0].setA8R8G8B8(colorRightUp.color);
-	v[4].Color[0].setA8R8G8B8(colorRightDown.color);
-	v[6].Color[0].setA8R8G8B8(colorLeftDown.color);
-#endif
-
-	u32 i;
-	for (i = 0; i < 8; i += sizeof_s4DVertexPairRel)
-	{
-		v[i + 0].flag = (u32)(clipToFrustumTest(v + i) | VertexCache.vSize[VertexCache.vType].Format);
-		v[i + 1].flag = v[i + 0].flag;
-		if ((v[i].flag & VERTEX4D_INSIDE) == VERTEX4D_INSIDE)
-		{
-			ndc_2_dc_and_project(v + i + 1, v + i, s4DVertex_ofs(1));
-		}
-	}
-
-
-	IBurningShader * render = BurningShader[ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT];
-	render->setRenderTarget(RenderTargetSurface, ViewPort);
-
-	s4DVertex* face[4];
-
-	for (i = 0; i < 6; i += VertexCache.primitiveHasVertex)
-	{
-		face[0] = VertexCache_getVertex(quad_triangle_indexList[i + 0]);
-		face[1] = VertexCache_getVertex(quad_triangle_indexList[i + 1]);
-		face[2] = VertexCache_getVertex(quad_triangle_indexList[i + 2]);
-
-		// test clipping
-		size_t clipmask = face[0]->flag & face[1]->flag & face[2]->flag & VERTEX4D_INSIDE;
-
-		if (clipmask == VERTEX4D_INSIDE)
-		{
-			render->drawTriangle(face[0] + 1, face[1] + 1, face[2] + 1);
-			continue;
-		}
-		// Todo: all vertices are clipped in 2d..
-		// is this true ?
-
-		memcpy_s4DVertexPair(Clipper.data + s4DVertex_ofs(0), face[0]);
-		memcpy_s4DVertexPair(Clipper.data + s4DVertex_ofs(1), face[1]);
-		memcpy_s4DVertexPair(Clipper.data + s4DVertex_ofs(2), face[2]);
-
-		size_t vOut = clipToFrustum(VertexCache.primitiveHasVertex,clipmask);
-		if (vOut < VertexCache.primitiveHasVertex)
-			continue;
-
-		vOut *= sizeof_s4DVertexPairRel;
-		// to DC Space, project homogenous vertex
-		ndc_2_dc_and_project(Clipper.data + 1, Clipper.data, vOut);
-
-		// re-tesselate ( triangle-fan, 0-1-2,0-2-3.. )
-		for (size_t g = 0; g <= vOut - 6; g += sizeof_s4DVertexPairRel)
-		{
-			// rasterize
-			render->drawTriangle(Clipper.data + 1, Clipper.data + g + 3, Clipper.data + g + 5);
-		}
-
-	}
-	
-}
-
-#endif // SOFTWARE_DRIVER_2_2D_NEW
-
-
-#if defined(SOFTWARE_DRIVER_2_2D_OLD)
-//!Draws an 2d rectangle with a gradient.
-void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
-	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
-	const core::rect<s32>* clip)
-{
-	draw2DRectangle(colorLeftUp, position, clip);
-}
-#endif //defined(SOFTWARE_DRIVER_2_2D_OLD)
 
 //! Draws a 2d line.
 void CBurningVideoDriver::draw2DLine(const core::position2d<s32>& start,
