@@ -1281,7 +1281,6 @@
   <ItemGroup>
     <ClCompile Include="burning_shader_color.cpp" />
     <ClCompile Include="CB3DMeshWriter.cpp" />
-    <ClCompile Include="CBlit.cpp" />
     <ClCompile Include="CD3D9RenderTarget.cpp" />
     <ClCompile Include="CDefaultSceneNodeAnimatorFactory.cpp" />
     <ClCompile Include="CDefaultSceneNodeFactory.cpp" />

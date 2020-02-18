@@ -170,7 +170,6 @@ namespace video
 		0
 	};
 
-	typedef unsigned int a8r8g8b8;
 
 	//! Creates a 16 bit A1R5G5B5 color
 	inline u16 RGBA16(u32 r, u32 g, u32 b, u32 a=0xFF)
@@ -200,7 +199,7 @@ namespace video
 
 
 	//! Converts a 32bit (X8R8G8B8) color to a 16bit A1R5G5B5 color
-	inline u16 X8R8G8B8toA1R5G5B5(a8r8g8b8 color)
+	inline u16 X8R8G8B8toA1R5G5B5(u32 color)
 	{
 		return (u16)(0x8000 |
 			( color & 0x00F80000) >> 9 |
@@ -210,7 +209,7 @@ namespace video
 
 
 	//! Converts a 32bit (A8R8G8B8) color to a 16bit A1R5G5B5 color
-	inline u16 A8R8G8B8toA1R5G5B5(a8r8g8b8 color)
+	inline u16 A8R8G8B8toA1R5G5B5(u32 color)
 	{
 		return (u16)(( color & 0x80000000) >> 16|
 			( color & 0x00F80000) >> 9 |
@@ -220,7 +219,7 @@ namespace video
 
 
 	//! Converts a 32bit (A8R8G8B8) color to a 16bit R5G6B5 color
-	inline u16 A8R8G8B8toR5G6B5(a8r8g8b8 color)
+	inline u16 A8R8G8B8toR5G6B5(u32 color)
 	{
 		return (u16)(( color & 0x00F80000) >> 8 |
 			( color & 0x0000FC00) >> 5 |
@@ -560,7 +559,7 @@ namespace video
 		}
 
 		//! color in A8R8G8B8 Format
-		a8r8g8b8 color;
+		u32 color;
 	};
 
 

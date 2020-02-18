@@ -885,7 +885,8 @@ bool COpenGLExtensionHandler::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 		return FeatureAvailable[IRR_ARB_seamless_cube_map];
 	case EVDF_DEPTH_CLAMP:
 		return FeatureAvailable[IRR_NV_depth_clamp] || FeatureAvailable[IRR_ARB_depth_clamp];
-
+	case EVDF_VIEWPORT_SCALE_GUI:
+		return true;
 	default:
 		return false;
 	};

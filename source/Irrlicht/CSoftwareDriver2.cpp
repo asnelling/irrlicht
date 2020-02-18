@@ -16,6 +16,11 @@
 #include "CBlit.h"
 
 
+//#define SOFTWARE_DRIVER_2_2D_OLD
+#define SOFTWARE_DRIVER_2_2D_AS_3D
+//#define SOFTWARE_DRIVER_2_2D_NEW
+//#define SOFTWARE_DRIVER_2_2D_AS_3D_TRANSFORM
+
 #define MAT_TEXTURE(tex) ( (video::CSoftwareTexture2*) Material.org.getTexture ( (u32)tex ) )
 
 // Matrix now here
@@ -497,6 +502,11 @@ bool CBurningVideoDriver::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 		break;
 #endif
 
+#if defined(SOFTWARE_DRIVER_2_2D_AS_3D)
+	case EVDF_VIEWPORT_SCALE_GUI:
+		on = 1;
+		break;
+#endif
 	default:
 		on = 0;
 		break;
@@ -3020,7 +3030,7 @@ CImage* getImage(const video::ITexture* texture)
 	draw2DImage with single color scales into destination quad & cliprect(more like viewport)
 	draw2DImage with 4 color scales on destination and cliprect is scissor
 */
-#define SOFTWARE_DRIVER_2_2D_OLD
+//#define SOFTWARE_DRIVER_2_2D_OLD
 //#define SOFTWARE_DRIVER_2_2D_AS_3D
 //#define SOFTWARE_DRIVER_2_2D_NEW
 //#define SOFTWARE_DRIVER_2_2D_AS_3D_TRANSFORM
@@ -3089,7 +3099,8 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 			argb == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND : BLITTER_TEXTURE_ALPHA_COLOR_BLEND : BLITTER_TEXTURE;
 
 		StretchBlit(op, RenderTargetSurface, clipRect, &destRect,
-			((CSoftwareTexture2*)texture)->getImage(), &sourceRect, &texture->getOriginalSize(), colors,4);
+			((CSoftwareTexture2*)texture)->getImage(), &sourceRect, &texture->getOriginalSize(), argb);
+
 	}
 }
 
@@ -3308,20 +3319,6 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 
 #endif // SOFTWARE_DRIVER_2_2D_NEW
 
-size_t compare_2d_material(const SMaterial& a, const SMaterial& b)
-{
-	size_t flag = 0;
-	flag |= a.MaterialType == b.MaterialType ? 0 : 1;
-	flag |= a.ZBuffer == b.ZBuffer ? 0 : 16;
-	flag |= a.TextureLayer[0].Texture == b.TextureLayer[0].Texture ? 0 : 2;
-	flag |= a.MaterialTypeParam == b.MaterialTypeParam ? 0 : 4;
-	if (flag) return flag;
-
-	flag |= a.TextureLayer[1].Texture == b.TextureLayer[1].Texture ? 0 : 8;
-	flag |= a.ZWriteEnable == b.ZWriteEnable ? 0 : 32;
-
-	return flag;
-}
 
 #if 0
 void transform_for_BlitJob2D( SBlitJob& out,
@@ -3398,6 +3395,21 @@ void transform_for_BlitJob2D( SBlitJob& out,
 }
 #endif
 
+size_t compare_2d_material(const SMaterial& a, const SMaterial& b)
+{
+	size_t flag = 0;
+	flag |= a.MaterialType == b.MaterialType ? 0 : 1;
+	flag |= a.ZBuffer == b.ZBuffer ? 0 : 16;
+	flag |= a.TextureLayer[0].Texture == b.TextureLayer[0].Texture ? 0 : 2;
+	flag |= a.MaterialTypeParam == b.MaterialTypeParam ? 0 : 4;
+	if (flag) return flag;
+
+	flag |= a.TextureLayer[1].Texture == b.TextureLayer[1].Texture ? 0 : 8;
+	flag |= a.ZWriteEnable == b.ZWriteEnable ? 0 : 32;
+
+	return flag;
+}
+
 void CBurningVideoDriver::setRenderStates2DMode(const video::SColor& color, video::ITexture* texture, bool useAlphaChannelOfTexture)
 {
 	//save current 3D Material
@@ -3430,12 +3442,9 @@ void CBurningVideoDriver::setRenderStates2DMode(const video::SColor& color, vide
 	//used for text. so stay as sharp as possible (like HW Driver)
 	bool mip = false;
 
-#ifdef BURNINGVIDEO_RENDERER_BEAUTIFUL
-	if (texture && texture->getOriginalSize() != texture->getSize())
-	{
-		mip = true;
-	}
-#endif
+	const SMaterial& currentMaterial = (!OverrideMaterial2DEnabled) ? InitMaterial2D : OverrideMaterial2D;
+	mip = currentMaterial.TextureLayer[0].BilinearFilter;
+
 	Material.mat2D.setFlag(video::EMF_BILINEAR_FILTER, mip);
 
 
@@ -3454,7 +3463,8 @@ void CBurningVideoDriver::setRenderStates2DMode(const video::SColor& color, vide
 		m.makeIdentity();
 		setTransform(ETS_WORLD, m);
 
-		//m.setTranslation(core::vector3df(0.375f, 0.375f, 0.0f));
+		if ( mip ) m.setTranslation(core::vector3df(0.375f, 0.375f, 0.0f));
+
 		setTransform(ETS_VIEW, m);
 	}
 

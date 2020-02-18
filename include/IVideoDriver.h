@@ -598,9 +598,12 @@ namespace video
 		virtual const core::rect<s32>& getViewPort() const =0;
 
 #if defined(IRRLICHT_FREE_CANVAS)
-		//!map screen coordinates (mouse) to current viewport
+		//! Map screen coordinates (mouse) to current viewport
 		virtual bool mapScreenToViewPort(core::vector2d<s32>& p) const
 		{
+			if (!queryFeature(EVDF_VIEWPORT_SCALE_GUI))
+				return true;
+
 			const core::rect<s32>& v = getViewPort();
 			const bool inside = v.isPointInside(p);
 			const core::dimension2d<u32>& s = getScreenSize();
@@ -612,11 +615,6 @@ namespace video
 			p.X = (s32)floorf((p.X - v.UpperLeftCorner.X)*sx + 0.5f);
 			p.Y = (s32)floorf((p.Y - v.UpperLeftCorner.Y)*sy + 0.5f);
 			return inside;
-		}
-#else
-		virtual bool mapScreenToViewPort(core::vector2d<s32>& p) const
-		{
-			return true;
 		}
 #endif
 
