@@ -732,11 +732,11 @@ static void executeBlit_TextureCopy_24_to_32( const SBlitJob * job )
 	}
 	else
 	{
-		for ( s32 dy = 0; dy != job->height; ++dy )
+		for ( u32 dy = 0; dy < job->height; ++dy )
 		{
 			const u8* s = src;
 
-			for ( s32 dx = 0; dx != job->width; ++dx )
+			for ( u32 dx = 0; dx < job->width; ++dx )
 			{
 				dst[dx] = 0xFF000000 | s[0] << 16 | s[1] << 8 | s[2];
 				s += 3;
@@ -1170,9 +1170,9 @@ static void executeBlit_TextureCombineColor_32_to_32( const SBlitJob * job )
 	u32 *src = (u32*) job->src;
 	u32 *dst = (u32*) job->dst;
 
-	for ( s32 dy = 0; dy != job->height; ++dy )
+	for ( u32 dy = 0; dy != job->height; ++dy )
 	{
-		for ( s32 dx = 0; dx != job->width; ++dx )
+		for (u32 dx = 0; dx != job->width; ++dx )
 		{
 			dst[dx] = PixelCombine32( dst[dx], PixelMul32_2( src[dx], job->argb ) );
 		}
@@ -1286,7 +1286,7 @@ inline void setClip(AbsRectangle &out, const core::rect<s32> *clip,
 	const s32 h = tex->getDimension().Height;
 
 	//driver could have changed texture size.
-	if (clip && tex_org && (w != tex_org->Width || h != tex_org->Height))
+	if (clip && tex_org && ((u32)w != tex_org->Width || (u32)h != tex_org->Height))
 	{
 		out.x0 = core::s32_clamp((clip->UpperLeftCorner.X*w) / tex_org->Width, 0, w - 1);
 		out.x1 = core::s32_clamp((clip->LowerRightCorner.X*w) / tex_org->Width, out.x0, w);
