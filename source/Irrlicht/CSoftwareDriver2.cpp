@@ -2590,15 +2590,15 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	
 	ITexture* texture0 = in.getTexture(0);
 	ITexture* texture1 = in.getTexture(1);
-	ITexture* texture2 = in.getTexture(2);
-	ITexture* texture3 = in.getTexture(3);
+	//ITexture* texture2 = in.getTexture(2);
+	//ITexture* texture3 = in.getTexture(3);
 
 	//visual studio code analysis
 	u32 maxTex = BURNING_MATERIAL_MAX_TEXTURES;
 	if (maxTex < 1) texture0 = 0;
 	if (maxTex < 2) texture1 = 0;
-	if (maxTex < 3) texture2 = 0;
-	if (maxTex < 4) texture3 = 0;
+	//if (maxTex < 3) texture2 = 0;
+	//if (maxTex < 4) texture3 = 0;
 
 	EyeSpace.TL_Flag &= ~(TL_TEXTURE_TRANSFORM | TL_LIGHT0_IS_NORMAL_MAP);
 
