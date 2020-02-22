@@ -145,9 +145,10 @@ namespace video
 		//! Support for clamping vertices beyond far-plane to depth instead of capping them.
 		EVDF_DEPTH_CLAMP,
 
+#if defined(IRRLICHT_FREE_CANVAS)
 		//! GUI scales on viewport
 		EVDF_VIEWPORT_SCALE_GUI,
-
+#endif
 		//! Only used for counting the elements of this enum
 		EVDF_COUNT
 	};

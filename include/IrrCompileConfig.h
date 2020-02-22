@@ -865,6 +865,11 @@ precision will be lower but speed higher. currently X86 only
 // CSceneNodeAnimatorFPS install Look(Rotate) for keyboard and handles MouseMovement only if mouse is inside window
 //#define IRRLICHT_FREE_CANVAS
 
+//!define IRRLICHT_sRGB if you want irrlicht handle linear and sRGB images and textures
+// Default: off
+// for example: Quake3 Textures/Lightmaps are linear
+
+//#define IRRLICHT_sRGB
 
 #endif // __IRR_COMPILE_CONFIG_H_INCLUDED__
 

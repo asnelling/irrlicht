@@ -496,9 +496,11 @@ bool CBurningVideoDriver::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 #endif
 
 #if defined(SOFTWARE_DRIVER_2_2D_AS_3D)
+#if defined(IRRLICHT_FREE_CANVAS)
 	case EVDF_VIEWPORT_SCALE_GUI:
 		on = 1;
 		break;
+#endif
 #endif
 	default:
 		on = 0;
@@ -2990,7 +2992,7 @@ CImage* getImage(const video::ITexture* texture)
 static const u16 quad_triangle_indexList[6] = { 0,1,2,0,2,3 };
 
 
-#if defined(SOFTWARE_DRIVER_2_2D_OLD)
+#if defined(SOFTWARE_DRIVER_2_2D_AS_2D)
 
 //! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
 void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
@@ -3049,182 +3051,10 @@ void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 	if (p.isValid()) drawRectangle(RenderTargetSurface, p, colorLeftUp);
 }
 
-#endif //defined(SOFTWARE_DRIVER_2_2D_OLD)
+#endif //defined(SOFTWARE_DRIVER_2_2D_AS_2D)
 
 
 
-#if defined(SOFTWARE_DRIVER_2_2D_NEW)
-//! draws an 2d image, using a color (if color is other then Color(255,255,255,255)) and the alpha channel of the texture if wanted.
-void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos,
-					 const core::rect<s32>& sourceRect,
-					 const core::rect<s32>* clipRect, SColor color,
-					 bool useAlphaChannelOfTexture)
-{
-	CImage* img = getImage(texture);
-	if (!img) return;
-
-	//simplify blitter
-	eBlitter op = useAlphaChannelOfTexture ? (color.color == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
-	const core::dimension2d<u32>& o = texture->getOriginalSize();
-
-	if (0 && o == texture->getSize() )
-	{
-		Blit(op, RenderTargetSurface, clipRect, &destPos, img, &sourceRect,&o,&color,1);
-	}
-	else
-	{
-		core::rect<s32> destRect(destPos,sourceRect.getSize());
-		SColor c4[4] = { color,color,color,color };
-
-		//StretchBlit(op,RenderTargetSurface, 0,&destRect, img,&sourceRect,&texture->getOriginalSize(),color.color);
-		draw2DImage(texture,destRect,sourceRect, clipRect,c4,useAlphaChannelOfTexture);
-	}
-
-}
-
-
-//! Draws a part of the texture into the rectangle.
-void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::rect<s32>& destRect,
-		const core::rect<s32>& sourceRect, const core::rect<s32>* clipRect,
-		const video::SColor* const colors, bool useAlphaChannelOfTexture)
-{
-	CImage* img = getImage(texture);
-	if (!img) return;
-
-	if ( OverrideMaterial2DEnabled ) {}
-
-	u32 argb = colors ? (colors[0].color & colors[1].color & colors[2].color & colors[3].color) : 0xFFFFFFFF;
-	eBlitter op = useAlphaChannelOfTexture ? (argb == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND: BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
-	if ( op == BLITTER_TEXTURE )
-	{
-		core::rect<s32> src(sourceRect);
-		const core::dimension2d<u32>& o = texture->getOriginalSize();
-		const core::dimension2d<u32>& w = texture->getSize();
-		if ( o != w)
-		{
-			src.UpperLeftCorner.X = (sourceRect.UpperLeftCorner.X*o.Width)/w.Width;
-			src.UpperLeftCorner.Y = (sourceRect.UpperLeftCorner.Y*o.Height)/w.Height;
-			src.LowerRightCorner.X = (sourceRect.LowerRightCorner.X*o.Width)/w.Width;
-			src.LowerRightCorner.Y = (sourceRect.LowerRightCorner.Y*o.Height)/w.Height;
-		}
-		core::rect<s32> dst(destRect);
-		if (clipRect)
-		{
-			dst.clipAgainst(*clipRect);
-		}
-		Resample_subSampling(op,RenderTargetSurface,&dst,img,&src);
-	}
-	else
-	{
-		StretchBlit(op,RenderTargetSurface, clipRect,&destRect, img,&sourceRect,&texture->getOriginalSize(), colors, 4);
-	}
-}
-
-//!Draws an 2d rectangle with a gradient.
-void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
-	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
-	const core::rect<s32>* clip)
-{
-	core::rect<s32> pos = position;
-	if (clip) pos.clipAgainst(*clip);
-	if (!pos.isValid()) return;
-
-	const core::dimension2d<s32> renderTargetSize(ViewPort.getSize());
-
-	const f32 xPlus = -(renderTargetSize.Width*0.5f);
-	const f32 xFact = 1.0f / (renderTargetSize.Width*0.5f);
-
-	const f32 yPlus = renderTargetSize.Height - (renderTargetSize.Height*0.5f);
-	const f32 yFact = 1.0f / (renderTargetSize.Height*0.5f);
-
-	// fill VertexCache direct
-	VertexCache.vertexCount = 4;
-	VertexCache.vType = E4VT_STANDARD;
-
-	VertexCache.indicesIndex = 0;
-	VertexCache.indicesRun = 0;
-	VertexCache.indicesPitch = 1;
-	VertexCache.primitiveHasVertex = 3;
-
-	VertexCache.info[0].index = 0;
-	VertexCache.info[1].index = 1;
-	VertexCache.info[2].index = 2;
-	VertexCache.info[3].index = 3;
-
-
-	s4DVertex* v = &VertexCache.mem.data[0];
-
-	v[0].Pos.set((pos.UpperLeftCorner.X + xPlus)  * xFact, (yPlus - pos.UpperLeftCorner.Y)  * yFact, 0.f, 1.f);
-	v[2].Pos.set((pos.LowerRightCorner.X + xPlus) * xFact, (yPlus - pos.UpperLeftCorner.Y)  * yFact, 0.f, 1.f);
-	v[4].Pos.set((pos.LowerRightCorner.X + xPlus) * xFact, (yPlus - pos.LowerRightCorner.Y) * yFact, 0.f, 1.f);
-	v[6].Pos.set((pos.UpperLeftCorner.X + xPlus)  * xFact, (yPlus - pos.LowerRightCorner.Y) * yFact, 0.f, 1.f);
-
-#if BURNING_MATERIAL_MAX_COLORS > 0
-	v[0].Color[0].setA8R8G8B8(colorLeftUp.color);
-	v[2].Color[0].setA8R8G8B8(colorRightUp.color);
-	v[4].Color[0].setA8R8G8B8(colorRightDown.color);
-	v[6].Color[0].setA8R8G8B8(colorLeftDown.color);
-#endif
-
-	size_t i;
-	for (i = 0; i < 8; i += sizeof_s4DVertexPairRel)
-	{
-		v[i + 0].flag = (u32)(clipToFrustumTest(v + i) | VertexCache.vSize[VertexCache.vType].Format);
-		v[i + 1].flag = v[i + 0].flag;
-		if ((v[i].flag & VERTEX4D_INSIDE) == VERTEX4D_INSIDE)
-		{
-			ndc_2_dc_and_project(v + i + 1, v + i, s4DVertex_ofs(1));
-		}
-	}
-
-
-	IBurningShader * render = BurningShader[ETR_GOURAUD_ALPHA_NOZ]; // ETR_GOURAUD_ALPHA_NOZ_NOPERSPECTIVE_CORRECT];
-	render->setRenderTarget(RenderTargetSurface, ViewPort);
-
-	s4DVertex* face[4];
-
-	for (i = 0; i < 6; i += VertexCache.primitiveHasVertex)
-	{
-		face[0] = VertexCache_getVertex(quad_triangle_indexList[i + 0]);
-		face[1] = VertexCache_getVertex(quad_triangle_indexList[i + 1]);
-		face[2] = VertexCache_getVertex(quad_triangle_indexList[i + 2]);
-
-		// test clipping
-		size_t clipmask = face[0]->flag & face[1]->flag & face[2]->flag & VERTEX4D_INSIDE;
-
-		if (clipmask == VERTEX4D_INSIDE)
-		{
-			render->drawTriangle(face[0] + 1, face[1] + 1, face[2] + 1);
-			continue;
-		}
-		// Todo: all vertices are clipped in 2d..
-		// is this true ?
-
-		memcpy_s4DVertexPair(Clipper.data + s4DVertex_ofs(0), face[0]);
-		memcpy_s4DVertexPair(Clipper.data + s4DVertex_ofs(1), face[1]);
-		memcpy_s4DVertexPair(Clipper.data + s4DVertex_ofs(2), face[2]);
-
-		size_t vOut = clipToFrustum(VertexCache.primitiveHasVertex);// , clipmask);
-		if (vOut < VertexCache.primitiveHasVertex)
-			continue;
-
-		vOut *= sizeof_s4DVertexPairRel;
-		// to DC Space, project homogenous vertex
-		ndc_2_dc_and_project(Clipper.data + 1, Clipper.data, vOut);
-
-		// re-tesselate ( triangle-fan, 0-1-2,0-2-3.. )
-		for (size_t g = 0; g <= vOut - 6; g += sizeof_s4DVertexPairRel)
-		{
-			// rasterize
-			render->drawTriangle(Clipper.data + 1, Clipper.data + g + 3, Clipper.data + g + 5);
-		}
-
-	}
-
-}
-
-
-#endif // SOFTWARE_DRIVER_2_2D_NEW
 
 
 #if 0
@@ -3877,10 +3707,12 @@ ITexture* CBurningVideoDriver::createDeviceDependentTexture(const io::path& name
 {
 	CSoftwareTexture2* texture = new CSoftwareTexture2(image, name,
 		(getTextureCreationFlag(ETCF_CREATE_MIP_MAPS) ? CSoftwareTexture2::GEN_MIPMAP : 0) |
-		(getTextureCreationFlag(ETCF_ALLOW_NON_POWER_2) ? CSoftwareTexture2::ALLOW_NPOT : 0) |
-		(getTextureCreationFlag(ETCF_IMAGE_IS_LINEAR) ? CSoftwareTexture2::IMAGE_IS_LINEAR : 0) |
-		(getTextureCreationFlag(ETCF_TEXTURE_IS_LINEAR) ? CSoftwareTexture2::TEXTURE_IS_LINEAR : 0),
-		this
+		(getTextureCreationFlag(ETCF_ALLOW_NON_POWER_2) ? CSoftwareTexture2::ALLOW_NPOT : 0)
+#if defined(IRRLICHT_sRGB)
+		| (getTextureCreationFlag(ETCF_IMAGE_IS_LINEAR) ? CSoftwareTexture2::IMAGE_IS_LINEAR : 0)
+		| (getTextureCreationFlag(ETCF_TEXTURE_IS_LINEAR) ? CSoftwareTexture2::TEXTURE_IS_LINEAR : 0)
+#endif
+		,this
 		);
 
 	return texture;

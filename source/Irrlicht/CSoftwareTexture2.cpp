@@ -44,7 +44,9 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	OriginalSize = image->getDimension();
 	OriginalFormat = image->getColorFormat();
 
+#if defined(IRRLICHT_sRGB)
 	if ( Flags & IMAGE_IS_LINEAR ) image->set_sRGB(0);
+#endif
 
 	bool isCompressed = IImage::isCompressedFormat(OriginalFormat);
 	if (isCompressed)
@@ -65,8 +67,9 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	if (OriginalSize == optSize)
 	{
 		MipMap[0] = new CImage(BURNINGSHADER_COLOR_FORMAT, image->getDimension());
+#if defined(IRRLICHT_sRGB)
 		MipMap[0]->set_sRGB( (Flags & TEXTURE_IS_LINEAR ) ? 0 : image->get_sRGB()  );
-		
+#endif		
 		if (!isCompressed)
 			image->copyTo(MipMap[0]);
 	}
@@ -82,7 +85,9 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 
 		os::Printer::log ( buf, ELL_WARNING );
 		MipMap[0] = new CImage(BURNINGSHADER_COLOR_FORMAT, optSize);
+#if defined(IRRLICHT_sRGB)
 		MipMap[0]->set_sRGB( (Flags & TEXTURE_IS_LINEAR ) ? 0 : image->get_sRGB()  );
+#endif
 		if (!isCompressed)
 		{
 			//image->copyToScalingBoxFilter ( MipMap[0],0, false );
@@ -143,7 +148,9 @@ void CSoftwareTexture2::regenerateMipMapLevels(void* data, u32 layer)
 				break;
 
 			MipMap[i] = new CImage(BURNINGSHADER_COLOR_FORMAT, newSize);
+#if defined(IRRLICHT_sRGB)
 			MipMap[i]->set_sRGB(MipMap[i - 1]->get_sRGB());
+#endif
 			//MipMap[i]->fill ( 0xFFFF4040 );
 			//MipMap[i-1]->copyToScalingBoxFilter( MipMap[i], 0, false );
 			Resample_subSampling(BLITTER_TEXTURE, MipMap[i], 0, MipMap[0], 0);
@@ -480,7 +487,6 @@ void Resample_subSampling(eBlitter op, video::IImage* dst, const core::rect<s32>
 	absrect2 dc;
 	if (clipTest(dc, dstRect, dst_clip)) return;
 	const video::ECOLOR_FORMAT dstFormat = dst->getColorFormat();
-	const int dst_sRGB = dst->get_sRGB();
 	u8* dstData = (u8*)dst->getData();
 
 	const absrect2 src_clip = { 0,0,(s32)src->getDimension().Width,(s32)src->getDimension().Height };
@@ -488,7 +494,15 @@ void Resample_subSampling(eBlitter op, video::IImage* dst, const core::rect<s32>
 	if (clipTest(sc, srcRect, src_clip)) return;
 	const video::ECOLOR_FORMAT srcFormat = src->getColorFormat();
 	const u8* srcData = (u8*)src->getData();
+
+#if defined(IRRLICHT_sRGB)
+	const int dst_sRGB = dst->get_sRGB();
 	const int src_sRGB = src->get_sRGB();
+#else
+	const int dst_sRGB = 1;
+	const int src_sRGB = 1;
+#endif
+
 
 
 	float scale[2];

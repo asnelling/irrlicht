@@ -857,6 +857,7 @@ namespace quake3
 
 				if ( fileSystem->existFile ( loadFile ) )
 				{
+#if defined(IRRLICHT_sRGB)
 					bool c0 = driver->getTextureCreationFlag(video::ETCF_IMAGE_IS_LINEAR);
 					bool c1 = driver->getTextureCreationFlag(video::ETCF_TEXTURE_IS_LINEAR);
 					driver->setTextureCreationFlag(video::ETCF_IMAGE_IS_LINEAR,true);
@@ -864,6 +865,9 @@ namespace quake3
 					texture = driver->getTexture( loadFile );
 					driver->setTextureCreationFlag(video::ETCF_IMAGE_IS_LINEAR,c0);
 					driver->setTextureCreationFlag(video::ETCF_TEXTURE_IS_LINEAR,c1);
+#else
+					texture = driver->getTexture(loadFile);
+#endif
 					if ( texture )
 					{
 						break;

@@ -1384,7 +1384,7 @@ static s32 Blit(eBlitter operation,
 	return 1;
 }
 
-#if defined(SOFTWARE_DRIVER_2_2D_OLD)
+#if defined(SOFTWARE_DRIVER_2_2D_AS_2D)
 static s32 StretchBlit(eBlitter operation,
 		video::IImage* dest, const core::rect<s32>* destClipping,const core::rect<s32> *destRect,
 		video::IImage* const source,const core::rect<s32> *srcRect, const core::dimension2d<u32>* source_org,

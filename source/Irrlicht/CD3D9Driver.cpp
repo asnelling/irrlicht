@@ -645,8 +645,10 @@ bool CD3D9Driver::queryFeature(E_VIDEO_DRIVER_FEATURE feature) const
 		return true;
 	case EVDF_TEXTURE_CUBEMAP:
 		return true;
+#if defined(IRRLICHT_FREE_CANVAS)
 	case EVDF_VIEWPORT_SCALE_GUI:
 		return true;
+#endif
 	default:
 		return false;
 	};

@@ -97,9 +97,11 @@ enum E_TEXTURE_CREATION_FLAG
 	  */
 	ETCF_AUTO_GENERATE_MIP_MAPS = 0x00000100,
 
+#if defined(IRRLICHT_sRGB)
 	//! Allow sRGB/linear conversion
 	ETCF_IMAGE_IS_LINEAR = 0x00000400,
 	ETCF_TEXTURE_IS_LINEAR = 0x00000800,
+#endif
 
 	/** This flag is never used, it only forces the compiler to compile
 	these enumeration values to 32 bit. */
