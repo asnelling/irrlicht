@@ -94,15 +94,17 @@ public:
 	virtual void OnSetMaterial(const SBurningShaderMaterial& material) _IRR_OVERRIDE_;
 
 #if defined(PATCH_SUPERTUX_8_0_1)
-	tFixPoint AlphaRef;
-	virtual void setParam(u32 index, f32 value)
+	SBurningShaderMaterial Material;
+
+	virtual void setMaterial(const SBurningShaderMaterial &material)
 	{
-		SBurningShaderMaterial material;
-		material.org.ZBuffer = 0;
-		material.org.MaterialTypeParam = value;
-		OnSetMaterial(material);
+		Material = material;
 	}
 
+	virtual void setParam(u32 index, f32 value)
+	{
+		OnSetMaterial(Material);
+}
 #endif
 
 private:
@@ -326,10 +328,10 @@ void CTRTextureGouraudAlphaNoZ::fragment_linear()
 
 			vec4_to_fix( a2,r2, g2, b2, line.c[0][0], inversew );
 
-			a0 = imulFix(a0, a2); //2D uses vertexalpha*texelalpha
-			r0 = imulFix ( r0, r2 );
-			g0 = imulFix ( g0, g2 );
-			b0 = imulFix ( b0, b2 );
+			//a0 = imulFix(a0, a2); //2D uses vertexalpha*texelalpha
+			r0 = imulFix_simple( r0, r2 );
+			g0 = imulFix_simple( g0, g2 );
+			b0 = imulFix_simple( b0, b2 );
 
 			color_to_fix ( r1, g1, b1, dst[i] );
 

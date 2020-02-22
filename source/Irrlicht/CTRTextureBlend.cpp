@@ -2569,6 +2569,7 @@ namespace video
 //! creates a flat triangle renderer
 IBurningShader* createTRTextureBlend(CBurningVideoDriver* driver)
 {
+	// EMT_ONETEXTURE_BLEND
 	#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
 	return new CTRTextureBlend(driver);
 	#else

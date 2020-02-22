@@ -302,7 +302,11 @@ namespace video
 		//used if no color interpolation is defined
 		void setPrimitiveColor(const video::SColor& color)
 		{
-			PrimitiveColor = BURNINGSHADER_COLOR_FORMAT == ECF_A8R8G8B8 ? color.color : color.toA1R5G5B5();
+			#if BURNINGSHADER_COLOR_FORMAT == ECF_A8R8G8B8
+				PrimitiveColor = color.color;
+			#else
+				PrimitiveColor = color.toA1R5G5B5();
+			#endif
 		}
 		void setTLFlag(size_t in /*eTransformLightFlags*/)
 		{
@@ -310,7 +314,11 @@ namespace video
 		}
 		void setFog(SColor color_fog)
 		{
-			fog_color_sample = BURNINGSHADER_COLOR_FORMAT == ECF_A8R8G8B8 ? color_fog.color : color_fog.toA1R5G5B5();
+#if BURNINGSHADER_COLOR_FORMAT == ECF_A8R8G8B8
+			fog_color_sample = color_fog.color;
+#else
+			fog_color_sample = color_fog.toA1R5G5B5();
+#endif
 			color_to_fix(fog_color, fog_color_sample);
 		}
 		void setScissor(const AbsRectangle& scissor)

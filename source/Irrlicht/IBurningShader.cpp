@@ -12,16 +12,18 @@
 
 namespace irr
 {
+
+
 namespace video
 {
 
-const tFixPointu IBurningShader::dithermask[] =
-{
-	0x00,0x80,0x20,0xa0,
-	0xc0,0x40,0xe0,0x60,
-	0x30,0xb0,0x10,0x90,
-	0xf0,0x70,0xd0,0x50
-};
+	const tFixPointu IBurningShader::dithermask[] =
+	{
+		0x00,0x80,0x20,0xa0,
+		0xc0,0x40,0xe0,0x60,
+		0x30,0xb0,0x10,0x90,
+		0xf0,0x70,0xd0,0x50
+	};
 
 IBurningShader::IBurningShader(CBurningVideoDriver* driver)
 {
@@ -32,7 +34,7 @@ IBurningShader::IBurningShader(CBurningVideoDriver* driver)
 	EdgeTestPass = edge_test_pass;
 	EdgeTestPass_stack = edge_test_pass;
 
-	for ( u32 i = 0; i != BURNING_MATERIAL_MAX_TEXTURES; ++i )
+	for ( u32 i = 0; i < BURNING_MATERIAL_MAX_TEXTURES; ++i )
 	{
 		IT[i].Texture = 0;
 	}

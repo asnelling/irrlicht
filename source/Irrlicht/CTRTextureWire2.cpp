@@ -139,13 +139,17 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int re
 	int xInc0 = 1 << VIDEO_SAMPLE_GRANULARITY;
 	int yInc0 = pitch0;
 
+#ifdef USE_ZBUFFER
 	int xInc1 = 4;
 	int yInc1 = pitch1;
+#endif
 
 	if ( dx < 0 )
 	{
 		xInc0 = - ( 1 << VIDEO_SAMPLE_GRANULARITY);
+#ifdef USE_ZBUFFER
 		xInc1 = -4;
+#endif
 		dx = -dx;
 	}
 
@@ -155,7 +159,9 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int re
 		register s32 t;
 		t = dx;dx=dy;dy=t;
 		t = xInc0;xInc0=yInc0;yInc0=t;
+#ifdef USE_ZBUFFER
 		t = xInc1;xInc1=yInc1;yInc1=t;
+#endif
 	}
 
 	if (0 == dx)
@@ -165,7 +171,7 @@ void CTRTextureWire2::renderLine ( const s4DVertex *a,const s4DVertex *b, int re
 	}
 
 	SOFTWARE_DRIVER_2_CLIPCHECK_WIRE;
-	dst = (tVideoSample*) ( (u8*) (tVideoSample*)RenderTarget->getData() + ( aposy * pitch0 ) + (aposx << VIDEO_SAMPLE_GRANULARITY ) );
+	dst = (tVideoSample*) ( (u8*) RenderTarget->getData() + ( aposy * pitch0 ) + (aposx* (1<< VIDEO_SAMPLE_GRANULARITY) ) );
 #ifdef USE_ZBUFFER
 	z = (fp24*) ( (u8*) (fp24*) DepthBuffer->lock() + ( aposy * pitch1 ) + (aposx << 2 ) );
 #endif

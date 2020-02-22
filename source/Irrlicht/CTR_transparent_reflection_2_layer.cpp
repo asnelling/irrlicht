@@ -228,7 +228,7 @@ void CTR_transparent_reflection_2_layer::fragmentShader()
 		b0 = imulFix_tex1(b0, b1);
 
 #ifdef IPOL_C0
-		vec4_to_fix(a1, r1, g1, b1, line.c[0][0], inversew);
+		vec4_to_fix(r1, g1, b1, line.c[0][0], inversew);
 		r0 = imulFix_simple(r1, r0);
 		g0 = imulFix_simple(g1, g0);
 		b0 = imulFix_simple(b1, b0);

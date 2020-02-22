@@ -26,6 +26,7 @@
 #define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		256
 #define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
 #define SOFTWARE_DRIVER_2_CLIPPING
+#define SOFTWARE_DRIVER_2_2D_OLD
 #endif
 
 
@@ -43,6 +44,7 @@
 	#define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		0
 	#define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
 	#define SOFTWARE_DRIVER_2_CLIPPING
+	#define SOFTWARE_DRIVER_2_2D_AS_3D
 #endif
 
 //! Set Flags for Windows Mobile
@@ -59,6 +61,7 @@
 	#define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		64
 	#define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
 	//#define SOFTWARE_DRIVER_2_CLIPPING
+	#define SOFTWARE_DRIVER_2_2D_OLD
 #endif
 
 #ifdef BURNINGVIDEO_RENDERER_FAST
@@ -74,6 +77,7 @@
 	#define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		256
 	#define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
 	//#define SOFTWARE_DRIVER_2_CLIPPING
+	#define SOFTWARE_DRIVER_2_2D_OLD
 #endif
 
 #ifdef BURNINGVIDEO_RENDERER_ULTRA_FAST
@@ -92,6 +96,7 @@
 	#define SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE		128
 	#define SOFTWARE_DRIVER_2_SCANLINE_MAG_MIN
 	//#define SOFTWARE_DRIVER_2_CLIPPING
+	#define SOFTWARE_DRIVER_2_2D_OLD
 #endif
 
 // Derivate flags
@@ -150,9 +155,9 @@ static inline float reciprocal_zero2(float x) { return x != 0.f ? 1.f / x : 0.f;
 #define SOFTWARE_DRIVER_2_CLIPCHECK_REF  if( pShader.xStart < 0 || pShader.xStart + pShader.dx >= (s32)RenderTarget->getDimension().Width || line.y < 0 || line.y >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
 #define SOFTWARE_DRIVER_2_CLIPCHECK_WIRE if( aposx < 0 || aposx >= (s32)RenderTarget->getDimension().Width || aposy < 0 || aposy >= (s32) RenderTarget->getDimension().Height ) __debugbreak()
 
-inline f32 reciprocal_zero_no(const f32 x)
+inline float reciprocal_zero_no(const float x)
 {
-	if (fabsf(x) <= 0.00001f) __debugbreak();
+	if (x*x <= 0.00001f) __debugbreak();
 	return 1.f / x;
 }
 #else
@@ -176,6 +181,13 @@ enum edge_test_flag
 
 //! normalize from fixed point Color Max to fixed point [0;1]
 #define fix_color_norm(x) x = (x+1) >> COLOR_MAX_LOG2
+
+//! from 1 bit to 5 bit
+#ifdef SOFTWARE_DRIVER_2_32BIT
+	#define fix_alpha_color_max(x)
+#else
+	#define fix_alpha_color_max(x) if (x) x = (x << COLOR_MAX_LOG2) - 1
+#endif
 
 // Check windows
 #if _WIN32 || _WIN64

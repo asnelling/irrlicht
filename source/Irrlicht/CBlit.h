@@ -10,7 +10,7 @@
 namespace irr
 {
 
-	//! f18 - fixpoint 18Bit
+//! f18 - fixpoint 14.18 limit to 16k Textures
 #define CBLIT_USE_FIXPOINT18
 
 #if defined(CBLIT_USE_FIXPOINT18)
@@ -20,13 +20,16 @@ namespace irr
 	#define f32_to_f18(x)((f18)floorf(((x) * 262144.f) + 0.f))
 	#define f32_to_f32(x)(x)
 	#define f18_floor(x) ((x)>>18)
+	#define f18_round(x) ((x+131.072)>>18)
 #else
 	typedef float f18;
 	#define f18_one 1.f
+	#define f18_zero_dot_five 0.5f
 	#define f18_zero 0.f
 	#define f32_to_f18(x)(x)
 	#define f32_to_f32(x)(x)
 	#define f18_floor(x) ((int)(x))
+	#define f18_round(x) ((int)(x+0.5f))
 #endif
 
 	struct SBlitJob
@@ -42,17 +45,12 @@ namespace irr
 		u32 width;
 		u32 height;
 
-		size_t srcPitch;
-		size_t dstPitch;
-
-		//u32 srcPixelMul;
-		//u32 dstPixelMul;
+		u32 srcPitch;
+		u32 dstPitch;
 
 		bool stretch;
-		float x_stretch;
-		float y_stretch;
-
-		SBlitJob() : stretch(false) {}
+		f32 x_stretch;
+		f32 y_stretch;
 	};
 
 	// Bitfields Cohen Sutherland
@@ -256,7 +254,7 @@ static void RenderLine32_Decal(video::IImage *t,
 	}
 
 	u32 *dst;
-	dst = (u32*) ( (u8*) t->getData() + ( p0.Y * t->getPitch() ) + ( p0.X << 2 ) );
+	dst = (u32*) ( (u8*) t->getData() + ( p0.Y * t->getPitch() ) + ( p0.X * 4 ) );
 
 	if ( dy > dx )
 	{
@@ -320,7 +318,7 @@ static void RenderLine32_Blend(video::IImage *t,
 	}
 
 	u32 *dst;
-	dst = (u32*) ( (u8*) t->getData() + ( p0.Y * t->getPitch() ) + ( p0.X << 2 ) );
+	dst = (u32*) ( (u8*) t->getData() + ( p0.Y * t->getPitch() ) + ( p0.X * 4 ) );
 
 	if ( dy > dx )
 	{
@@ -384,7 +382,7 @@ static void RenderLine16_Decal(video::IImage *t,
 	}
 
 	u16 *dst;
-	dst = (u16*) ( (u8*) t->getData() + ( p0.Y * t->getPitch() ) + ( p0.X << 1 ) );
+	dst = (u16*) ( (u8*) t->getData() + ( p0.Y * t->getPitch() ) + ( p0.X * 2 ) );
 
 	if ( dy > dx )
 	{
@@ -448,7 +446,7 @@ static void RenderLine16_Blend(video::IImage *t,
 	}
 
 	u16 *dst;
-	dst = (u16*) ( (u8*) t->getData() + ( p0.Y * t->getPitch() ) + ( p0.X << 1 ) );
+	dst = (u16*) ( (u8*) t->getData() + ( p0.Y * t->getPitch() ) + ( p0.X * 2 ) );
 
 	if ( dy > dx )
 	{
@@ -800,54 +798,21 @@ static void executeBlit_TextureCopy_32_to_24( const SBlitJob * job )
 */
 static void executeBlit_TextureBlend_16_to_16( const SBlitJob * job )
 {
-	const u32 w = job->width;
-	const u32 h = job->height;
-	const u32 rdx = w>>1;
+	const f18 wscale = f32_to_f18(job->x_stretch);
+	const f18 hscale = f32_to_f18(job->y_stretch);
 
-	const u32 *src = (u32*) job->src;
-	u32 *dst = (u32*) job->dst;
+	f18 src_y = f18_zero;
+	u16 *dst = (u16*)job->dst;
 
-	if (job->stretch)
+	for (u32 dy = 0; dy < job->height; ++dy, src_y += hscale)
 	{
-		const float wscale = job->x_stretch;
-		const float hscale = job->y_stretch;
-		const u32 off = core::if_c_a_else_b(w&1, (u32)((w-1)*wscale), 0);
-		for ( u32 dy = 0; dy < h; ++dy )
+		const u16* src = (u16*)((u8*)(job->src) + job->srcPitch*f18_floor(src_y));
+		f18 src_x = f18_zero;
+		for (u32 dx = 0; dx < job->width; ++dx, src_x += wscale)
 		{
-			const u32 src_y = (u32)(dy*hscale);
-			src = (u32*) ( (u8*) (job->src) + job->srcPitch*src_y );
-
-			for ( u32 dx = 0; dx < rdx; ++dx )
-			{
-				const u32 src_x = (u32)(dx*wscale);
-				dst[dx] = PixelBlend16_simd( dst[dx], src[src_x] );
-			}
-			if ( off )
-			{
-				((u16*) dst)[off] = PixelBlend16( ((u16*) dst)[off], ((u16*) src)[off] );
-			}
-
-			dst = (u32*) ( (u8*) (dst) + job->dstPitch );
+			dst[dx] = PixelBlend16(dst[dx], src[f18_floor(src_x)]);
 		}
-	}
-	else
-	{
-		const u32 off = core::if_c_a_else_b(w&1, w-1, 0);
-		for (u32 dy = 0; dy != h; ++dy )
-		{
-			for (u32 dx = 0; dx != rdx; ++dx )
-			{
-				dst[dx] = PixelBlend16_simd( dst[dx], src[dx] );
-			}
-
-			if ( off )
-			{
-				((u16*) dst)[off] = PixelBlend16( ((u16*) dst)[off], ((u16*) src)[off] );
-			}
-
-			src = (u32*) ( (u8*) (src) + job->srcPitch );
-			dst = (u32*) ( (u8*) (dst) + job->dstPitch );
-		}
+		dst = (u16*)((u8*)(dst)+job->dstPitch);
 	}
 }
 
@@ -877,21 +842,26 @@ static void executeBlit_TextureBlend_32_to_32( const SBlitJob * job )
 */
 static void executeBlit_TextureBlendColor_16_to_16( const SBlitJob * job )
 {
-	u16 *src = (u16*) job->src;
-	u16 *dst = (u16*) job->dst;
+	const u16 blend = video::A8R8G8B8toA1R5G5B5(job->argb);
 
-	u16 blend = video::A8R8G8B8toA1R5G5B5 ( job->argb );
-	for ( s32 dy = 0; dy != job->height; ++dy )
+	const f18 wscale = f32_to_f18(job->x_stretch);
+	const f18 hscale = f32_to_f18(job->y_stretch);
+
+	f18 src_y = f18_zero;
+	u16 *dst = (u16*)job->dst;
+	for (u32 dy = 0; dy < job->height; ++dy, src_y += hscale)
 	{
-		for ( s32 dx = 0; dx != job->width; ++dx )
+		const u16* src = (u16*)((u8*)(job->src) + job->srcPitch*f18_floor(src_y));
+		f18 src_x = f18_zero;
+		for (u32 dx = 0; dx < job->width; ++dx, src_x += wscale)
 		{
-			if ( 0 == (src[dx] & 0x8000) )
+			register u16 c0 = src[f18_floor(src_x)];
+			if (0 == (c0 & 0x8000))
 				continue;
 
-			dst[dx] = PixelMul16_2( src[dx], blend );
+			dst[dx] = PixelMul16_2(c0, blend);
 		}
-		src = (u16*) ( (u8*) (src) + job->srcPitch );
-		dst = (u16*) ( (u8*) (dst) + job->dstPitch );
+		dst = (u16*)((u8*)(dst)+job->dstPitch);
 	}
 }
 
@@ -956,11 +926,11 @@ static void executeBlit_ColorAlpha_16_to_16( const SBlitJob * job )
 		return;
 	const u32 src = video::A8R8G8B8toA1R5G5B5( job->argb );
 
-	for ( s32 dy = 0; dy != job->height; ++dy )
+	for ( u32 dy = 0; dy != job->height; ++dy )
 	{
-		for ( s32 dx = 0; dx != job->width; ++dx )
+		for ( u32 dx = 0; dx != job->width; ++dx )
 		{
-			dst[dx] = 0x8000 | PixelBlend16( dst[dx], src, alpha );
+			dst[dx] = PixelBlend16( dst[dx], src, alpha );
 		}
 		dst = (u16*) ( (u8*) (dst) + job->dstPitch );
 	}
@@ -983,6 +953,7 @@ static void executeBlit_ColorAlpha_32_to_32( const SBlitJob * job )
 		}
 		dst = (u32*) ( (u8*) (dst) + job->dstPitch );
 	}
+
 }
 
 /*!
@@ -1326,9 +1297,9 @@ inline void setClip(AbsRectangle &out, const core::rect<s32> *clip,
 	{
 		//y-1 to prevent starting on illegal memory (not ideal!).
 		out.x0 = core::s32_clamp(clip->UpperLeftCorner.X, 0, w - 1);
-		out.x1 = core::s32_clamp(clip->LowerRightCorner.X, out.x0, w);
+		out.x1 = core::s32_clamp(clip->LowerRightCorner.X, passnative ? 0 : out.x0, w);
 		out.y0 = core::s32_clamp(clip->UpperLeftCorner.Y, 0, h - 1);
-		out.y1 = core::s32_clamp(clip->LowerRightCorner.Y, out.y0, h);
+		out.y1 = core::s32_clamp(clip->LowerRightCorner.Y, passnative ? 0 : out.y0, h);
 	}
 	else
 	{

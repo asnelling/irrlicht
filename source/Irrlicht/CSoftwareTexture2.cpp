@@ -52,11 +52,13 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 		os::Printer::log("Texture compression not available.", ELL_ERROR);
 	}
 
+	//visual studio code warning
+	u32 maxTexSize = SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE;
 	core::dimension2d<u32> optSize(	OriginalSize.getOptimalSize(
 			(Flags & ALLOW_NPOT) ? 0 : 1, // requirePowerOfTwo
 			false, // requireSquare
-			(Flags & ALLOW_NPOT) ? 1 : SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE == 0, // larger
-			(Flags & ALLOW_NPOT) ? 0 : SOFTWARE_DRIVER_2_TEXTURE_MAXSIZE // maxValue
+			(Flags & ALLOW_NPOT) ? 1 : maxTexSize == 0, // larger
+			(Flags & ALLOW_NPOT) ? 0 : maxTexSize // maxValue
 		)
 	);
 
@@ -72,7 +74,7 @@ CSoftwareTexture2::CSoftwareTexture2(IImage* image, const io::path& name, u32 fl
 	{
 		char buf[256];
 		core::stringw showName ( name );
-		snprintf_irr ( buf, sizeof(buf), "Burningvideo: Warning Texture %ls reformat %dx%d,%d -> %dx%d,%d",
+		snprintf_irr ( buf, sizeof(buf), "Burningvideo: Warning Texture %ls reformat %ux%u,%d -> %ux%u,%d",
 						showName.c_str(),
 						OriginalSize.Width, OriginalSize.Height,OriginalFormat,
 						optSize.Width, optSize.Height,BURNINGSHADER_COLOR_FORMAT

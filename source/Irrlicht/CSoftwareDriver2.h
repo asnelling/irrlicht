@@ -178,6 +178,9 @@ namespace video
 			video::SColor leftDownEdge = video::SColor(0,0,0,0),
 			video::SColor rightDownEdge = video::SColor(0,0,0,0)) _IRR_OVERRIDE_;
 
+		//! Enable the 2d override material
+		virtual void enableMaterial2D(bool enable = true) _IRR_OVERRIDE_;
+
 		//! Returns the graphics card vendor name.
 		virtual core::stringc getVendorInfo() _IRR_OVERRIDE_;
 
@@ -316,7 +319,6 @@ namespace video
 
 		void setRenderStates2DMode(const video::SColor& color,video::ITexture* texture,bool useAlphaChannelOfTexture);
 		void setRenderStates3DMode();
-		void restoreRenderStates3DMode();
 
 		//ETS_CLIPSCALE, // moved outside to stay at 16 matrices
 		f32 Transformation_ETS_CLIPSCALE[2][4];

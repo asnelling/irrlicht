@@ -215,7 +215,8 @@ void CTRTextureGouraudNoZ2::scanline_bilinear ( )
 #endif
 			tx0 = tofix ( line.t[0][0].x,inversew);
 			ty0 = tofix ( line.t[0][0].y,inversew);
-//			dst[i] = getTexel_plain ( &IT[0], tx0, ty0 );
+			//skybox
+			//dst[i] = getTexel_plain ( &IT[0], tx0, ty0 );
 
 			getSample_texture ( r0, g0, b0, IT+0, tx0, ty0 );
 			dst[i] = fix_to_sample( r0, g0, b0 );

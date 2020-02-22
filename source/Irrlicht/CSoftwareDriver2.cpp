@@ -16,13 +16,6 @@
 #include "CBlit.h"
 
 
-//#define SOFTWARE_DRIVER_2_2D_OLD
-#define SOFTWARE_DRIVER_2_2D_AS_3D
-//#define SOFTWARE_DRIVER_2_2D_NEW
-//#define SOFTWARE_DRIVER_2_2D_AS_3D_TRANSFORM
-
-#define MAT_TEXTURE(tex) ( (video::CSoftwareTexture2*) Material.org.getTexture ( (u32)tex ) )
-
 // Matrix now here
 
 template <class T>
@@ -781,21 +774,12 @@ void CBurningVideoDriver::setRenderTargetImage(video::CImage* image)
 #if 1
 
 // used to scale <-1,-1><1,1> to viewport
-void buildNDCToDCMatrix_3D(f32* m, const core::rect<s32>& viewport)
+void buildNDCToDCMatrix(f32* m, const core::rect<s32>& viewport, f32 tx)
 {
-	m[0] = (viewport.getWidth() - 0.375f) * 0.5f;
+	m[0] = (viewport.getWidth() + tx) * 0.5f;
 	m[1] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ((viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X) * 0.5f);
 
-	m[2] = (viewport.getHeight() - 0.375f) * -0.5f;
-	m[3] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ((viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y) * 0.5f);
-}
-
-void buildNDCToDCMatrix_2D(f32* m, const core::rect<s32>& viewport)
-{
-	m[0] = (viewport.getWidth() - 0.f) * 0.5f;
-	m[1] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ((viewport.UpperLeftCorner.X + viewport.LowerRightCorner.X) * 0.5f);
-
-	m[2] = (viewport.getHeight() - 0.f) * -0.5f;
+	m[2] = (viewport.getHeight() + tx) * -0.5f;
 	m[3] = SOFTWARE_DRIVER_2_PIXEL_CENTER + ((viewport.UpperLeftCorner.Y + viewport.LowerRightCorner.Y) * 0.5f);
 }
 
@@ -848,8 +832,8 @@ void CBurningVideoDriver::setViewPort(const core::rect<s32>& area)
 	core::rect<s32> rendert(0,0,RenderTargetSize.Width,RenderTargetSize.Height);
 	ViewPort.clipAgainst(rendert);
 
-	buildNDCToDCMatrix_3D(Transformation_ETS_CLIPSCALE[0], ViewPort);
-	buildNDCToDCMatrix_2D(Transformation_ETS_CLIPSCALE[1], ViewPort);
+	buildNDCToDCMatrix(Transformation_ETS_CLIPSCALE[0], ViewPort,-0.375f);
+	buildNDCToDCMatrix(Transformation_ETS_CLIPSCALE[1], ViewPort, 0.f); // OverrideMaterial2DEnabled ? -0.375f : 0.f);
 
 	if (CurrentShader)
 		CurrentShader->setRenderTarget(RenderTargetSurface, ViewPort);
@@ -1240,6 +1224,8 @@ f32 MipmapLevel(const sVec2& uv, const sVec2& textureSize)
 	return log2f(sqrtf(d));
 }
 #endif
+
+#define MAT_TEXTURE(tex) ( (video::CSoftwareTexture2*) Material.org.getTexture ( (u32)tex ) )
 
 /*!
 	calculate from unprojected.
@@ -2242,38 +2228,6 @@ int CBurningVideoDriver::VertexCache_reset ( const void* vertices, u32 vertexCou
 	return 0;
 }
 
-//! draws a vertex primitive list in 2d
-void CBurningVideoDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
-	const void* indexList, u32 primitiveCount,
-	E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
-{
-	if (!checkPrimitiveCount(primitiveCount))
-		return;
-
-	CNullDriver::draw2DVertexPrimitiveList(vertices, vertexCount, indexList, primitiveCount, vType, pType, iType);
-
-	bool useAlphaChannelOfTexture = false;
-	video::SColor color(0xFFFFFFFF);
-	switch (Material.org.MaterialType)
-	{
-		case EMT_TRANSPARENT_ALPHA_CHANNEL:
-			useAlphaChannelOfTexture = true;
-			break;
-		case EMT_TRANSPARENT_VERTEX_ALPHA:
-			color.setAlpha(127);
-			break;
-		default:
-			break;
-	}
-	setRenderStates2DMode(color, Material.org.getTexture(0), useAlphaChannelOfTexture);
-
-	drawVertexPrimitiveList(vertices, vertexCount,
-		indexList, primitiveCount,
-		vType, pType, iType);
-
-	setRenderStates3DMode();
-
-}
 
 //! draws a vertex primitive list
 void CBurningVideoDriver::drawVertexPrimitiveList(const void* vertices, u32 vertexCount,
@@ -2639,10 +2593,12 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	ITexture* texture2 = in.getTexture(2);
 	ITexture* texture3 = in.getTexture(3);
 
-	if (BURNING_MATERIAL_MAX_TEXTURES < 1) texture0 = 0;
-	if (BURNING_MATERIAL_MAX_TEXTURES < 2) texture1 = 0;
-	if (BURNING_MATERIAL_MAX_TEXTURES < 3) texture2 = 0;
-	if (BURNING_MATERIAL_MAX_TEXTURES < 4) texture3 = 0;
+	//visual studio code analysis
+	u32 maxTex = BURNING_MATERIAL_MAX_TEXTURES;
+	if (maxTex < 1) texture0 = 0;
+	if (maxTex < 2) texture1 = 0;
+	if (maxTex < 3) texture2 = 0;
+	if (maxTex < 4) texture3 = 0;
 
 	EyeSpace.TL_Flag &= ~(TL_TEXTURE_TRANSFORM | TL_LIGHT0_IS_NORMAL_MAP);
 
@@ -2768,6 +2724,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 		{
 			shader = ETR_TEXTURE_GOURAUD_WIRE;
 		}
+		shader = ETR_TEXTURE_GOURAUD_WIRE;
 	}
 
 	if (in.PointCloud)
@@ -3030,30 +2987,9 @@ CImage* getImage(const video::ITexture* texture)
 	draw2DImage with single color scales into destination quad & cliprect(more like viewport)
 	draw2DImage with 4 color scales on destination and cliprect is scissor
 */
-//#define SOFTWARE_DRIVER_2_2D_OLD
-//#define SOFTWARE_DRIVER_2_2D_AS_3D
-//#define SOFTWARE_DRIVER_2_2D_NEW
-//#define SOFTWARE_DRIVER_2_2D_AS_3D_TRANSFORM
 
 static const u16 quad_triangle_indexList[6] = { 0,1,2,0,2,3 };
 
-
-#if 0
-//! draws an 2d image
-// is copy of void CNullDriver::draw2DImage
-void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core::position2d<s32>& destPos, bool useAlphaChannelOfTexture)
-{
-	if (!texture)
-		return;
-
-	draw2DImage(texture, destPos,
-		core::rect<s32>(core::position2d<s32>(0, 0), core::dimension2di(texture->getOriginalSize())),
-		0,
-		SColor(255, 255, 255, 255),
-		useAlphaChannelOfTexture
-	);
-}
-#endif
 
 #if defined(SOFTWARE_DRIVER_2_2D_OLD)
 
@@ -3096,7 +3032,7 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 
 		u32 argb = (colors ? colors[0].color : 0xFFFFFFFF);
 		eBlitter op = useAlphaChannelOfTexture ?
-			argb == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND : BLITTER_TEXTURE_ALPHA_COLOR_BLEND : BLITTER_TEXTURE;
+			(argb == 0xFFFFFFFF ? BLITTER_TEXTURE_ALPHA_BLEND : BLITTER_TEXTURE_ALPHA_COLOR_BLEND) : BLITTER_TEXTURE;
 
 		StretchBlit(op, RenderTargetSurface, clipRect, &destRect,
 			((CSoftwareTexture2*)texture)->getImage(), &sourceRect, &texture->getOriginalSize(), argb);
@@ -3104,44 +3040,16 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 	}
 }
 
-#if 0
-//! draw an 2d rectangle 1:1 niko
-void CBurningVideoDriver::draw2DRectangle(SColor color, const core::rect<s32>& pos,
-	const core::rect<s32>* clip)
-{
-	if (clip)
-	{
-		core::rect<s32> p(pos);
-
-		p.clipAgainst(*clip);
-
-		if (!p.isValid())
-			return;
-
-		drawRectangle(RenderTargetSurface, p, color);
-	}
-	else
-	{
-		if (!pos.isValid())
-			return;
-
-		drawRectangle(RenderTargetSurface, pos, color);
-	}
-}
-#endif
-
 //!Draws an 2d rectangle with a gradient.
 void CBurningVideoDriver::draw2DRectangle(const core::rect<s32>& position,
 	SColor colorLeftUp, SColor colorRightUp, SColor colorLeftDown, SColor colorRightDown,
 	const core::rect<s32>* clip)
 {
-	//draw2DRectangle(colorLeftUp, position, clip);
 	core::rect<s32> p(position);
-
 	if (clip) p.clipAgainst(*clip);
 	if (p.isValid()) drawRectangle(RenderTargetSurface, p, colorLeftUp);
-
 }
+
 #endif //defined(SOFTWARE_DRIVER_2_2D_OLD)
 
 
@@ -3395,6 +3303,14 @@ void transform_for_BlitJob2D( SBlitJob& out,
 }
 #endif
 
+
+//! Enable the 2d override material
+void CBurningVideoDriver::enableMaterial2D(bool enable)
+{
+	CNullDriver::enableMaterial2D(enable);
+	burning_setbit(TransformationFlag[1][ETS_PROJECTION], 0, ETF_VALID);
+}
+
 size_t compare_2d_material(const SMaterial& a, const SMaterial& b)
 {
 	size_t flag = 0;
@@ -3466,6 +3382,9 @@ void CBurningVideoDriver::setRenderStates2DMode(const video::SColor& color, vide
 		if ( mip ) m.setTranslation(core::vector3df(0.375f, 0.375f, 0.0f));
 
 		setTransform(ETS_VIEW, m);
+
+		buildNDCToDCMatrix(Transformation_ETS_CLIPSCALE[TransformationStack], ViewPort, mip ? -0.187f : 0.f);
+
 	}
 
 	//compare
@@ -3480,17 +3399,46 @@ void CBurningVideoDriver::setRenderStates2DMode(const video::SColor& color, vide
 	
 }
 
-void CBurningVideoDriver::restoreRenderStates3DMode()
+void CBurningVideoDriver::setRenderStates3DMode()
 {
-	//setMaterial(Material.save3D);
+	//restoreRenderStates3DMode
 
+	//setMaterial(Material.save3D);
 	//switch to 3D Matrix Stack
 	TransformationStack = 0;
 }
 
-void CBurningVideoDriver::setRenderStates3DMode()
+//! draws a vertex primitive list in 2d
+void CBurningVideoDriver::draw2DVertexPrimitiveList(const void* vertices, u32 vertexCount,
+	const void* indexList, u32 primitiveCount,
+	E_VERTEX_TYPE vType, scene::E_PRIMITIVE_TYPE pType, E_INDEX_TYPE iType)
 {
-	restoreRenderStates3DMode();
+	if (!checkPrimitiveCount(primitiveCount))
+		return;
+
+	CNullDriver::draw2DVertexPrimitiveList(vertices, vertexCount, indexList, primitiveCount, vType, pType, iType);
+
+	bool useAlphaChannelOfTexture = false;
+	video::SColor color(0xFFFFFFFF);
+	switch (Material.org.MaterialType)
+	{
+	case EMT_TRANSPARENT_ALPHA_CHANNEL:
+		useAlphaChannelOfTexture = true;
+		break;
+	case EMT_TRANSPARENT_VERTEX_ALPHA:
+		color.setAlpha(127);
+		break;
+	default:
+		break;
+	}
+	setRenderStates2DMode(color, Material.org.getTexture(0), useAlphaChannelOfTexture);
+
+	drawVertexPrimitiveList(vertices, vertexCount,
+		indexList, primitiveCount,
+		vType, pType, iType);
+
+	setRenderStates3DMode();
+
 }
 
 //setup a quad
