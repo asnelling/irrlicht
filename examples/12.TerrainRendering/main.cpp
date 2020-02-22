@@ -221,6 +221,7 @@ int main()
 	{
 	}
 
+	(void)data; // disable unused variable warnings
 	buffer->drop(); // When done drop the buffer again.
 
 	/*

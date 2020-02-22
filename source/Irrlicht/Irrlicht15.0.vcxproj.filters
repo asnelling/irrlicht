@@ -1342,9 +1342,6 @@
     <ClInclude Include="..\..\include\SOverrideMaterial.h">
       <Filter>include\video</Filter>
     </ClInclude>
-    <ClInclude Include="CBlit.h">
-      <Filter>Irrlicht\video\Null</Filter>
-    </ClInclude>
     <ClInclude Include="burning_shader_color_fraq.h">
       <Filter>Irrlicht\video\Burning Video</Filter>
     </ClInclude>
@@ -2304,16 +2301,13 @@
     <ClCompile Include="CWGLManager.cpp">
       <Filter>Irrlicht\video\OpenGL Context</Filter>
     </ClCompile>
+    <ClCompile Include="burning_shader_color.cpp">
+      <Filter>Irrlicht\video\Burning Video</Filter>
+    </ClCompile>
     <ClCompile Include="CTR_transparent_reflection_2_layer.cpp">
       <Filter>Irrlicht\video\Burning Video</Filter>
     </ClCompile>
     <ClCompile Include="CTRGouraudNoZ2.cpp">
-      <Filter>Irrlicht\video\Burning Video</Filter>
-    </ClCompile>
-    <ClCompile Include="CBlit.cpp">
-      <Filter>Irrlicht\video\Null</Filter>
-    </ClCompile>
-    <ClCompile Include="burning_shader_color.cpp">
       <Filter>Irrlicht\video\Burning Video</Filter>
     </ClCompile>
   </ItemGroup>

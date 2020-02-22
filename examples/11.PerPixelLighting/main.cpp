@@ -285,9 +285,9 @@ int main()
 				driver->getTexture(mediaPath + "rockwall.jpg"));
 		room->setMaterialTexture(1, normalMap);
 
-		// Stones don't glitter..
-		room->getMaterial(0).SpecularColor.set(0,0,0,0);
-		room->getMaterial(0).Shininess = 0.f;
+		// Stones don't glitter.. (but specular highlight for EMT_SOLID)
+		//room->getMaterial(0).SpecularColor.set(0,0,0,0);
+		//room->getMaterial(0).Shininess = 0.f;
 
 		room->setMaterialFlag(video::EMF_FOG_ENABLE, true);
 		room->setMaterialType(video::EMT_PARALLAX_MAP_SOLID);

@@ -1339,8 +1339,8 @@
     <ClInclude Include="CWGLManager.h">
       <Filter>Irrlicht\video\OpenGL Context</Filter>
     </ClInclude>
-    <ClInclude Include="CBlit.h">
-      <Filter>Irrlicht\video\Null</Filter>
+    <ClInclude Include="..\..\include\SOverrideMaterial.h">
+      <Filter>include\video</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\IOctreeSceneNode.h">
       <Filter>include\scene</Filter>
@@ -2282,10 +2282,10 @@
     <ClCompile Include="CWGLManager.cpp">
       <Filter>Irrlicht\video\OpenGL Context</Filter>
     </ClCompile>
-    <ClCompile Include="CTRGouraudNoZ2.cpp">
+    <ClCompile Include="CTR_transparent_reflection_2_layer.cpp">
       <Filter>Irrlicht\video\Burning Video</Filter>
     </ClCompile>
-    <ClCompile Include="CTR_transparent_reflection_2_layer.cpp">
+    <ClCompile Include="CTRGouraudNoZ2.cpp">
       <Filter>Irrlicht\video\Burning Video</Filter>
     </ClCompile>
   </ItemGroup>

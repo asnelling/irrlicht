@@ -656,8 +656,8 @@ void CDemo::shoot()
 	else
 	{
 		// doesnt collide with wall
-		core::vector3df start = camera->getPosition();
-		core::vector3df end = (camera->getTarget() - start);
+		start = camera->getPosition();
+		end = (camera->getTarget() - start);
 		end.normalize();
 		start += end*8.0f;
 		end = start + (end * camera->getFarValue());

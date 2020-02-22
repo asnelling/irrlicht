@@ -115,7 +115,8 @@ void GameData::setDefault ()
 
 	// Add the original quake3 files before you load your custom map
 	// Most mods are using the original shaders, models&items&weapons
-	CurrentArchiveList.push_back("/q/baseq3/");
+	//CurrentArchiveList.push_back("/q/baseq3/");
+	CurrentArchiveList.push_back("T:/xbox/xdk/baseq3/");
 
 	CurrentArchiveList.push_back(StartupDir + mediaPath + "map-20kdm2.pk3");
 }
