@@ -346,6 +346,7 @@ void CTRNormalMap::fragmentShader()
 				b2 = b1 + imulFix(a3, b2 - b1);
 			}
 
+#ifdef IPOL_C1
 			//mix with distance
 			if (aFog < FIX_POINT_ONE)
 			{
@@ -353,7 +354,7 @@ void CTRNormalMap::fragmentShader()
 				g2 = fog_color[2] + imulFix(aFog, g2 - fog_color[2]);
 				b2 = fog_color[3] + imulFix(aFog, b2 - fog_color[3]);
 			}
-
+#endif
 			dst[i] = fix_to_sample(r2, g2, b2);
 
 

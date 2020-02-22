@@ -489,24 +489,44 @@ static void executeBlit_TextureCopy_x_to_x( const SBlitJob * job )
 {
 	if (job->stretch)
 	{
-		//assume 32bit.. not true!
-		const u32 *src = (u32*)(job->src);
-		u32 *dst = (u32*)(job->dst);
-
 		const f18 wscale = f32_to_f18(job->x_stretch);
 		const f18 hscale = f32_to_f18(job->y_stretch);
 
 		f18 src_y = f18_zero;
-		for (u32 dy = 0; dy < job->height; ++dy, src_y += hscale)
-		{
-			src = (u32*)((u8*)(job->src) + job->srcPitch*f18_floor(src_y));
 
-			f18 src_x = f18_zero;
-			for (u32 dx = 0; dx < job->width; ++dx, src_x += wscale)
+		if (job->srcPixelMul == 4)
+		{
+			const u32 *src = (u32*)(job->src);
+			u32 *dst = (u32*)(job->dst);
+
+			for (u32 dy = 0; dy < job->height; ++dy, src_y += hscale)
 			{
-				dst[dx] = src[f18_floor(src_x)];
+				src = (u32*)((u8*)(job->src) + job->srcPitch*f18_floor(src_y));
+
+				f18 src_x = f18_zero;
+				for (u32 dx = 0; dx < job->width; ++dx, src_x += wscale)
+				{
+					dst[dx] = src[f18_floor(src_x)];
+				}
+				dst = (u32*)((u8*)(dst)+job->dstPitch);
 			}
-			dst = (u32*)((u8*)(dst)+job->dstPitch);
+		}
+		else if (job->srcPixelMul == 2)
+		{
+			const u16 *src = (u16*)(job->src);
+			u16* dst = (u16*)(job->dst);
+
+			for (u32 dy = 0; dy < job->height; ++dy, src_y += hscale)
+			{
+				src = (u16*)((u8*)(job->src) + job->srcPitch*f18_floor(src_y));
+
+				f18 src_x = f18_zero;
+				for (u32 dx = 0; dx < job->width; ++dx, src_x += wscale)
+				{
+					dst[dx] = src[f18_floor(src_x)];
+				}
+				dst = (u16*)((u8*)(dst)+job->dstPitch);
+			}
 		}
 	}
 	else

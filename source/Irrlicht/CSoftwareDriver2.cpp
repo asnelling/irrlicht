@@ -3002,6 +3002,14 @@ void CBurningVideoDriver::draw2DImage(const video::ITexture* texture, const core
 {
 	if (texture)
 	{
+		if (texture->getOriginalSize() != texture->getSize())
+		{
+			core::rect<s32> destRect(destPos, sourceRect.getSize());
+			SColor c4[4] = { color,color,color,color };
+			draw2DImage(texture, destRect, sourceRect, clipRect, c4, useAlphaChannelOfTexture);
+			return;
+		}
+
 		if (texture->getDriverType() != EDT_BURNINGSVIDEO)
 		{
 			os::Printer::log("Fatal Error: Tried to copy from a surface not owned by this driver.", ELL_ERROR);

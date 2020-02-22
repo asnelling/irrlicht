@@ -415,25 +415,26 @@ enum e4DIndexType
 	E4IT_NONE  = 4, //
 };
 
-#if 0
-#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
-	#define BURNING_MATERIAL_MAX_COLORS 1
-#else
-	#define BURNING_MATERIAL_MAX_COLORS 0
-#endif
-
-#define BURNING_MATERIAL_MAX_TEXTURES 2
-
 #ifdef BURNINGVIDEO_RENDERER_BEAUTIFUL
+	#define BURNING_MATERIAL_MAX_TEXTURES 4
+	#define BURNING_MATERIAL_MAX_COLORS 4
 	#define BURNING_MATERIAL_MAX_LIGHT_TANGENT 1
-#else
-	#define BURNING_MATERIAL_MAX_LIGHT_TANGENT 0
-#endif
-#endif
 
-#define BURNING_MATERIAL_MAX_TEXTURES 4
-#define BURNING_MATERIAL_MAX_COLORS 4
-#define BURNING_MATERIAL_MAX_LIGHT_TANGENT 1
+	//ensure handcrafted sizeof(s4DVertex)
+	#define sizeof_s4DVertex	128
+
+#else
+	#define BURNING_MATERIAL_MAX_TEXTURES 2
+	#ifdef SOFTWARE_DRIVER_2_USE_VERTEX_COLOR
+		#define BURNING_MATERIAL_MAX_COLORS 1
+	#else
+		#define BURNING_MATERIAL_MAX_COLORS 0
+	#endif
+	#define BURNING_MATERIAL_MAX_LIGHT_TANGENT 1
+
+	//ensure handcrafted sizeof(s4DVertex)
+	#define sizeof_s4DVertex	64
+#endif
 
 // dummy Vertex. used for calculation vertex memory size
 struct s4DVertex_proxy
@@ -452,8 +453,6 @@ struct s4DVertex_proxy
 
 };
 
-//ensure handcrafted sizeof(s4DVertex)
-#define sizeof_s4DVertex	128
 
 /*!
 	Internal BurningVideo Vertex

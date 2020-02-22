@@ -139,7 +139,6 @@ void CTRTextureGouraudAddNoZ2::fragmentShader()
 	xEnd = fill_convention_right( line.x[1] );
 
 	dx = xEnd - xStart;
-
 	if ( dx < 0 )
 		return;
 
@@ -332,7 +331,7 @@ void CTRTextureGouraudAddNoZ2::drawTriangle(const s4DVertex* burning_restrict a,
 #endif
 
 	// rasterize upper sub-triangle
-	if ( (f32) 0.0 != scan.invDeltaY[1]  )
+	if (F32_GREATER_0(scan.invDeltaY[1])  )
 	{
 		// calculate slopes for top edge
 		scan.slopeX[1] = (b->Pos.x - a->Pos.x) * scan.invDeltaY[1];
@@ -467,10 +466,10 @@ void CTRTextureGouraudAddNoZ2::drawTriangle(const s4DVertex* burning_restrict a,
 	}
 
 	// rasterize lower sub-triangle
-	if ( (f32) 0.0 != scan.invDeltaY[2] )
+	if (F32_GREATER_0(scan.invDeltaY[2]) )
 	{
 		// advance to middle point
-		if( (f32) 0.0 != scan.invDeltaY[1] )
+		if(F32_GREATER_0(scan.invDeltaY[1]) )
 		{
 			temp[0] = b->Pos.y - a->Pos.y;	// dy
 

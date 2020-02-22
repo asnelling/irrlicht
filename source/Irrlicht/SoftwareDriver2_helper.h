@@ -1164,6 +1164,7 @@ static REALINLINE void getSample_texture(tFixPoint &a, tFixPoint &r, tFixPoint &
 	const tVideoSample t00 = *((tVideoSample*)((u8*)t->data + ofs));
 
 	(tFixPointu &)a = (t00 & MASK_A) >> (SHIFT_A - FIX_POINT_PRE);
+	fix_alpha_color_max(a);
 	(tFixPointu &)r = (t00 & MASK_R) >> (SHIFT_R - FIX_POINT_PRE);
 	(tFixPointu &)g = (t00 & MASK_G) << (FIX_POINT_PRE - SHIFT_G);
 	(tFixPointu &)b = (t00 & MASK_B) << (FIX_POINT_PRE - SHIFT_B);

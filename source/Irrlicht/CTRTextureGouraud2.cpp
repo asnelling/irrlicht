@@ -250,7 +250,7 @@ void CTRTextureGouraud2::fragmentShader ()
 	tFixPoint r3, g3, b3;
 #endif
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 	u32 dIndex = ( line.y & 3 ) << 2;
 #endif
 
@@ -331,7 +331,7 @@ void CTRTextureGouraud2::fragmentShader ()
 
 #else
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 			const tFixPointu d = dithermask [ dIndex | ( i ) & 3 ];
 			dst[i] = getTexel_plain ( &IT[0], d + tx0, d + ty0 );
 #else

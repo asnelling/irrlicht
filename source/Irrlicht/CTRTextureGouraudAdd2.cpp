@@ -192,9 +192,8 @@ void CTRTextureGouraudAdd2::scanline_bilinear ()
 	f32 inversew = FIX_POINT_F32_MUL;
 
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 	u32 dIndex = ( line.y & 3 ) << 2;
-
 #else
 	tFixPoint tx0;
 	tFixPoint ty0;
@@ -215,25 +214,21 @@ void CTRTextureGouraudAdd2::scanline_bilinear ()
 
 		{
 
+#ifdef INVERSE_W
+			inversew = fix_inverse32(line.w[0]);
+#endif
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 
 		const tFixPointu d = dithermask [ dIndex | ( i ) & 3 ];
 
-
-#ifdef INVERSE_W
-			inversew = fix_inverse32 ( line.w[0] );
-#endif
-			dst[i] = PixelAdd32 (
-						dst[i],
-					getTexel_plain ( &IT[0],	d + tofix ( line.t[0][0].x,inversew),
-												d + tofix ( line.t[0][0].y,inversew) )
-												  );
+		dst[i] = PixelAdd32 (
+					dst[i],
+				getTexel_plain ( &IT[0],	d + tofix ( line.t[0][0].x,inversew),
+											d + tofix ( line.t[0][0].y,inversew) )
+												);
 #else
 
-#ifdef INVERSE_W
-			inversew = fix_inverse32 ( line.w[0] );
-#endif
 			tx0 = tofix ( line.t[0][0].x,inversew);
 			ty0 = tofix ( line.t[0][0].y,inversew);
 			getSample_texture ( r0, g0, b0, &IT[0], tx0,ty0 );

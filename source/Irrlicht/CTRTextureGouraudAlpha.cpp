@@ -106,7 +106,7 @@ CTRTextureGouraudAlpha2::CTRTextureGouraudAlpha2(CBurningVideoDriver* driver)
 */
 void CTRTextureGouraudAlpha2::OnSetMaterial(const SBurningShaderMaterial& material)
 {
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 	AlphaRef = core::floor32(material.org.MaterialTypeParam * 256.f);
 #else
 	AlphaRef = tofix(material.org.MaterialTypeParam, FIXPOINT_COLOR_MAX);
@@ -202,15 +202,11 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 
 	f32 inversew = FIX_POINT_F32_MUL;
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
-	u32 dIndex = ( line.y & 3 ) << 2;
-
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
+	u32 dIndex = (line.y & 3) << 2;
 #else
-	tFixPoint a0,r0, g0, b0;
-#endif
+	tFixPoint a0, r0, g0, b0;
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
-#else
 #ifdef IPOL_C0
 	tFixPoint r1, g1, b1;
 	tFixPoint r2, g2, b2;
@@ -228,7 +224,7 @@ void CTRTextureGouraudAlpha2::scanline_bilinear ()
 
 		{
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 
 		const tFixPointu d = dithermask [ dIndex | ( i ) & 3 ];
 

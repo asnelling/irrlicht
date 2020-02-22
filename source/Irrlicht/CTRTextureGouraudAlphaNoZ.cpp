@@ -136,7 +136,7 @@ CTRTextureGouraudAlphaNoZ::CTRTextureGouraudAlphaNoZ(CBurningVideoDriver* driver
 */
 void CTRTextureGouraudAlphaNoZ::OnSetMaterial(const SBurningShaderMaterial& material)
 {
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 	AlphaRef = core::floor32(material.org.MaterialTypeParam * 256.f);
 #else
 	AlphaRef = tofix(material.org.MaterialTypeParam, FIXPOINT_COLOR_MAX);
@@ -251,7 +251,7 @@ void CTRTextureGouraudAlphaNoZ::fragment_linear()
 
 	f32 inversew = FIX_POINT_F32_MUL;
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 	u32 dIndex = ( line.y & 3 ) << 2;
 
 #else
@@ -279,7 +279,7 @@ void CTRTextureGouraudAlphaNoZ::fragment_linear()
 
 		{
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 
 		const tFixPointu d = dithermask [ dIndex | ( i ) & 3 ];
 
@@ -471,7 +471,7 @@ void CTRTextureGouraudAlphaNoZ::fragment_linear_test()
 
 	f32 inversew = FIX_POINT_F32_MUL;
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 	u32 dIndex = (line.y & 3) << 2;
 
 #else
@@ -499,7 +499,7 @@ void CTRTextureGouraudAlphaNoZ::fragment_linear_test()
 
 			{
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 
 				const tFixPointu d = dithermask[dIndex | (i) & 3];
 
@@ -692,7 +692,7 @@ void CTRTextureGouraudAlphaNoZ::fragment_point_noz()
 
 	f32 inversew = FIX_POINT_F32_MUL;
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 	u32 dIndex = (line.y & 3) << 2;
 
 #else
@@ -719,7 +719,7 @@ void CTRTextureGouraudAlphaNoZ::fragment_point_noz()
 
 			{
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 
 				const tFixPointu d = dithermask[dIndex | (i) & 3];
 

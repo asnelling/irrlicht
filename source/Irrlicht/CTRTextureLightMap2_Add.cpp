@@ -188,11 +188,10 @@ REALINLINE void CTRTextureLightMap2_Add::scanline_bilinear ()
 #endif
 
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
 	f32 inversew = FIX_POINT_F32_MUL;
+
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
 	u32 dIndex = ( line.y & 3 ) << 2;
-
-
 #else
 	//
 	tFixPoint r0, g0, b0;
@@ -217,11 +216,12 @@ REALINLINE void CTRTextureLightMap2_Add::scanline_bilinear ()
 			z[i] = line.w[0];
 #endif
 
-#ifdef BURNINGVIDEO_RENDERER_FAST
-
 #ifdef INVERSE_W
-			inversew = fix_inverse32 ( line.w[0] );
+			inversew = fix_inverse32(line.w[0]);
 #endif
+
+#if defined(BURNINGVIDEO_RENDERER_FAST) && COLOR_MAX==0xff
+
 			const tFixPointu d = dithermask [ dIndex | ( i ) & 3 ];
 
 			dst[i] = PixelAdd32 (
@@ -232,7 +232,6 @@ REALINLINE void CTRTextureLightMap2_Add::scanline_bilinear ()
 							);
 
 #else
-			const f32 inversew = fix_inverse32 ( line.w[0] );
 
 			getSample_texture ( r0, g0, b0, &IT[0], tofix ( line.t[0][0].x,inversew), tofix ( line.t[0][0].y,inversew) );
 			getSample_texture ( r1, g1, b1, &IT[1], tofix ( line.t[0][1].x,inversew), tofix ( line.t[0][1].y,inversew) );
