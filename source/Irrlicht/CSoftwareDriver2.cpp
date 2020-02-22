@@ -1954,7 +1954,7 @@ s4DVertexPair* CBurningVideoDriver::VertexCache_getVertex ( const u32 sourceInde
 	fill blockwise on the next 16(Cache_Size) unique vertices in indexlist
 	merge the next 16 vertices with the current
 */
-void CBurningVideoDriver::VertexCache_get(s4DVertexPair ** face)
+void CBurningVideoDriver::VertexCache_get(s4DVertexPair* face[4])
 {
 	// next primitive must be complete in cache
 	if (	VertexCache.indicesIndex - VertexCache.indicesRun < VertexCache.primitiveHasVertex &&
@@ -2087,7 +2087,7 @@ void CBurningVideoDriver::VertexCache_get(s4DVertexPair ** face)
 			face[0] = face[1] = face[2] = VertexCache_getVertex(VertexCache.indicesRun + 0);
 		break;
 	}
-
+	face[3] = face[0]; // quad unsupported
 	VertexCache.indicesRun += VertexCache.indicesPitch;
 }
 
@@ -2724,7 +2724,6 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 		{
 			shader = ETR_TEXTURE_GOURAUD_WIRE;
 		}
-		shader = ETR_TEXTURE_GOURAUD_WIRE;
 	}
 
 	if (in.PointCloud)
@@ -2744,7 +2743,7 @@ void CBurningVideoDriver::setMaterial(const SMaterial& material)
 	{
 		CurrentShader->setTLFlag(EyeSpace.TL_Flag);
 		if (EyeSpace.TL_Flag & TL_FOG) CurrentShader->setFog(FogColor);
-		if (EyeSpace.TL_Flag &TL_SCISSOR) CurrentShader->setScissor(Scissor);
+		if (EyeSpace.TL_Flag & TL_SCISSOR) CurrentShader->setScissor(Scissor);
 		CurrentShader->setRenderTarget(RenderTargetSurface, ViewPort);
 		CurrentShader->OnSetMaterial(Material);
 		CurrentShader->pushEdgeTest(in.Wireframe, in.PointCloud, 0);
@@ -3315,13 +3314,14 @@ size_t compare_2d_material(const SMaterial& a, const SMaterial& b)
 {
 	size_t flag = 0;
 	flag |= a.MaterialType == b.MaterialType ? 0 : 1;
-	flag |= a.ZBuffer == b.ZBuffer ? 0 : 16;
-	flag |= a.TextureLayer[0].Texture == b.TextureLayer[0].Texture ? 0 : 2;
-	flag |= a.MaterialTypeParam == b.MaterialTypeParam ? 0 : 4;
+	flag |= a.ZBuffer == b.ZBuffer ? 0 : 2;
+	flag |= a.TextureLayer[0].Texture == b.TextureLayer[0].Texture ? 0 : 4;
+	flag |= a.TextureLayer[0].BilinearFilter == b.TextureLayer[0].BilinearFilter ? 0 : 8;
+	flag |= a.MaterialTypeParam == b.MaterialTypeParam ? 0 : 16;
 	if (flag) return flag;
 
-	flag |= a.TextureLayer[1].Texture == b.TextureLayer[1].Texture ? 0 : 8;
-	flag |= a.ZWriteEnable == b.ZWriteEnable ? 0 : 32;
+	flag |= a.TextureLayer[1].Texture == b.TextureLayer[1].Texture ? 0 : 32;
+	flag |= a.ZWriteEnable == b.ZWriteEnable ? 0 : 64;
 
 	return flag;
 }

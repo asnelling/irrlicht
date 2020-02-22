@@ -39,13 +39,16 @@ namespace irr
 
 		u32 argb;
 
-		void* src;
+		const void* src;
 		void* dst;
 
-		u32 width;
+		u32 width;		//draw size
 		u32 height;
 
-		u32 srcPitch;
+		u32 srcPixelMul; //pixel byte size
+		u32 dstPixelMul;
+
+		u32 srcPitch;	//scanline byte size
 		u32 dstPitch;
 
 		bool stretch;
@@ -486,7 +489,7 @@ static void executeBlit_TextureCopy_x_to_x( const SBlitJob * job )
 {
 	if (job->stretch)
 	{
-		//assume 32bit..
+		//assume 32bit.. not true!
 		const u32 *src = (u32*)(job->src);
 		u32 *dst = (u32*)(job->dst);
 
@@ -508,13 +511,13 @@ static void executeBlit_TextureCopy_x_to_x( const SBlitJob * job )
 	}
 	else
 	{
-		//const u32 widthPitch = job->width * job->dstPixelMul;
+		const size_t widthPitch = job->width * job->dstPixelMul;
 		const void *src = (void*) job->src;
 		void *dst = (void*) job->dst;
 
 		for ( u32 dy = 0; dy < job->height; ++dy )
 		{
-			memcpy( dst, src, job->dstPitch);
+			memcpy( dst, src, widthPitch);
 
 			src = (void*) ( (u8*) (src) + job->srcPitch );
 			dst = (void*) ( (u8*) (dst) + job->dstPitch );
@@ -1363,8 +1366,8 @@ static s32 Blit(eBlitter operation,
 	if ( source )
 	{
 		job.srcPitch = source->getPitch();
-		u32 srcPixelMul = source->getBytesPerPixel();
-		job.src = (void*) ( (u8*) source->getData() + ( job.Source.y0 * job.srcPitch ) + ( job.Source.x0 * srcPixelMul ) );
+		job.srcPixelMul = source->getBytesPerPixel();
+		job.src = (void*) ( (u8*) source->getData() + ( job.Source.y0 * job.srcPitch ) + ( job.Source.x0 * job.srcPixelMul ) );
 	}
 	else
 	{
@@ -1373,8 +1376,8 @@ static s32 Blit(eBlitter operation,
 	}
 
 	job.dstPitch = dest->getPitch();
-	u32 dstPixelMul = dest->getBytesPerPixel();
-	job.dst = (void*) ( (u8*) dest->getData() + ( job.Dest.y0 * job.dstPitch ) + ( job.Dest.x0 * dstPixelMul ) );
+	job.dstPixelMul = dest->getBytesPerPixel();
+	job.dst = (void*) ( (u8*) dest->getData() + ( job.Dest.y0 * job.dstPitch ) + ( job.Dest.x0 * job.dstPixelMul ) );
 
 	blitter( &job );
 
@@ -1424,13 +1427,13 @@ static s32 StretchBlit(eBlitter operation,
 	if ( source )
 	{
 		job.srcPitch = source->getPitch();
-		u32 srcPixelMul = source->getBytesPerPixel();
+		job.srcPixelMul = source->getBytesPerPixel();
 
 		//dest-clippling. advance source. loosing subpixel precision
 		job.Source.x0 += (s32)floorf(job.x_stretch * (job.Dest.x0 - v.x0));
 		job.Source.y0 += (s32)floorf(job.y_stretch * (job.Dest.y0 - v.y0));
 
-		job.src = (void*) ( (u8*) source->getData() + ( job.Source.y0 * job.srcPitch ) + ( job.Source.x0 * srcPixelMul ) );
+		job.src = (void*) ( (u8*) source->getData() + ( job.Source.y0 * job.srcPitch ) + ( job.Source.x0 * job.srcPixelMul ) );
 	}
 	else
 	{
@@ -1439,8 +1442,8 @@ static s32 StretchBlit(eBlitter operation,
 	}
 
 	job.dstPitch = dest->getPitch();
-	u32 dstPixelMul = dest->getBytesPerPixel();
-	job.dst = (void*) ( (u8*) dest->getData() + ( job.Dest.y0 * job.dstPitch ) + ( job.Dest.x0 * dstPixelMul ) );
+	job.dstPixelMul = dest->getBytesPerPixel();
+	job.dst = (void*) ( (u8*) dest->getData() + ( job.Dest.y0 * job.dstPitch ) + ( job.Dest.x0 * job.dstPixelMul ) );
 
 	blitter( &job );
 
