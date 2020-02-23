@@ -53,10 +53,10 @@ static bool transformPlane(const vector3df & point, const vector3df & normal,
 }
 
 
-static bool drawScaledOctree(video::E_DRIVER_TYPE type)
+static bool drawScaledOctree(void)
 {
 	bool result = false;
-	IrrlichtDevice *device = createDevice(type, dimension2d<u32>(160, 120), 32);
+	IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO, dimension2d<u32>(160, 120), 32);
 	if (!device)
 		return false;
 
@@ -96,7 +96,7 @@ static bool drawScaledOctree(video::E_DRIVER_TYPE type)
 
 
 // Test the ability to transform a plane with a matrix.
-bool planeMatrix_scaled_octree(video::E_DRIVER_TYPE type)
+bool planeMatrix(void)
 {
 	matrix4 rotationMatrix;
 	rotationMatrix.setRotationDegrees(vector3df(90, 0, 0));
@@ -237,15 +237,8 @@ bool planeMatrix_scaled_octree(video::E_DRIVER_TYPE type)
 	success &= transformPlane(vector3df(0, 1, 0), vector3df(-1, 1, 0), matrix, plane3df(vector3df(-0.707f,-0.000f,0.354f).normalize(), -2.236f));
 	success &= transformPlane(vector3df(0, 1, 0), vector3df(1, -1, 0), matrix, plane3df(vector3df(0.707f,0.000f,-0.354f).normalize(), 2.236f));
 
-	success &= drawScaledOctree(type);
+	success &= drawScaledOctree();
 
 	return success;
 }
 
-// Test the ability to transform a plane with a matrix.
-bool planeMatrix(void)
-{
-	bool result = true;
-	TestWithAllDrivers(planeMatrix_scaled_octree);
-	return result;
-}

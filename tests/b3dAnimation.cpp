@@ -6,10 +6,10 @@
 using namespace irr;
 
 // Tests B3D animations.
-bool b3dAnimation_test(video::E_DRIVER_TYPE driverType)
+bool b3dAnimation(void)
 {
 	// Use EDT_BURNINGSVIDEO since it is not dependent on (e.g.) OpenGL driver versions.
-	IrrlichtDevice *device = createDevice(driverType, core::dimension2d<u32>(160, 120), 32);
+	IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO, core::dimension2d<u32>(160, 120), 32);
 	assert_log(device);
 	if (!device)
 		return false;
@@ -85,11 +85,3 @@ bool b3dAnimation_test(video::E_DRIVER_TYPE driverType)
 
 	return result;
 }
-
-bool b3dAnimation()
-{
-	bool result = true;
-	TestWithAllDrivers(b3dAnimation_test);
-	return result;
-}
-

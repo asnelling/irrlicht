@@ -8,9 +8,9 @@ using namespace scene;
 using namespace video;
 
 /** Tests the Burning Video driver */
-bool burningsVideo_ambient_light(video::E_DRIVER_TYPE type)
+bool burningsVideo(void)
 {
-    IrrlichtDevice *device = createDevice(type,
+    IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO,
 										core::dimension2du(160,120), 32);
     if (!device)
         return false;
@@ -37,13 +37,4 @@ bool burningsVideo_ambient_light(video::E_DRIVER_TYPE type)
     device->drop();
 
     return result;
-}
-
-/** Tests the Burning Video driver */
-bool burningsVideo()
-{
-	bool result = true;
-	TestWithAllDrivers(burningsVideo_ambient_light);
-
-	return result;
 }

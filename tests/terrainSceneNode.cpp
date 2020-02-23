@@ -8,15 +8,10 @@ namespace
 {
 
 // test camera changes with terrain scene node recalculation
-bool terrainRecalc(video::E_DRIVER_TYPE type)
+bool terrainRecalc(void)
 {
-	//TA: D3D9 crashes all the time. excluded
-	//TA: what's the goal?. testing large and scaled terrain?
-	//TA: burningvideo produces near identical opengl pictures. (both maybe wrong).
-	if (type == video::EDT_DIRECT3D9)
-		return true;
 	IrrlichtDevice *device =
-		createDevice(type, dimension2du(160, 120), 32);
+		createDevice(video::EDT_BURNINGSVIDEO, dimension2du(160, 120), 32);
 
 	if (!device)
 		return true;
@@ -80,9 +75,9 @@ bool terrainRecalc(video::E_DRIVER_TYPE type)
 	return result;
 }
 
-bool terrainGaps(video::E_DRIVER_TYPE type)
+bool terrainGaps()
 {
-	IrrlichtDevice* device = createDevice(type, dimension2d<u32>(160, 120));
+	IrrlichtDevice* device = createDevice(video::EDT_BURNINGSVIDEO, dimension2d<u32>(160, 120));
 	if (!device)
 		return true;
 
@@ -126,10 +121,8 @@ bool terrainGaps(video::E_DRIVER_TYPE type)
 
 bool terrainSceneNode()
 {
-	bool result = true;
-	TestWithAllDrivers(terrainRecalc);
-	TestWithAllDrivers(terrainGaps);
-
+	bool result = terrainRecalc();
+	result &= terrainGaps();
 	return result;
 }
 

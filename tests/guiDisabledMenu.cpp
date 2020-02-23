@@ -12,9 +12,9 @@ using namespace gui;
 	http://irrlicht.sourceforge.net/phpBB2/viewtopic.php?p=178436#178436
  */
 
-bool gui_DisabledMenu(video::E_DRIVER_TYPE type)
+bool guiDisabledMenu(void)
 {
-	IrrlichtDevice *device = createDevice( type,
+	IrrlichtDevice *device = createDevice( video::EDT_BURNINGSVIDEO,
 											dimension2d<u32>(160, 40), 32);
 	assert_log(device);
 	if (!device)
@@ -56,11 +56,3 @@ bool gui_DisabledMenu(video::E_DRIVER_TYPE type)
 	return result;
 }
 
-
-bool guiDisabledMenu(void)
-{
-	bool result = true;
-	TestWithAllDrivers(gui_DisabledMenu);
-
-	return result;
-}

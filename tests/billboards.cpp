@@ -8,11 +8,10 @@ using namespace irr;
 namespace
 {
 // Test billboard sizing
-bool billboardSize(video::E_DRIVER_TYPE type)
+bool billboardSize(void)
 {
-	//if (type != video::EDT_BURNINGSVIDEO ) return true;
 	// Use EDT_BURNINGSVIDEO since it is not dependent on (e.g.) OpenGL driver versions.
-	IrrlichtDevice *device = createDevice(type, core::dimension2d<u32>(160, 120), 32);
+	IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO, core::dimension2d<u32>(160, 120), 32);
 	assert_log(device);
 	if (!device)
 		return false;
@@ -101,7 +100,7 @@ bool billboardSize(video::E_DRIVER_TYPE type)
 	smgr->drawAll();
 	driver->endScene();
 
-	result = takeScreenshotAndCompareAgainstReference(driver, "-billboard.png",99.999f);
+	result = takeScreenshotAndCompareAgainstReference(driver, "-billboard.png");
 
 	device->closeDevice();
 	device->run();
@@ -113,10 +112,10 @@ bool billboardSize(video::E_DRIVER_TYPE type)
 // Test billboard orientation
 // Should generate a properly readable (i.e. not mirrored or flipped)
 // font file display.
-bool billboardOrientation(video::E_DRIVER_TYPE type)
+bool billboardOrientation(void)
 {
 	// Use EDT_BURNINGSVIDEO since it is not dependent on (e.g.) OpenGL driver versions.
-	IrrlichtDevice *device = createDevice(type, core::dimension2d<u32>(160, 120), 32);
+	IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO, core::dimension2d<u32>(160, 120), 32);
 	assert_log(device);
 	if (!device)
 		return false;
@@ -151,9 +150,7 @@ bool billboardOrientation(video::E_DRIVER_TYPE type)
 // Test billboards
 bool billboards(void)
 {
-	bool result = true;
-	TestWithAllDrivers(billboardSize);
-	TestWithAllDrivers(billboardOrientation);
-
+	bool result = billboardSize();
+	result &= billboardOrientation();
 	return result;
 }

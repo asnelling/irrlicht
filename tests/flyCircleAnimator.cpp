@@ -9,9 +9,9 @@ using namespace scene;
 using namespace video;
 
 /** Tests the offset capability of the fly circle animator */
-bool flyCircleAnimator_offset(video::E_DRIVER_TYPE type)
+bool flyCircleAnimator(void)
 {
-	IrrlichtDevice *device = createDevice(type,
+	IrrlichtDevice *device = createDevice(video::EDT_BURNINGSVIDEO,
 										core::dimension2du(160,120), 32);
 	if (!device)
 		return false;
@@ -58,12 +58,3 @@ bool flyCircleAnimator_offset(video::E_DRIVER_TYPE type)
 	return result;
 }
 
-
-/** Tests the offset capability of the fly circle animator */
-bool flyCircleAnimator(void)
-{
-	bool result = true;
-	TestWithAllDrivers(flyCircleAnimator_offset);
-
-	return result;
-}

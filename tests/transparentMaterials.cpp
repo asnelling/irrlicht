@@ -182,8 +182,7 @@ bool testTransparentReflection2Layer(video::E_DRIVER_TYPE driverType)
 	video::IVideoDriver* driver = device->getVideoDriver();
 	scene::ISceneManager* smgr = device->getSceneManager();
 
-	if (driver->getColorFormat() != video::ECF_A8R8G8B8 &&
-		driver->getColorFormat() != video::ECF_R8G8B8) // OpenGL 4.6.0,GeForce GTX 1070,Win7
+	if (driver->getColorFormat() != video::ECF_A8R8G8B8)
 	{
 		device->closeDevice();
 		device->run();
